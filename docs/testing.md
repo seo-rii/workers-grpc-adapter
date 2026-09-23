@@ -4,7 +4,7 @@ The full local gate runs real SDK packages, native grpc-js comparisons, workerd,
 
 ## Run the local gate
 
-From the repository root:
+Use a current Node.js 22 or later with **npm 11.4.1**, then run these commands from the repository root. `package.json` pins the package manager; CI installs it explicitly because the npm 10 bundled with Node 22 does not reproduce the fixture's scoped auth override.
 
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund

@@ -6,7 +6,9 @@ An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carrie
 
 ## Quick start
 
-The full local suite requires **Linux x64 and Node.js 22 or later**. Run these commands from a checkout:
+The full local suite requires **Linux x64, a current Node.js 22 or later, and npm 11.4.1**. The package manager is pinned in `package.json`; npm 10 does not reproduce the fixture's scoped auth override. Check `npm --version` before setup and select npm 11.4.1 using your preferred toolchain manager. CI installs that version on its disposable runner.
+
+Run these commands from a checkout:
 
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund

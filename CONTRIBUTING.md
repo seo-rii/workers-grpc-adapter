@@ -4,7 +4,7 @@ This is an experimental client transport adapter. Contributions should state the
 
 ## Development setup
 
-Use Node.js 22 or later. The full Envoy and official emulator suite currently targets Linux x64. Follow the [README quick start](README.md#quick-start) to install pinned dependencies and local tools. No cloud credentials are required for that suite.
+Use a current Node.js 22 or later and npm 11.4.1, as pinned by `packageManager` in `package.json`. Check `node --version` and `npm --version` first; npm 10 does not reproduce the fixture's scoped auth override. The full Envoy and official emulator suite currently targets Linux x64. Follow the [README quick start](README.md#quick-start) to install pinned dependencies and local tools. No cloud credentials are required for that suite.
 
 For work limited to the adapter's unit tests:
 

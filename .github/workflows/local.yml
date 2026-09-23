@@ -58,6 +58,7 @@ jobs:
           import json
           import os
           from pathlib import Path
+          import re
           import signal
           import subprocess
           import time
@@ -66,7 +67,11 @@ jobs:
           logs = Path.home() / 'logs'
           logs.mkdir(mode=0o700, exist_ok=True)
           logs.chmod(0o700)
+          npm_pin = json.loads(Path('package.json').read_text())['packageManager']
+          if not re.fullmatch(r'npm@\d+\.\d+\.\d+', npm_pin):
+              raise ValueError('packageManager must pin an exact npm version')
           phases = [
+              ('npm-setup', ['npm', 'install', '--global', npm_pin, '--ignore-scripts', '--no-audit', '--no-fund'], 300),
               ('root-install', ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], 600),
               ('fixtures-install', ['npm', 'run', 'fixtures:install'], 600),
               ('envoy-download', ['node', 'fixtures/envoy/download.cjs'], 300),

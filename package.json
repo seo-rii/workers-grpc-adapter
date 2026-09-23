@@ -3,6 +3,7 @@
   "version": "0.0.0-prototype.1",
   "description": "Experimental grpc-js client transport over binary gRPC-Web for Workers; not a certified replacement",
   "private": true,
+  "packageManager": "npm@11.4.1",
   "license": "MIT",
   "repository": {
     "type": "git",
