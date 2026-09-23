@@ -1,30 +1,178 @@
-name: Local adapter and SDK verification
+name: Local verification
+
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: local-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   local:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: Node 22 / Linux x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      WGA_RUN_GOOGLE_TESTS: '0'
+      WGA_ALLOW_TEST_WRITES: '0'
+      WRANGLER_SEND_METRICS: 'false'
+      DO_NOT_TRACK: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm run fixtures:install
-      - run: node fixtures/envoy/download.cjs
-      - run: npm run emulators:install
-      - run: npm run verify
-        env:
-          WGA_RUN_GOOGLE_TESTS: '0'
-          WGA_ALLOW_TEST_WRITES: '0'
-      - uses: actions/upload-artifact@v4
-        if: always()
+          architecture: x64
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            fixtures/google/package-lock.json
+            fixtures/native/package-lock.json
+            fixtures/worker/package-lock.json
+
+      - name: Restore pinned local service artifacts
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          name: local-verification
+          # Java is extracted from its verified archive on each fresh runner.
           path: |
-            verification/
-            compatibility/*.json
+            fixtures/envoy/.cache/envoy-*
+            fixtures/emulators/.cache/*.jar
+            fixtures/emulators/.cache/*.tar.gz
+          key: local-services-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('fixtures/envoy/binary.json', 'fixtures/emulators/toolchain.json') }}
+
+      - name: Install fixtures and run all local gates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import signal
+          import subprocess
+          import time
+
+          os.umask(0o077)
+          logs = Path.home() / 'logs'
+          logs.mkdir(mode=0o700, exist_ok=True)
+          logs.chmod(0o700)
+          phases = [
+              ('root-install', ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], 600),
+              ('fixtures-install', ['npm', 'run', 'fixtures:install'], 600),
+              ('envoy-download', ['node', 'fixtures/envoy/download.cjs'], 300),
+              ('emulator-download', ['node', 'fixtures/emulators/download.cjs'], 300),
+              ('verify', ['npm', 'run', 'verify'], 1200),
+          ]
+
+          def interrupt(signum, _frame):
+              raise SystemExit(128 + signum)
+
+          def stop_group(process):
+              try:
+                  os.killpg(process.pid, signal.SIGTERM)
+              except ProcessLookupError:
+                  return
+              # Node fixture signal handlers finish their detached Java cleanup.
+              deadline = time.monotonic() + 12
+              while time.monotonic() < deadline:
+                  process.poll()
+                  try:
+                      os.killpg(process.pid, 0)
+                  except ProcessLookupError:
+                      return
+                  time.sleep(0.1)
+              try:
+                  os.killpg(process.pid, signal.SIGKILL)
+              except ProcessLookupError:
+                  pass
+              process.wait(timeout=5)
+
+          signal.signal(signal.SIGINT, interrupt)
+          signal.signal(signal.SIGTERM, interrupt)
+          for phase, command, timeout in phases:
+              stem = logs / f'wga-ci-{phase}-{time.time_ns()}'
+              log = Path(str(stem) + '.log')
+              receipt = Path(str(stem) + '.exit.json')
+              if phase == 'envoy-download':
+                  pin = json.loads(Path('fixtures/envoy/binary.json').read_text())
+                  binary = Path('fixtures/envoy/.cache') / ('envoy-' + pin['version'])
+                  if (binary.is_file() and binary.stat().st_size == pin['size']
+                          and hashlib.sha256(binary.read_bytes()).hexdigest() == pin['sha256']):
+                      receipt.write_text(json.dumps({'phase': phase, 'exitCode': 0, 'verifiedCache': True,
+                                                     'sha256': pin['sha256']}, indent=2) + '\n')
+                      print(f'{phase}: verified pinned cached binary; receipt {receipt}', flush=True)
+                      continue
+              process = None
+              failure = None
+              started = time.time()
+              try:
+                  with log.open('xb') as output:
+                      process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, start_new_session=True, umask=0o022)
+                  print(f'{phase}: started PID {process.pid}; log {log}', flush=True)
+                  code = process.wait(timeout=timeout)
+              except BaseException as error:
+                  failure = type(error).__name__
+                  if process is not None:
+                      stop_group(process)
+                  raise
+              finally:
+                  result = {'phase': phase, 'command': command, 'pid': process.pid if process else None,
+                            'exitCode': process.poll() if process else None, 'failure': failure,
+                            'elapsedSeconds': round(time.time() - started, 3), 'log': str(log)}
+                  receipt.write_text(json.dumps(result, indent=2) + '\n')
+                  print(f'{phase}: exit {result["exitCode"]}; receipt {receipt}', flush=True)
+              if code != 0:
+                  raise SystemExit(code if 0 < code < 126 else 1)
+          PY
+
+      - name: Collect verification reports and process receipts
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import tarfile
+
+          os.umask(0o077)
+          root = Path.cwd()
+          archive = Path(os.environ['RUNNER_TEMP']) / 'wga-local-receipts.tar.gz'
+          reports = root / 'verification'
+          generated = ['exports-contract.json', 'google-graph.json', 'google-native-graph.json',
+                       'google-local.json', 'google-types.json']
+          with tarfile.open(archive, 'w:gz') as output:
+              if reports.is_dir():
+                  for file in sorted(reports.rglob('*')):
+                      if file.is_file() and not file.is_symlink() and file.suffix in {'.json', '.log', '.tap'}:
+                          output.add(file, arcname=str(file.relative_to(root)), recursive=False)
+              for name in generated:
+                  file = root / 'compatibility' / name
+                  if file.is_file() and not file.is_symlink():
+                      output.add(file, arcname=str(file.relative_to(root)), recursive=False)
+              logs = Path.home() / 'logs'
+              if logs.is_dir():
+                  for file in sorted(logs.glob('wga-*')):
+                      if file.is_file() and not file.is_symlink() and file.name.endswith(('.log', '.exit', '.exit.json', '.access.jsonl')):
+                          output.add(file, arcname='logs/' + file.name, recursive=False)
+          print(f'Collected local verification receipts: {archive.name}')
+          PY
+
+      - name: Upload local verification receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: local-verification-node22-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/wga-local-receipts.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
