@@ -30,6 +30,7 @@
     "build": "node scripts/build.cjs",
     "test": "npm run build && node --test test/*.test.cjs",
     "test:local": "node --test test/*.test.cjs",
+    "test:fuzz": "npm run build && node scripts/fuzz.cjs",
     "test:pack": "node scripts/test-pack.cjs",
     "test:types": "node scripts/test-types.cjs",
     "test:google": "node scripts/google-test.cjs",
@@ -52,7 +53,7 @@
     "doctor": "node scripts/doctor.cjs",
     "prepack": "npm run build"
   },
-  "devDependencies": { "typescript": "5.8.3", "@types/node": "22.15.30" },
+  "devDependencies": { "typescript": "5.8.3", "@types/node": "22.15.30", "fast-check": "4.10.2" },
   "peerDependencies": { "esbuild": ">=0.25.0 <1", "typescript": ">=5.8.0 <6" },
   "peerDependenciesMeta": { "esbuild": { "optional": true }, "typescript": { "optional": true } }
 }

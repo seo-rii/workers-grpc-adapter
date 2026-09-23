@@ -37,6 +37,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | Command | Coverage | Generated output |
 |---|---|---|
 | `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
+| `npm run test:fuzz` | Fixed framing corpus and shrinking property tests for framing and call lifecycle | Console, including seed/path and counterexample on failure |
 | `npm run test:types` | Adapter consumers in strict Node16/NodeNext/Bundler modes | `verification/types.json` |
 | `npm run test:sdk:types` | Real SDK declarations compared with the native baseline | `compatibility/google-types.json` |
 | `npm run test:sdk:local` | Shared native/adapter SDK behavior against controlled servers | `compatibility/google-local.json` |
@@ -85,6 +86,30 @@ Emulators use memory and temporary working directories. The launcher records res
 Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. The workerd fixture runs both configurations concurrently in one isolate, checking request destinations, binary gRPC-Web headers and protobuf bytes, unary results, and server-streamed messages. Its controlled outbound responder does not emulate Cloudflare's private-beta edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Real gateway translation is exercised separately through Envoy, including the official emulator suite.
 
 Protocol tests include frame flags, deterministic message/chunk splits, every truncation position in fixed vectors, base64 forms and budgets. Native differential tests compare selected callback/metadata/status/data/error/end behavior. Real Envoy tests are distinct from the hand-built controlled bridge.
+
+### Reproducible property fuzzing
+
+`test/wire-fuzz.test.cjs` retains the fixed regression corpus. Additional `*-property.test.cjs` files use the pinned development dependency [fast-check](https://fast-check.dev/docs/configuration/). These are generated, property-based tests with shrinking, not coverage-guided native fuzzing. They run automatically in `npm test`, `npm run verify`, and the existing GitHub Actions workflow.
+
+The framing properties compare bounded arbitrary and mutated byte streams against an independent whole-buffer protocol oracle. They also vary empty chunks, fragmentation, byte offsets, early consumer exit and errors, checking frame preservation and reader cleanup. Lifecycle properties vary controlled asynchronous events in both transport modes and check single terminal delivery, routing isolation and resource cleanup. They use synthetic local responses, not cloud services.
+
+The default is 200 cases per property with seed `1470698469` (`0x57a913e5`), including explicit boundary examples where supplied. Inputs and action lists have explicit size bounds. Each property has a 120-second test timeout; exceeding it fails the run. Increase the run count and vary the seed for a longer local campaign:
+
+```sh
+npm run test:fuzz
+WGA_FUZZ_SEED=20260923 WGA_FUZZ_RUNS=2000 npm run test:fuzz
+WGA_FUZZ_SEED=-314159 WGA_FUZZ_RUNS=2000 npm run test:fuzz
+```
+
+`WGA_FUZZ_SEED` accepts a signed 32-bit decimal integer; `WGA_FUZZ_RUNS` accepts 1–100000. These settings affect the new property tests, not the older fixed corpus. A failing property reports its seed, shrink path, reduced counterexample and original assertion. Keep the pinned dependency version when replaying. Select the exact failing test with `--test-name-pattern`, then supply the reported seed and path via `WGA_FUZZ_SEED` and `WGA_FUZZ_PATH`; replay stops at that counterexample without further shrinking.
+
+```sh
+# Replace the seed/path and test name with those from the failing run.
+WGA_FUZZ_SEED=1470698469 WGA_FUZZ_PATH='0' npm run test:fuzz -- \
+  '--test-name-pattern=^FUZZ property arbitrary and mutated wire bytes match an independent framing oracle$'
+```
+
+Save a confirmed failure as a focused regression test before fixing it. A passing campaign establishes only the tested properties and generated inputs; it does not certify all protocol behavior or Cloudflare's beta translator.
 
 Benchmarks report local p50/p95 latency, cold require, bundle size, observed buffering and process memory for large/small/slow/concurrent cases. They do not establish ownership of Fetch allocator bytes or deployed Worker performance. Production budgets remain unset.
 

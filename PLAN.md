@@ -45,6 +45,8 @@ differences are documented in [Limitations](docs/limitations.md).
   cleanup without cloud credentials or persistent database state.
 - [x] Run deterministic framing fuzz cases, lifecycle stress checks and a local
   performance measurement harness.
+- [x] Add bounded property fuzzing with counterexample shrinking and seed/path
+  replay for protocol parsing and asynchronous call lifecycle in both modes.
 - [x] Map the original 189 planned cases to named execution evidence, keeping
   complete, partial and unimplemented cases distinct. Detect drift in sources,
   locks, installed code, artifacts, profiles and generated reports.
