@@ -1,18 +1,27 @@
 # Pinned grpc-js client core
 
-The pristine TypeScript files in `client/` were extracted from the actual npm
+The pristine TypeScript files in [`client/`](./client/) were extracted from the npm
 `@grpc/grpc-js@1.14.0` tarball. Its SHA-512 integrity was checked before extraction.
-`UPSTREAM.json` records the registry tarball, integrity, git commit, Apache license,
+[`UPSTREAM.json`](./UPSTREAM.json) records the registry tarball, integrity, git commit, Apache license,
 and each original, patch, and resulting source file's SHA-256. The original npm
 package has no NOTICE; our attribution records that fact.
 
-`src/` contains the buildable client-only fork. `patches/` contains unified diffs
-from each original to its corresponding `src/` file. Verify byte-for-byte patch
-reproduction with `node vendor/verify.cjs`; `--apply` regenerates those source
-files. Updating the pin requires a fresh tarball, integrity check, source review,
-patch regeneration, and the regression/differential/type suites.
+The repository's [`src/`](../src/) directory contains the buildable client-only fork.
+[`patches/`](./patches/) contains unified diffs from each original to its
+corresponding source file. Run from the repository root to verify byte-for-byte
+patch reproduction:
 
-The patch boundary follows P-01 through P-06 from `docs/spec/v0.3.md`:
+```sh
+node vendor/verify.cjs
+```
+
+`node vendor/verify.cjs --apply` regenerates the fork's source files from the
+originals and patches. Updating the upstream pin requires a fresh tarball,
+integrity verification, source review, patch regeneration and the regression,
+differential and declaration tests included in `npm run verify`.
+
+The patch boundary follows P-01 through P-06 of the
+[design specification](../docs/spec/v0.3.md):
 
 - Client creates the branded Workers Channel and rejects foreign channel overrides.
   `waitForReady` reports the explicitly unsupported connection concept.
@@ -26,7 +35,8 @@ The patch boundary follows P-01 through P-06 from `docs/spec/v0.3.md`:
   process/environment tracing initialization.
 - HTTP/2 and TLS references are type-only. The unsupported server parent type is
   opaque; native channel, resolver, retry, server and transport code is excluded.
-  Credentials remain the separately implemented HTTPS boundary in `src/credentials.ts`.
+  Transport credentials are implemented separately in
+  [`src/credentials.ts`](../src/credentials.ts).
 - Root exports the supported client API. Server constructors remain explicit
   unsupported stubs. Generated service names, unsafe-name skipping, Metadata map
   shape, stream buffering and destroy behavior follow grpc-js 1.14.0.

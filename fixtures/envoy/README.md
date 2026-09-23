@@ -7,12 +7,12 @@ HTTP/2 gRPC translation. There is no handwritten translation bridge in this test
 Run from the repository root:
 
 ```sh
-npm run build
+npm ci
+npm run fixtures:install
 node fixtures/envoy/download.cjs
-node scripts/envoy-test.cjs
+npm run test:envoy
 ```
 
-The native fixture dependencies must already be installed (`fixtures/native`).
 The downloader accepts only Linux x64, saves the binary under ignored `.cache/`,
 and checks its exact size and SHA-256 from the pinned official release metadata.
 No system installation, Docker daemon or external deployment is needed.
@@ -24,7 +24,9 @@ admin readiness endpoint is loopback-only. Processes, native server connections
 and temporary configuration are cleaned up after each run. Envoy stdout/stderr go
 to a unique `0600` file in `~/logs`; `verification/envoy.json` records its PID,
 exit code and log path. For automation, run the outer runner in the background
-with its own restricted log and retained exit status as required by this workspace.
+with stdout/stderr redirected to a separate log and retain its exit status.
+The [CI workflow](../../.github/workflows/local.yml) archives those reports and
+process logs on both success and failure.
 
 Six cases cover unary success, server stream success, unary and stream non-OK
 trailers, a deadline, and cancellation after confirmed upstream arrival. The
@@ -39,6 +41,12 @@ This is local Node + Envoy evidence. It does not certify Cloudflare outbound
 translation, deployed workerd, real Google endpoints, TLS or production Envoy
 policy. Performance, production configuration and release budgets are separate.
 
+The [Google emulator fixtures](../emulators/README.md) also use this pinned binary
+to compare native grpc-js, the Node adapter and workerd against official
+Firestore and Datastore-mode emulators. That harness observes gRPC status at
+Envoy's upstream router and records the evidence in
+`verification/google-emulators.json`.
+
 Primary references:
 
 - [Envoy 1.39.1 release](https://github.com/envoyproxy/envoy/releases/tag/v1.39.1)
@@ -48,4 +56,4 @@ Primary references:
 - [Envoy router and retry policy](https://www.envoyproxy.io/docs/envoy/v1.39.1/configuration/http/http_filters/router_filter)
 
 The fixture configures no retry policy. The version, download URL, architecture,
-size and digest are recorded in `binary.json`.
+size and digest are recorded in [binary.json](./binary.json).

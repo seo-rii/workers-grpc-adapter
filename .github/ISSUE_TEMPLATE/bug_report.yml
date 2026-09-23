@@ -1,0 +1,34 @@
+name: Bug report
+description: Report unexpected adapter or local verification behavior.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For suspected security vulnerabilities, follow SECURITY.md instead of sharing details here. Remove credentials, tokens, customer data, and private endpoints from all examples and logs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+      description: Describe the concrete failure and what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the commands or code needed to reproduce the issue with synthetic data.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the adapter commit/version, OS and architecture, Node or workerd version, SDK versions, and transport mode.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Redacted output
+      description: Include the relevant error and test command. Review logs for sensitive data before attaching them.
+      render: text

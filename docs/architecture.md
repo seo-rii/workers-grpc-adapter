@@ -1,58 +1,61 @@
-# 구현 구조
+# Architecture
 
-## 현재 실행 경로
+The adapter preserves a selected grpc-js client surface while replacing its native transport with binary gRPC-Web over Fetch. It is a prototype; see [limitations](limitations.md) for the compatibility boundary.
 
-```text
-SDK 또는 생성 클라이언트
- → @grpc/grpc-js (설치 alias/override)
- → src/index.ts
- → upstream에서 이식한 Client / factory / interceptors / Metadata
- → src/channel.ts
- → src/call.ts
- → src/wire.ts
- → fetch(application/grpc-web+proto)
- → Cloudflare 변환 또는 명시한 gateway
- → native gRPC 서버
+## Request path
+
+```mermaid
+flowchart TD
+    SDK[SDK or generated client] --> Alias["@grpc/grpc-js alias and root override"]
+    Alias --> Client[Vendored client, factory, interceptors and Metadata]
+    Client --> Channel[Workers Channel]
+    Channel --> Call[Call lifecycle and authentication]
+    Call --> Wire[Binary gRPC-Web framing]
+    Wire --> Fetch[Fetch]
+    Fetch --> Gateway[Cloudflare translation or an explicit gateway]
+    Gateway --> Server[Native gRPC service]
 ```
 
-클라이언트 코어는 실제 npm `@grpc/grpc-js@1.14.0`에서 가져왔습니다. `vendor/UPSTREAM.json`이 npm integrity, git commit, 원본·수정본 hash와 patch를 고정합니다. `vendor/verify.cjs`는 patch 재적용 결과까지 검증합니다. native Channel/resolver/server는 런타임 그래프에 포함하지 않습니다.
+The client core comes from the npm artifact `@grpc/grpc-js@1.14.0`. [UPSTREAM.json](../vendor/UPSTREAM.json) records its integrity, commit, file hashes and patches. `node vendor/verify.cjs` checks both original bytes and patch reproduction. Native channel, resolver and server implementations are excluded from the runtime graph.
 
-## 모듈 책임
+## Modules
 
-| 모듈 | 현재 구현 |
+All paths below are relative to `src/`.
+
+| Module | Responsibility |
 |---|---|
-| `index.ts` | client-only root facade, 인터셉터·builder, 명시적 Server 실패 |
-| `factory.ts` | generated constructor, `loadPackageDefinition`, originalName 별칭 |
-| `client.ts`, `call-surface.ts` | upstream overload, callback, stream, transform와 호출 표면 |
-| `client-interceptors.ts` | upstream interceptor 순서·비동기 listener·직렬화, 최종 method/options bridge |
-| `channel.ts` | target/config/credentials, 활성 Call 추적, close |
-| `call.ts` | 인증 준비, 1회 fetch, deadline, 취소, 종료·reader 정리 |
-| `wire.ts` | 길이 제한을 먼저 검사하는 incremental framing, trailers, metadata |
-| `credentials.ts` | CallCredentials 결합, getRequestHeaders 기반 Google 인증 연결 |
-| `config-internal.ts` | 순수 validation, 설정 snapshot, canonical routing |
-| `config.ts` | 공개 configure/get API만 재노출 |
-| `options.ts` | 허용/거부 및 문서화된 무시 옵션 |
-| `adapter.ts` | 인스턴스별 고급 설정. 기본 alias 모드의 필수 조건은 아님 |
-| `build/` | Node 전용, SDK/schema hash를 확인하고 protobuf codec을 빌드 시점에 생성 |
+| `index.ts` | Client exports and explicit failures for server APIs |
+| `factory.ts` | Generated constructors, package definitions and original-name aliases |
+| `client.ts`, `call-surface.ts` | Upstream overloads, callbacks, streams and invocation transforms |
+| `client-interceptors.ts` | Interceptor order, asynchronous listeners, serialization and final call options |
+| `channel.ts` | Target/configuration/credentials, active calls and channel closure |
+| `call.ts` | Authentication preparation, one Fetch attempt, deadlines, cancellation and terminal cleanup |
+| `wire.ts` | Incremental frame parsing, length checks, trailers and metadata |
+| `credentials.ts` | Credential composition and Google `getRequestHeaders()` integration |
+| `config-internal.ts` | Configuration validation, immutable snapshots and canonical routing |
+| `config.ts` | Public configuration exports |
+| `options.ts` | Supported channel options and explicit rejection rules |
+| `adapter.ts` | Optional configuration scoped to a client instance |
+| `build/` | Node-only SDK profile validation and protobuf code generation |
 
-## Call 수명주기
+## Call lifecycle
 
-`start → auth/request 준비 → halfClose → fetch → frame 소비 → terminal`입니다. auth와 request는 독립적으로 준비됩니다. 종료 사유가 먼저 확정되면 늦은 auth 또는 fetch 응답으로 새 요청을 시작하지 않습니다.
+A call progresses through `start → prepare authentication/request → halfClose → fetch → consume frames → terminal`. Authentication and the request can become ready independently. Once a terminal result is chosen, late authentication or Fetch completion cannot start another request.
 
-`finishObject()`가 먼저 terminal 상태를 기록하고 타이머·요청 버퍼·대기 중 reader 수요를 정리합니다. callback/listener는 그 뒤 통지합니다. 한 Call의 fetch는 최대 1회입니다. parent SDK의 재호출은 별개의 Call입니다.
+`finishObject()` records terminal state before notifying listeners. It clears timers, request buffers and pending reader demand. The adapter makes at most one data Fetch attempt per Call. A retry initiated by an SDK creates another Call; it is not an adapter retry.
 
-Decoder는 전체 response를 합치지 않습니다. 현재 Fetch chunk와 현재 frame을 읽고, transport가 최대 한 메시지를 앞서 읽을 수 있습니다. Readable은 upstream의 object-mode 기본 highWaterMark를 사용하므로 SDK stream 버퍼는 transport의 한 메시지 lookahead와 별개입니다. 스트림 종료는 원본 Client의 data/error/status/end 순서를 따릅니다.
+The decoder consumes the current Fetch chunk and frame instead of assembling the whole response. The transport can read one message ahead. The upstream object-mode Readable buffer and the Fetch implementation's allocations are additional buffers, so this is not a bound on total process memory.
 
-타이머는 긴 deadline을 2^31−1ms 이하 구간으로 나누어 재설정합니다. 명시한 Infinity는 패키지 기본 timeout으로 덮어쓰지 않습니다. SDK 초기화 전 시간을 전체적으로 제한하는 타이머는 아닙니다.
+Long deadlines use timer intervals no greater than `2^31 − 1` milliseconds. An explicit infinite deadline is preserved rather than replaced with the configured default. This timer does not cover all SDK initialization before the Call exists.
 
-## ESM / CJS
+## Module identity
 
-`dist/*.js`가 canonical CommonJS 구현이고 `.mjs`는 그 객체의 symbol을 재노출합니다. `Metadata`, credentials, Client, 설정 singleton을 두 번 만들지 않습니다. Node의 혼합 import/require와 실제 tarball 경로에서 identity를 검사했습니다. Workers bundler가 만든 산출물의 identity는 아직 검증하지 않았습니다.
+`dist/*.js` contains the CommonJS implementation; `.mjs` wrappers re-export its objects. This keeps `Metadata`, credentials, `Client` and global configuration shared between Node import and require consumers. Mixed-module identity is tested through the actual tarball. A general identity guarantee across arbitrary Workers bundlers remains unverified.
 
-## 프로토콜 오류와 사용자 예외
+## Errors and the upstream boundary
 
-네트워크 오류의 원문과 인증 오류의 원문은 외부 details에 복사하지 않습니다. 원격 gRPC status/details는 정상 프로토콜 값으로 전달합니다. 호출자 callback이 throw하면 transport 오류로 변환하지 않고 microtask에서 다시 throw합니다. 이 예외 타이밍의 upstream 동등성은 아직 인증되지 않았습니다.
+The transport preserves remote gRPC status and details. It does not copy arbitrary network or authentication exception text into public details. Exceptions thrown by user callbacks are rethrown in a microtask rather than converted into transport errors; complete equivalence with upstream exception timing is still unverified.
 
-## 이식 경계
+`channel.createCallForMethod()` receives the final method definition and call options. It removes already-consumed interceptor options, composes credentials once, and distinguishes an absent deadline from an explicit infinite deadline. Patches also make transformed arguments and interceptor-modified method definitions reach the transport. These differences remain recorded in `vendor/patches/`.
 
-`channel.createCallForMethod()`는 최종 method 종류와 CallOptions를 받습니다. 인터셉터가 소비한 옵션은 제거하고 credentials는 한 번만 결합합니다. deadline 부재와 명시적 Infinity를 구분합니다. transformer가 바꾼 argument와 최종 method_definition을 사용하는 변경은 원본과의 차이로 patch에 남깁니다. 실제 native grpc-js 서버·클라이언트와 비교한 결과는 `verification/native-differential.json`에 있습니다.
+Local native-client comparisons produce `verification/native-differential.json`. See [testing](testing.md) for generation commands and CI artifacts.

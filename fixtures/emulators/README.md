@@ -1,4 +1,4 @@
-# Official local Google database emulators
+# Google database emulator fixtures
 
 This fixture pins the official Firestore emulator **1.22.0** and an isolated
 Eclipse Temurin **21.0.12.1+1** JRE for Linux x64. Both artifacts have fixed URLs,
@@ -8,13 +8,30 @@ Downloads and Java extraction stay in the ignored `.cache/` directory; global
 Java, gcloud components, gcloud configuration and credentials are untouched.
 
 ```sh
+npm ci
+npm run fixtures:install
 node fixtures/emulators/download.cjs
 node fixtures/emulators/launcher.cjs
+node fixtures/emulators/lifecycle.cjs
 ```
 
-The second command is a lifecycle smoke test: start both modes, reset their data,
-and stop both processes. Run long tests with stdout and stderr redirected to a
-restrictive background log, as required by this workspace's AGENTS.md.
+Run these commands from the repository root. `launcher.cjs` starts both modes,
+resets their data and stops both processes. `lifecycle.cjs` verifies shutdown after
+SIGINT/SIGTERM, shutdown during startup and repeated `stop()` calls. It writes
+`verification/emulator-lifecycle.json`.
+
+To run the SDK compatibility scenarios through real Envoy with native grpc-js,
+the Node adapter and workerd:
+
+```sh
+node fixtures/envoy/download.cjs
+node scripts/google-emulator-test.cjs
+```
+
+Results are written to `verification/google-emulators.json`. `npm run verify`
+includes both the SDK scenarios and lifecycle checks after the pinned artifacts
+have been downloaded. The [CI workflow](../../.github/workflows/local.yml)
+downloads them automatically and retains reports and process logs as an artifact.
 
 ```js
 const { startEmulators } = require('./fixtures/emulators/launcher.cjs');
@@ -42,6 +59,8 @@ credentials or inherited Java options to the processes. Logs are created under
 `~/logs` with mode `0600` before spawning, and each process has an
 `.exit.json` status file. `stop()` is idempotent, waits for termination and
 removes the working directory; callers must await it in `finally`.
+The launcher also stops and records its Java children when the parent receives
+SIGINT or SIGTERM, including signals received during startup.
 Downloaded artifacts stay cached for subsequent runs. Initial downloads require
 network access; database requests use local endpoints only.
 

@@ -1,79 +1,99 @@
-# 테스트와 실행 증거
+# Testing and evidence
+
+The full local gate runs real SDK packages, native grpc-js comparisons, workerd, Envoy and official database emulators. It requires Linux x64 for the pinned Envoy and Java distributions, plus Node.js 22 or later and npm. Dependency and toolchain downloads require network access; the verification scenarios do not call live Google services.
+
+## Run the local gate
+
+From the repository root:
 
 ```sh
-npm ci
+npm ci --ignore-scripts --no-audit --no-fund
 npm run fixtures:install
 node fixtures/envoy/download.cjs
 npm run emulators:install
 npm run verify
 ```
 
-`fixtures:install`은 현재 tarball과 fixture lock integrity를 맞추고 Google/native/Worker를 npm ci로 설치합니다. `verify`는 live/write 플래그를 강제로 끄며 모든 로컬 검증 보고서를 생성합니다. 외부 Google 데이터는 만들지 않습니다.
+`fixtures:install` packs the current source, updates the fixture locks' local tarball integrity and runs `npm ci` for the Google, native and Worker fixtures. Run it again after changing packaged files, including the README, API guide or limitations guide. Use a consistent build umask: archive entry modes affect tarball integrity even when file contents match.
 
-전체 gate는 Linux x64용으로 고정된 Envoy binary를 먼저 준비해야 합니다. 다른 플랫폼에서는 core/type/SDK 검사를 개별 실행할 수 있지만 전체 증거 gate 통과로 표시하지 않습니다.
+`verify` forces live and write opt-ins off. It creates local test records only in controlled services or disposable emulators. Build outputs, tarballs, verification reports and generated compatibility reports are ignored by Git. GitHub Actions runs the local gate and uploads `local-verification-node22-<run_id>-<attempt>`. That artifact contains `wga-local-receipts.tar.gz` with verification reports, generated compatibility reports and process logs/exit receipts. Download it from the corresponding run to inspect results.
 
-## 검사 계층
+Other platforms can run applicable core/type/SDK commands, but those results do not satisfy the complete Linux toolchain gate.
 
-| 명령 | 내용 | 증거 |
+## Run the smaller test suite
+
+The unit and regression suite still needs the installed SDK fixtures: evidence tests exercise the actual pinned build profile. It does not require the Envoy or emulator downloads.
+
+```sh
+npm ci --ignore-scripts --no-audit --no-fund
+npm run fixtures:install
+npm test
+```
+
+## Commands and outputs
+
+Individual commands assume their required fixtures and build outputs are prepared. `npm test` builds first; `npm run test:local` uses the existing build. `verify` is the command that collects the unit-test TAP output and writes the aggregate report.
+
+| Command | Coverage | Generated output |
 |---|---|---|
-| `npm test` | protocol/API/auth/lifecycle/interceptor, fuzz, doctor negative controls | verification/tests.tap |
-| `npm run test:types` | 어댑터 strict Node16/NodeNext/Bundler 소비자 | verification/types.json |
-| `npm run test:sdk:types` | 실제 SDK와 원본 baseline 선언 | compatibility/google-types.json |
-| `npm run test:sdk:local` | 같은 shared 코드의 native/adapter CRUD/query/transaction/stream | compatibility/google-local.json |
-| `npm run test:differential` | 실제 grpc-js 서버의 callback/status/stream 이벤트 비교 | verification/native-differential.json |
-| `npm run test:envoy` | 실제 Envoy grpc_web → native grpc-js | verification/envoy.json |
-| `npm run test:auth` | 실제 OAuth2Client 갱신·경합·격리·취소 및 서비스 계정 JWT 서명·교환·재사용 | verification/google-auth.json |
-| `npm run test:contract` | root/deep CJS/ESM identity, native transport import 배제 | compatibility/exports-contract.json |
-| `npm run test:pack` | 실제 tarball, alias-only negative, override, npm ci | verification/packaging.json |
-| `npm run test:workers` | workerd 정적 alias import와 기본 RPC | verification/workers.json |
-| `npm run test:workers:sdk` | 실제 SDK 정적 bootstrap·protobuf preset·workerd RPC | verification/workers-sdk.json |
-| `npm run test:workers:shared` | 동일 shared 소스의 native/workerd CRUD·transaction·stream·오류 | verification/workers-shared.json |
-| `npm run test:emulators` | 공식 Firestore/Datastore-mode + 실제 Envoy + native/adapter/workerd | verification/google-emulators.json |
-| `npm run test:emulators:lifecycle` | 시작 중/실행 중 SIGINT·SIGTERM 및 반복 stop 정리 | verification/emulator-lifecycle.json |
-| `npm run test:evidence` | 189개 ID별 named-test 증거 및 소스·lock·artifact drift | verification/evidence.json |
-| `npm run test:benchmark` | 로컬 Node large/small/slow/concurrent 측정 | verification/benchmark.json |
-| `npm run test:google` | 별도 opt-in된 live Google 함수 | verification/google-preflight.json |
+| `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
+| `npm run test:types` | Adapter consumers in strict Node16/NodeNext/Bundler modes | `verification/types.json` |
+| `npm run test:sdk:types` | Real SDK declarations compared with the native baseline | `compatibility/google-types.json` |
+| `npm run test:sdk:local` | Shared native/adapter SDK behavior against controlled servers | `compatibility/google-local.json` |
+| `npm run test:differential` | Callback, metadata, status and stream events against native grpc-js | `verification/native-differential.json` |
+| `npm run test:envoy` | Real Envoy gRPC-Web → native grpc-js, including cancellation/deadlines | `verification/envoy.json` |
+| `npm run test:auth` | Real OAuth2Client and JWT logic over injected token/RPC transports | `verification/google-auth.json` |
+| `npm run test:contract` | Root/deep CJS/ESM identity and transport import boundaries | `compatibility/exports-contract.json` |
+| `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
+| `npm run test:workers` | Static alias import and basic RPC in workerd | `verification/workers.json` |
+| `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
+| `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
+| `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
+| `npm run test:emulators:lifecycle` | Startup/running signal handling and repeated stop cleanup | `verification/emulator-lifecycle.json` |
+| `npm run test:evidence` | Current source, lock, artifact, process receipt and case-evidence consistency | `verification/evidence.json` |
+| `npm run test:benchmark` | Optional local Node latency, buffering and concurrency measurements | `verification/benchmark.json` |
+| `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
 
-`vendor/verify.cjs`는 npm 원본 hash, 수정본 hash 및 patch 재적용을 검사합니다. `test:contract`는 Node 전용 `/build`를 Worker runtime closure와 분리합니다.
+`node vendor/verify.cjs` validates upstream and patched source hashes and reproduces the patches. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. The benchmark and live runner are not required live executions in the local gate.
 
-## 실제 SDK와 native 비교
+## Native SDK comparisons
 
-`fixtures/native`는 원본 grpc-js 1.14.0, `fixtures/google`는 replacement를 설치합니다. 전체 graph/integrity는 doctor 보고서에 남습니다. 두 소비자는 같은 `fixtures/google/shared/` 코드를 사용하고 파일 hash를 비교합니다. 통제 서버의 실제 메서드 도달 횟수·status와 gRPC-Web Content-Type을 기록합니다.
+`fixtures/native` installs grpc-js 1.14.0, while `fixtures/google` installs the replacement. Doctor reports record the dependency graph and integrity. The consumers execute identical shared business bytes and compare their hashes, RPC methods/statuses and binary gRPC-Web content types.
 
-Datastore·Firestore CRUD/query/transaction, 읽기 stream, Firestore 여러/누락 문서, Secret Manager 정상·권한·없는 리소스 오류, Listen 비지원 범위를 검증합니다. 통제된 Datastore ABORTED, Commit 적용 후 응답 보류·deadline, Firestore 충돌 후 정확히 한 번의 SDK transaction 재시도도 비교합니다. 실패한 Commit 이후의 실제 저장 값을 읽어 결과 불확실성을 확인합니다. 실제 Google DB의 consistency/transaction retry/권한 정책은 별도 시험입니다.
+Controlled cases cover Datastore/Firestore CRUD, query, transaction and read-stream behavior; missing Firestore documents; unsupported Listen; and Secret Manager success, permission and missing-resource errors. Fault cases include Datastore `ABORTED`, an applied Commit whose response is withheld until a deadline, and a Firestore conflict followed by exactly one SDK transaction retry. Follow-up reads distinguish a failed response from a write that never happened.
 
-Node16/NodeNext/Bundler의 실제 SDK ESM/CJS 선언을 strict·skipLibCheck=false로 검사하며 모든 진단을 실패 처리합니다. 양쪽 fixture는 `google-auth-library@10.5.0`을 공식 `10.9.1`로만 override하고 auth 11.1.0은 유지합니다. 원본과 어댑터의 auth 버전·integrity가 같은지도 검사합니다.
+SDK declarations are checked in strict ESM and CJS Node16/NodeNext/Bundler modes with `skipLibCheck: false`. Both fixtures replace auth 10.5.0 with official 10.9.1 while retaining auth 11.1.0. Their auth versions and integrity must match.
 
-## 공식 데이터베이스 에뮬레이터
+Authentication tests use real OAuth2Client/JWT/Gaxios logic with controlled transports. They check token refresh, concurrency, credential isolation, cancellation, JWT signatures, exchange claims and reuse. They do not contact Google's token endpoint or establish live OAuth/IAM behavior.
 
-`scripts/google-emulator-test.cjs`는 `fixtures/emulators`의 고정 Firestore 1.22.0/Java21을 시작합니다. 두 모드를 독립 포트에서 실행하고 실제 Envoy 1.39.1의 grpc_web filter로 연결합니다. 모든 SDK RPC는 실제 에뮬레이터가 처리합니다. `fixtures/google/shared/emulator-suites.mjs`의 같은 파일을 세 런타임에서 실행하고 workerd에서는 각 suite를 두 번의 별도 요청으로 반복합니다.
+## Official database emulators
 
-등록된 모든 suite를 native·adapter·workerd 두 차례에서 실행합니다. 실제 business assertion 배열, shared SHA-256, 메서드·gRPC 상태별 호출 횟수를 비교하고 adapter fetch마다 upstream 도달을 확인합니다. 최신 실행 개수는 `verification/google-emulators.json`에 기록합니다. gRPC-Web 변환이 trailer를 소비하므로 상태는 downstream logger가 아닌 Envoy router의 **upstream access log**에서 관찰합니다. 로그에는 RPC 경로·상태만 포함하며 문서나 토큰 내용은 기록하지 않습니다.
+The harness starts pinned Firestore 1.22.0/Java 21 processes in Native and Datastore modes on independent loopback ports. Real Envoy 1.39.1 translates each gRPC-Web request. Every registered suite runs under native grpc-js, the Node adapter and two workerd invocations, using the same shared files.
 
-Firestore BatchWrite는 에뮬레이터 관리 권한이 필요합니다. 로컬 Envoy의 Firestore 경로에만 가상 `Bearer owner`를 주입하며, 클라이언트가 실제 credentials/ADC를 사용하거나 평문으로 인증 정보를 전송하면 실패합니다. workerd의 host service는 HTTP framing header를 재계산하고 원래 protobuf body와 streaming response를 그대로 Envoy와 전달합니다.
+The report compares business assertions, source SHA-256 values and method/status counts. Each adapter Fetch must have a corresponding upstream arrival. Envoy's router **upstream access log** records status because the downstream gRPC-Web filter consumes trailers. Logs record RPC paths and status, not document or token payloads.
 
-Datastore 자료형·namespace·ancestor·batch/missing·callback·cursor·projection·집계·allocate/reserve IDs·rollback·SDK 읽기 스트림·조기 종료, Firestore 자료형·getAll·mask·cursor·집계·transform·rollback·BulkWriter를 실제로 검사합니다. 두 서비스 모두 실제 ALREADY_EXISTS/NOT_FOUND 및 실패한 쓰기 묶음의 원자성을 검사하고, Firestore는 오래된 precondition의 FAILED_PRECONDITION도 확인합니다. 기존 CRUD/transaction 함수도 변경 없이 재사용합니다. 공식 에뮬레이터의 인덱스·제한·동시성 차이는 [공식 문서](https://docs.cloud.google.com/firestore/native/docs/emulator)를 따르며 운영 인증으로 확대하지 않습니다.
+Firestore's emulator BatchWrite path needs emulator owner authorization. Local Envoy injects synthetic `Bearer owner` only toward Firestore. Clients use neither real credentials nor ADC and do not send credentials over plaintext. The workerd host bridge adjusts HTTP framing headers while forwarding protobuf bytes and the streaming response.
 
-에뮬레이터는 RAM과 임시 작업 폴더만 사용합니다. 프로세스 생성 시부터 0600 로그와 PID를 남기고 종료 코드·signal을 별도 기록합니다. 중단 회귀 시험은 Java PID 소멸과 임시 폴더 제거까지 확인합니다. 다운로드 캐시만 남깁니다.
+Datastore scenarios cover data types, namespace/ancestor keys, batch/missing lookup, callback/Promise shapes, query cursors/projection, aggregation, ID allocation/reservation, rollback, read streams and early destruction. Firestore scenarios cover data types, getAll/field masks, query cursors, aggregation, transforms, rollback and BulkWriter. Both exercise `ALREADY_EXISTS`, `NOT_FOUND` and failed-write atomicity; Firestore also checks stale-precondition `FAILED_PRECONDITION`.
 
-## protocol과 자원
+The SDK stream-destruction case fits in a single unary query page. It checks subsequent delivery and client usability, not multi-page suppression or internal adapter resource release. See [limitations](limitations.md).
 
-원래 framing/metadata/lifecycle 시험에 모든 frame flag, 고정 seed의 메시지·chunk 분할, 모든 truncation 위치, canonical/noncanonical base64 및 상한 검사를 추가했습니다. fuzz는 결정적으로 재현할 수 있습니다.
+Emulators use memory and temporary working directories. The launcher records restricted logs, PIDs and exit receipts. Lifecycle tests check SIGINT/SIGTERM propagation, Java process exit, working-directory removal and idempotent stop. Only download caches are retained. [Google documents emulator differences](https://docs.cloud.google.com/firestore/native/docs/emulator), including transactions, indexes and limits; passing these scenarios does not certify production behavior.
 
-native differential은 콜백·초기/종료 metadata·status·data/error/end 순서와 Metadata 객체 동작을 비교합니다. Envoy 시험은 수제 bridge 시험과 별도로 실제 proxy를 실행하고 deadline/cancel도 확인합니다. 프록시 버전/hash와 실행 방법은 `fixtures/envoy/README.md`에 있습니다.
+## Protocol, resources and Workers
 
-benchmark는 큰 메시지, 많은 작은 메시지, 느린 소비자, 동시 호출의 p50/p95, cold require, 번들 크기와 관찰한 버퍼/프로세스 메모리를 기록합니다. Fetch allocator까지 포함한 owned bytes 보장이나 배포 Worker 성능 수치로 해석하지 않습니다. 예산은 아직 정하지 않았습니다.
+Protocol tests include frame flags, deterministic message/chunk splits, every truncation position in fixed vectors, base64 forms and budgets. Native differential tests compare selected callback/metadata/status/data/error/end behavior. Real Envoy tests are distinct from the hand-built controlled bridge.
 
-## Workers
+Benchmarks report local p50/p95 latency, cold require, bundle size, observed buffering and process memory for large/small/slow/concurrent cases. They do not establish ownership of Fetch allocator bytes or deployed Worker performance. Production budgets remain unset.
 
-실제 workerd에서 정적 SDK import와 생성자, protobuf encode/decode/reflection, 인증 header, 첫 RPC와 다음 요청을 검사합니다. `/build` preset 없이 실패하는 대조군과 profile/schema hash가 다른 경우 거부되는 negative control도 포함합니다. node_modules를 수동 수정하지 않으며 범용 require shim으로 SDK를 우회하지 않습니다.
+Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim.
 
-`test:workers:shared`는 원본 비즈니스 모듈을 그대로 bundle하고 native baseline에 같은 바이트를 복사합니다. 각 파일 hash, SDK/GAX/auth/protobuf 버전, 메서드·상태·호출 횟수, 두 credentials의 분리를 기록합니다. 유한 응답을 버퍼링하는 통제 bridge를 사용하므로 incremental stream 취소 증거는 `test:workers:sdk`에서 구분합니다.
+The controlled shared workerd bridge buffers finite responses. Incremental cancellation evidence comes from the separate Worker SDK harness. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.
 
-Worker lockfile에는 Wrangler가 사용하는 Miniflare alpha가 명시되어 있습니다. 실행 보고서의 실제 Wrangler/Miniflare/workerd 및 compatibility_date를 확인하세요. 이 실행은 Cloudflare 계정의 outbound gRPC 변환이나 배포 E2E가 아닙니다.
+## Evidence rules
 
-## 판정
+`verification/report.json` aggregates subprocess results. The deliberately disabled live preflight remains blocked. Required local cases cannot be promoted from blocked or not-run to passed. Reports retain `releaseEligible: false`, and the original 189-case catalog stays separate from test-runner totals and supplemental scenarios.
 
-`verification/report.json`은 subprocess 결과에서 생성합니다. required 시험의 blocked/미실행을 passed로 바꾸지 않으며 `releaseEligible:false`를 유지합니다. 원래 189개 계획 시나리오는 별도 catalog이고, 로컬 테스트 개수를 그 189개와 합산하지 않습니다. `compatibility/test-evidence.json`은 각 ID를 정확한 TAP 이름이나 실행 결과의 case/suite ID에 연결하고, `verification/evidence.json`은 covered/partial/unimplemented를 구분합니다.
+The checked-in `compatibility/test-evidence.json` maps IDs to exact TAP names or report cases. Generated `verification/evidence.json` distinguishes covered, partial and unimplemented cases. A passed partial test remains partial.
 
-`verify`는 실행 전에 입력 hash를 저장하고 마지막에 artifact integrity, 고정 설치 그래프·profile·후보 버전, 보고서와 소스의 일치를 검사합니다. 이후 `test:evidence`만 실행하면 낡은 증거나 변경된 source/lock/artifact를 거부합니다. 입력을 바꾼 경우 fixture 재설치와 전체 `verify`를 다시 실행해야 합니다.
+`verify` snapshots inputs before execution and checks current sources, installed runtime bytes, tarball integrity, locked dependencies, SDK candidates, build profiles, report contents and external process receipts afterward. `npm run test:evidence` rejects stale evidence. After input changes, prepare affected fixtures and rerun the complete gate. Downloaded CI reports describe that CI run; checking external process receipts requires the original runner's local log files.

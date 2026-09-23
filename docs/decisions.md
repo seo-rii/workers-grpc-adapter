@@ -1,43 +1,55 @@
-# 구현 결정 기록
+# Design decisions
 
-## D-001: v0.3 목표와 이번 prototype의 경계
+These records explain the current prototype. They do not mark every requirement in the historical v0.3 design as complete.
 
-고정 upstream의 클라이언트 코어를 재사용합니다. 초기 자체 facade는 실제 npm `@grpc/grpc-js@1.14.0`의 Client/factory/interceptor/Metadata/call surface로 교체했습니다. 원본 소스, SHA-256, npm integrity, git commit 및 재적용 가능한 patch를 `vendor/`에 보존합니다.
+## D-001: Reuse the pinned upstream client core
 
-하단 bridge에서 native channel을 WorkersChannel로 교체하며 최종 method/options/credentials와 deadline 부재를 보존합니다. transformer argument와 interceptor method_definition을 실제 전송에 반영하는 두 변경도 patch로 명시합니다.
+The initial custom facade was replaced with the client, factory, interceptor, Metadata and call surfaces from the npm artifact `@grpc/grpc-js@1.14.0`. Original source, checksums, npm integrity, commit and reproducible patches remain in `vendor/`.
 
-## D-002: 한 개의 CJS 구현, 얇은 ESM wrapper
+The lower bridge replaces the native channel with the Workers transport while preserving final method/options/credentials and absent deadlines. Patches explicitly record the use of invocation-transformed arguments and interceptor-modified method definitions.
 
-CJS를 사용하는 GAX와 ESM 앱의 Metadata/credentials/config identity가 갈라지지 않도록 같은 구현을 다시 export한다. Node에서 실제 혼합 import를 시험했다. Workers bundler에서는 별도 시험이 필요하며, 이를 Node 시험으로 대체하지 않는다.
+## D-002: Share one CommonJS implementation with ESM
 
-## D-003: 외부 transport 종속성 없이 구현
+Thin ESM wrappers re-export the CommonJS objects so GAX and ESM consumers share Metadata, credentials and configuration identity. Node mixed-module imports are tested through the actual tarball. Arbitrary Workers bundler identity remains a separate verification task.
 
-runtime dependency가 없으며 HTTP/2를 Worker 내부에 구현하지 않는다. binary gRPC-Web, 표준 Fetch/ReadableStream/AbortController, Workers가 제공하는 Node builtin만 사용한다. 로컬 시험에서는 globals를 통제했지만 공개 임의 fetch injection API는 만들지 않았다.
+## D-003: Use Fetch without a runtime transport dependency
 
-## D-004: 무제한 지원을 주장하지 않는 안전 제한
+The runtime uses binary gRPC-Web, Fetch, ReadableStream, AbortController and the supported Node builtins available in Workers. It does not implement native HTTP/2 inside a Worker. Tests control globals where needed; there is no public arbitrary Fetch-injection API.
 
-메시지 ceiling, header/trailer budget, exact endpoint mapping, redirect 차단, HTTPS, 자격증명 없는 localhost만 허용하는 예외를 적용했다. 자체 retry, 압축, mTLS/custom CA, bidi/client streaming, native READY, server는 구현하지 않았다. 지원하지 않는 옵션은 조용히 버리지 않는다.
+## D-004: Enforce explicit transport limits
 
-## D-005: 스트림의 오류가 앞선 메시지를 버리면 안 됨
+The adapter applies message ceilings, header/trailer budgets, exact gateway mappings, redirect rejection and HTTPS. The HTTP exception is limited to explicit, credential-free literal-loopback tests. Unsupported options fail explicitly. Adapter retries, compression, custom TLS, client/bidirectional streaming, native connection readiness and server behavior are outside the implementation.
 
-로컬 시험 중 partial server stream에 오류를 전달하기 위해 `destroy(error)`를 사용하면 buffered 마지막 메시지가 관찰되기 전에 폐기될 수 있었다. 원본 1.14.0 Client source의 terminal 경로를 참고하여 readable 종료 후 error/status를 방출하도록 수정하고 회귀 시험을 추가했다. 실제 upstream native 서버·클라이언트와의 정상/실패/빈 stream 이벤트 비교가 통과했다.
+## D-005: Preserve stream messages before terminal errors
 
-## D-006: 실험의 독립성 표시
+Destroying a readable with an error can discard a buffered final message before consumers observe it. The client surface follows upstream 1.14.0 terminal behavior instead. Regression and native differential tests compare representative successful, failed and empty streams. Full upstream event equivalence remains a broader gate.
 
-local HTTP/2 interop은 실제 소켓과 HTTP/2 trailer를 사용하지만 고정 목적지의 수제 bridge/서버다. 실제 replacement .tgz alias 시험도 실제 npm을 쓰지만 SDK/GAX와 baseline grpc 모듈은 모의 패키지다. 이 결과를 Envoy·실제 Google SDK·배포 Cloudflare 호환 인증으로 승격하지 않는다.
+## D-006: Keep evidence layers distinct
 
-## D-007: 라이브 시험은 분리하고 기본 비활성화
+Controlled HTTP/2 tests use real sockets and trailers but purpose-built local services and bridges. Tarball alias tests use real npm with small synthetic SDK/GAX packages. Real Google SDK, Envoy, emulator and deployed-cloud evidence are separate layers; passing one does not imply the others passed.
 
-`npm run verify`는 Google API를 절대 호출하지 않는다. 독립 fixture가 실제 SDK dependency를 갖고, project·credential·live/write opt-in을 명시해야만 live runner가 동작한다. Worker entrypoint는 일반 사용자 서비스가 아니라 보호해야 하는 시험 도구다. 원본 요청/응답 데이터나 secret을 보고서에 저장하지 않는다.
+## D-007: Disable live execution by default
 
-## D-008: 라이선스
+`npm run verify` forces live Google execution off. A separate fixture requires explicit project, credentials and live/write opt-ins. The test Worker is a protected test tool rather than a general application service. Reports omit original request/response payloads and credential material.
 
-어댑터의 독자 코드는 MIT이고, grpc-js에서 이식한 파일은 원래 Apache-2.0 저작권 고지와 라이선스를 유지한다. `vendor/LICENSE`, `vendor/NOTICE`, `vendor/UPSTREAM.json`과 patch를 tarball에도 포함한다.
+## D-008: Preserve upstream licensing
 
-## D-009: 실제 SDK 시험과 클라우드 시험 분리
+Original adapter code uses MIT. Files derived from grpc-js retain their Apache-2.0 notices and license. The package includes `vendor/LICENSE`, `vendor/NOTICE`, `vendor/UPSTREAM.json` and patches.
 
-설치한 실제 Datastore/Firestore/Secret Manager와 원본 grpc-js baseline을 고정된 로컬 native 서버에 연결한다. 같은 shared 파일의 SHA-256, 호출 메서드·상태, binary gRPC-Web Content-Type을 비교한다. 이는 실제 Google API의 IAM/transaction conflict/quota 동작을 인증하지 않는다.
+## D-009: Compare real SDKs with a native baseline
 
-## D-010: Workers protobuf 코드는 빌드 시점에 생성
+Pinned Datastore, Firestore and Secret Manager packages run against controlled local native gRPC services. Consumers compare shared source hashes, business assertions, RPC methods/statuses and binary gRPC-Web observations. Live IAM, quotas and production transaction behavior require independent execution.
 
-Node 전용 `/build`에서 설치본·schema hash가 일치하는 profile만 변환한다. SDK 정적 import와 lazy encoder/decoder에서 필요한 코드를 미리 생성하며, node_modules를 직접 수정하거나 전역 protobuf prototype을 바꾸지 않는다. 이 개발 도구의 TypeScript/esbuild peer는 선택 사항이며 Worker transport의 runtime dependency가 아니다.
+## D-010: Generate Workers protobuf code at build time
+
+The Node-only `/build` preset accepts only matching installed dependencies and schema hashes. It prepares code needed by static SDK imports and lazy protobuf codecs without changing installed node_modules or global protobuf prototypes. TypeScript and esbuild are build-time peers, not transport runtime dependencies.
+
+## D-011: Use official emulators for database semantics
+
+The local gate runs the official Firestore emulator in Native and Datastore modes through real Envoy. Identical business modules execute in native grpc-js, the Node adapter and two workerd invocations. This adds actual database behavior, query, mutation and error evidence while keeping live projects and credentials out of the default gate.
+
+The harness retains explicit emulator limits, records process cleanup and observes gRPC status at Envoy's upstream router. A synthetic owner header exists only on the local Firestore emulator route. These tests do not replace live authentication or production concurrency checks.
+
+## D-012: Keep planned coverage separate from passing test counts
+
+The original 189-case catalog remains unchanged. Each mapping identifies a concrete test or report case and preserves missing invariants as partial coverage. Supplemental scenarios stay outside that denominator. Verification snapshots inputs and rejects stale sources, locks, artifacts, profiles, reports and process receipts. Generated outputs are published as CI artifacts rather than checked-in evidence of a later source revision.

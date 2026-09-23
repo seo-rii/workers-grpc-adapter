@@ -1,20 +1,29 @@
-# 소스 검토와 확인 범위
+# Sources and provenance
 
-검토일: 2026-09-22, 실행 근거 갱신: 2026-09-23. 아래는 기술 설계에 사용한 공식 소스다. 링크의 main branch가 추후 바뀔 수 있으므로 확인한 version/blob을 함께 적었다. **소스의 version은 npm artifact 설치 성공 또는 최신 release 확인을 뜻하지 않는다.**
+These references explain the design and verification boundaries. External documentation can change; installed package versions and artifact checksums come from the repository's pins rather than a moving branch or a claim about the latest release.
 
-| 주제 | 공식 소스 | 확인 범위 |
+## Official references
+
+| Topic | Reference | Use in this project |
 |---|---|---|
-| Cloudflare gRPC | https://blog.cloudflare.com/grpc-workers/ | outbound gRPC-Web translation과 발표 당시 private beta. 현재 계정 활성화 미검증 |
-| Workers Node 호환성 | https://developers.cloudflare.com/workers/runtime-apis/nodejs/ | 런타임 API 배경. 실제 workerd 결과는 verification/workers*.json |
-| npm alias/override | https://docs.npmjs.com/cli/v11/configuring-npm/package-json/ | alias 및 root overrides. 실제 tarball alias/override와 실제 SDK npm ci 그래프 시험; 실행 버전은 보고서에 기록 |
-| grpc-js Client reference | https://github.com/grpc/grpc-node/blob/%40grpc%2Fgrpc-js%401.14.0/packages/grpc-js/src/client.ts | tag `@grpc/grpc-js@1.14.0`, blob `dc75ac4828d4db3c9ef84692d30c878357ea8cfc`; 특히 server stream 종료/error/status 경로 |
-| gRPC-Web wire protocol | https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md | binary message/trailer framing |
-| Native gRPC protocol | https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md | timeout, metadata, status와 HTTP/2 interop의 기준 |
-| HTTP→gRPC 매핑 | https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md | gRPC status가 없을 때만 fallback |
-| Datastore manifest | https://github.com/googleapis/nodejs-datastore/blob/main/package.json | source version10.1.0, blob `8e8583e2a64ed9e4515077f22a40e2dd2cce89a4` |
-| Firestore manifest | https://github.com/googleapis/nodejs-firestore/blob/main/package.json | source version8.3.0, blob `92ccfa723530c07e6138b1bbb4b5757d5d907d14` |
-| Secret Manager manifest | https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/package.json | source version7.1.0, blob `6cc47f202403f96b0683614d8a46e6bce34fbdac` |
+| Workers gRPC translation | [Cloudflare announcement](https://blog.cloudflare.com/grpc-workers/) | Outbound gRPC-Web translation design; account enablement and deployed execution remain unverified |
+| Workers Node compatibility | [Runtime documentation](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) | Builtin/runtime background; fixture configuration and actual workerd reports define the tested setup |
+| npm aliases and root overrides | [npm package.json reference](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) | Consumer dependency replacement and root-level override behavior |
+| grpc-js client behavior | [Client source at 1.14.0](https://github.com/grpc/grpc-node/blob/%40grpc%2Fgrpc-js%401.14.0/packages/grpc-js/src/client.ts) | Vendored client surface and native comparison baseline |
+| Binary gRPC-Web | [Protocol specification](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md) | Message/trailer framing and protocol boundaries |
+| Native gRPC | [HTTP/2 protocol specification](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md) | Metadata, timeout and status semantics used by native interop tests |
+| HTTP status fallback | [HTTP-to-gRPC status mapping](https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md) | Fallback only when a gRPC status is absent |
+| Firestore emulator | [Google Cloud documentation](https://docs.cloud.google.com/firestore/native/docs/emulator) | Local service behavior and differences from production |
 
-원래의 설계 근거와 189개 시험 계획은 `docs/spec/v0.3.md` 및 `compatibility/test-catalog.json`에도 있다. 현재 구현의 차이/제한은 `limitations.md`가 우선하며, 현재 통과 결과는 실행 보고서를 따른다.
+## Repository pins
 
-실제 npm 원본의 integrity/commit/hash는 `vendor/UPSTREAM.json`과 `compatibility/google-graph.json`을 따른다. SDK manifest 링크만으로 설치·호환 통과를 주장하지 않는다. Envoy 공식 release와 SHA-256은 `fixtures/envoy/binary.json`에 고정한다.
+- [vendor/UPSTREAM.json](../vendor/UPSTREAM.json) records grpc-js 1.14.0 npm integrity, commit `3dd281b00fd54ad8f811e941c1d9acc0785c3182`, original and patched source hashes, and patch hashes. `node vendor/verify.cjs` reproduces the patches.
+- [compatibility/candidates.json](../compatibility/candidates.json) records the installed Datastore 10.1.0, Firestore 8.3.0 and Secret Manager 7.1.0 artifacts, npm integrity and source references.
+- Fixture `package-lock.json` files pin the complete adapter/native/Worker dependency graphs. Generated `compatibility/google-graph.json` and `compatibility/google-native-graph.json` report their actual resolution.
+- [fixtures/envoy/binary.json](../fixtures/envoy/binary.json) pins the Envoy release and SHA-256.
+- [fixtures/emulators/toolchain.json](../fixtures/emulators/toolchain.json) pins the official Firestore emulator and Java distribution, including download URLs, size, checksum and provenance.
+- [src/build/profiles/google-static-v1.json](../src/build/profiles/google-static-v1.json) pins the SDK/GAX/protobuf inputs and schemas supported by the build preset.
+
+Source review, artifact installation and executed compatibility tests are separate evidence. A package manifest or protocol document alone does not demonstrate that the adapter passed an SDK test.
+
+The [historical v0.3 specification](spec/v0.3.md) is retained in Korean. Its [189-case catalog](../compatibility/test-catalog.json) records planned requirements. Current implementation boundaries are in [limitations](limitations.md); [testing](testing.md) explains how to produce reports and locate CI artifacts.

@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a supported behavior or development workflow improvement.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use case
+      description: Describe the task you cannot complete with the current adapter.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include the relevant SDK, RPC shape, runtime, and any alternatives you considered.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification approach
+      description: Suggest a reproducible local case if possible. Identify any behavior that would require live cloud validation.
