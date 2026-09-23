@@ -1,0 +1,11 @@
+--- a/src/auth-context.ts
++++ b/src/auth-context.ts
+@@ -15,7 +15,7 @@
+  *
+  */
+ 
+-import { PeerCertificate } from "tls";
++import type { PeerCertificate } from "node:tls";
+ 
+ export interface AuthContext {
+   transportSecurityType?: string;

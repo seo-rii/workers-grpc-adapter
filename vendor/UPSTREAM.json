@@ -1,0 +1,129 @@
+{
+  "package": "@grpc/grpc-js",
+  "version": "1.14.0",
+  "tarball": "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.14.0.tgz",
+  "integrity": "sha512-N8Jx6PaYzcTRNzirReJCtADVoq4z7+1KQ4E70jTg/koQiMoUSN1kbNjPOqpPbhMFhfU1/l7ixspPl8dNY+FoUg==",
+  "gitHead": "3dd281b00fd54ad8f811e941c1d9acc0785c3182",
+  "repository": "https://github.com/grpc/grpc-node",
+  "license": "Apache-2.0",
+  "licenseSha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+  "upstreamNotice": null,
+  "files": [
+    {
+      "upstreamPath": "src/client.ts",
+      "source": "vendor/client/client.ts",
+      "sha256": "215d41d55165e9c21656a043894eccc9065745f8735f0818c1cb05124168df53",
+      "target": "src/client.ts",
+      "patchedSha256": "c18abd65ceffe73c4118c978555f9a0064b44802b5e032eca4d78d947161cc01",
+      "patch": "vendor/patches/client.ts.patch",
+      "patchSha256": "d5f29cff855f382fed8eef7882d7efc1e9578d4d1f5f60ece41f875e45fce028"
+    },
+    {
+      "upstreamPath": "src/make-client.ts",
+      "source": "vendor/client/make-client.ts",
+      "sha256": "53acc4fa9e851d4644341913d45d1d5cfe9e071f14191aabaf48716543669fdf",
+      "target": "src/factory.ts",
+      "patchedSha256": "e7bb78ece931c2d43fa8da0a1c0523f7018bce2b9f62b41ab1dff956c857cd67",
+      "patch": "vendor/patches/factory.ts.patch",
+      "patchSha256": "2f7be3ed6333c1e4658962aff9c54a3956d2a048501521ac76bf73f89607d73f"
+    },
+    {
+      "upstreamPath": "src/metadata.ts",
+      "source": "vendor/client/metadata.ts",
+      "sha256": "53cd9e7a30986c69ffc6753b68d0b0434893c5ac0b5ac31cc6febf52c695fe46",
+      "target": "src/metadata.ts",
+      "patchedSha256": "dfe981ed6ccc1149eb943df50d80459026e83371ed707169d5e3dd39d30532dd",
+      "patch": "vendor/patches/metadata.ts.patch",
+      "patchSha256": "6a738445913cacc5989c8a07bcc58be290b5594adf56e4b023b9db0d4db17799"
+    },
+    {
+      "upstreamPath": "src/call.ts",
+      "source": "vendor/client/call.ts",
+      "sha256": "3a6fd60fd29da2ee15c771d92e54a6773a74cd7a7b68c1510e2afc25e0347e81",
+      "target": "src/call-surface.ts",
+      "patchedSha256": "1f983513761fa1210cb7b4d0bb3eecf3c34afb4a27c7f9424d4ea7b12bcf912e",
+      "patch": "vendor/patches/call-surface.ts.patch",
+      "patchSha256": "6213543a1beeb02be03d314af9235f83084c42b904ee73f714896ebffc712bcd"
+    },
+    {
+      "upstreamPath": "src/client-interceptors.ts",
+      "source": "vendor/client/client-interceptors.ts",
+      "sha256": "fb6fc290df96c2e810fc4bef692539b3848f26f8360ad3d9d9be246ac80cb6af",
+      "target": "src/client-interceptors.ts",
+      "patchedSha256": "63fac7df9dc38c1747671caea87dc15ef2a0a06f52c43bab519e3751dbf1b6bb",
+      "patch": "vendor/patches/client-interceptors.ts.patch",
+      "patchSha256": "4c165443b325d02e34d465fdfc380a591e81da3ff37ebd3a982d6cce6f725b0b"
+    },
+    {
+      "upstreamPath": "src/call-interface.ts",
+      "source": "vendor/client/call-interface.ts",
+      "sha256": "733c3afd5623b2b82a1afd3581a778fe3816eb9a166aaa220f7d65a1bbd4e817",
+      "target": "src/call-interface.ts",
+      "patchedSha256": "6ff45ebe6cb22fdf98c45a5fb1ce1b611fbbbe0340608b8a33b26925642e8038",
+      "patch": "vendor/patches/call-interface.ts.patch",
+      "patchSha256": "4bf8b6e6496c1979093f6269d024c96e7c98f856185922af4a145ca35ada8f3b"
+    },
+    {
+      "upstreamPath": "src/events.ts",
+      "source": "vendor/client/events.ts",
+      "sha256": "397b7d634ebf922031ebad959ea82ffcac3846dbaa3bfa3d0d2369f6deab7bd6",
+      "target": "src/events.ts",
+      "patchedSha256": "397b7d634ebf922031ebad959ea82ffcac3846dbaa3bfa3d0d2369f6deab7bd6",
+      "patch": null,
+      "patchSha256": null
+    },
+    {
+      "upstreamPath": "src/object-stream.ts",
+      "source": "vendor/client/object-stream.ts",
+      "sha256": "4bebc8ec7ad5e2bc1dc4edd2a89e20dedb2accd9d05463693f6b88bfbee5d9f2",
+      "target": "src/object-stream.ts",
+      "patchedSha256": "bbf93db333569b458fe95f5a336daa22c5a0d5ef1202537dd3c42d5ce37279e5",
+      "patch": "vendor/patches/object-stream.ts.patch",
+      "patchSha256": "c029c397d4bcd86c03593b7454e91fdc69d3f7501fcba3f2d4191337880f0be7"
+    },
+    {
+      "upstreamPath": "src/auth-context.ts",
+      "source": "vendor/client/auth-context.ts",
+      "sha256": "376d65b2f33ba9842cac17432db2e5fabd2429ac7769539b6ea922e6c5cdd143",
+      "target": "src/auth-context.ts",
+      "patchedSha256": "a1ef91920fbcd440bbe05e50d53ea92681b302443a35944effea0339c7ebd1bf",
+      "patch": "vendor/patches/auth-context.ts.patch",
+      "patchSha256": "8777a6571fc212aa8d2285f7eb6a0c7fc5c26e6726b9541a44ffaa04f8232746"
+    },
+    {
+      "upstreamPath": "src/error.ts",
+      "source": "vendor/client/error.ts",
+      "sha256": "4dab77b20756fa630d15a235ecf25393c8a7dbb0d6c2a6f4b57b9d4458a2e191",
+      "target": "src/error.ts",
+      "patchedSha256": "4dab77b20756fa630d15a235ecf25393c8a7dbb0d6c2a6f4b57b9d4458a2e191",
+      "patch": null,
+      "patchSha256": null
+    },
+    {
+      "upstreamPath": "src/status-builder.ts",
+      "source": "vendor/client/status-builder.ts",
+      "sha256": "dc0cff5041c9a1862b64c9d382330d94685c4357cfe3fed05cad07c9cb335a9d",
+      "target": "src/status-builder.ts",
+      "patchedSha256": "925284c3d17064854616b9a2134366ee2a8c4b947fd799c7ec6a1dddc8cb3476",
+      "patch": "vendor/patches/status-builder.ts.patch",
+      "patchSha256": "c0f5e4fe9bb9c38e68e3f75f6fee57737b6c3fafcdf61ef9fd5836fafd77b814"
+    },
+    {
+      "upstreamPath": "src/index.ts",
+      "source": "vendor/client/index.ts",
+      "sha256": "00bab7607ea5ac648a7d78e53767071947c1121ecfa989a185ca6573d5a705f7",
+      "target": "src/index.ts",
+      "patchedSha256": "82579482a65e3cbf2e87a2b01048c7cbfda2c55b678d0f604b74be9120c6f73f",
+      "patch": "vendor/patches/index.ts.patch",
+      "patchSha256": "e19043818962f6218f0bf8882502c6d444d4fdfc6195aba321de1a54efef1df9"
+    }
+  ],
+  "patchPolicy": {
+    "P-01": "Workers Channel construction; reject foreign overrides; explicit unsupported waitForReady",
+    "P-02": "Bridge final method/options; preserve omitted deadline; use transformed argument",
+    "P-03": "Factory imports the same vendored Client",
+    "P-04": "HTTPS credentials implemented by src/credentials.ts, not copied from native TLS source",
+    "P-05": "Client-only root exports and module closure",
+    "P-06": "Type-only http2/tls imports; omit unsupported server parent types; use node: builtins"
+  }
+}

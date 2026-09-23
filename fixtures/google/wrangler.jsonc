@@ -1,0 +1,12 @@
+{
+  "name": "wga-google-compatibility-tests",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "vars": {
+    "WGA_RUN_GOOGLE_TESTS": "0",
+    "WGA_ALLOW_TEST_WRITES": "0",
+    "WGA_TRANSPORT_MODE": "cloudflare"
+  }
+}

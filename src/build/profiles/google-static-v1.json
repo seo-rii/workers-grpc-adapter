@@ -1,0 +1,327 @@
+{
+  "id": "google-static-v1",
+  "revision": 1,
+  "packages": [
+    {
+      "path": "node_modules/@google-cloud/datastore",
+      "name": "@google-cloud/datastore",
+      "version": "10.1.0"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore",
+      "name": "@google-cloud/firestore",
+      "version": "8.3.0"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs",
+      "name": "protobufjs",
+      "version": "7.6.6"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager",
+      "name": "@google-cloud/secret-manager",
+      "version": "7.1.0"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax",
+      "name": "google-gax",
+      "version": "6.5.0"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs",
+      "name": "protobufjs",
+      "version": "7.6.6"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader",
+      "name": "@grpc/proto-loader",
+      "version": "0.8.1"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs",
+      "name": "protobufjs",
+      "version": "7.6.6"
+    },
+    {
+      "path": "node_modules/google-gax",
+      "name": "google-gax",
+      "version": "5.0.8"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs",
+      "name": "protobufjs",
+      "version": "7.6.6"
+    },
+    {
+      "path": "node_modules/protobufjs",
+      "name": "protobufjs",
+      "version": "7.4.0"
+    }
+  ],
+  "files": [
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/ext/descriptor/index.js",
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
+      "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/fallback.js",
+      "sha256": "e986037a32525796bea4fc320a1f6ad2599472afda2763d7edfccc8ee7a7866c"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/googleError.js",
+      "sha256": "806b38a98ade22de5de1face6eef9b81ae073db78a2bf0b7409a1412693686ad"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/ext/descriptor/index.js",
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/build/src/index.js",
+      "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/ext/descriptor/index.js",
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+    },
+    {
+      "path": "node_modules/google-gax/build/src/grpc.js",
+      "sha256": "e1a5910fc6f4710eae35fa466b0ff6735fb08162eb66b3214978a7c2d0f42e38"
+    },
+    {
+      "path": "node_modules/google-gax/build/src/fallback.js",
+      "sha256": "36b9a74bada12da2decf8352efc2698f4df739a6772852177369be763662a582"
+    },
+    {
+      "path": "node_modules/google-gax/build/src/googleError.js",
+      "sha256": "08f8daa0b5bdefbd400f933ca149bdd0d86faf38628a7644d6630ff207977014"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/ext/descriptor/index.js",
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+    },
+    {
+      "path": "node_modules/protobufjs/ext/descriptor/index.js",
+      "sha256": "3ffe19232a0da1de2cb269a13ddf8d57e6708a3b7584521353923b2770aa684f"
+    },
+    {
+      "path": "node_modules/@google-cloud/datastore/build/src/entity.js",
+      "sha256": "2014072fecef2fe876ce94112bd717bff2b926a833fb9690a4e56e44ea7dc60c"
+    },
+    {
+      "path": "node_modules/@google-cloud/datastore/build/src/v1/datastore_client.js",
+      "sha256": "7f6e93aaafe74edf89e84244705e53860917845b843233494e3c1ebf58b3ba7c"
+    },
+    {
+      "path": "node_modules/@google-cloud/datastore/build/src/v1/datastore_admin_client.js",
+      "sha256": "8c9e2fc26b448b7e56790dff94c5dec7409952ce243f9d64da1aaa7074d88f73"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/build/src/v1/secret_manager_service_client.js",
+      "sha256": "85c37bef4e3a04e892281f7a9c685a5a75126ef54aa4841d162e23430dddd66b"
+    }
+  ],
+  "schemas": [
+    {
+      "path": "node_modules/@google-cloud/datastore/build/protos/protos.json",
+      "sha256": "a6d5d4be4e2426e2fe53b27f63e3e86eefd4954d4f172aca80ddeb92fba447be"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/build/protos/v1.json",
+      "sha256": "5e1b31dfe7df56371dc2d993a74f57e4ee1635e650c041b63b902c11d71a5123"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/google/protobuf/descriptor.json",
+      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/build/protos/protos.json",
+      "sha256": "28c566344d58cd0e3eb49e2e5881cf7588d3c321d4943930aefd40591321db30"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/protos/operations.json",
+      "sha256": "a79deb6de150d5ee5035d10a78c005a789014b6de7864f8f683a8aea62e264f6"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/protos/locations.json",
+      "sha256": "af29c2511df278e5ef19c24928af1c3ebb8ff668c4faf35778b09e7e860cc37b"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/protos/iam_service.json",
+      "sha256": "305303e2853c456acdf769697cbb5d2b277f51d7e277ce0828edaf9d33c25e76"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/protos/status.json",
+      "sha256": "5b20d93e4c0d02af64cfecbb591fd90bd2adbe4e1f5835bf244d78adbc51ede7"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/google/protobuf/descriptor.json",
+      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/google/protobuf/descriptor.json",
+      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
+    },
+    {
+      "path": "node_modules/google-gax/build/protos/operations.json",
+      "sha256": "cb73b2a9ba2ba37dfd3483f9288c99d399a86fce3be68f18241b26139eed3d8e"
+    },
+    {
+      "path": "node_modules/google-gax/build/protos/locations.json",
+      "sha256": "e9b52be69f995c9e5c05ad00e46093bdad38fd8cac41e9fddba408a0d821e66d"
+    },
+    {
+      "path": "node_modules/google-gax/build/protos/iam_service.json",
+      "sha256": "52c095a139edc417b6536ce83d57bdffff4b7aee577ab39757226d9fa064c489"
+    },
+    {
+      "path": "node_modules/google-gax/build/protos/status.json",
+      "sha256": "027a1510e28535ae45d11a140ee1f32a72e851f0c77cd0fc9e5130edb9d48091"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/google/protobuf/descriptor.json",
+      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
+    },
+    {
+      "path": "node_modules/protobufjs/google/protobuf/descriptor.json",
+      "sha256": "c83325498a6796562c92a1e0ec90b715cebc87a49ec605cfa30dc523f90a6b81"
+    },
+    {
+      "path": "node_modules/@google-cloud/datastore/build/protos/app_engine_key.proto",
+      "sha256": "66a935b684da94cdbe55e40199a6c0aa4a0457bdf3b6f67b134238b846cbd77b"
+    }
+  ],
+  "codegenInputs": [
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/root.js",
+      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/type.js",
+      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/encoder.js",
+      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/decoder.js",
+      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/verifier.js",
+      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
+    },
+    {
+      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/converter.js",
+      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/root.js",
+      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/type.js",
+      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/encoder.js",
+      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/decoder.js",
+      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/verifier.js",
+      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/converter.js",
+      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/root.js",
+      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/type.js",
+      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/encoder.js",
+      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/decoder.js",
+      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/verifier.js",
+      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
+    },
+    {
+      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/converter.js",
+      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/root.js",
+      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/type.js",
+      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/encoder.js",
+      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/decoder.js",
+      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/verifier.js",
+      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
+    },
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/converter.js",
+      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
+    },
+    {
+      "path": "node_modules/protobufjs/src/root.js",
+      "sha256": "862ff11b87634e184751d6e4a71b36063f4fe0d12ccf1ef5b70f0437c75cdaf6"
+    },
+    {
+      "path": "node_modules/protobufjs/src/type.js",
+      "sha256": "a2a2030a5fcb3499a875a035c32b6a9a9cd1b07ed05d46390efccad61ee38acf"
+    },
+    {
+      "path": "node_modules/protobufjs/src/encoder.js",
+      "sha256": "e2cd520cc408c8367c2aa2ab4d4f393f8a9bbfdb3289148181f93baa779213e5"
+    },
+    {
+      "path": "node_modules/protobufjs/src/decoder.js",
+      "sha256": "8298cce32cf0bfb8782fc0fb05ad5cde374888131035e7a6a886fd2d97687844"
+    },
+    {
+      "path": "node_modules/protobufjs/src/verifier.js",
+      "sha256": "fc256498755e24b035dd3a430bd263ec3914c979354f2133e61e596524a83208"
+    },
+    {
+      "path": "node_modules/protobufjs/src/converter.js",
+      "sha256": "8ae1d3ee777cc94ac0cd959cc001e66d08152cc7f9c524d8b4b10e56c66f3955"
+    }
+  ],
+  "loaderOptions": {
+    "keepCase": false,
+    "longs": "String",
+    "enums": "String",
+    "defaults": true,
+    "oneofs": true,
+    "includeDirs": "resolved GAX protos directory (JSON path does not read filesystem)"
+  }
+}

@@ -1,0 +1,24 @@
+--- a/src/call-interface.ts
++++ b/src/call-interface.ts
+@@ -16,17 +16,16 @@
+  */
+ 
+ import { AuthContext } from './auth-context';
+-import { CallCredentials } from './call-credentials';
+-import { Status } from './constants';
+-import { Deadline } from './deadline';
++import { CallCredentials } from './credentials';
++import { status as Status } from './status';
++import type { Deadline } from './call';
+ import { Metadata } from './metadata';
+-import { ServerSurfaceCall } from './server-call';
+ 
+ export interface CallStreamOptions {
+   deadline: Deadline;
+   flags: number;
+   host: string;
+-  parentCall: ServerSurfaceCall | null;
++  parentCall: unknown;
+ }
+ 
+ export type PartialCallStreamOptions = Partial<CallStreamOptions>;

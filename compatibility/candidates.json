@@ -1,0 +1,40 @@
+{
+  "status": "registry-installed-and-locked",
+  "checkedAt": "2026-09-23",
+  "node": "v24.1.0",
+  "npm": "11.4.1",
+  "typescript": "5.8.3",
+  "sdkCandidates": [
+    {
+      "package": "@google-cloud/datastore",
+      "version": "10.1.0",
+      "sourceBlob": "8e8583e2a64ed9e4515077f22a40e2dd2cce89a4",
+      "npmIntegrity": "sha512-FqkIRF0zu8Q4BTY0H2P6AT8vqDUVykqHy9MR6X3ptg6ZadgN404J9CVItgYYLXX4/vVdQlSzYeUw//98H+MRIA==",
+      "installed": true
+    },
+    {
+      "package": "@google-cloud/firestore",
+      "version": "8.3.0",
+      "sourceBlob": "92ccfa723530c07e6138b1bbb4b5757d5d907d14",
+      "npmIntegrity": "sha512-OYadXaHxx8J5GQtCwDNjaVu2+O9Ozdst4Iqi+vDTI/WmLTO56XX3QBOXp4T+qh3tyQzl9YzDBrmA7o8n1xTouA==",
+      "installed": true
+    },
+    {
+      "package": "@google-cloud/secret-manager",
+      "version": "7.1.0",
+      "sourceBlob": "6cc47f202403f96b0683614d8a46e6bce34fbdac",
+      "npmIntegrity": "sha512-bJd9cpb+erx3BE7zKDCmD18vDb01MRRb8E1B/gCPUsaXUdyTcMObiOsJRuDbj/4KY998h2/DHALdDvegqkcwJA==",
+      "installed": true
+    }
+  ],
+  "grpcJsReference": {
+    "version": "1.14.0",
+    "clientSourceBlob": "dc75ac4828d4db3c9ef84692d30c878357ea8cfc",
+    "installed": true,
+    "vendored": true,
+    "integrity": "sha512-N8Jx6PaYzcTRNzirReJCtADVoq4z7+1KQ4E70jTg/koQiMoUSN1kbNjPOqpPbhMFhfU1/l7ixspPl8dNY+FoUg==",
+    "gitHead": "3dd281b00fd54ad8f811e941c1d9acc0785c3182"
+  },
+  "fullDependencyGraphLocked": true,
+  "note": "Actual SDK artifacts installed and npm ci verified; live cloud certification remains pending."
+}

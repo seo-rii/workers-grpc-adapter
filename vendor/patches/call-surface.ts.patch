@@ -1,0 +1,17 @@
+--- a/src/call-surface.ts
++++ b/src/call-surface.ts
+@@ -15,11 +15,11 @@
+  *
+  */
+ 
+-import { EventEmitter } from 'events';
+-import { Duplex, Readable, Writable } from 'stream';
++import { EventEmitter } from 'node:events';
++import { Duplex, Readable, Writable } from 'node:stream';
+ 
+ import { StatusObject, MessageContext } from './call-interface';
+-import { Status } from './constants';
++import { status as Status } from './status';
+ import { EmitterAugmentation1 } from './events';
+ import { Metadata } from './metadata';
+ import { ObjectReadable, ObjectWritable, WriteCallback } from './object-stream';

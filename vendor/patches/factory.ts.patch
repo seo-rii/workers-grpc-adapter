@@ -1,0 +1,23 @@
+--- a/src/factory.ts
++++ b/src/factory.ts
+@@ -15,10 +15,11 @@
+  *
+  */
+ 
+-import { ChannelCredentials } from './channel-credentials';
+-import { ChannelOptions } from './channel-options';
++import { ChannelCredentials } from './credentials';
++import { ChannelOptions } from './options';
+ import { Client } from './client';
+-import { UntypedServiceImplementation } from './server';
++// Server implementations are not loaded into the client-only runtime.
++type UntypedServiceImplementation = { [method: string]: unknown };
+ 
+ export interface Serialize<T> {
+   (value: T): Buffer;
+@@ -236,3 +237,5 @@
+   }
+   return result;
+ }
++
++export { makeClientConstructor as makeGenericClientConstructor };

@@ -1,0 +1,27 @@
+node_modules/
+**/node_modules/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/
+**/.wrangler/
+coverage/
+*.log
+
+# Recreated by the build and local/CI verification commands.
+/dist/
+/artifacts/
+/verification/
+/compatibility/exports-contract.json
+/compatibility/google-graph.json
+/compatibility/google-native-graph.json
+/compatibility/google-types.json
+/compatibility/google-local.json
+.cache/
+.wga-build/
+
+# Workspace-local bookkeeping is not part of the published project.
+/RISK_REGISTER.md

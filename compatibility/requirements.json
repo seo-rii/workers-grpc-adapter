@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "R-001",
+      "description": "루트 alias와 overrides가 앱 및 SDK의 모든 관련 GAX 의존 경로에서 replacement를 해석한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-002",
+      "description": "지원한 root/deep exports, ESM/CJS, 타입 및 클래스 identity를 보존한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-003",
+      "description": "SDK import·생성자·비즈니스 호출·반환값 처리 코드는 native baseline과 동일하다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-004",
+      "description": "실제 SDK의 정적 import·proto 초기화·인증·첫 호출까지 Workers에서 실행한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-005",
+      "description": "grpc-js 생성 클라이언트와 사용자 인터셉터의 관찰 가능한 계약을 유지한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-006",
+      "description": "Google 인증과 credentials composition을 연결하고 논리적 서비스의 audience를 유지한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-007",
+      "description": "Unary와 server streaming을 incremental gRPC-Web로 처리한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-008",
+      "description": "상태 전이·취소·deadline·종료 정리가 결정적이며 최종 status와 write callback은 중복되지 않는다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-009",
+      "description": "초기 metadata, trailing metadata, binary 값과 오류 상세를 보존한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-010",
+      "description": "응답 스트림의 backpressure와 메시지/헤더 예산을 준수한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-011",
+      "description": "어댑터는 한 Call에 대해 데이터 RPC fetch를 최대 한 번만 실행한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-012",
+      "description": "Datastore CRUD·데이터 표현·Query·SDK object stream을 보존한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-013",
+      "description": "Datastore transaction·쓰기 결과 불확실성·SDK 재시도 경계를 보존한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-014",
+      "description": "endpoint·TLS·redirect·인증정보·요청 간 상태의 보안 경계를 지킨다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-015",
+      "description": "비지원 API와 옵션은 명시적으로 실패하며 조용한 기능 축소를 하지 않는다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-016",
+      "description": "필요한 빌드 변환은 고정한 SDK/GAX/schema 프로파일 안에서만 수행한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-017",
+      "description": "지원 버전·플랫폼은 실제 시험 행렬과 증거로 인증한다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-018",
+      "description": "설치 tarball·exports·선언 파일·라이선스·패치가 재현 가능하다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-019",
+      "description": "문서 예제는 소비자 fixture에서 추출하고 문서와 실행 상태를 일치시킨다.",
+      "priority": "required"
+    },
+    {
+      "id": "R-020",
+      "description": "소유 버퍼·번들·cold initialization·stream 성능을 측정하고 회귀를 기록한다.",
+      "priority": "required"
+    }
+  ]
+}

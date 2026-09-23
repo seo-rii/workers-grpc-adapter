@@ -1,0 +1,19 @@
+{
+  "name": "wga-native-sdk-fixtures",
+  "private": true,
+  "type": "module",
+  "description": "Pinned native grpc-js baseline for the same Google SDK scenarios",
+  "dependencies": {
+    "@google-cloud/datastore": "10.1.0",
+    "@google-cloud/firestore": "8.3.0",
+    "@google-cloud/secret-manager": "7.1.0",
+    "@grpc/grpc-js": "1.14.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "$@grpc/grpc-js",
+    "google-auth-library@10.5.0": "10.9.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/google-local-test.cjs"
+  }
+}

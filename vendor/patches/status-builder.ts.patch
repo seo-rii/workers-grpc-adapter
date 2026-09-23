@@ -1,0 +1,11 @@
+--- a/src/status-builder.ts
++++ b/src/status-builder.ts
+@@ -16,7 +16,7 @@
+  */
+ 
+ import { StatusObject } from './call-interface';
+-import { Status } from './constants';
++import { status as Status } from './status';
+ import { Metadata } from './metadata';
+ 
+ /**

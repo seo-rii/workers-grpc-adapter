@@ -1,0 +1,30 @@
+name: Local adapter and SDK verification
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run fixtures:install
+      - run: node fixtures/envoy/download.cjs
+      - run: npm run emulators:install
+      - run: npm run verify
+        env:
+          WGA_RUN_GOOGLE_TESTS: '0'
+          WGA_ALLOW_TEST_WRITES: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-verification
+          path: |
+            verification/
+            compatibility/*.json

@@ -1,0 +1,13 @@
+This is an experimental Workers transport adapter, not the official
+@grpc/grpc-js package. Complete API and production behavior equivalence is
+not claimed.
+
+Portions of the client, factory, metadata, interceptor, stream surface and
+supporting types derive from @grpc/grpc-js 1.14.0, copyright the gRPC authors,
+licensed under Apache License 2.0. Original notices remain in those files.
+See vendor/LICENSE, vendor/NOTICE and vendor/UPSTREAM.json for the original
+license, npm integrity, source commit, file hashes and modification patches.
+The adapter's original code is licensed under the root MIT LICENSE.
+
+Cloudflare, Google Cloud, gRPC, Datastore and Firestore are names of their
+respective projects/products. This prototype is not endorsed by them.

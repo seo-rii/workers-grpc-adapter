@@ -1,0 +1,28 @@
+{
+  "prototype": "0.0.0-prototype.1",
+  "releaseEligible": false,
+  "surfaces": {
+    "node-local-core": "implemented-and-executed",
+    "npm-alias-mock-consumer": "executed-with-actual-replacement-tarball",
+    "upstream-grpc-js-differential": "passed-native-1.14.0",
+    "envoy": "passed-1.39.1-native-interop",
+    "workers-runtime": "passed-core-sdk-static-bootstrap-and-identical-shared-suites",
+    "datastore": "passed-controlled-and-official-emulator-types-query-aggregation-ids-rollback-streams-errors-atomicity",
+    "firestore": "passed-controlled-and-official-emulator-types-query-aggregation-transforms-bulk-writer-rollback-errors-atomicity",
+    "secret-manager": "passed-controlled-sdk-read-notfound-permission",
+    "sdk-nodenext-bundler-types": "passed-native-and-replacement",
+    "sdk-node16-types": "passed-native-and-replacement-official-auth-10.9.1-override",
+    "google-live": "not-run",
+    "cloudflare-deployed": "not-run",
+    "google-auth": "passed-controlled-oauth-refresh-isolation-cancellation-and-service-account-jwt",
+    "official-gcp-emulators": "passed-firestore-1.22.0-native-and-datastore-mode-through-envoy",
+    "emulator-runtime-matrix": "passed-native-node-adapter-and-two-workerd-runs"
+  },
+  "originalCatalog": {
+    "plannedScenarios": 189,
+    "allSatisfied": false,
+    "perCaseEvidence": "../verification/evidence.json"
+  },
+  "canonicalEvidence": "../verification/report.json",
+  "emulatorEvidence": "../verification/google-emulators.json"
+}

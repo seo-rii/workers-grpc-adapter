@@ -1,0 +1,9 @@
+syntax = "proto3";
+package demo;
+service Echo {
+  rpc Unary (Message) returns (Message);
+  rpc Stream (Message) returns (stream Message);
+  rpc ClientStream (stream Message) returns (Message);
+  rpc Bidi (stream Message) returns (stream Message);
+}
+message Message { string text = 1; }

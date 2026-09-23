@@ -1,0 +1,8 @@
+{
+  "version": "1.39.1",
+  "platform": "linux-x64",
+  "url": "https://github.com/envoyproxy/envoy/releases/download/v1.39.1/envoy-1.39.1-linux-x86_64",
+  "sha256": "002c6e1c69ed0fa0ea381887247cadadfaec9481375fa8d8d2b1731eeabf40b8",
+  "size": 105039832,
+  "provenance": "https://api.github.com/repos/envoyproxy/envoy/releases/tags/v1.39.1"
+}

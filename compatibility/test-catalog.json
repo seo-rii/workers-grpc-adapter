@@ -1,0 +1,5057 @@
+{
+  "schemaVersion": 1,
+  "documentVersion": "0.3",
+  "status": "planned",
+  "actualAdapterTestsRun": false,
+  "note": "모든 expected_result는 예상 결과이며 실제 라이브러리 실행 결과가 아니다.",
+  "cases": [
+    {
+      "id": "PKG-001",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "alias-only negative",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "root alias만 지정하고 서로 다른 grpc 버전 요구의 nested GAX를 설치한다",
+      "expected_result": "남은 원본 resolve를 doctor가 fail로 보고하며 false pass 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-002",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "alias+override positive",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "root alias와 $ref overrides로 clean install하고 각 GAX 위치에서 resolve한다",
+      "expected_result": "앱과 모든 관련 GAX가 같은 replacement를 해석",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-003",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "nested GAX 둘 이상",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "두 SDK가 서로 다른 GAX 사본을 설치하는 fixture를 구성한다",
+      "expected_result": "모든 관련 소비자 경로가 교체되고 원본 runtime 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-004",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "lockfile 재현",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "install 결과의 lockfile로 새 디렉터리에서 npm ci한다",
+      "expected_result": "설치 graph와 실제 resolve identity 재현",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-005",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "배포 tarball 완전성",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "workspace와 source tree 없이 tarball만 설치한다",
+      "expected_result": "exports/types/assets/license가 모두 해결",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-006",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "root package.json",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "GAX 위치에서 @grpc/grpc-js/package.json을 읽는다",
+      "expected_result": "실제 replacement version/name 반환, 원본 버전 가장 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-007",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "client deep path",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "runtime과 선언에서 build/src/client를 사용한다",
+      "expected_result": "지원 경로가 root와 동일 Client를 반환",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-008",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "unsupported deep path",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "허용되지 않은 grpc-js 내부 path를 import한다",
+      "expected_result": "원본으로 fallback하지 않고 명시적 실패",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-009",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "ESM/CJS identity",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "앱 ESM과 GAX CJS에서 Metadata/Client/creds를 가져온다",
+      "expected_result": "같은 constructor identity와 composition 성공",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-010",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "이중 설치 탐지",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "replacement를 자기 이름과 alias로 중복·다른 버전 설치한다",
+      "expected_result": "class split 또는 mixed graph를 doctor가 탐지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-011",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "production graph",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "final bundle의 executable imports를 조사한다",
+      "expected_result": "원본 http2/native transport graph 없음; type-only는 구분",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-012",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "설치 검사 의미",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "doctor를 계정/인터넷 없이 실행한다",
+      "expected_result": "설치 상태만 반환하고 Google 인증/fetch 0회",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-013",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "export API snapshot",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "pinned upstream/소비자 import 목록과 exports를 diff한다",
+      "expected_result": "모든 S/I/T 등급 이름과 signature 차이가 설명됨",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PKG-014",
+      "requirement_ids": [
+        "R-001",
+        "R-002",
+        "R-018"
+      ],
+      "title": "깨끗한 소비자 경로",
+      "layer": "packaging",
+      "fixture": "temporary-registry/real-tarball",
+      "procedure": "symlink를 없애고 packed package로 예제를 compile한다",
+      "expected_result": "개발 환경의 우연한 경로 없이 성공",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "원본 transport로 묵시적 fallback 없음",
+        "소비자별 실제 resolve provenance 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/PKG-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-001",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "Node16 타입",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "strict/skipLibCheck=false와 Node16 resolution으로 실제 SDK 예제를 검사한다",
+      "expected_result": "별도 any나 skipLibCheck 없이 같은 타입 계약",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-002",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "NodeNext 타입",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "ESM/CJS 혼합 소비자를 NodeNext로 검사한다",
+      "expected_result": "root/config/deep declaration 모두 해석",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-003",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "bundler 타입",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "Worker 앱의 bundler resolution으로 SDK 예제를 검사한다",
+      "expected_result": "SDK Promise tuple/Key/Transaction/Query 타입 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-004",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "unary overload",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "generated와 직접 Client에 네 unary overload를 각각 사용한다",
+      "expected_result": "request/metadata/options/callback 및 반환 call 타입 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-005",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "server-stream overload",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "네 readable stream overload와 listener를 사용한다",
+      "expected_result": "typed message/metadata/error 및 cancel 표면 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-006",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "잘못된 공개 설정",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "mode 누락 mapping, 잘못된 숫자 타입, readonly 수정 예제를 typecheck한다",
+      "expected_result": "의도한 compile-time 오류가 발생",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TYPE-007",
+      "requirement_ids": [
+        "R-002",
+        "R-005",
+        "R-018"
+      ],
+      "title": "server type-only 소비",
+      "layer": "types",
+      "fixture": "native-and-replacement/type-consumers",
+      "procedure": "필요한 server 타입 선언만 참조한 SDK를 build한다",
+      "expected_result": "선언은 해결하되 runtime server 기능을 끌어오지 않음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "skipLibCheck=false / strict",
+        "런타임 구현 없이 선언 시험만으로 SDK 지원 인증하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TYPE-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-PACK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-001",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "직접 Client",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "Client.makeUnaryRequest를 alias 기본과 명시적 adapter factory로 각각 한 번 호출한다",
+      "expected_result": "두 경로의 동일 wire/status/callback; 각 Call fetch 한 번, 수동 옵션은 alias에 요구하지 않음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-002",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "extends Client",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "사용자 생성 client가 Client를 상속해 호출한다",
+      "expected_result": "수동 hook 없이 동일 transport",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-003",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "makeGenericClientConstructor",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "service definition으로 client를 생성한다",
+      "expected_result": ".service/.serviceName/메서드 alias와 transport 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-004",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "loadPackageDefinition",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "실제 proto-loader definition을 넘겨 client를 생성한다",
+      "expected_result": "중첩 package·enum·message metadata 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-005",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "interceptor request 변경",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "client interceptor가 request payload와 metadata를 바꾼다",
+      "expected_result": "변경 후 bytes/metadata가 wire에 도달",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-006",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "interceptor deadline 변경",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "interceptor가 CallOptions.deadline을 바꾼다",
+      "expected_result": "최종 deadline과 timeout header에 반영",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-007",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "user transformer 공존",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "invocation transformer와 두 interceptor를 함께 설치한다",
+      "expected_result": "pinned native와 의미상 실행 순서·최종 값 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-008",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "직렬화 실패",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "serializer가 의도적으로 오류를 throw한다",
+      "expected_result": "원래 gRPC 오류 의미, fetch 0회, terminal 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-009",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "역직렬화 실패",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "정상 frame에 잘못된 protobuf bytes를 담는다",
+      "expected_result": "native interceptor 오류 의미·cleanup 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-010",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "unary 응답 0개",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "grpc-status OK이나 message가 없는 응답을 보낸다",
+      "expected_result": "callback 오류와 status 이벤트를 각각 native trace와 비교",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-011",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "unary 응답 2개",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "data 두 개와 OK trailer를 보낸다",
+      "expected_result": "native의 cardinality error 및 event 계약 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-012",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "client stream 거부",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "client-stream API를 호출하고 listener를 설치한다",
+      "expected_result": "비동기 UNIMPLEMENTED, auth/fetch/server arrival 모두 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-013",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "bidi 거부",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "bidi API를 호출하고 listener를 설치한다",
+      "expected_result": "같은 실패 surface, auth/fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-014",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "waitForReady",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "열린 Channel에서 ready helper를 호출한다",
+      "expected_result": "성공/가짜 READY 없음, 비지원 callback, health fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-015",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "server stub",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "import 후 Server 사용을 시도한다",
+      "expected_result": "import-only와 실제 사용 실패를 구분, no-op 성공 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-015.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "API-016",
+      "requirement_ids": [
+        "R-003",
+        "R-005",
+        "R-015"
+      ],
+      "title": "callback throw",
+      "layer": "unit+workers",
+      "fixture": "generated-grpc-client",
+      "procedure": "unary callback에서 application 오류를 throw한다",
+      "expected_result": "transport 오류로 재해석하지 않고 정리는 완료",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "callback/status 각 표면을 독립 비교",
+        "동일 Call의 데이터 fetch ≤ 1",
+        "종료 후 소유 자원 0"
+      ],
+      "evidence": [
+        "results/<run-id>/API-016.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-001",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "기본 구성",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "아무 설정 없이 첫 Channel을 만든다",
+      "expected_result": "cloudflare/default cap, 암묵 default deadline 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-002",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "동일 구성 재호출",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "순서만 다른 동등한 mapping으로 configure를 두 번 한다",
+      "expected_result": "정규화 후 idempotent 성공",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-003",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "구성 변경 거부",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "configure 후 Channel 전 다른 값으로 재설정한다",
+      "expected_result": "WGA_CONFIG_ALREADY_SET, 원래 config 불변",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-004",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "lock 후 변경",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "첫 Channel을 만든 뒤 다른 configure를 호출한다",
+      "expected_result": "WGA_CONFIG_LOCKED",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-005",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "snapshot 불변",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "반환 snapshot과 원래 입력 객체를 mutate한다",
+      "expected_result": "내부 config는 변하지 않음; snapshot은 deep readonly/frozen",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-006",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "잘못된 숫자",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "0/음수/NaN/Infinity/fraction을 timeout·cap에 지정한다",
+      "expected_result": "WGA_INVALID_CONFIG, 상태 변경 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-007",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "gateway mapping 누락",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "grpc-web mode에서 빈 map 또는 unknown authority를 사용한다",
+      "expected_result": "설정 또는 target 오류, 임의 native fallback 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-008",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "unknown Channel option",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "미등록 키와 active keepalive/retry/service_config를 지정한다",
+      "expected_result": "명시적 구성 오류, 조용한 무시 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-009",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "GAX 기본 옵션",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "실제 GAX의 -1 size/default backoff를 기록한다",
+      "expected_result": "허용된 정확 기본값만 수용, safety cap 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-010",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "foreign Channel",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "원본 또는 임의 channelOverride를 넣는다",
+      "expected_result": "alias 인증 경로에서 명확히 거부",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CFG-011",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "metadata wait/cork",
+      "layer": "unit",
+      "fixture": "isolated-config-module",
+      "procedure": "waitForReady=true 또는 corked=true를 설정한다",
+      "expected_result": "비지원 호출 오류, fetch 0회",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실패한 configure는 기존 상태를 변경하지 않음",
+        "순수 설정 검증의 네트워크 0"
+      ],
+      "evidence": [
+        "results/<run-id>/CFG-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-001",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "기본 SSL composition",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "GAX 기본 credentials 생성과 Google generator를 실행한다",
+      "expected_result": "수동 주입 없이 bearer metadata 도달",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-002",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "원래 service audience",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "logical Google authority를 gateway로 map한다",
+      "expected_result": "service_url/method_name은 원래 target 규칙",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-003",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "compose 순서",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "서로 다른 완료 시간의 여러 generator와 per-call credentials를 합친다",
+      "expected_result": "pinned merge 순서와 키 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-004",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "동기 generator",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "metadata callback을 즉시 완료한다",
+      "expected_result": "준비 race 없이 fetch 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-005",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "비동기 generator",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "auth Promise를 request halfClose 뒤 완료한다",
+      "expected_result": "auth 전 fetch 0, 완료 뒤 fetch 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-006",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "코드 없는 auth 실패",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "code 없는 오류로 generator를 실패시킨다",
+      "expected_result": "UNKNOWN, 익명 fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-007",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "auth 명시 코드",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "허용 numeric code UNAUTHENTICATED/UNAVAILABLE를 반환한다",
+      "expected_result": "허용된 code 보존, safe details",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-008",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "control-plane 금지 코드",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "OK/NOT_FOUND/ABORTED 등의 auth 오류를 반환한다",
+      "expected_result": "pinned restriction에 따라 INTERNAL",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-009",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "중복 authorization",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "caller와 generator에 서로 다른 bearer를 넣는다",
+      "expected_result": "INTERNAL, fetch 0, 임의 token 선택 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-010",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "auth 중 cancel",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "auth 완료 전 cancel 후 나중에 auth를 resolve한다",
+      "expected_result": "CANCELLED 한 번, late fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-011",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "auth 중 deadline",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "fake clock으로 expiry 후 auth를 완료한다",
+      "expected_result": "DEADLINE_EXCEEDED 한 번, late fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-012",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "토큰 갱신 fixture",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "첫 토큰 만료 후 SDK auth가 새 토큰을 공급하게 한다",
+      "expected_result": "갱신 책임은 auth 라이브러리, adapter 자체 캐시 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-013",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "두 credential 격리",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "서로 다른 project/client_email 요청을 병렬 실행한다",
+      "expected_result": "header와 결과가 요청 사이에 섞이지 않음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-014",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "custom TLS 거부",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "CA/key/cert/verification 옵션을 공급한다",
+      "expected_result": "WGA_UNSUPPORTED_TLS, native connector 실행 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "AUTH-015",
+      "requirement_ids": [
+        "R-006",
+        "R-009",
+        "R-014"
+      ],
+      "title": "인증 로그 검사",
+      "layer": "unit+workers",
+      "fixture": "real-gax/fake-auth-generators",
+      "procedure": "의도적인 token marker가 포함된 auth 오류를 만든다",
+      "expected_result": "로그/HTTP 오류/artifact에 marker 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "terminal 이후 새 데이터 fetch 0",
+        "인증 실패 시 익명 재시도 0",
+        "민감한 원문 로그 0"
+      ],
+      "evidence": [
+        "results/<run-id>/AUTH-015.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-001",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "정상 unary",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "data 한 개와 OK trailer를 넣는다",
+      "expected_result": "원래 bytes 한 번과 OK status",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-002",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "빈 메시지",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "0바이트 data와 OK trailer를 넣는다",
+      "expected_result": "존재하는 빈 message 한 번, missing-message와 구별",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-003",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "빈 server stream",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "data 없이 OK trailer를 넣는다",
+      "expected_result": "메시지 0개 정상 종료",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-004",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "분할 header",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "5바이트 header를 모든 단일 분할 위치로 나눈다",
+      "expected_result": "동일 frame·상태, 데이터 손실 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-005",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "1바이트 chunks",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "작은 전체 응답을 1바이트씩 제공한다",
+      "expected_result": "동일 응답, quadratic concat 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-006",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "합쳐진 frames",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "data 여러 개와 trailer를 하나의 chunk로 제공한다",
+      "expected_result": "순서·trailer 유지, 무제한 message array 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-007",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "payload/trailer 분할",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "seed 고정 random 경계로 payload와 trailer를 나눈다",
+      "expected_result": "동일 메시지/metadata",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-008",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "최대 길이 경계",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "limit-1/limit/limit+1 및 GAX -1 조건의 4MiB 초과·32MiB 이내 payload를 보낸다",
+      "expected_result": "effective limit 규칙대로 수용/거부; 초과는 allocation 전 RESOURCE_EXHAUSTED, 숨은 4MiB 제한 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-009",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "0xffffffff 길이",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "header에 uint32 최대값만 담는다",
+      "expected_result": "signed overflow 없이 크기 오류, 거대 allocation 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-010",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "잘린 header",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "EOF 직전 1~4바이트 header만 보낸다",
+      "expected_result": "INTERNAL, terminal 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-011",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "잘린 payload",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "선언한 payload보다 짧게 보낸 뒤 EOF한다",
+      "expected_result": "INTERNAL, partial protobuf 전달 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-012",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "예약 flags",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "data/trailer 이외 reserved bit를 설정한다",
+      "expected_result": "INTERNAL",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-013",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "압축 frame",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "compressed flag/비지원 encoding을 보낸다",
+      "expected_result": "UNIMPLEMENTED, 잘못된 bytes deserialize 금지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-014",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "중복 trailer",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "trailer를 두 번 보낸다",
+      "expected_result": "INTERNAL, 조기 OK 확정 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-015",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "트레일러 뒤 data",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "OK trailer 뒤 data frame을 붙인다",
+      "expected_result": "INTERNAL",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-015.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-016",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "status 없는 200",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "valid data 뒤 grpc-status 없이 EOF한다",
+      "expected_result": "UNKNOWN / WGA_STATUS_MISSING",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-016.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-017",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "200 + non-OK",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "HTTP200에 PERMISSION_DENIED trailer를 넣는다",
+      "expected_result": "PERMISSION_DENIED, HTTP200 성공 처리 금지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-017.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-018",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "HTTP fallback",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "400/401/403/404/429/502/503/504/200을 status 없이 보낸다",
+      "expected_result": "문서의 정확 매핑",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-018.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-019",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "header trailers-only",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "header에 non-OK status와 빈 body를 보낸다",
+      "expected_result": "해당 status·trailing 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-019.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-020",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "잘못된 status",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "숫자 아닌 값/범위밖/중복 충돌 status를 보낸다",
+      "expected_result": "INTERNAL",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-020.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-021",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "binary metadata 복수",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "padded/unpadded/comma 결합 -bin 값을 보낸다",
+      "expected_result": "각 bytes 값 정확히 복원",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-021.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-022",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "일반 metadata 복수",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "request에 같은 key 값 두 개를 추가한다",
+      "expected_result": "getMap으로 첫 값만 보내지 않음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-022.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-023",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "잘못된 base64",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "잘못된 alphabet/padding -bin 값을 보낸다",
+      "expected_result": "protocol error, lenient decode 금지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-023.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-024",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "grpc-message UTF8",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "한글 percent encoding과 손상 %를 각각 보낸다",
+      "expected_result": "정상 decode 또는 안전 원문 보존, uncaught exception 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-024.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-025",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "Google 오류 bytes",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "grpc-status-details-bin에 정해진 bytes를 넣는다",
+      "expected_result": "byte-identical 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-025.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-026",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "header/trailer cap",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "직렬화 budget의 limit/limit+1을 보낸다",
+      "expected_result": "limit 수용, +1 RESOURCE_EXHAUSTED",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-026.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "WIRE-027",
+      "requirement_ids": [
+        "R-007",
+        "R-009",
+        "R-010"
+      ],
+      "title": "비-grpc body",
+      "layer": "unit",
+      "fixture": "raw-grpc-web-response-vectors",
+      "procedure": "HTML/JSON 응답과 grpc-web-text를 보낸다",
+      "expected_result": "false decode/OK 없음, 안전한 오류·body 정리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "frame 길이 검사는 allocation 전",
+        "terminal delivery ≤ 1",
+        "원래 bytes 의미 보존"
+      ],
+      "evidence": [
+        "results/<run-id>/WIRE-027.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-001",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "start 전 cancel",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "listener가 설치되기 전에 cancel한다",
+      "expected_result": "start 후 final 한 번, auth/fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-002",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "halfClose 먼저",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "request/halfClose 후 auth를 완료한다",
+      "expected_result": "모든 준비 조건 뒤 fetch 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-003",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "auth 먼저",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "auth 완료 후 request/halfClose를 제공한다",
+      "expected_result": "halfClose 전 fetch 0, 이후 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-004",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "빈 request 구별",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "zero-byte message와 halfClose를 전달한다",
+      "expected_result": "유효한 request로 fetch 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-005",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "write ack race",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "send 직후 cancel하고 write callback을 계측한다",
+      "expected_result": "callback 정확히 한 번, 미완료 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-006",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "fetch 중 cancel",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "fetch Promise가 pending인 동안 cancel한다",
+      "expected_result": "abort, final 한 번, rejection 처리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-007",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "body 중 cancel",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "message 일부 전달 후 cancel한다",
+      "expected_result": "이후 message 0, reader/pump 정리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-008",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "EOF와 cancel 경쟁",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "같은 단계에서 두 완료 순서를 각각 실행한다",
+      "expected_result": "first terminal wins, final 중복 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-009",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "Channel.close",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "활성 Call 두 개 상태에서 close를 두 번 호출한다",
+      "expected_result": "모두 UNAVAILABLE 한 번, 신규 Call 거부",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-010",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "Call 독립성",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "같은 Channel의 A만 취소한다",
+      "expected_result": "B 정상 진행, credentials/reader 분리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-011",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "late reject",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "terminal 후 auth/fetch/read를 reject한다",
+      "expected_result": "unhandled rejection 및 새 final 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-012",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "listener 재진입",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "message listener가 즉시 startRead/cancel을 호출한다",
+      "expected_result": "중복 pump·중복 message 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-013",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "명시 Infinity",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "config timeout이 있는 상태에서 Infinity deadline 호출",
+      "expected_result": "timer/header 없음, config로 덮어쓰기 금지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-014",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "deadline 생략",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "config timeout 유/무 두 경우를 실행한다",
+      "expected_result": "기본값 있을 때만 relative deadline 적용",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-015",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "지난 deadline",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "과거 값과 invalid Date를 각각 전달한다",
+      "expected_result": "DEADLINE_EXCEEDED 또는 INVALID_ARGUMENT, auth/fetch 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-015.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-016",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "timeout header 경계",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "8자리/단위 변환 및 긴 timer 경계를 검사한다",
+      "expected_result": "잘못된 짧은 timeout·overflow 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-016.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-017",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "종료 잔여 자원",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "성공/에러/cancel 각 100회 후 자원 counter를 검사한다",
+      "expected_result": "activeCall/timer/pump/소유 bytes 모두 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-017.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "LIFE-018",
+      "requirement_ids": [
+        "R-008",
+        "R-010",
+        "R-011"
+      ],
+      "title": "caller Buffer mutation",
+      "layer": "unit+workers",
+      "fixture": "controlled-clock-promises-streams",
+      "procedure": "send 직후 원래 Buffer를 수정한다",
+      "expected_result": "이미 수용한 request bytes 불변",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "data fetch ≤ 1 / final delivery ≤ 1 / write completion ≤ 1",
+        "terminal 이후 메시지 0",
+        "완료 후 active Call·timer·pump·소유 buffer 0"
+      ],
+      "evidence": [
+        "results/<run-id>/LIFE-018.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-001",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "느린 소비자",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "1KiB 메시지 다수를 보내고 각 메시지 소비를 지연한다",
+      "expected_result": "순서 보존, bounded pending/assembly",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-002",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "pause/resume",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "몇 메시지 뒤 pause 후 resume한다",
+      "expected_result": "pause 중 추가 방출 없음, resume 후 누락/중복 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-003",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "총합 > 메시지 cap",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "작은 message 합계가 safety cap보다 큰 stream을 보낸다",
+      "expected_result": "전체 응답 버퍼링 없이 완료",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-004",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "느린 소비 중 cancel",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "backpressure로 정지한 동안 cancel한다",
+      "expected_result": "reader/pending/assembly 정리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-005",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "부분 stream 뒤 실패",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "data 몇 개 뒤 non-OK trailer를 보낸다",
+      "expected_result": "부분 data 이후 오류, 자동 replay 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-006",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "한 read 뒤 trailer",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "unary readDemand 한 번만 제공한다",
+      "expected_result": "trailer까지 읽고 종료, 추가 message 오류 감지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "FLOW-007",
+      "requirement_ids": [
+        "R-007",
+        "R-010",
+        "R-020"
+      ],
+      "title": "큰 runtime chunk",
+      "layer": "workers+interop",
+      "fixture": "slow-consumer/native-stream-server",
+      "procedure": "한 chunk에 많은 작은 frame을 넣는다",
+      "expected_result": "adapter message array 누적 없음; runtime chunk 비용 별도 계측",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "pending message ≤ 1 / assembly ≤ 1",
+        "소비 순서 보존",
+        "자동 재시도/replay 0"
+      ],
+      "evidence": [
+        "results/<run-id>/FLOW-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-001",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "정적 import",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "실제 앱과 같은 static Datastore import bundle을 workerd에서 실행한다",
+      "expected_result": "import 성공 또는 정확한 profile 필요 원인 기록",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-002",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "초기화 closure",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "constructor와 lazy initialize를 실행한다",
+      "expected_result": "실제 proto/common types/operations 초기화 경로 성공",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-003",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "첫 serializer",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "실제 GAX stub으로 첫 get/save 요청을 serialize한다",
+      "expected_result": "fake bytes bypass 없이 실제 request bytes 생성",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-004",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "첫 decoder",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "native fixture 응답을 실제 SDK로 deserialize한다",
+      "expected_result": "실제 protobuf 및 SDK 데이터 변환 성공",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-005",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "codegen audit",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "cold/first fromObject/toObject/encode/decode를 실행한다",
+      "expected_result": "runtime eval/new Function 경로 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-006",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "정적 codec 순서",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "ctor 설정 뒤 모든 codec/reflection 메서드를 호출한다",
+      "expected_result": "lazy codegen 재진입 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-007",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "schema 옵션",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "pinned loader options와 static registry 결과를 비교한다",
+      "expected_result": "longs/bytes/enums/defaults/oneofs 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-008",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "profile hash 불일치",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "SDK source/schema 한 부분을 바꾼다",
+      "expected_result": "build가 명시적으로 실패, runtime fallback 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-009",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "앱 protobuf 격리",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "앱의 별도 protobuf 사용과 함께 preset을 적용한다",
+      "expected_result": "지정 profile 밖 전역 prototype/loader 변경 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-010",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "fallback 경로 감시",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "실제 SDK fetch content-type과 GAX stub 생성을 관찰한다",
+      "expected_result": "grpc-web 경로, REST fallback으로 false pass 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "BOOT-011",
+      "requirement_ids": [
+        "R-004",
+        "R-016",
+        "R-018"
+      ],
+      "title": "요청 연속/동시 실행",
+      "layer": "workers",
+      "fixture": "actual-sdk-cold-worker-bundle",
+      "procedure": "같은 isolate에서 두 Worker 요청을 순차·병렬 실행한다",
+      "expected_result": "요청별 IO·auth·Call 격리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "실제 SDK stub/serializer 우회 금지",
+        "REST fallback false pass 금지",
+        "profile 밖 전역 protobuf 변경 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/BOOT-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G0-BOOT",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-001",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "business 동일성",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "native와 Worker가 읽는 business module SHA256을 비교한다",
+      "expected_result": "byte-identical, 환경별 SDK 호출 수정 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-002",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "save 단건",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "완전한 key로 typed entity를 저장 후 조회한다",
+      "expected_result": "mutation/데이터/반환 tuple native와 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-003",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "save batch",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "여러 엔티티를 batch로 저장한다",
+      "expected_result": "mutation 순서·개수·오류 의미 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-004",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "insert/upsert/update",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "존재/미존재 key에 각 동작을 실행한다",
+      "expected_result": "원래 operation 의미·status 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-005",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "불완전 key",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "incomplete key로 저장한다",
+      "expected_result": "실행 내 할당 key 참조 및 후속 조회 일관성",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-006",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "get scalar/array",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "단일 key와 여러 key를 조회한다",
+      "expected_result": "SDK의 scalar/array 반환 형태 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-007",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "missing entity",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "found/missing이 섞인 Lookup 결과를 보낸다",
+      "expected_result": "원본 missing 의미; 임의 NOT_FOUND 변환 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-008",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "deferred Lookup",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "첫 응답에 deferred key를 포함한다",
+      "expected_result": "SDK 후속 조회, 누락/중복 없음; adapter retry와 구분",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-009",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "delete 단건/batch",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "존재 및 미존재 key를 삭제한다",
+      "expected_result": "원본 성공/오류 계약 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-010",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "ID 할당",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "실제 high-level 타입에 있는 할당/예약 경로를 실행한다",
+      "expected_result": "형식·정수 정밀도·키 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-010.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-011",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "key/ancestor/namespace",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "다른 ancestor와 namespace의 key를 생성한다",
+      "expected_result": "key path/project/database/namespace/KEY symbol 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-011.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-012",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "bytes/Date",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "bytes와 날짜 필드를 round-trip한다",
+      "expected_result": "Buffer bytes/epoch 및 SDK 반환 타입 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-012.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-013",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "int64 정밀도",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "safe integer 경계 밖 값을 SDK 지원 옵션으로 처리한다",
+      "expected_result": "decimal 값과 wrapper 의미 보존, Number 손실 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-013.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-014",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "null/undefined/nested",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "빈 값·중첩·배열을 SDK 지원 범위에서 저장한다",
+      "expected_result": "missing/undefined/null을 테스트 serializer가 구분",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-014.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-015",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "query filter/order",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "명시적 filter/order/tie-breaker로 질의한다",
+      "expected_result": "결과 값과 순서 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-015.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-016",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "cursor pagination",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "pageSize를 작게 하고 모든 페이지를 가져온다",
+      "expected_result": "누락/중복 없음, cursor의 실행 내 연속성 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-016.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-017",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "query projection/ancestor",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "select 및 ancestor query를 실행한다",
+      "expected_result": "SDK projection/key 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-017.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-018",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "aggregation",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "설치본이 제공하는 count/sum/avg를 실행한다",
+      "expected_result": "aggregation 타입·값·빈 결과 native와 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-018.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-019",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "index/invalid query 오류",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "통제된 오류 및 실제 index 요구를 분리 시험한다",
+      "expected_result": "code/details/metadata 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-019.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-020",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "query stream 이벤트",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "runQueryStream의 data/info/error/end를 기록한다",
+      "expected_result": "native 의미상 순서와 결과 수 유지",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-020.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-021",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "query stream destroy",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "첫 페이지 중 SDK stream을 destroy한다",
+      "expected_result": "불필요한 후속 페이지 요청 없음, 활성 call 정리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-021.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-022",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "read stream",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "createReadStream에 found/missing/deferred를 섞는다",
+      "expected_result": "누락/중복/종료/오류 의미 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-022.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-023",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "callback/Promise",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "같은 작업을 callback와 Promise overload로 실행한다",
+      "expected_result": "error 위치·tuple 길이·info 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-023.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DS-024",
+      "requirement_ids": [
+        "R-003",
+        "R-012",
+        "R-009"
+      ],
+      "title": "routing metadata",
+      "layer": "sdk-controlled",
+      "fixture": "shared-datastore-business/native-data-service",
+      "procedure": "project/database/namespace 및 routing headers를 기록한다",
+      "expected_result": "원래 service 요청 의미, gateway 경유에도 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "shared business source hash 일치",
+        "SDK 반환 타입·배열 순서 보존",
+        "Call별 data fetch ≤ 1"
+      ],
+      "evidence": [
+        "results/<run-id>/DS-024.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-001",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "정상 commit",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "begin/get/update/commit을 실행한다",
+      "expected_result": "ID bytes 일관, mutation 한 번, 원래 반환 형태",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-002",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "query transaction",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "transaction 안에서 query 후 commit한다",
+      "expected_result": "transaction option과 응답 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-003",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "rollback",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "save 예정 mutation 후 rollback한다",
+      "expected_result": "Commit 도달 0, Rollback ID 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-004",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "read-only",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "read-only transaction에 읽기와 금지 쓰기를 시험한다",
+      "expected_result": "원본 SDK 허용/거부 의미",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-005",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "ABORTED conflict",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "native server가 conflict code를 반환한다",
+      "expected_result": "code 보존, adapter transaction 재실행 0",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-006",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "commit 전 장애",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "서버 반영 전 연결 실패를 일으킨다",
+      "expected_result": "실패와 fetch/server count를 기록, 같은 Call 재송신 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-007",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "commit 후 응답 유실",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "mutation 기록 후 응답을 끊는다",
+      "expected_result": "mutation 한 번, 오류·불확실성 유지, 가짜 rollback 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-008",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "commit 중 cancel",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "서버 수신 뒤 호출자를 취소한다",
+      "expected_result": "CANCELLED, 이미 실행된 mutation 취소 보장 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "TX-009",
+      "requirement_ids": [
+        "R-003",
+        "R-013",
+        "R-011"
+      ],
+      "title": "동시 transaction",
+      "layer": "sdk-controlled",
+      "fixture": "shared-business/transaction-fault-server",
+      "procedure": "다른 ID/credential의 transaction 두 개를 교차 실행한다",
+      "expected_result": "ID와 metadata 격리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "transaction ID 격리",
+        "동일 Call Commit 재전송 0",
+        "로컬 취소를 서버 rollback으로 변환하지 않음"
+      ],
+      "evidence": [
+        "results/<run-id>/TX-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G2-SDK",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "RETRY-001",
+      "requirement_ids": [
+        "R-011",
+        "R-013"
+      ],
+      "title": "adapter retry 없음",
+      "layer": "interop",
+      "fixture": "native-server-attempt-counter",
+      "procedure": "UNAVAILABLE 한 번을 직접 grpc-js call에 반환한다",
+      "expected_result": "데이터 fetch와 서버 도달 한 번",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "adapter별 data fetch ≤ 1",
+        "GAX 새 Call과 auth fetch 카운터 분리"
+      ],
+      "evidence": [
+        "results/<run-id>/RETRY-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "RETRY-002",
+      "requirement_ids": [
+        "R-011",
+        "R-013"
+      ],
+      "title": "GAX 상위 retry",
+      "layer": "interop",
+      "fixture": "native-server-attempt-counter",
+      "procedure": "같은 business code의 GAX policy로 첫 실패 후 성공시킨다",
+      "expected_result": "새 Call별 fetch 한 번, 설정된 상위 attempt 수만큼 도달",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "adapter별 data fetch ≤ 1",
+        "GAX 새 Call과 auth fetch 카운터 분리"
+      ],
+      "evidence": [
+        "results/<run-id>/RETRY-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "RETRY-003",
+      "requirement_ids": [
+        "R-011",
+        "R-013"
+      ],
+      "title": "부분 stream replay 금지",
+      "layer": "interop",
+      "fixture": "native-server-attempt-counter",
+      "procedure": "메시지 일부 후 UNAVAILABLE를 보낸다",
+      "expected_result": "이미 보낸 메시지 재전달 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "adapter별 data fetch ≤ 1",
+        "GAX 새 Call과 auth fetch 카운터 분리"
+      ],
+      "evidence": [
+        "results/<run-id>/RETRY-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "RETRY-004",
+      "requirement_ids": [
+        "R-011",
+        "R-013"
+      ],
+      "title": "auth 요청 분리",
+      "layer": "interop",
+      "fixture": "native-server-attempt-counter",
+      "procedure": "토큰 발급 HTTP와 데이터 RPC가 있는 호출을 계측한다",
+      "expected_result": "auth count와 data fetch count 분리",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "adapter별 data fetch ≤ 1",
+        "GAX 새 Call과 auth fetch 카운터 분리"
+      ],
+      "evidence": [
+        "results/<run-id>/RETRY-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G3-INTEROP",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-001",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "redirect credential 보호",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "공격자 origin으로 301/302/307/308을 보낸다",
+      "expected_result": "redirect target 도달 0, bearer 유출 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-002",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "path escape",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "method/target에 query/.. /encoded slash/userinfo를 넣는다",
+      "expected_result": "request 전 거부, 임의 endpoint 도달 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-003",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "CRLF 주입",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "metadata key/value에 CRLF를 넣는다",
+      "expected_result": "추가 header 생성 없이 실패",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-004",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "insecure production 차단",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "Google credential과 HTTP/loopback test route를 합친다",
+      "expected_result": "구성/호출 거부, token 전송 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-005",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "unknown origin",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "endpoints에 없는 logical service를 요청한다",
+      "expected_result": "원래 주소나 임의 proxy로 fallback 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-006",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "비밀 artifact 검사",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "auth/payload에 고유 secret marker를 넣고 실패시킨다",
+      "expected_result": "logs/reports/source map에 marker 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "SEC-007",
+      "requirement_ids": [
+        "R-014",
+        "R-015"
+      ],
+      "title": "mTLS 환경",
+      "layer": "unit+workers",
+      "fixture": "security-negative-fixtures",
+      "procedure": "mTLS 요구 env/credential을 설정한다",
+      "expected_result": "보안 옵션 무시 없이 명시적 실패",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "추가 origin으로 bearer 전달 0",
+        "민감한 로그/artifact 0",
+        "비지원 보안 옵션의 조용한 무시 0"
+      ],
+      "evidence": [
+        "results/<run-id>/SEC-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G1-CORE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-001",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "변환 canary",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "배포 Worker에서 통제된 native unary/stream server를 호출한다",
+      "expected_result": "실제 변환·non-OK·cancel 확인, 계정 상태 증거",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-002",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "Datastore CRUD",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "전용 project에 저장/조회/삭제를 실행한다",
+      "expected_result": "실제 Google 인증 및 데이터 round-trip",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-003",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "Datastore typed query",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "typed entity와 ordered cursor query를 실행한다",
+      "expected_result": "key/bytes/date/int64/query 의미 보존",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-004",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "Datastore aggregation",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "실제 project에서 지원 집계를 실행한다",
+      "expected_result": "설치 SDK의 반환 구조/값 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-005",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "Datastore transaction",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "정상 commit과 rollback을 실행한다",
+      "expected_result": "실제 서버 mutation과 반환 의미 확인",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-006",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "권한 오류",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "별도 제한 principal로 허용되지 않은 작업을 요청한다",
+      "expected_result": "실제 PERMISSION_DENIED·metadata 의미",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-006.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-007",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "Secret Manager 회귀",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "getSecret/accessSecretVersion/listSecrets를 실행한다",
+      "expected_result": "인증·payload 내부 비교·페이지 조회, 비밀 출력 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-007.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-008",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "환경 미충족",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "beta/자격증명/권한이 없는 required case를 실행한다",
+      "expected_result": "skipped/blocked로 기록하고 cloud 인증 gate 실패",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-008.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "CLOUD-009",
+      "requirement_ids": [
+        "R-004",
+        "R-006",
+        "R-012",
+        "R-013",
+        "R-017"
+      ],
+      "title": "실패 cleanup",
+      "layer": "deployed-e2e",
+      "fixture": "deployed-worker/dedicated-gcp-project",
+      "procedure": "중간에 E2E를 실패시킨 후 리소스 cleanup을 수행한다",
+      "expected_result": "run namespace 리소스 정리 또는 명시적 cleanup 실패 보고",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "전용 테스트 프로젝트만 사용",
+        "실행 없는 계층을 pass로 승격하지 않음",
+        "실패 시 cleanup 결과 별도 기록"
+      ],
+      "evidence": [
+        "results/<run-id>/CLOUD-009.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G4-CLOUD",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PERF-001",
+      "requirement_ids": [
+        "R-020",
+        "R-010"
+      ],
+      "title": "bundle 크기",
+      "layer": "performance",
+      "fixture": "fixed-environment-benchmarks",
+      "procedure": "transport-only와 SDK 포함 bundle을 각각 측정한다",
+      "expected_result": "분리된 baseline과 provenance 기록, 임의 속도 우위 주장 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "측정 환경·baseline provenance 기록",
+        "adapter 메모리와 runtime heap 혼동 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/PERF-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PERF-002",
+      "requirement_ids": [
+        "R-020",
+        "R-010"
+      ],
+      "title": "cold 초기화",
+      "layer": "performance",
+      "fixture": "fixed-environment-benchmarks",
+      "procedure": "import/constructor/initialize/첫 Call 시간을 분리한다",
+      "expected_result": "SDK bootstrap과 RPC 시간 혼동 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "측정 환경·baseline provenance 기록",
+        "adapter 메모리와 runtime heap 혼동 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/PERF-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PERF-003",
+      "requirement_ids": [
+        "R-020",
+        "R-010"
+      ],
+      "title": "stream buffer high-water",
+      "layer": "performance",
+      "fixture": "fixed-environment-benchmarks",
+      "procedure": "느린 소비자의 소유 buffer를 계측한다",
+      "expected_result": "request/pending/assembly와 runtime chunk를 구분",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "측정 환경·baseline provenance 기록",
+        "adapter 메모리와 runtime heap 혼동 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/PERF-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PERF-004",
+      "requirement_ids": [
+        "R-020",
+        "R-010"
+      ],
+      "title": "반복 호출 leak",
+      "layer": "performance",
+      "fixture": "fixed-environment-benchmarks",
+      "procedure": "성공/실패/cancel 혼합 반복 후 counter와 heap 경향을 검사한다",
+      "expected_result": "소유 resource 0, 설명되지 않은 증가 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "측정 환경·baseline provenance 기록",
+        "adapter 메모리와 runtime heap 혼동 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/PERF-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "PERF-005",
+      "requirement_ids": [
+        "R-020",
+        "R-010"
+      ],
+      "title": "latency 기준",
+      "layer": "performance",
+      "fixture": "fixed-environment-benchmarks",
+      "procedure": "동일 지역/환경의 p50/p95/첫 message를 측정한다",
+      "expected_result": "baseline 저장 후 threshold 설정, null threshold는 인증 blocked",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "측정 환경·baseline provenance 기록",
+        "adapter 메모리와 runtime heap 혼동 금지"
+      ],
+      "evidence": [
+        "results/<run-id>/PERF-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DOC-001",
+      "requirement_ids": [
+        "R-018",
+        "R-019",
+        "R-017"
+      ],
+      "title": "예제 추출",
+      "layer": "documentation",
+      "fixture": "docs-from-consumer-fixtures",
+      "procedure": "실제 consumer fixture와 문서 code block을 비교한다",
+      "expected_result": "drift 없음, 미실행 코드는 예상 결과 표시",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "계획/예상과 실제 실행 결과 분리",
+        "모든 지원 문구에 실제 프로파일 증거 필요"
+      ],
+      "evidence": [
+        "results/<run-id>/DOC-001.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DOC-002",
+      "requirement_ids": [
+        "R-018",
+        "R-019",
+        "R-017"
+      ],
+      "title": "compatibility 생성",
+      "layer": "documentation",
+      "fixture": "docs-from-consumer-fixtures",
+      "procedure": "exact manifests와 results에서 지원 표를 생성한다",
+      "expected_result": "skipped/planned를 pass로 표시하지 않음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "계획/예상과 실제 실행 결과 분리",
+        "모든 지원 문구에 실제 프로파일 증거 필요"
+      ],
+      "evidence": [
+        "results/<run-id>/DOC-002.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DOC-003",
+      "requirement_ids": [
+        "R-018",
+        "R-019",
+        "R-017"
+      ],
+      "title": "known differences",
+      "layer": "documentation",
+      "fixture": "docs-from-consumer-fixtures",
+      "procedure": "unsupported API와 auth details/peer/caps 차이를 검토한다",
+      "expected_result": "README와 실제 정책·negative tests 일치",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "계획/예상과 실제 실행 결과 분리",
+        "모든 지원 문구에 실제 프로파일 증거 필요"
+      ],
+      "evidence": [
+        "results/<run-id>/DOC-003.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DOC-004",
+      "requirement_ids": [
+        "R-018",
+        "R-019",
+        "R-017"
+      ],
+      "title": "release provenance",
+      "layer": "documentation",
+      "fixture": "docs-from-consumer-fixtures",
+      "procedure": "vendor LICENSE/NOTICE/hash/patch/tarball을 검사한다",
+      "expected_result": "누락 또는 null pin이 있으면 release 실패",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "계획/예상과 실제 실행 결과 분리",
+        "모든 지원 문구에 실제 프로파일 증거 필요"
+      ],
+      "evidence": [
+        "results/<run-id>/DOC-004.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    },
+    {
+      "id": "DOC-005",
+      "requirement_ids": [
+        "R-018",
+        "R-019",
+        "R-017"
+      ],
+      "title": "문서 링크/진단",
+      "layer": "documentation",
+      "fixture": "docs-from-consumer-fixtures",
+      "procedure": "troubleshooting code와 test ID를 교차 확인한다",
+      "expected_result": "고아 code/없는 script/틀린 예제 경로 없음",
+      "expected_result_label": "예상 결과 — 구현 테스트 미실행",
+      "invariants": [
+        "계획/예상과 실제 실행 결과 분리",
+        "모든 지원 문구에 실제 프로파일 증거 필요"
+      ],
+      "evidence": [
+        "results/<run-id>/DOC-005.json",
+        "정확한 dependency/profile 및 test source hash",
+        "해당 fixture의 trace 또는 진단"
+      ],
+      "gate": "G5-RELEASE",
+      "execution_status": "not_run",
+      "required": true
+    }
+  ]
+}

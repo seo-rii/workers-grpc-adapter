@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "checkedOn": "2026-09-23",
+  "firestore": {
+    "version": "1.22.0",
+    "url": "https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.22.0.jar",
+    "filename": "cloud-firestore-emulator-v1.22.0.jar",
+    "size": 136707194,
+    "sha256": "9b6498b7f62714d67f48f59b3818883cd682dbcd46b9f59511de81c97bb5166c",
+    "provenance": "https://github.com/firebase/firebase-tools/blob/a5173c0eefcdbb25006a9defcb481a6d755e4121/src/emulator/downloadableEmulatorInfo.json",
+    "mainClass": "com.google.cloud.datastore.emulator.firestore.CloudFirestore"
+  },
+  "java": {
+    "vendor": "Eclipse Temurin",
+    "version": "21.0.12.1+1",
+    "platform": "linux-x64",
+    "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jre_x64_linux_hotspot_21.0.12.1_1.tar.gz",
+    "filename": "OpenJDK21U-jre_x64_linux_hotspot_21.0.12.1_1.tar.gz",
+    "size": 52059408,
+    "sha256": "2413149700df0f7d440500a84a8f764c535f21e5a5e87d38328b64eec2c5b500",
+    "directory": "jdk-21.0.12.1+1-jre",
+    "provenance": "https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.12.1%2B1"
+  },
+  "documentation": {
+    "firestore": "https://docs.cloud.google.com/firestore/native/docs/emulator",
+    "datastore": "https://docs.cloud.google.com/datastore/docs/emulator",
+    "command": "https://docs.cloud.google.com/sdk/gcloud/reference/emulators/firestore/start"
+  }
+}

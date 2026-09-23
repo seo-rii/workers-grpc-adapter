@@ -1,0 +1,61 @@
+--- a/src/client-interceptors.ts
++++ b/src/client-interceptors.ts
+@@ -29,10 +29,11 @@
+   MessageContext,
+   Call,
+ } from './call-interface';
+-import { Status } from './constants';
+-import { Channel } from './channel';
++import { status as Status } from './status';
++import { Channel, isWorkersChannel } from './channel';
++import { WorkersGrpcConfigurationError } from './status';
+ import { CallOptions } from './client';
+-import { ClientMethodDefinition } from './make-client';
++import { ClientMethodDefinition } from './factory';
+ import { getErrorMessage } from './error';
+ import { AuthContext } from './auth-context';
+ 
+@@ -345,17 +346,14 @@
+   }
+ }
+ 
+-function getCall(channel: Channel, path: string, options: CallOptions): Call {
+-  const deadline = options.deadline ?? Infinity;
+-  const host = options.host;
+-  const parent = options.parent ?? null;
+-  const propagateFlags = options.propagate_flags;
+-  const credentials = options.credentials;
+-  const call = channel.createCall(path, deadline, host, parent, propagateFlags);
+-  if (credentials) {
+-    call.setCredentials(credentials);
+-  }
+-  return call;
++function getCall(channel: Channel, methodDefinition: ClientMethodDefinition<any, any>, options: InterceptorOptions): Call {
++  if (!isWorkersChannel(channel)) {
++    throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
++  }
++  // Interceptors have already run. Retain the final options and the distinction
++  // between an omitted deadline and explicit Infinity for the Workers policy.
++  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
++  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, callOptions);
+ }
+ 
+ /**
+@@ -485,7 +483,7 @@
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   methodDefinition: ClientMethodDefinition<any, any>
+ ) {
+-  const call = getCall(channel, methodDefinition.path, options);
++  const call = getCall(channel, methodDefinition, options);
+   if (methodDefinition.responseStream) {
+     return new BaseStreamingInterceptingCall(call, methodDefinition);
+   } else {
+@@ -579,7 +577,7 @@
+       return currentOptions => nextInterceptor(currentOptions, nextCall);
+     },
+     (finalOptions: InterceptorOptions) =>
+-      getBottomInterceptingCall(channel, finalOptions, methodDefinition)
++      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition)
+   );
+   return getCall(interceptorOptions);
+ }

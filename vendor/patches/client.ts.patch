@@ -1,0 +1,151 @@
+--- a/src/client.ts
++++ b/src/client.ts
+@@ -27,16 +27,16 @@
+   ServiceError,
+   callErrorFromStatus,
+   SurfaceCall,
+-} from './call';
+-import { CallCredentials } from './call-credentials';
++} from './call-surface';
++import { CallCredentials } from './credentials';
+ import { StatusObject } from './call-interface';
+-import { Channel, ChannelImplementation } from './channel';
+-import { ConnectivityState } from './connectivity-state';
+-import { ChannelCredentials } from './channel-credentials';
+-import { ChannelOptions } from './channel-options';
+-import { Status } from './constants';
++import { Channel } from './channel';
++import { WorkersGrpcConfigurationError } from './status';
++import { ChannelCredentials } from './credentials';
++import { ChannelOptions } from './options';
++import { status as Status } from './status';
+ import { Metadata } from './metadata';
+-import { ClientMethodDefinition } from './make-client';
++import { ClientMethodDefinition } from './factory';
+ import {
+   getInterceptingCall,
+   Interceptor,
+@@ -44,13 +44,7 @@
+   InterceptorArguments,
+   InterceptingCallInterface,
+ } from './client-interceptors';
+-import {
+-  ServerUnaryCall,
+-  ServerReadableStream,
+-  ServerWritableStream,
+-  ServerDuplexStream,
+-} from './server-call';
+-import { Deadline } from './deadline';
++import type { Deadline } from './call';
+ 
+ const CHANNEL_SYMBOL = Symbol();
+ const INTERCEPTOR_SYMBOL = Symbol();
+@@ -71,11 +65,8 @@
+ export interface CallOptions {
+   deadline?: Deadline;
+   host?: string;
+-  parent?:
+-    | ServerUnaryCall<any, any>
+-    | ServerReadableStream<any, any>
+-    | ServerWritableStream<any, any>
+-    | ServerDuplexStream<any, any>;
++  /** Parent/server call propagation is unsupported by the Workers transport. */
++  parent?: unknown;
+   propagate_flags?: number;
+   credentials?: CallCredentials;
+   interceptors?: Interceptor[];
+@@ -144,23 +135,10 @@
+     this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
+       options.callInvocationTransformer;
+     delete options.callInvocationTransformer;
+-    if (options.channelOverride) {
+-      this[CHANNEL_SYMBOL] = options.channelOverride;
+-    } else if (options.channelFactoryOverride) {
+-      const channelFactoryOverride = options.channelFactoryOverride;
+-      delete options.channelFactoryOverride;
+-      this[CHANNEL_SYMBOL] = channelFactoryOverride(
+-        address,
+-        credentials,
+-        options
+-      );
+-    } else {
+-      this[CHANNEL_SYMBOL] = new ChannelImplementation(
+-        address,
+-        credentials,
+-        options
+-      );
+-    }
++    if (options.channelOverride !== undefined || options.channelFactoryOverride !== undefined) {
++      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
++    }
++    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
+   }
+ 
+   close(): void {
+@@ -172,33 +150,8 @@
+   }
+ 
+   waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
+-    const checkState = (err?: Error) => {
+-      if (err) {
+-        callback(new Error('Failed to connect before the deadline'));
+-        return;
+-      }
+-      let newState;
+-      try {
+-        newState = this[CHANNEL_SYMBOL].getConnectivityState(true);
+-      } catch (e) {
+-        callback(new Error('The channel has been closed'));
+-        return;
+-      }
+-      if (newState === ConnectivityState.READY) {
+-        callback();
+-      } else {
+-        try {
+-          this[CHANNEL_SYMBOL].watchConnectivityState(
+-            newState,
+-            deadline,
+-            checkState
+-          );
+-        } catch (e) {
+-          callback(new Error('The channel has been closed'));
+-        }
+-      }
+-    };
+-    setImmediate(checkState);
++    // Workers fetch has no persistent connection readiness state.
++    queueMicrotask(() => callback(Object.assign(new Error('WGA_CONNECTIVITY_UNSUPPORTED'), { code: Status.UNIMPLEMENTED })));
+   }
+ 
+   private checkOptionalUnaryResponseArguments<ResponseType>(
+@@ -365,7 +318,7 @@
+         emitter.emit('status', status);
+       },
+     });
+-    call.sendMessage(argument);
++    call.sendMessage(callProperties.argument);
+     call.halfClose();
+     return emitter;
+   }
+@@ -617,7 +570,7 @@
+         stream.emit('status', status);
+       },
+     });
+-    call.sendMessage(argument);
++    call.sendMessage(callProperties.argument);
+     call.halfClose();
+     return stream;
+   }
+@@ -714,3 +667,12 @@
+     return stream;
+   }
+ }
++
++export type { Deadline } from './call';
++export type { StatusObject } from './call-interface';
++export type { ClientMethodDefinition } from './factory';
++export type { ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream, ServiceError, SurfaceCall } from './call-surface';
++export { callErrorFromStatus } from './call-surface';
++export function closeClient(client: Client): void { client.close(); }
++export function getClientChannel(client: Client): Channel { return Client.prototype.getChannel.call(client); }
++export function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void { client.waitForReady(deadline, callback); }
