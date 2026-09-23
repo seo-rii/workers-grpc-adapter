@@ -45,7 +45,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:auth` | Real OAuth2Client and JWT logic over injected token/RPC transports | `verification/google-auth.json` |
 | `npm run test:contract` | Root/deep CJS/ESM identity and transport import boundaries | `compatibility/exports-contract.json` |
 | `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
-| `npm run test:workers` | Static alias import and basic RPC in workerd | `verification/workers.json` |
+| `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |
 | `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
@@ -81,6 +81,8 @@ The SDK stream-destruction case fits in a single unary query page. It checks sub
 Emulators use memory and temporary working directories. The launcher records restricted logs, PIDs and exit receipts. Lifecycle tests check SIGINT/SIGTERM propagation, Java process exit, working-directory removal and idempotent stop. Only download caches are retained. [Google documents emulator differences](https://docs.cloud.google.com/firestore/native/docs/emulator), including transactions, indexes and limits; passing these scenarios does not certify production behavior.
 
 ## Protocol, resources and Workers
+
+Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. The workerd fixture runs both configurations concurrently in one isolate, checking request destinations, binary gRPC-Web headers and protobuf bytes, unary results, and server-streamed messages. Its controlled outbound responder does not emulate Cloudflare's private-beta edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Real gateway translation is exercised separately through Envoy, including the official emulator suite.
 
 Protocol tests include frame flags, deterministic message/chunk splits, every truncation position in fixed vectors, base64 forms and budgets. Native differential tests compare selected callback/metadata/status/data/error/end behavior. Real Envoy tests are distinct from the hand-built controlled bridge.
 

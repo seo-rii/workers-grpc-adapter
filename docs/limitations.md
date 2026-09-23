@@ -11,6 +11,15 @@ This is an experimental, client-only prototype. The package remains `private: tr
 
 The checked-in `compatibility/test-evidence.json` maps each original case to reviewed evidence. A verification run produces `verification/evidence.json`, distinguishing full, partial and missing coverage. Local test counts and supplemental scenarios do not increase the original catalog's denominator. See [testing](testing.md) for reports and CI artifacts.
 
+## Transport modes and verification
+
+Both `cloudflare` and `grpc-web` modes are implemented. They send binary gRPC-Web from the Worker; neither provides raw HTTP/2 gRPC inside the Worker.
+
+- `cloudflare` is the default. It sends directly to the logical service's HTTPS origin and relies on Cloudflare's private-beta outgoing conversion. The account capability must be enabled separately; this configuration does not turn it on. The [official announcement](https://blog.cloudflare.com/grpc-workers/) describes automatic translation without a special Fetch conversion flag.
+- `grpc-web` requires a map from logical service authorities to trusted gateway origins. Local Envoy and official emulator integrations verify this gateway path. A native gRPC endpoint without a translation layer does not accept the adapter's wire protocol.
+
+Local routing and framing checks do not prove Cloudflare's platform conversion or production Google service behavior. There is no automatic capability detection, route failover, or replay of a failed call through another mode. The gateway alternative must be selected explicitly before constructing a client. Neither mode switches to GAX's REST fallback. See [API configuration](api.md#global-configuration) for both examples.
+
 ## What local verification establishes
 
 The client, factory, interceptor, Metadata and call surfaces derive from grpc-js 1.14.0. Tests check provenance, builds, selected root/deep module identities and representative native event behavior. They do not cover every upstream API interaction.

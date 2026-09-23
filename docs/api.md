@@ -18,9 +18,34 @@ Client interceptors, interceptor providers, `InterceptingCall`, `ListenerBuilder
 
 ## Global configuration
 
-Import configuration from the `/config` subpath before constructing clients:
+Import configuration from the `/config` subpath before constructing clients. Choose one of the following modes; both use binary `application/grpc-web+proto` requests and responses at the adapter's Fetch boundary.
+
+### Cloudflare automatic outgoing conversion
+
+`cloudflare` is the default mode. It sends to the logical service's HTTPS origin without an endpoint map:
 
 ```ts
+import { Client, credentials } from '@grpc/grpc-js';
+import { configureWorkersGrpc } from '@grpc/grpc-js/config';
+
+configureWorkersGrpc({
+  mode: 'cloudflare',
+  defaultTimeoutMs: 30_000,
+});
+
+const client = new Client('datastore.googleapis.com:443', credentials.createSsl());
+```
+
+For example, `/google.datastore.v1.Datastore/Lookup` targets `https://datastore.googleapis.com/google.datastore.v1.Datastore/Lookup`. The example constructs the transport client; a real RPC also needs its method codecs and service credentials.
+
+Cloudflare's private-beta capability automatically converts outgoing gRPC-Web to native gRPC. Its published client example uses ordinary `fetch()` with manual redirect handling, with no special conversion flag. The adapter uses that request shape, but configuration cannot enable the account capability. Confirm it is enabled before using this mode against a native gRPC service. This project's local tests do not establish deployed conversion behavior. See [Cloudflare's announcement](https://blog.cloudflare.com/grpc-workers/).
+
+### Explicit gRPC-Web gateway
+
+`grpc-web` selects an explicit trusted gateway and requires an endpoint map:
+
+```ts
+import { Client, credentials } from '@grpc/grpc-js';
 import { configureWorkersGrpc } from '@grpc/grpc-js/config';
 
 configureWorkersGrpc({
@@ -30,16 +55,22 @@ configureWorkersGrpc({
   },
   defaultTimeoutMs: 30_000,
 });
+
+const client = new Client('datastore.googleapis.com:443', credentials.createSsl());
 ```
 
-Replace the example origin with a trusted gateway that performs gRPC-Web translation. It can see credentials and protobuf payloads. An ordinary gRPC endpoint does not automatically provide this protocol.
+The same Lookup method now targets `https://gateway.example.test/google.datastore.v1.Datastore/Lookup`. Replace the example origin with a trusted gateway that performs gRPC-Web translation; it can see credentials and protobuf payloads. The client target and authentication audience remain the logical service. Unmapped targets fail with `WGA_UNMAPPED_TARGET` instead of being sent directly.
+
+This is an explicitly selected gateway alternative, not automatic failover. A failed call is not replayed through another mode. Neither mode uses GAX's `fallback: true` REST transport.
+
+### Settings and configuration lifetime
 
 `configureWorkersGrpc(config)` returns a `WorkersGrpcConfigSnapshot`. `getWorkersGrpcConfig()` returns the current snapshot without locking it or starting network work.
 
 | Setting | Default and meaning |
 |---|---|
-| `mode` | `cloudflare`; alternatively `grpc-web` with explicit endpoint mappings |
-| `endpoints` | Required only in `grpc-web` mode: logical authority → trusted HTTPS gateway origin |
+| `mode` | `cloudflare` by default: direct HTTPS target with Cloudflare conversion; `grpc-web`: explicit gateway mapping |
+| `endpoints` | Required in `grpc-web` mode: logical authority → trusted HTTPS gateway origin; rejected in `cloudflare` mode |
 | `defaultTimeoutMs` | Unset; if supplied, a positive safe integer in milliseconds |
 | `transportMaxSendBytes` | 32 MiB per message |
 | `transportMaxReceiveBytes` | 32 MiB per message |

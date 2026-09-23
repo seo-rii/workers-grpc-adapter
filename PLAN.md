@@ -17,6 +17,10 @@ differences are documented in [Limitations](docs/limitations.md).
   patches, npm integrity and file hashes under `vendor/`.
 - [x] Implement binary framing and trailers, metadata, endpoint mapping,
   deadlines, cancellation, message limits, and one Fetch request per Call.
+- [x] Support direct service routing for Cloudflare automatic translation
+  (`cloudflare`, the default) and explicit gRPC-Web gateway fallback (`grpc-web`).
+  Verify both modes with unary and server-streaming calls in local workerd;
+  deployed private-beta translation remains a separate cloud gate below.
 - [x] Install pinned Datastore, Firestore and Secret Manager SDKs in isolated
   native and replacement fixtures. Verify alias/override resolution and clean
   `npm ci` reproduction.
@@ -45,9 +49,10 @@ differences are documented in [Limitations](docs/limitations.md).
   complete, partial and unimplemented cases distinct. Detect drift in sources,
   locks, installed code, artifacts, profiles and generated reports.
 
-The latest local full run passed 158 core tests and 80 official-emulator scenario
-executions (20 scenarios in four execution groups). These counts describe those
-test suites; they do not mean all 189 original specification cases are satisfied.
+The full local gate covers core tests and 80 official-emulator scenario
+executions (20 scenarios in four execution groups). Execution counts and results
+are recorded in `verification/report.json`; they do not mean all 189 original
+specification cases are satisfied.
 GitHub Actions reruns the gates and publishes reports as workflow artifacts.
 See [Testing](docs/testing.md) for the commands and report inventory.
 
