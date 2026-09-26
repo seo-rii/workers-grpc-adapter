@@ -1,6 +1,10 @@
 {
   "name": "wga-google-compatibility-tests",
-  "main": "worker.mjs",
+  "main": "../../.wga-build/google-live/worker.mjs",
+  "build": {
+    "command": "node ../../scripts/build-google-worker.cjs",
+    "cwd": "."
+  },
   "compatibility_date": "2026-09-21",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,

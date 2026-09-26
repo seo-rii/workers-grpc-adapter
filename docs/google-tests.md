@@ -90,7 +90,25 @@ Node rejects `cloudflare` mode because its Fetch does not provide the Cloudflare
 
 [fixtures/google/worker.mjs](../fixtures/google/worker.mjs) accepts authenticated POST requests only for fixed registered suite names. Request bodies cannot override the destination, credentials or project. The checked-in configuration disables `workers_dev` and sets live/write opt-ins to zero.
 
-Deployment and account-specific translation have not been verified. The intended response from a correctly configured deployed test Worker is a suite status and check-name array. Local workerd success does not establish deployed routing, IAM or live Google behavior.
+Wrangler's custom build runs the pinned Google SDK preset before its Node compatibility transforms. This is required: pointing Wrangler directly at the source entry does not prepare the SDK graph for Workers. Build the actual live entry without deploying:
+
+```sh
+node fixtures/worker/node_modules/wrangler/bin/wrangler.js deploy \
+  --dry-run --cwd fixtures/google --config wrangler.jsonc
+node scripts/test-google-worker-build.cjs
+```
+
+Use `--cwd fixtures/google`: the custom build command resolves from that working directory. Generated files and the source/version/hash manifest are under `.wga-build/google-live/`. The focused test verifies the real entry and shared suites are bundled, then runs authenticated, unauthenticated, disabled and write-denied requests in workerd with outbound access denied. It is included in `npm run verify`.
+
+The separate [temporary deployed probe](cloud-probe.md) exercises public protocol endpoints and SDK bootstrap with Google API calls disabled. The intended response from a correctly configured live test Worker is a suite status and check-name array.
+
+The [temporary GCP deployment test](gcp-cloud-probe.md) uses its own protected entry and short-lived `gcloud` tokens. On 2026-09-24, all five shared Google suites passed with native grpc-js and a deployed Worker using an explicit Envoy gateway. Secret Manager coverage was metadata `GetSecret` only; no secret version or payload was accessed. Automatic-mode calls failed against both the controlled native origin and Google APIs on the tested account; the initial run did not identify the cause. These finite live observations do not establish credential refresh, other authentication flows, or production readiness, and do not change the local verification gates.
+
+The [2026-09-26 follow-up](cloudflare-conversion.md) identified the omitted conversion setting and the Google `+proto` content-type incompatibility. The adapter now selects `cf.grpcWeb: 'convert'` and bare binary `application/grpc-web` for `cloudflare` mode; `grpc-web` uses `passthrough` and `application/grpc-web+proto`. These per-request controls remove the need for a Worker-wide conversion flag. Raw wire controls and the full SDK deployment suites remain separate evidence.
+
+The [corrected deployment run](gcp-cloud-probe.md#corrected-results-2026-09-26) passed all five shared SDK suites in each Worker mode and in the native baseline. Both Workers used only `nodejs_compat`, with authenticated readiness verified before executing the suites. This establishes the tested direct and gateway paths with short-lived user tokens; production authentication lifecycles and recovery remain release gates.
+
+The GCP probe statically imports the SDK modules during Worker initialization and deploys one Worker per transport mode. Lazy Datastore initialization during a request can trigger a prohibited protobuf `eval`; GAX also caches constructors by schema across per-instance facades. Switching facades in the same isolate does not reliably isolate Google SDK transport modes. Keep those modes in separate Workers even though direct grpc-js clients can use independently configured transports.
 
 ## Interpreting failures
 

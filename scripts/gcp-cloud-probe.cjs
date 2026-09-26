@@ -1,0 +1,424 @@
+'use strict';
+// Explicit temporary infrastructure runner. No existing service is updated.
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const { createRequire } = require('node:module');
+const { randomBytes, createHash } = require('node:crypto');
+const root = path.resolve(__dirname, '..');
+const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
+const wrangler = path.join(path.dirname(workerRequire.resolve('wrangler/package.json')), 'bin/wrangler.js');
+const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+const reportFile = path.join(root, 'verification/gcp-cloud-probe.json');
+const report = { startedAt: new Date().toISOString(), status: 'running', releaseEligible: false, resources: [], results: [], cleanup: [] };
+const secrets = new Set();
+let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
+let interrupted = false;
+const onSignal = () => { interrupted = true; };
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const redact = value => {
+  let result = String(value);
+  for (const secret of secrets) result = result.split(secret).join('[REDACTED]');
+  return result;
+};
+function save() {
+  fs.mkdirSync(path.dirname(reportFile), { recursive: true });
+  const bytes = JSON.stringify(report, null, 2) + '\n';
+  fs.writeFileSync(reportFile, bytes, { mode: 0o600 }); fs.chmodSync(reportFile, 0o600);
+  if (directory) fs.writeFileSync(path.join(directory, 'receipt.json'), bytes, { mode: 0o600 });
+}
+function phase(value) { report.phase = value; save(); console.log(JSON.stringify({ phase: value, run: report.run })); }
+function command(program, args, { env = process.env, timeout = 120000, cwd = root, sensitive = false } = {}) {
+  const result = spawnSync(program, args, { cwd, env, encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024 });
+  if (result.status !== 0) {
+    const error = new Error(sensitive ? 'CREDENTIAL_COMMAND_FAILED' : redact(result.stderr || result.error?.code || 'Command failed').slice(-1800));
+    error.code = 'COMMAND_FAILED'; throw error;
+  }
+  return result.stdout.trim();
+}
+function gcloud(args, options) { return command('gcloud', [...args, '--project', project, '--quiet'], options); }
+function secret(value) { if (!value) throw new Error('EMPTY_CREDENTIAL'); secrets.add(value); return value; }
+async function api(url, method = 'GET', body) {
+  const response = await fetch(url, { method, redirect: 'error', signal: AbortSignal.timeout(45000),
+    headers: { authorization: `Bearer ${url.startsWith('https://api.cloudflare.com/') ? cfToken : accessToken}`, ...(body ? { 'content-type': 'application/json' } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const text = await response.text();
+  let data; try { data = JSON.parse(text); } catch { data = {}; }
+  return { status: response.status, data };
+}
+function ok(response, label) {
+  if (response.status < 200 || response.status >= 300 || response.data.error || response.data.success === false) {
+    throw Object.assign(new Error(`${label}: HTTP ${response.status} ${redact(response.data.error?.message ?? response.data.errors?.map(item => item.code).join(',') ?? '').slice(0, 600)}`), { code: response.data.error?.status ?? 'API_FAILED' });
+  }
+  return response.data;
+}
+async function operation(data, base, timeout = 360000, creationRecord) {
+  if (!data.name?.includes('/operations/')) return data;
+  const end = Date.now() + timeout;
+  let current = data;
+  while (!current.done) {
+    if (Date.now() > end) throw new Error('OPERATION_TIMEOUT');
+    await pause(2500);
+    const polled = await api(base + '/' + data.name);
+    if (polled.status !== 200) ok(polled, 'operation');
+    current = polled.data;
+  }
+  if (creationRecord) { creationRecord.creationSettled = true; save(); }
+  if (current.error) throw new Error(`OPERATION_${current.error.code}: ${redact(current.error.message).slice(0, 600)}`);
+  return current.response;
+}
+function ownedIdentity(record, value) {
+  if (record.uid && (value.uid || value.uniqueId) !== record.uid) return false;
+  if (record.kind === 'service-account') return value.description === report.run && value.email === record.name;
+  if (record.kind === 'secret' || record.kind === 'cloud-run') return value.labels?.['wga-probe'] === report.run;
+  if (record.kind === 'database') return value.type === record.databaseType && value.locationId === region &&
+    Number.isFinite(Date.parse(value.createTime)) && Date.parse(value.createTime) >= Date.parse(report.startedAt) - 1000;
+  return false;
+}
+function resourceLookupUrl(record) {
+  return record.kind === 'service-account' && record.uid
+    ? `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${record.uid}`
+    : record.url;
+}
+async function createResource(resource, createUrl, body, operationBase) {
+  if (interrupted) throw new Error('INTERRUPTED');
+  const absent = await api(resource.url);
+  if (absent.status !== 404) throw new Error(`NAME_NOT_ABSENT_${resource.kind}_${absent.status}`);
+  const record = { ...resource, operationBase, absentBefore: true, attempted: false, owned: false };
+  report.resources.push(record); save();
+  if (interrupted) throw new Error('INTERRUPTED');
+  record.attempted = true; save();
+  let response;
+  try { response = await api(createUrl, 'POST', body); }
+  catch (error) { record.ambiguousCreate = true; save(); throw error; }
+  // A collision is never ours to delete, even though it was absent at preflight.
+  if (response.status === 409) { record.collision = true; save(); throw new Error('CREATE_COLLISION'); }
+  ok(response, `create ${resource.kind}`);
+  record.owned = true; record.operation = response.data.name;
+  record.creationSettled = !response.data.name?.includes('/operations/');
+  record.uid = response.data.uid || response.data.uniqueId;
+  if (record.kind === 'service-account') record.creationIdentityVerified = ownedIdentity(record, response.data);
+  save();
+  await operation(response.data, operationBase, 360000, record);
+  // IAM can acknowledge creation before lookup replicas have the account. Use
+  // its immutable UID and allow bounded propagation before failing the probe.
+  let created;
+  for (let attempt = 0; attempt < 16; attempt++) {
+    created = await api(resourceLookupUrl(record));
+    if (created.status !== 404 || attempt === 15) break;
+    await pause(2000);
+  }
+  const value = ok(created, `read created ${resource.kind}`);
+  if (!ownedIdentity(record, value)) throw new Error('CREATED_RESOURCE_IDENTITY_MISMATCH');
+  record.uid = value.uid || value.uniqueId;
+  record.created = true; save();
+  return value;
+}
+async function inventory() {
+  // Projections exclude credentials, environment bindings and secret payloads.
+  const run = JSON.parse(gcloud(['run', 'services', 'list', '--platform=managed', '--format=json(metadata.name,metadata.uid,metadata.generation)']));
+  const databases = JSON.parse(gcloud(['firestore', 'databases', 'list', '--format=json(name,uid,type,locationId)']));
+  const secretItems = JSON.parse(gcloud(['secrets', 'list', '--format=json(name,createTime,etag)']));
+  const accounts = JSON.parse(gcloud(['iam', 'service-accounts', 'list', '--format=json(name,email,uniqueId,disabled)']));
+  const repositories = JSON.parse(gcloud(['artifacts', 'repositories', 'list', '--location=all', '--format=json(name,format)']));
+  const normalize = items => items.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return Object.fromEntries(Object.entries({ run, databases, secretItems, accounts, repositories }).map(([name, items]) => [name, normalize(items)]));
+}
+async function deployService(name, image, port, serviceAccount, args) {
+  const base = `https://run.googleapis.com/v2/projects/${project}/locations/${region}/services`;
+  return createResource({ kind: 'cloud-run', name, url: `${base}/${name}` }, `${base}?serviceId=${name}`, {
+    labels: { 'wga-probe': report.run }, description: 'Temporary workers-grpc-adapter test; delete after probe',
+    ingress: 'INGRESS_TRAFFIC_ALL', invokerIamDisabled: false,
+    template: { serviceAccount, timeout: '30s', maxInstanceRequestConcurrency: 4,
+      scaling: { minInstanceCount: 0, maxInstanceCount: 1 },
+      containers: [{ image, ports: [{ name: 'h2c', containerPort: port }], resources: { limits: { cpu: '1', memory: '512Mi' }, cpuIdle: true }, ...(args ? { command: ['/usr/local/bin/envoy'], args } : {}) }],
+    },
+  }, 'https://run.googleapis.com/v2');
+}
+function wranglerCommand(args, authenticated = false) {
+  const env = { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' };
+  for (const name of Object.keys(env)) if (/^(?:WGA_|CF_|CLOUDFLARE_|GOOGLE_APPLICATION_CREDENTIALS)/.test(name)) delete env[name];
+  if (authenticated) Object.assign(env, { CLOUDFLARE_API_TOKEN: cfToken, CLOUDFLARE_ACCOUNT_ID: cfAccount });
+  return command(process.execPath, [wrangler, ...args], { cwd: directory, env, timeout: 180000 });
+}
+async function buildWorker() {
+  const entry = path.join(directory, 'entry.mjs');
+  fs.writeFileSync(entry, `import gcp from ${JSON.stringify(path.join(root, 'fixtures/google/gcp-probe.mjs'))};\nimport echo from ${JSON.stringify(path.join(root, 'fixtures/google/gcp-echo-probe.mjs'))};\nexport default {fetch(r,e,c){return new URL(r.url).pathname.startsWith('/gcp/')?gcp.fetch(r,e,c):echo.fetch(r,e,c)}};\n`);
+  const built = await require('./build-google-worker.cjs').buildGoogleWorker({ entry, outdir: path.join(directory, 'prepared') });
+  const configFile = path.join(directory, 'wrangler.json');
+  fs.writeFileSync(configFile, JSON.stringify({ name: report.run, main: built.main, compatibility_date: '2026-09-21', compatibility_flags: ['nodejs_compat'], workers_dev: true, preview_urls: false, send_metrics: false }));
+  wranglerCommand(['deploy', '--dry-run', '--config', configFile, '--outdir', path.join(directory, 'bundle'), '--no-autoconfig']);
+  const main = path.join(directory, 'bundle/worker.js');
+  const script = fs.readFileSync(main, 'utf8');
+  report.bundle = { path: path.relative(root, main), sha256: sha(script), bytes: Buffer.byteLength(script), gzipBytes: require('node:zlib').gzipSync(script).length, presetManifest: path.relative(root, built.manifestFile) };
+  // Exercise the exact final script with outbound denied before provisioning.
+  const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
+  const runtime = new Miniflare(convertV4MiniflareOptions({ modules: true, script, compatibilityDate: '2026-09-21', compatibilityFlags: ['nodejs_compat'], log: new Log(LogLevel.NONE), bindings: { WGA_TEST_KEY: workerKey, WGA_PROBE_MODE: 'cloudflare' }, outboundService: () => { throw new Error('Local network denied'); } }));
+  try {
+    const denied = await runtime.dispatchFetch('https://probe.test/gcp/cloudflare/secret-manager-read', { method: 'POST' });
+    const disabled = await runtime.dispatchFetch('https://probe.test/gcp/cloudflare/secret-manager-read', { method: 'POST', headers: { authorization: `Bearer ${workerKey}` } });
+    if (denied.status !== 404 || disabled.status !== 403) throw new Error('LOCAL_GUARDS_FAILED');
+    report.localPreflight = { passed: true, unauthorized: denied.status, disabled: disabled.status };
+  } finally { await runtime.dispose(); }
+  return { main, configFile };
+}
+async function deployWorker(build, env, mode, { targetKey = mode, compatibilityFlags = ['nodejs_compat'] } = {}) {
+  const accounts = ok(await api('https://api.cloudflare.com/client/v4/accounts?per_page=50'), 'CF accounts').result;
+  cfAccount = process.env.CLOUDFLARE_ACCOUNT_ID || (accounts.length === 1 ? accounts[0].id : undefined);
+  if (!cfAccount || !accounts.some(account => account.id === cfAccount)) throw new Error('CF_ACCOUNT_REQUIRED');
+  const subdomain = ok(await api(`https://api.cloudflare.com/client/v4/accounts/${cfAccount}/workers/subdomain`), 'CF subdomain').result.subdomain;
+  if (!subdomain) throw new Error('CF_SUBDOMAIN_REQUIRED');
+  const name = `${report.run}-${targetKey === 'cloudflare-flag' ? 'auto-flag' : mode === 'grpc-web' ? 'web' : 'auto'}`;
+  const url = `https://api.cloudflare.com/client/v4/accounts/${cfAccount}/workers/scripts/${name}`;
+  if ((await api(url)).status !== 404) throw new Error('CF_WORKER_NAME_COLLISION');
+  const bundleSha256 = sha(fs.readFileSync(build.main));
+  if (bundleSha256 !== report.bundle.sha256) throw new Error('WORKER_BUNDLE_CHANGED');
+  const record = { kind: 'cloudflare-worker', name, url, targetKey, compatibilityFlags, bundleSha256,
+    absentBefore: true, attempted: true, owned: true };
+  report.resources.push(record); save();
+  const secretBindings = { WGA_TEST_KEY: workerKey, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken };
+  const vars = { ...env, WGA_PROBE_MODE: mode }; for (const name of Object.keys(secretBindings)) delete vars[name];
+  fs.writeFileSync(build.configFile, JSON.stringify({ name, account_id: cfAccount, main: build.main, no_bundle: true,
+    compatibility_date: '2026-09-21', compatibility_flags: compatibilityFlags, workers_dev: true, preview_urls: false, send_metrics: false, vars }));
+  const secretsFile = path.join(directory, 'secrets.json');
+  fs.writeFileSync(secretsFile, JSON.stringify(secretBindings), { mode: 0o600 });
+  if (interrupted) throw new Error('INTERRUPTED');
+  wranglerCommand(['deploy', '--config', build.configFile, '--no-bundle', '--secrets-file', secretsFile, '--no-autoconfig'], true);
+  record.created = true;
+  report.workerUrls ??= {}; report.workerUrls[targetKey] = `https://${name}.${subdomain}.workers.dev`; save();
+  fs.rmSync(secretsFile, { force: true });
+  const settings = ok(await api(`${url}/settings`), 'CF Worker settings').result;
+  record.settingsCompatibilityFlags = settings?.compatibility_flags;
+  record.settingsVerified = Array.isArray(record.settingsCompatibilityFlags) &&
+    JSON.stringify([...record.settingsCompatibilityFlags].sort()) === JSON.stringify([...compatibilityFlags].sort());
+  save();
+  if (!record.settingsVerified) throw new Error('WORKER_COMPATIBILITY_FLAGS_MISMATCH');
+}
+async function workerRequest(route, authorized = true, targetKey = route.split('/')[2], timeoutMs = 95000) {
+  const response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(timeoutMs), headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
+  const value = await response.text();
+  let body; try { body = JSON.parse(value); } catch { body = { code: 'NON_JSON_RESPONSE' }; }
+  return { route, httpStatus: response.status, body };
+}
+async function waitWorkerReady(mode, targetKey = mode) {
+  report.workerReadiness ??= {};
+  const receipt = report.workerReadiness[targetKey] = { passed: false, attempts: 0 };
+  const deadline = Date.now() + 120000;
+  while (Date.now() < deadline) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    receipt.attempts++;
+    try {
+      const result = await workerRequest(`/gcp/${mode}/ready`, true, targetKey, 5000);
+      receipt.httpStatus = result.httpStatus;
+      receipt.passed = result.httpStatus === 200 && result.body?.status === 'ready' && result.body?.mode === mode;
+      delete receipt.error;
+    } catch (error) { receipt.error = error.name; }
+    save();
+    if (receipt.passed) return;
+    await pause(2000);
+  }
+  throw new Error(`WORKER_READINESS_TIMEOUT_${targetKey}`);
+}
+async function main() {
+  if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
+  const compareAutoGrpcConvert = process.argv.includes('--compare-auto-grpc-convert');
+  if (compareAutoGrpcConvert) { report.compareAutoGrpcConvert = true; report.flaggedResults = []; }
+  project = process.argv.find(arg => arg.startsWith('--project='))?.slice(10);
+  region = process.argv.find(arg => arg.startsWith('--region='))?.slice(9) || 'asia-northeast3';
+  if (!project || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(project) || !/^[a-z]+-[a-z]+[0-9]$/.test(region)) throw new Error('EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED');
+  cfToken = secret(process.env.CF_TOKEN || process.env.CLOUDFLARE_API_TOKEN);
+  accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true }));
+  identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
+  const projectInfo = JSON.parse(gcloud(['projects', 'describe', project, '--format=json(projectNumber,projectId)']));
+  const number = String(projectInfo.projectNumber);
+  report.run = `wga-probe-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${randomBytes(4).toString('hex')}`;
+  Object.assign(report, { project, projectNumber: number, region });
+  directory = path.join(root, '.wga-build/gcp-cloud-probe', report.run);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 }); fs.chmodSync(directory, 0o700);
+  workerKey = secret(randomBytes(32).toString('hex'));
+  process.on('SIGINT', onSignal); process.on('SIGTERM', onSignal);
+  phase('build-and-local-preflight');
+  const build = await buildWorker();
+  phase('resource-inventory');
+  before = await inventory();
+  fs.writeFileSync(path.join(directory, 'inventory-before.json'), JSON.stringify(before, null, 2), { mode: 0o600 });
+  report.inventoryBefore = Object.fromEntries(Object.entries(before).map(([key, value]) => [key, { count: value.length, sha256: sha(JSON.stringify(value)) }]));
+  const ids = { datastore: `${report.run}-ds`, firestore: `${report.run}-fs`, secret: `${report.run}-secret`, sa: `wga-probe-${randomBytes(6).toString('hex')}` };
+  phase('create-isolated-resources');
+  const serviceAccount = `${ids.sa}@${project}.iam.gserviceaccount.com`;
+  await createResource({ kind: 'service-account', name: serviceAccount, url: `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${serviceAccount}` }, `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts`, { accountId: ids.sa, serviceAccount: { displayName: 'Temporary WGA probe, no roles', description: report.run } });
+  for (const [kind, type] of [['datastore', 'DATASTORE_MODE'], ['firestore', 'FIRESTORE_NATIVE']]) {
+    const url = `https://firestore.googleapis.com/v1/projects/${project}/databases/${ids[kind]}`;
+    await createResource({ kind: 'database', name: ids[kind], url, databaseType: type }, `https://firestore.googleapis.com/v1/projects/${project}/databases?databaseId=${ids[kind]}`, { locationId: region, type, deleteProtectionState: 'DELETE_PROTECTION_DISABLED', pointInTimeRecoveryEnablement: 'POINT_IN_TIME_RECOVERY_DISABLED' }, 'https://firestore.googleapis.com/v1');
+  }
+  const secretName = `projects/${number}/secrets/${ids.secret}`;
+  await createResource({ kind: 'secret', name: ids.secret, url: `https://secretmanager.googleapis.com/v1/${secretName}` }, `https://secretmanager.googleapis.com/v1/projects/${project}/secrets?secretId=${ids.secret}`, { replication: { automatic: {} }, labels: { 'wga-probe': report.run } });
+  const images = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/cloud-run-probe/images.json')));
+  phase('deploy-native-origin');
+  const native = await deployService(`${report.run}-native`, `docker.io/${images.native.repository}@${images.native.digest}`, 9000, serviceAccount);
+  report.nativeOrigin = native.uri;
+  phase('deploy-private-gateway');
+  const config = require('../fixtures/cloud-run-probe/envoy-config.cjs').createEnvoyConfig({ nativeOrigin: native.uri });
+  const gateway = await deployService(`${report.run}-gateway`, `docker.io/${images.envoy.repository}@${images.envoy.digest}`, 8080, serviceAccount, ['--config-yaml', JSON.stringify(config), '--concurrency', '1', '--log-level', 'warning']);
+  report.gatewayOrigin = gateway.uri;
+  // Refresh short-lived user tokens immediately before they enter the test Worker.
+  accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true }));
+  identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
+  const env = { WGA_GCP_PROJECT: project, WGA_GCP_PROJECT_NUMBER: number, WGA_DATASTORE_DATABASE: ids.datastore, WGA_FIRESTORE_DATABASE: ids.firestore,
+    WGA_SECRET_NAME: secretName, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken,
+    WGA_RUN_GOOGLE_TESTS: '1', WGA_ALLOW_TEST_WRITES: '1', WGA_NATIVE_ORIGIN: native.uri, WGA_GATEWAY_ORIGIN: gateway.uri,
+    WGA_ENDPOINTS_JSON: JSON.stringify(Object.fromEntries(['datastore', 'firestore', 'secretmanager'].map(service => [`${service}.googleapis.com:443`, gateway.uri]))) };
+  phase('native-controls');
+  const controls = require('./gcp-native-probe.cjs');
+  report.echoControls = await controls.runEchoControls({ origin: native.uri, idToken: identityToken }); save();
+  report.nativeGoogle = await controls.runNativeSuites(env); save();
+  if (!report.echoControls.nativeGrpcPassed || report.nativeGoogle.status !== 'passed') throw new Error('NATIVE_BASELINE_FAILED');
+  phase('deploy-cloudflare-worker');
+  for (const mode of ['grpc-web', 'cloudflare']) await deployWorker(build, env, mode);
+  if (compareAutoGrpcConvert) await deployWorker(build, env, 'cloudflare', {
+    targetKey: 'cloudflare-flag', compatibilityFlags: ['nodejs_compat', 'auto_grpc_convert'],
+  });
+  phase('wait-for-worker-readiness');
+  for (const mode of ['grpc-web', 'cloudflare']) await waitWorkerReady(mode);
+  if (compareAutoGrpcConvert) await waitWorkerReady('cloudflare', 'cloudflare-flag');
+  let guard;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try { guard = await workerRequest('/gcp/grpc-web/secret-manager-read', false); if (guard.httpStatus === 404) break; } catch {}
+    await pause(2000);
+  }
+  report.unauthorizedGuard = { passed: guard?.httpStatus === 404, httpStatus: guard?.httpStatus }; save();
+  phase('deployed-echo-probes');
+  const echoTests = ['unary', 'stream', 'error', 'raw', ...(compareAutoGrpcConvert ? ['raw-convert', 'raw-passthrough'] : [])];
+  for (const mode of ['grpc-web', 'cloudflare']) for (const test of echoTests) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    try { report.results.push(await workerRequest(`/echo/${mode}/${test}`)); }
+    catch (error) { report.results.push({ route: `/echo/${mode}/${test}`, code: error.name }); }
+    save();
+  }
+  phase('deployed-google-suites');
+  for (const mode of ['grpc-web', 'cloudflare']) for (const suite of ['secret-manager-read', 'datastore-crud', 'datastore-transaction', 'firestore-crud', 'firestore-transaction']) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    try { report.results.push(await workerRequest(`/gcp/${mode}/${suite}`)); }
+    catch (error) { report.results.push({ route: `/gcp/${mode}/${suite}`, code: error.name }); }
+    save();
+  }
+  report.fallbackGooglePassed = report.results.filter(item => item.route.startsWith('/gcp/grpc-web/')).every(item => item.body?.status === 'passed');
+  report.cloudflareGooglePassed = report.results.filter(item => item.route.startsWith('/gcp/cloudflare/')).every(item => item.body?.status === 'passed');
+  report.status = report.fallbackGooglePassed ? report.cloudflareGooglePassed ? 'passed' : 'completed-with-cloudflare-mode-failure' : 'completed-with-failures';
+  if (compareAutoGrpcConvert) {
+    phase('deployed-flagged-echo-probes');
+    for (const test of echoTests) {
+      if (interrupted) throw new Error('INTERRUPTED');
+      const route = `/echo/cloudflare/${test}`;
+      try { report.flaggedResults.push(await workerRequest(route, true, 'cloudflare-flag')); }
+      catch (error) { report.flaggedResults.push({ route, code: error.name }); }
+      save();
+    }
+    phase('deployed-flagged-google-suites');
+    for (const suite of ['secret-manager-read', 'datastore-crud', 'datastore-transaction', 'firestore-crud', 'firestore-transaction']) {
+      if (interrupted) throw new Error('INTERRUPTED');
+      const route = `/gcp/cloudflare/${suite}`;
+      try { report.flaggedResults.push(await workerRequest(route, true, 'cloudflare-flag')); }
+      catch (error) { report.flaggedResults.push({ route, code: error.name }); }
+      save();
+    }
+    const googleResults = report.flaggedResults.filter(item => item.route.startsWith('/gcp/cloudflare/'));
+    const echoResults = report.flaggedResults.filter(item => /^\/echo\/cloudflare\/(?:unary|stream|error)$/.test(item.route));
+    report.flagonGooglePassed = googleResults.length === 5 && googleResults.every(item => item.body?.status === 'passed');
+    report.flagonEchoPassed = echoResults.length === 3 && echoResults.every(item => item.body?.passed === true);
+    report.status = 'completed-auto-conversion-comparison';
+  }
+}
+async function cleanup() {
+  if (directory) phase('cleanup');
+  if (report.resources.length) try { accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true })); }
+  catch (error) { report.cleanupTokenRefreshError = error.code || 'CREDENTIAL_REFRESH_FAILED'; }
+  const pendingDatabaseDeletes = [];
+  for (const resource of [...report.resources].reverse()) {
+    if ((!resource.owned && !resource.ambiguousCreate) || resource.collision) continue;
+    const receipt = { kind: resource.kind, name: resource.name, verifiedAbsent: false };
+    report.cleanup.push(receipt); save();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (resource.operation?.includes('/operations/') && !resource.creationSettled) {
+          try { await operation({ name: resource.operation }, resource.operationBase, 360000, resource); }
+          catch (error) { if (!resource.creationSettled) throw error; }
+        }
+        const existing = await api(resourceLookupUrl(resource));
+        if (existing.status === 404) {
+          if (resource.ambiguousCreate && !resource.creationSettled) throw new Error('AMBIGUOUS_CREATE_CANNOT_PROVE_FINAL_ABSENCE');
+          if (resource.kind === 'service-account' && resource.owned && !receipt.deleteAcknowledged) {
+            // A fresh IAM account can be missing from both email and UID reads.
+            // Only the acknowledged, identity-checked create permits deletion
+            // in that case; a lookup 404 alone never proves cleanup succeeded.
+            if (!resource.uid || !resource.creationIdentityVerified) throw new Error('ACKNOWLEDGED_SERVICE_ACCOUNT_ABSENCE_UNPROVEN');
+          } else { receipt.verifiedAbsent = true; break; }
+        } else {
+          ok(existing, 'cleanup lookup');
+          if (resource.kind !== 'cloudflare-worker' && !ownedIdentity(resource, existing.data)) throw new Error('RESOURCE_IDENTITY_CHANGED_REFUSING_DELETE');
+          resource.owned = true;
+          resource.uid ??= existing.data.uid || existing.data.uniqueId;
+        }
+        let deleteUrl = resource.kind === 'service-account' ? `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${resource.uid}` : resource.url;
+        if (existing.data.etag && ['cloud-run', 'database', 'secret'].includes(resource.kind)) deleteUrl += `?etag=${encodeURIComponent(existing.data.etag)}`;
+        const deleted = await api(deleteUrl, 'DELETE');
+        receipt.deleteStatus = deleted.status; ok(deleted, 'delete owned resource');
+        receipt.deleteAcknowledged = true; save();
+        if (resource.kind === 'database' && deleted.data.name?.includes('/operations/')) {
+          // Submit independent database deletes one at a time, then let their
+          // server-side operations overlap while other owned resources close.
+          receipt.deleteOperation = deleted.data.name;
+          receipt.deleteOperationSettled = false;
+          pendingDatabaseDeletes.push({ resource, receipt, operationData: deleted.data });
+          save();
+          break;
+        }
+        if (resource.operationBase) await operation(deleted.data, resource.operationBase);
+        const absent = await api(resourceLookupUrl(resource));
+        receipt.lookupStatus = absent.status;
+        receipt.verifiedAbsent = absent.status === 404;
+        if (receipt.verifiedAbsent) break;
+        await pause(2000);
+      } catch (error) {
+        receipt.error = redact(error.message).slice(0, 800);
+        if (resource.kind === 'service-account' && attempt < 2) await pause(2000);
+      }
+    }
+    save();
+  }
+  for (const { resource, receipt, operationData } of pendingDatabaseDeletes) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (!receipt.deleteOperationSettled) {
+          await operation(operationData, resource.operationBase);
+          receipt.deleteOperationSettled = true; save();
+        }
+        // A 404 while the delete is still running is not completion evidence.
+        const absent = await api(resource.url);
+        receipt.lookupStatus = absent.status;
+        receipt.verifiedAbsent = absent.status === 404;
+        if (receipt.verifiedAbsent) { delete receipt.error; break; }
+        ok(absent, 'verify database deletion');
+        await pause(2000);
+      } catch (error) { receipt.error = redact(error.message).slice(0, 800); }
+    }
+    save();
+  }
+  if (directory) fs.rmSync(path.join(directory, 'secrets.json'), { force: true });
+  if (before) try {
+    const after = await inventory();
+    fs.writeFileSync(path.join(directory, 'inventory-after.json'), JSON.stringify(after, null, 2), { mode: 0o600 });
+    report.existingResources = Object.fromEntries(Object.keys(before).map(key => [key, { beforeCount: before[key].length, afterCount: after[key].length, unchanged: JSON.stringify(before[key]) === JSON.stringify(after[key]) }]));
+  } catch (error) { report.inventoryAfterError = redact(error.message).slice(0, 800); }
+  report.existingResourcesUnchanged = Boolean(report.existingResources) && Object.values(report.existingResources).every(item => item.unchanged);
+  report.allCreatedResourcesDeleted = report.resources.filter(item => item.owned || item.ambiguousCreate).length === report.cleanup.length && report.cleanup.every(item => item.verifiedAbsent);
+  if (!report.allCreatedResourcesDeleted) { report.status = 'cleanup-failed'; process.exitCode = 1; }
+  if (before && !report.existingResourcesUnchanged) { report.status = 'inventory-verification-failed'; process.exitCode = 1; }
+  process.off('SIGINT', onSignal); process.off('SIGTERM', onSignal);
+  report.finishedAt = new Date().toISOString(); save();
+  console.log(JSON.stringify({ status: report.status, allCreatedResourcesDeleted: report.allCreatedResourcesDeleted, report: path.relative(root, reportFile) }));
+}
+if (require.main === module) main().catch(error => {
+  report.status = 'failed'; report.error = redact(error.message).slice(0, 1800); process.exitCode = 1; save();
+}).finally(cleanup).catch(error => { console.error(redact(error.message).slice(0, 1000)); process.exitCode = 1; });

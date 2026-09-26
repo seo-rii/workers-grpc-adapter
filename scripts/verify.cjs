@@ -67,6 +67,12 @@ function main() {
     run('packaging', ['scripts/test-pack.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
+    run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
+    run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
+    run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
+    run('gcp-probe-conversion', ['scripts/test-gcp-conversion-probe.cjs']);
+    run('google-conversion-wire', ['scripts/test-google-conversion-wire.cjs']);
+    run('gcp-probe-cleanup', ['scripts/test-gcp-cleanup.cjs']);
     run('workers-shared', ['scripts/workers-shared-test.cjs']);
     run('envoy', ['scripts/envoy-test.cjs'], [0, 2]);
     run('google-emulators', ['scripts/google-emulator-test.cjs']);
@@ -98,7 +104,7 @@ function main() {
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },
         evidenceInputHashes,
         sharedBusinessFiles: shared, sourceHashes, commands,
-        blockers: [...(sdkTypes.status !== 'passed' ? ['Google SDK Node16 declarations fail identically in the native baseline; see compatibility/google-types.json.'] : []), 'Cloudflare account translation and Google live E2E have not run.', 'The full 189-case catalog, full grpc-js API parity and production performance certification remain release gates.'],
+        blockers: [...(sdkTypes.status !== 'passed' ? ['Google SDK Node16 declarations fail identically in the native baseline; see compatibility/google-types.json.'] : []), 'This local gate excludes deployed Cloudflare conversion and live Google E2E; see the separate gcp-cloud-probe receipt.', 'The full 189-case catalog, full grpc-js API parity and production performance certification remain release gates.'],
     };
     fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2) + '\n');
     writeEvidence(root);

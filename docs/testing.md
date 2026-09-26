@@ -48,6 +48,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
 | `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |
 | `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
+| `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
 | `npm run test:emulators:lifecycle` | Startup/running signal handling and repeated stop cleanup | `verification/emulator-lifecycle.json` |
@@ -56,6 +57,12 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
 
 `node vendor/verify.cjs` validates upstream and patched source hashes and reproduces the patches. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. The benchmark and live runner are not required live executions in the local gate.
+
+The [temporary Cloudflare probe](cloud-probe.md) is a separate explicit deployment command. It is never invoked by `verify` or CI, and records deployed evidence in `verification/cloud-probe.json` without changing the local report's cloud-certification flags.
+
+The [temporary GCP integration test](gcp-cloud-probe.md) adds private Cloud Run upstreams and isolated live Google databases. Its local bundle/guard checks (`node scripts/test-gcp-probe.cjs`), authenticated readiness retry checks (`node scripts/test-gcp-readiness.cjs`) and cleanup failure simulations (`node scripts/test-gcp-cleanup.cjs`) run in `verify`; provisioning and live calls remain separate opt-in work.
+
+The [automatic-conversion diagnosis](cloudflare-conversion.md) adds opt-in flag and content-type comparisons. `verify` runs only their local contracts (`scripts/test-gcp-conversion-probe.cjs` and `scripts/test-google-conversion-wire.cjs`), with outbound requests intercepted. It does not deploy their Workers or call Google.
 
 ## Native SDK comparisons
 
@@ -83,7 +90,9 @@ Emulators use memory and temporary working directories. The launcher records res
 
 ## Protocol, resources and Workers
 
-Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. The workerd fixture runs both configurations concurrently in one isolate, checking request destinations, binary gRPC-Web headers and protobuf bytes, unary results, and server-streamed messages. Its controlled outbound responder does not emulate Cloudflare's private-beta edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Real gateway translation is exercised separately through Envoy, including the official emulator suite.
+Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. They assert bare `application/grpc-web` with `cf.grpcWeb: 'convert'` for direct requests, and `application/grpc-web+proto` with `cf.grpcWeb: 'passthrough'` for gateway requests. The workerd fixture runs direct grpc-js clients with both configurations concurrently in one isolate, checking request destinations, protobuf bytes, unary results, and server-streamed messages. This is not evidence of Google SDK mode isolation: the pinned GAX constructor cache requires separate Workers for different SDK transport modes.
+
+The controlled outbound responder does not emulate Cloudflare's edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Local assertions on Fetch options establish the adapter's request contract only. Real gateway translation is exercised separately through Envoy, including the official emulator suite; deployed conversion results remain a separate check.
 
 Protocol tests include frame flags, deterministic message/chunk splits, every truncation position in fixed vectors, base64 forms and budgets. Native differential tests compare selected callback/metadata/status/data/error/end behavior. Real Envoy tests are distinct from the hand-built controlled bridge.
 

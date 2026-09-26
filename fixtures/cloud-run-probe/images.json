@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-09-24",
+  "registry": "https://registry-1.docker.io",
+  "platform": "linux/amd64",
+  "envoy": {
+    "repository": "envoyproxy/envoy",
+    "tag": "v1.39.1",
+    "indexDigest": "sha256:57e14a549d7bd43c8d3f6d03e8cfa653e037d4b38e133acd9b54f38c524401b4",
+    "digest": "sha256:be87c8b52663c1164a5bdf3c5419017a269cb3d8c74be1ec93638a71f1ffbd4b"
+  },
+  "native": {
+    "repository": "moul/grpcbin",
+    "tag": "latest",
+    "digest": "sha256:bd8f2ffdd02d0849fad2d1c754eff4402c867e7a3e0552b8992f4590f5687d20"
+  }
+}
