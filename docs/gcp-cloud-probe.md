@@ -40,6 +40,8 @@ Every run generates a random `wga-probe-*` prefix and records inventory before c
 
 Each exact resource name must return `404` before creation. Google resources use create-only POST APIs, which reject collisions. The runner records creation operations, UIDs or ownership markers, waits for operations, and checks identity again before deletion. Supported delete APIs receive the current `etag`; service accounts are deleted by immutable ID. Ambiguous creation or unresolved deletion is reported as a failure rather than silently treated as clean.
 
+For Cloudflare, each upload carries the run tag and records its immutable version ID from pinned Wrangler's structured output. Cleanup verifies the active deployment, its single 100% version and that version's ownership tag before deletion. A replacement, split deployment, missing tag or unacknowledged upload fails cleanup; an ambiguous upload is not accepted as deleted merely because a lookup returns `404`. Local tests cover these paths without cloud access. Cloudflare's name-based create/delete operations are not conditional atomic operations, so a concurrent external mutation between the final identity check and mutation remains a limitation. The historical live results below predate this added ownership guard.
+
 Database deletion can remain asynchronous after a resource starts returning `404`. The runner submits the two independent database deletions sequentially, then waits for both operation completions before accepting final absence. Local cleanup tests also verify that a replaced UID is never deleted and an unfinished operation cannot be treated as complete.
 
 Cloud Run uses immutable public image digests, min instances `0`, max instances `1`, concurrency `4` and a 30-second request timeout. No build job, source upload or Artifact Registry repository/image is created. Both services require Cloud Run IAM authentication; no anonymous invoker grant is added. See the [upstream fixture guide](../fixtures/cloud-run-probe/README.md).
@@ -56,7 +58,7 @@ SDK fixtures require explicit live/write flags, the project binding, named datab
 
 Database SDKs receive the project ID in `WGA_GCP_PROJECT`. Secret Manager uses the separate numeric `WGA_GCP_PROJECT_NUMBER` for its canonical resource name. These identifiers are not interchangeable for database data-plane calls. All five native Google suites must pass before dependent Workers are deployed.
 
-Use separate Workers per mode: pinned GAX caches generated constructors by protobuf schema, so changing per-instance transport facades within one isolate can reuse the first mode's constructors. The dedicated entry also statically imports shared SDK modules before the first request; late Datastore loading can otherwise trigger protobuf code generation forbidden by workerd.
+The runner uses separate Workers per mode and statically imports the shared SDK modules for a controlled deployment comparison. The adapter now supports mixed-mode clients in one isolate and bundled SDK imports during requests; [local regression gates](testing.md) exercise those newer behaviors. The earlier cloud runs used the separate-deployment workaround for the former GAX cache and Datastore initialization limitations.
 
 ## Evidence and cleanup
 
@@ -81,7 +83,7 @@ Run `wga-probe-20260926-6c3b0f09` deployed the corrected adapter with bundle SHA
 | Raw Worker request without conversion → native origin | HTTP 502/plain text, the expected negative control |
 | Direct HTTP/2 gRPC-Web → native origin | HTTP 502/plain text, the expected negative control |
 
-The five suites cover Datastore and Firestore CRUD/query and transactions, plus Secret Manager metadata `GetSecret`. Native and Worker consumers execute the same shared business modules. No secret payload or version is accessed. Automatic and fallback SDK clients run in separate Workers because of the pinned GAX constructor cache. The tokens are short-lived user credentials; this is finite integration evidence, not a production authentication or load certification.
+The five suites cover Datastore and Firestore CRUD/query and transactions, plus Secret Manager metadata `GetSecret`. Native and Worker consumers execute the same shared business modules. No secret payload or version is accessed. This run used separate Workers to avoid the then-unresolved GAX constructor cache issue. The tokens are short-lived user credentials; this is finite integration evidence, not a production authentication or load certification.
 
 Authenticated readiness succeeded on the first fallback attempt and second automatic-mode attempt. An earlier attempt, `wga-probe-20260926-c1e397e2`, lacked that per-Worker check and received non-JSON 404s from the automatic Worker; those responses are excluded as adapter evidence. Its native/fallback suites passed, all eight resources were deleted, and the existing inventory was unchanged.
 

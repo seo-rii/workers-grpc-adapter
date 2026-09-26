@@ -67,6 +67,8 @@ function main() {
     run('packaging', ['scripts/test-pack.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
+    run('workers-gax-modes', ['scripts/test-gax-mode-isolation.cjs']);
+    run('workers-lazy-sdk', ['scripts/test-workers-lazy-sdk.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
     run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
@@ -99,7 +101,8 @@ function main() {
         googleAuth: read('google-auth.json'),
         googleEmulators, emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
-        workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
+        workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
+        workersLazySdk: read('workers-lazy-sdk.json'), workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },
         evidenceInputHashes,

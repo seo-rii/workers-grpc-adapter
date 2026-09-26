@@ -56,7 +56,7 @@ Both modes retain binary protobuf framing and accept either binary gRPC-Web resp
 
 Run `wga-probe-20260926-6c3b0f09` then passed all five real Google SDK suites in both modes and the native baseline. Both Workers used only `nodejs_compat`; automatic-mode unary echo, ten-message streaming and exact error details all passed. The raw control without a conversion option still returned HTTP 502 from the native origin. See the [corrected deployment results](gcp-cloud-probe.md#corrected-results-2026-09-26) for the bundle hash, controls and cleanup evidence.
 
-The project remains experimental. The finite transport checks do not certify credential refresh, sustained load, recovery or full grpc-js compatibility. Pinned GAX clients still require separate Workers per mode and SDK imports during startup; see [limitations](limitations.md).
+The project remains experimental. The finite transport checks do not certify credential refresh, sustained load, recovery or full grpc-js compatibility. Subsequent local regressions verify mixed-mode SDK clients in one isolate and bundled SDK imports during requests, removing the earlier cache and initialization constraints; see [limitations](limitations.md).
 
 ## Reproduction and evidence
 

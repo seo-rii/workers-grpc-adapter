@@ -48,6 +48,8 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
 | `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |
 | `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
+| `node scripts/test-gax-mode-isolation.cjs` | Three real SDKs sharing GAX caches across default, direct and two gateway configurations in workerd | `verification/workers-gax-modes.json` |
+| `node scripts/test-workers-lazy-sdk.cjs` | Cold/warm request-time SDK imports and Datastore nested Struct explain metrics | `verification/workers-lazy-sdk.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
@@ -90,7 +92,9 @@ Emulators use memory and temporary working directories. The launcher records res
 
 ## Protocol, resources and Workers
 
-Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. They assert bare `application/grpc-web` with `cf.grpcWeb: 'convert'` for direct requests, and `application/grpc-web+proto` with `cf.grpcWeb: 'passthrough'` for gateway requests. The workerd fixture runs direct grpc-js clients with both configurations concurrently in one isolate, checking request destinations, protobuf bytes, unary results, and server-streamed messages. This is not evidence of Google SDK mode isolation: the pinned GAX constructor cache requires separate Workers for different SDK transport modes.
+Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. They assert bare `application/grpc-web` with `cf.grpcWeb: 'convert'` for direct requests, and `application/grpc-web+proto` with `cf.grpcWeb: 'passthrough'` for gateway requests. The workerd fixture runs direct grpc-js clients with both configurations concurrently in one isolate, checking request destinations, protobuf bytes, unary results, and server-streamed messages.
+
+The separate GAX isolation gate runs 90 calls across the three pinned SDKs: three cache initialization orders, two invocations per isolate, and five client configurations including plain clients before and after explicit transports. It verifies protobuf identity, destination, Content-Type/Accept, Google credentials and gateway-only headers. Two gateway clients in the same mode use different destinations. This guards against GAX reusing a constructor that retained another client's configuration. The gate runs in `verify` and CI with outbound requests intercepted locally.
 
 The controlled outbound responder does not emulate Cloudflare's edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Local assertions on Fetch options establish the adapter's request contract only. Real gateway translation is exercised separately through Envoy, including the official emulator suite; deployed conversion results remain a separate check.
 
@@ -122,7 +126,7 @@ Save a confirmed failure as a focused regression test before fixing it. A passin
 
 Benchmarks report local p50/p95 latency, cold require, bundle size, observed buffering and process memory for large/small/slow/concurrent cases. They do not establish ownership of Fetch allocator bytes or deployed Worker performance. Production budgets remain unset.
 
-Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim.
+Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. The lazy SDK gate additionally starts with no SDK modules initialized, imports all three inside the first request, and repeats on a warm request with different credentials. It checks six RPCs, including Datastore explain metrics decoded through the separate `Struct` schema with nested objects, lists, nulls, strings, numbers and booleans. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim. Both new SDK gates are required by `verify` and CI.
 
 The controlled shared workerd bridge buffers finite responses. Incremental cancellation evidence comes from the separate Worker SDK harness. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.
 

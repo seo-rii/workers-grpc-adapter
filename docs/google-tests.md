@@ -108,7 +108,7 @@ The [2026-09-26 follow-up](cloudflare-conversion.md) identified the omitted conv
 
 The [corrected deployment run](gcp-cloud-probe.md#corrected-results-2026-09-26) passed all five shared SDK suites in each Worker mode and in the native baseline. Both Workers used only `nodejs_compat`, with authenticated readiness verified before executing the suites. This establishes the tested direct and gateway paths with short-lived user tokens; production authentication lifecycles and recovery remain release gates.
 
-The GCP probe statically imports the SDK modules during Worker initialization and deploys one Worker per transport mode. Lazy Datastore initialization during a request can trigger a prohibited protobuf `eval`; GAX also caches constructors by schema across per-instance facades. Switching facades in the same isolate does not reliably isolate Google SDK transport modes. Keep those modes in separate Workers even though direct grpc-js clients can use independently configured transports.
+The GCP probe keeps static SDK imports and one Worker per transport mode for a controlled deployment comparison. These are no longer requirements for the pinned adapter graph: the local mixed-mode gate runs all three SDKs with default, direct and two gateway configurations in one isolate, while the lazy-import gate initializes the SDKs during the first request. Use `gaxOptions()` for each independently configured SDK client and bundle all SDK code through the pinned build preset. The historical cloud runs do not by themselves verify these newer local capabilities.
 
 ## Interpreting failures
 

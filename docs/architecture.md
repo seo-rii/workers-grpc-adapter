@@ -62,6 +62,8 @@ Long deadlines use timer intervals no greater than `2^31 − 1` milliseconds. An
 
 `dist/*.js` contains the CommonJS implementation; `.mjs` wrappers re-export its objects. This keeps `Metadata`, credentials, `Client` and global configuration shared between Node import and require consumers. Mixed-module identity is tested through the actual tarball. A general identity guarantee across arbitrary Workers bundlers remains unverified.
 
+GAX receives the same grpc module for every transport instance. Each client's options carry an opaque configuration reference through GAX to the adapter channel. The channel consumes it before ordinary option validation. Generated service constructors therefore remain independent of transport configuration, and GAX's constructor cache can be shared without retaining another client's routing settings.
+
 ## Errors and the upstream boundary
 
 The transport preserves remote gRPC status and details. It does not copy arbitrary network or authentication exception text into public details. Exceptions thrown by user callbacks are rethrown in a microtask rather than converted into transport errors; complete equivalence with upstream exception timing is still unverified.

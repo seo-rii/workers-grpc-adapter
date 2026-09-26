@@ -103,9 +103,9 @@ Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, 
 
 - `channelCredentials`: default HTTPS channel credentials.
 - `grpcOptions(existing?)`: channel options bound to the instance configuration.
-- `gaxOptions(existing)`: a scoped grpc facade with `fallback: false`.
+- `gaxOptions(existing)`: Google SDK options bound to this transport, using the shared grpc module and `fallback: false`.
 
-Instance configuration does not change the global snapshot. Existing channel overrides conflict with `grpcOptions()`. Existing `grpc`, `sslCreds` or `fallback` settings conflict with `gaxOptions()`. The GAX facade is exercised by the [temporary Google SDK probe](gcp-cloud-probe.md), with one transport mode per Worker. The pinned GAX graph caches service constructors by schema across facades, so separate per-instance configurations do not isolate different Google SDK transport modes in one isolate. Use separate Workers for those modes. Direct grpc-js clients have separate mode-isolation tests.
+Instance configuration does not change the global snapshot. Existing channel overrides conflict with `grpcOptions()`. Existing `grpc`, `sslCreds`, `fallback` or channel-override settings conflict with `gaxOptions()`, including GAX's prefixed override forms. Both helpers reject options already bound to a transport instead of silently rebinding them. The generated GAX options carry the transport configuration through each client's channel creation, rather than capturing it in service constructors. This allows different SDK modes and gateway mappings in the same isolate, including clients created before or after a shared GAX cache entry. Keep the generated options intact when passing them to SDK constructors. [Local workerd tests](../scripts/test-gax-mode-isolation.cjs) exercise this with all three pinned SDKs; the historical [cloud probe](gcp-cloud-probe.md) uses separate deployments for comparison.
 
 ## Credentials
 
@@ -134,6 +134,6 @@ Fetch redirects use `manual` mode and are not followed. Local error details use 
 
 The Node-only `/build` subpath exports `createGoogleWorkerBuild({ projectRoot, outdir, profile, typescript })`. The optional profile defaults to `google-static-v1`; the installed TypeScript module is required. The returned object contains an esbuild `plugin`, a `registryFile` path and `manifest()`.
 
-Install TypeScript and esbuild as development dependencies. Keep `/build` out of Worker runtime imports. The preset rejects mismatched dependency, source or schema hashes rather than adapting arbitrary SDK versions. The repository's `scripts/workers-sdk-test.cjs` is the executable integration example.
+Install TypeScript and esbuild as development dependencies. Keep `/build` out of Worker runtime imports. The preset rejects mismatched dependency, source or schema hashes rather than adapting arbitrary SDK versions. It also precompiles Datastore's `google/protobuf/struct.proto` path so bundled SDK modules can initialize during the first request without runtime code generation. The repository's `scripts/workers-sdk-test.cjs` and `scripts/test-workers-lazy-sdk.cjs` are executable startup and lazy-import examples.
 
 Native HTTP/2, arbitrary upstream deep imports, gzip, channelz, load balancing and remote connection health are unavailable. Connectivity reports only `IDLE` or `SHUTDOWN`; `waitForReady()` never reports a ready connection. Identity-encoded writes accept flags `0`, `BufferHint` (`1`), `NoCompress` (`2`) or their combination. `WriteThrough` and actual parent-call propagation are unsupported.

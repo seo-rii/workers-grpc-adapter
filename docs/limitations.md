@@ -4,7 +4,7 @@ This is an experimental, client-only prototype. The package remains `private: tr
 
 ## Remaining release gates
 
-- Production validation of direct Google SDK calls after the conversion and content-type correction. The [conversion diagnosis](cloudflare-conversion.md) explains the wire-level evidence; finite Google SDK deployment results are recorded separately in the [GCP probe](gcp-cloud-probe.md).
+- Sustained production traffic, resource budgets, quotas and recovery. Finite direct and gateway Google SDK deployment results are recorded separately in the [GCP probe](gcp-cloud-probe.md); those runs do not establish long-running reliability.
 - Live service-account OAuth/JWT refresh, IAM and quota errors, workload identity federation, impersonation and ADC.
 - Production transaction conflicts and uncertain Commit outcomes under real network failures.
 - All 189 original planned cases, full public grpc-js API and exception-timing equivalence, and production performance budgets.
@@ -28,7 +28,9 @@ Pinned Google SDKs run against controlled local gRPC servers and official databa
 
 The Node-only build preset supports the pinned SDK/GAX/protobuf sources and schemas. It does not infer transformations for other versions. Worker tooling is locked, including the Miniflare alpha used by the installed Wrangler; reports identify the actual versions and compatibility date.
 
-Import the pinned SDK modules during Worker initialization: lazy Datastore initialization during a request can trigger a prohibited protobuf `eval`. GAX also caches service constructors by schema across per-instance facades. Different Google SDK transport modes therefore require separate Workers; the adapter's direct-client mode-isolation tests do not establish GAX isolation.
+The pinned build profile supports SDK imports during startup and bundled dynamic imports during the first request. It generates Datastore's well-known `Struct` codecs at build time, including the codecs used to decode query explain metrics. Arbitrary SDK versions, unknown protobuf schemas and unbundled dynamic module loading remain outside this profile.
+
+Google SDK clients can use different per-instance transport configurations in one Worker. `gaxOptions()` passes the configuration through each client's channel options, so GAX's shared service-constructor cache cannot select another client's mode or gateway. Local workerd tests cover all three pinned SDKs, multiple gateway destinations, ordinary default clients, different cache initialization orders and repeated invocations. These controlled local tests do not add a new deployed-cloud certification.
 
 Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; separate Worker SDK tests cover incremental transport cancellation.
 
