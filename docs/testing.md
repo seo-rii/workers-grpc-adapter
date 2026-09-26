@@ -50,6 +50,9 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
 | `node scripts/test-gax-mode-isolation.cjs` | Three real SDKs sharing GAX caches across default, direct and two gateway configurations in workerd | `verification/workers-gax-modes.json` |
 | `node scripts/test-workers-lazy-sdk.cjs` | Cold/warm request-time SDK imports and Datastore nested Struct explain metrics | `verification/workers-lazy-sdk.json` |
+| `node scripts/test-workers-auth.cjs` | Actual workerd Fetch token exchange, refresh, isolation, failure recovery and JWT signatures | `verification/workers-auth.json` |
+| `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
+| `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
@@ -76,6 +79,8 @@ SDK declarations are checked in strict ESM and CJS Node16/NodeNext/Bundler modes
 
 Authentication tests use real OAuth2Client/JWT/Gaxios logic with controlled transports. They check token refresh, concurrency, credential isolation, cancellation, JWT signatures, exchange claims and reuse. They do not contact Google's token endpoint or establish live OAuth/IAM behavior.
 
+The workerd authentication gate runs ordinary OAuth2Client and JWT constructors through Gaxios and Workers Fetch, with only the outbound service intercepted. It checks cached credentials, expired-token refresh, concurrent refresh coalescing, distinct identities, denied-refresh recovery, cancellation/deadlines during refresh, and Secret Manager SDK calls. A generated ephemeral RSA key signs JWT assertions; the host verifies signatures and claims. No key, assertion or token is written to the report. These scenarios cover real library and runtime integration, while Google's token service and IAM remain outside this local gate.
+
 ## Official database emulators
 
 The harness starts pinned Firestore 1.22.0/Java 21 processes in Native and Datastore modes on independent loopback ports. Real Envoy 1.39.1 translates each gRPC-Web request. Every registered suite runs under native grpc-js, the Node adapter and two workerd invocations, using the same shared files.
@@ -86,7 +91,7 @@ Firestore's emulator BatchWrite path needs emulator owner authorization. Local E
 
 Datastore scenarios cover data types, namespace/ancestor keys, batch/missing lookup, callback/Promise shapes, query cursors/projection, aggregation, ID allocation/reservation, rollback, read streams and early destruction. Firestore scenarios cover data types, getAll/field masks, query cursors, aggregation, transforms, rollback and BulkWriter. Both exercise `ALREADY_EXISTS`, `NOT_FOUND` and failed-write atomicity; Firestore also checks stale-precondition `FAILED_PRECONDITION`.
 
-The SDK stream-destruction case fits in a single unary query page. It checks subsequent delivery and client usability, not multi-page suppression or internal adapter resource release. See [limitations](limitations.md).
+The emulator's stream-destruction case fits in one unary query page. A separate controlled pagination gate compares identical business code under native grpc-js, the Node adapter and both workerd modes. It observes exact request cursors, remaining limits, page counts and reuse. In the pinned Datastore SDK, `end()` suppresses subsequent pages; `destroy()` alone suppresses delivered entities but still requests later pages. Neither operation cancels an already pending unary query. The gate holds that query at the backend to verify this boundary before releasing it. See [limitations](limitations.md#datastore-query-streams).
 
 Emulators use memory and temporary working directories. The launcher records restricted logs, PIDs and exit receipts. Lifecycle tests check SIGINT/SIGTERM propagation, Java process exit, working-directory removal and idempotent stop. Only download caches are retained. [Google documents emulator differences](https://docs.cloud.google.com/firestore/native/docs/emulator), including transactions, indexes and limits; passing these scenarios does not certify production behavior.
 
@@ -95,6 +100,10 @@ Emulators use memory and temporary working directories. The launcher records res
 Transport-mode tests check direct service routing in `cloudflare` mode and explicit gateway routing in `grpc-web` mode. They assert bare `application/grpc-web` with `cf.grpcWeb: 'convert'` for direct requests, and `application/grpc-web+proto` with `cf.grpcWeb: 'passthrough'` for gateway requests. The workerd fixture runs direct grpc-js clients with both configurations concurrently in one isolate, checking request destinations, protobuf bytes, unary results, and server-streamed messages.
 
 The separate GAX isolation gate runs 90 calls across the three pinned SDKs: three cache initialization orders, two invocations per isolate, and five client configurations including plain clients before and after explicit transports. It verifies protobuf identity, destination, Content-Type/Accept, Google credentials and gateway-only headers. Two gateway clients in the same mode use different destinations. This guards against GAX reusing a constructor that retained another client's configuration. The gate runs in `verify` and CI with outbound requests intercepted locally.
+
+The resilience gate repeats concurrent unary and streaming calls in both modes, on cold and warm Worker invocations. Each wave mixes successful calls, HTTP 503, permission/quota statuses, truncated frames, message-size violations, empty unary responses, slow consumers, cancellation, deadlines and channel closure, then reuses the client successfully. It requires one terminal event per call, zero active calls, cleared deadline timers and zero retained request/current-response payload bytes after each wave. Paused consumers must exercise buffering within the Readable high-water mark and one-message transport lookahead.
+
+This gate uses Miniflare's Node handler bridge to observe unfinished HTTP responses closing before runtime disposal. The Fetch-callback bridge does not propagate cancellation to an idle host response stream, so its `cancel()` callback is not used as evidence. The measurements cover adapter-visible state and loopback disconnects; they do not measure total Fetch/parser allocation, deployed resource limits, CPU quotas or sustained production throughput.
 
 The controlled outbound responder does not emulate Cloudflare's edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Local assertions on Fetch options establish the adapter's request contract only. Real gateway translation is exercised separately through Envoy, including the official emulator suite; deployed conversion results remain a separate check.
 
@@ -128,7 +137,7 @@ Benchmarks report local p50/p95 latency, cold require, bundle size, observed buf
 
 Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. The lazy SDK gate additionally starts with no SDK modules initialized, imports all three inside the first request, and repeats on a warm request with different credentials. It checks six RPCs, including Datastore explain metrics decoded through the separate `Struct` schema with nested objects, lists, nulls, strings, numbers and booleans. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim. Both new SDK gates are required by `verify` and CI.
 
-The controlled shared workerd bridge buffers finite responses. Incremental cancellation evidence comes from the separate Worker SDK harness. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.
+The controlled shared workerd bridge buffers finite responses. The Worker SDK harness verifies client-visible cancellation; the resilience gate additionally observes interrupted loopback responses closing before disposal. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.
 
 ## Evidence rules
 

@@ -110,6 +110,8 @@ The [corrected deployment run](gcp-cloud-probe.md#corrected-results-2026-09-26) 
 
 The GCP probe keeps static SDK imports and one Worker per transport mode for a controlled deployment comparison. These are no longer requirements for the pinned adapter graph: the local mixed-mode gate runs all three SDKs with default, direct and two gateway configurations in one isolate, while the lazy-import gate initializes the SDKs during the first request. Use `gaxOptions()` for each independently configured SDK client and bundle all SDK code through the pinned build preset. The historical cloud runs do not by themselves verify these newer local capabilities.
 
+The local authentication gate now exercises normal OAuth2Client/JWT constructors and token refresh through Workers Fetch, including an actual Secret Manager SDK client. Profile revision 3 changes Gaxios's default fetch selection in the bundle; explicit fetch overrides remain supported. Controlled token responses and ephemeral RSA signatures verify runtime integration, but do not add live OAuth, service-account IAM or ADC certification. The separate pagination gate compares native and adapter Datastore clients: use `runQueryStream().end()` to stop future pages, since bare `destroy()` can continue fetching them. Already in-flight pages remain subject to their RPC deadline.
+
 ## Interpreting failures
 
 Missing configuration is blocked, not passed. REST fallback does not count as adapter success: Firestore uses `preferRest: false`, and applicable GAPIC clients use `fallback: false`; transport observations must confirm the RPC path.

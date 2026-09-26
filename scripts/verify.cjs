@@ -69,6 +69,9 @@ function main() {
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
     run('workers-gax-modes', ['scripts/test-gax-mode-isolation.cjs']);
     run('workers-lazy-sdk', ['scripts/test-workers-lazy-sdk.cjs']);
+    run('workers-auth', ['scripts/test-workers-auth.cjs']);
+    run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
+    run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
     run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
@@ -85,9 +88,11 @@ function main() {
     const sdkTypes = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-types.json')));
     const sdkGraph = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-graph.json')));
     const googleEmulators = read('google-emulators.json');
+    const datastorePagination = read('datastore-pagination.json');
     const shared = filesIn(path.join(root, 'fixtures/google/shared')).filter(p => p.endsWith('.mjs')).map(file => ({ file: path.relative(root, file), sha256: hash(file),
         nativeBaselineCompared: Boolean((sdkLocal.sameSharedFiles && sdkLocal.sourceHashes.native[path.basename(file)] === hash(file))
-            || (googleEmulators.sameSharedFiles && googleEmulators.sourceHashes.native[path.basename(file)] === hash(file))) }));
+            || (googleEmulators.sameSharedFiles && googleEmulators.sourceHashes.native[path.basename(file)] === hash(file))
+            || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))) }));
     const catalog = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/test-catalog.json')));
     const sourceFiles = ['src', 'scripts', 'test', 'fixtures'].flatMap(dir => filesIn(path.join(root, dir))).filter(p => /\.(ts|cts|mts|mjs|cjs|proto|json|jsonc|yaml)$/.test(p));
     const sourceHashes = Object.fromEntries(sourceFiles.sort().map(file => [path.relative(root, file), hash(file)]));
@@ -102,7 +107,9 @@ function main() {
         googleEmulators, emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
-        workersLazySdk: read('workers-lazy-sdk.json'), workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
+        workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
+        datastorePagination, workersResilience: read('workers-resilience.json'),
+        workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },
         evidenceInputHashes,

@@ -30,9 +30,13 @@ The Node-only build preset supports the pinned SDK/GAX/protobuf sources and sche
 
 The pinned build profile supports SDK imports during startup and bundled dynamic imports during the first request. It generates Datastore's well-known `Struct` codecs at build time, including the codecs used to decode query explain metrics. Arbitrary SDK versions, unknown protobuf schemas and unbundled dynamic module loading remain outside this profile.
 
+The profile also selects Workers' native Fetch for the pinned Gaxios default transport. Without this transformation, its Node fallback can lose response headers and fail to parse OAuth token responses in workerd. Explicit caller-supplied fetch implementations keep precedence. Local workerd tests exercise real OAuth/JWT refresh and exchange, credential isolation, cancellation/deadlines during refresh and recovery after rejection; they use controlled token endpoints and do not establish live Google authentication behavior.
+
 Google SDK clients can use different per-instance transport configurations in one Worker. `gaxOptions()` passes the configuration through each client's channel options, so GAX's shared service-constructor cache cannot select another client's mode or gateway. Local workerd tests cover all three pinned SDKs, multiple gateway destinations, ordinary default clients, different cache initialization orders and repeated invocations. These controlled local tests do not add a new deployed-cloud certification.
 
-Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; separate Worker SDK tests cover incremental transport cancellation.
+Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; the resilience gate checks cancellation of interrupted loopback responses.
+
+Repeated local workerd fault waves verify concurrent calls, slow streams, deadlines, cancellation, message limits, client reuse and adapter-visible resource cleanup in both modes. The loopback server observes interrupted response closure before runtime disposal. These are finite regression tests, not sustained traffic, total memory measurements or production recovery certification.
 
 Official Firestore 1.22.0 Native and Datastore modes run through real Envoy locally. These tests cover the explicitly asserted data, query, stream and error behavior. Emulator results do not establish production IAM, composite-index requirements, quotas or transaction concurrency. Secret Manager still uses a controlled server. The emulator-only synthetic owner header is injected by local Envoy and is not authentication evidence.
 
@@ -49,4 +53,16 @@ Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, compr
 - User callback exceptions are rethrown in a microtask. Complete upstream exception-timing equivalence is unverified.
 - HTTPS credentials use Fetch TLS. Legacy callback-only Google credential shapes are unsupported.
 
-Datastore's emulator stream-destruction case uses one unary query page. It verifies that later entities are not delivered and that the client remains usable. It does not prove multi-page suppression, HTTP/2 stream cancellation or internal timer/pump cleanup; native SDK info events may still arrive after destruction.
+## Datastore query streams
+
+Datastore `runQueryStream()` chains unary `RunQuery` pages. In the pinned SDK, `destroy()` stops entity delivery but can continue requesting later pages. This also occurs with native grpc-js. Use the SDK's `end()` method to stop pagination:
+
+```js
+const stream = datastore.runQueryStream(query, { gaxOptions: { timeout: 5_000 } });
+stream.on('error', handleError);
+stream.on('data', entity => {
+  if (!consume(entity)) stream.end();
+});
+```
+
+`end()` prevents new pages after the current one. Neither `end()` nor `destroy()` exposes cancellation of a unary page already in flight; its deadline still matters, and SDK `info` events may arrive afterward. Controlled native/Node-adapter/workerd comparisons verify complete pagination, stopping on the first entity, stopping while a second page is held, and successful reuse. Official emulator coverage remains limited to a single page for early destruction. These tests do not claim that stopping this SDK stream cancels native HTTP/2 or releases an in-flight RPC immediately.

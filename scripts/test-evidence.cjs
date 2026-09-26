@@ -11,6 +11,8 @@ const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
+    'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
+    'verification/datastore-pagination.json', 'verification/workers-resilience.json',
     'verification/workers-sdk-build.json', 'verification/workers-shared.json', 'verification/google-emulators.json', 'verification/emulator-lifecycle.json', 'verification/envoy.json', 'verification/google-preflight.json',
     ...[...GENERATED_COMPATIBILITY].map(file => `compatibility/${file}`)];
 function fail(message) { throw new Error(`WGA_EVIDENCE_INVALID: ${message}`); }
@@ -332,7 +334,9 @@ function validateProvenance(root, report) {
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
-        ['workersSdk', 'verification/workers-sdk.json'], ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
+        ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
+        ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
+        ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);
     const packaging = report.packaging;

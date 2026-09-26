@@ -46,7 +46,7 @@ All paths below are relative to `src/`.
 | `config.ts` | Public configuration exports |
 | `options.ts` | Supported channel options and explicit rejection rules |
 | `adapter.ts` | Optional configuration scoped to a client instance |
-| `build/` | Node-only SDK profile validation and protobuf code generation |
+| `build/` | Node-only SDK profile validation, protobuf code generation and Gaxios native-Fetch default selection |
 
 ## Call lifecycle
 
