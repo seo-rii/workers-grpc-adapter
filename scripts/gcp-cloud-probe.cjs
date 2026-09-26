@@ -77,9 +77,49 @@ function ownedIdentity(record, value) {
   return false;
 }
 function resourceLookupUrl(record) {
+  if (record.kind === 'cloudflare-worker') return record.url + '/settings';
   return record.kind === 'service-account' && record.uid
     ? `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${record.uid}`
     : record.url;
+}
+function acknowledgeWorkerUpload(record, output) {
+  // Wrangler's pinned structured output identifies the upload we acknowledged;
+  // the current version from a later GET alone could belong to a replacement.
+  const deployments = output.split('\n').filter(line => line.trim()).map(line => JSON.parse(line))
+    .filter(entry => entry.type === 'deploy');
+  const uploaded = deployments[0];
+  if (deployments.length !== 1 || uploaded.version !== 1 || uploaded.worker_name !== record.name ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uploaded.version_id)) {
+    throw new Error('WORKER_UPLOAD_IDENTITY_UNPROVEN');
+  }
+  // Wrangler reports the pre-existing script tag, or null for a new Worker.
+  // Never claim an observed late name collision as an owned temporary resource.
+  if (typeof uploaded.worker_tag === 'string' && uploaded.worker_tag) {
+    record.collision = true;
+    throw new Error('CF_WORKER_NAME_COLLISION');
+  }
+  if (uploaded.worker_tag !== null) throw new Error('WORKER_UPLOAD_IDENTITY_UNPROVEN');
+  record.versionId = uploaded.version_id;
+  record.uploadAcknowledged = true;
+  record.creationSettled = true;
+  record.owned = true;
+  delete record.ambiguousCreate;
+}
+async function verifyWorkerIdentity(record) {
+  if (!record.uploadAcknowledged || !record.versionId || !record.ownershipTag) {
+    throw new Error('WORKER_CREATION_IDENTITY_UNPROVEN');
+  }
+  // The first deployment is the one actively serving traffic. A repeated
+  // deployment of even the same version is a change to the owned instance.
+  const current = ok(await api(record.url + '/deployments'), 'CF Worker deployments').result?.deployments?.[0];
+  if (!current?.id || (record.deploymentId && current.id !== record.deploymentId) ||
+    current.versions?.length !== 1 || current.versions[0].version_id !== record.versionId ||
+    current.versions[0].percentage !== 100) throw new Error('RESOURCE_IDENTITY_CHANGED_REFUSING_DELETE');
+  const version = ok(await api(record.url + '/versions/' + record.versionId), 'CF Worker version').result;
+  if (version?.id !== record.versionId || version.annotations?.['workers/tag'] !== record.ownershipTag) {
+    throw new Error('RESOURCE_IDENTITY_CHANGED_REFUSING_DELETE');
+  }
+  return current.id;
 }
 async function createResource(resource, createUrl, body, operationBase) {
   if (interrupted) throw new Error('INTERRUPTED');
@@ -136,10 +176,11 @@ async function deployService(name, image, port, serviceAccount, args) {
     },
   }, 'https://run.googleapis.com/v2');
 }
-function wranglerCommand(args, authenticated = false) {
+function wranglerCommand(args, authenticated = false, outputFile) {
   const env = { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' };
-  for (const name of Object.keys(env)) if (/^(?:WGA_|CF_|CLOUDFLARE_|GOOGLE_APPLICATION_CREDENTIALS)/.test(name)) delete env[name];
+  for (const name of Object.keys(env)) if (/^(?:WGA_|CF_|CLOUDFLARE_|GOOGLE_APPLICATION_CREDENTIALS|WRANGLER_OUTPUT_FILE_|WRANGLER_CI_(?:OVERRIDE_NAME|MATCH_TAG))/.test(name)) delete env[name];
   if (authenticated) Object.assign(env, { CLOUDFLARE_API_TOKEN: cfToken, CLOUDFLARE_ACCOUNT_ID: cfAccount });
+  if (outputFile) env.WRANGLER_OUTPUT_FILE_PATH = outputFile;
   return command(process.execPath, [wrangler, ...args], { cwd: directory, env, timeout: 180000 });
 }
 async function buildWorker() {
@@ -164,6 +205,7 @@ async function buildWorker() {
   return { main, configFile };
 }
 async function deployWorker(build, env, mode, { targetKey = mode, compatibilityFlags = ['nodejs_compat'] } = {}) {
+  if (interrupted) throw new Error('INTERRUPTED');
   const accounts = ok(await api('https://api.cloudflare.com/client/v4/accounts?per_page=50'), 'CF accounts').result;
   cfAccount = process.env.CLOUDFLARE_ACCOUNT_ID || (accounts.length === 1 ? accounts[0].id : undefined);
   if (!cfAccount || !accounts.some(account => account.id === cfAccount)) throw new Error('CF_ACCOUNT_REQUIRED');
@@ -175,19 +217,33 @@ async function deployWorker(build, env, mode, { targetKey = mode, compatibilityF
   const bundleSha256 = sha(fs.readFileSync(build.main));
   if (bundleSha256 !== report.bundle.sha256) throw new Error('WORKER_BUNDLE_CHANGED');
   const record = { kind: 'cloudflare-worker', name, url, targetKey, compatibilityFlags, bundleSha256,
-    absentBefore: true, attempted: true, owned: true };
+    ownershipTag: report.run, absentBefore: true, attempted: false, owned: false };
   report.resources.push(record); save();
   const secretBindings = { WGA_TEST_KEY: workerKey, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken };
   const vars = { ...env, WGA_PROBE_MODE: mode }; for (const name of Object.keys(secretBindings)) delete vars[name];
   fs.writeFileSync(build.configFile, JSON.stringify({ name, account_id: cfAccount, main: build.main, no_bundle: true,
     compatibility_date: '2026-09-21', compatibility_flags: compatibilityFlags, workers_dev: true, preview_urls: false, send_metrics: false, vars }));
   const secretsFile = path.join(directory, 'secrets.json');
-  fs.writeFileSync(secretsFile, JSON.stringify(secretBindings), { mode: 0o600 });
-  if (interrupted) throw new Error('INTERRUPTED');
-  wranglerCommand(['deploy', '--config', build.configFile, '--no-bundle', '--secrets-file', secretsFile, '--no-autoconfig'], true);
+  const outputFile = path.join(directory, `wrangler-${targetKey}.ndjson`);
+  let deployError;
+  try {
+    fs.writeFileSync(secretsFile, JSON.stringify(secretBindings), { mode: 0o600 });
+    fs.writeFileSync(outputFile, '', { mode: 0o600, flag: 'wx' });
+    if (interrupted) throw new Error('INTERRUPTED');
+    record.attempted = true; record.ambiguousCreate = true; save();
+    wranglerCommand(['deploy', '--config', build.configFile, '--no-bundle', '--secrets-file', secretsFile,
+      '--no-autoconfig', '--tag', record.ownershipTag], true, outputFile);
+  } catch (error) { deployError = error; }
+  finally { fs.rmSync(secretsFile, { force: true }); }
+  if (!record.attempted) throw deployError;
+  try { acknowledgeWorkerUpload(record, fs.readFileSync(outputFile, 'utf8')); }
+  catch (error) { record.uploadReceiptError = redact(error.message).slice(0, 800); save(); throw deployError || error; }
+  save();
+  if (deployError) throw deployError;
+  record.deploymentId = await verifyWorkerIdentity(record);
+  record.creationIdentityVerified = true;
   record.created = true;
   report.workerUrls ??= {}; report.workerUrls[targetKey] = `https://${name}.${subdomain}.workers.dev`; save();
-  fs.rmSync(secretsFile, { force: true });
   const settings = ok(await api(`${url}/settings`), 'CF Worker settings').result;
   record.settingsCompatibilityFlags = settings?.compatibility_flags;
   record.settingsVerified = Array.isArray(record.settingsCompatibilityFlags) &&
@@ -341,6 +397,9 @@ async function cleanup() {
     report.cleanup.push(receipt); save();
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
+        if (resource.kind === 'cloudflare-worker' && (!resource.uploadAcknowledged || !resource.versionId)) {
+          throw new Error('WORKER_CREATION_IDENTITY_UNPROVEN');
+        }
         if (resource.operation?.includes('/operations/') && !resource.creationSettled) {
           try { await operation({ name: resource.operation }, resource.operationBase, 360000, resource); }
           catch (error) { if (!resource.creationSettled) throw error; }
@@ -353,10 +412,17 @@ async function cleanup() {
             // Only the acknowledged, identity-checked create permits deletion
             // in that case; a lookup 404 alone never proves cleanup succeeded.
             if (!resource.uid || !resource.creationIdentityVerified) throw new Error('ACKNOWLEDGED_SERVICE_ACCOUNT_ABSENCE_UNPROVEN');
-          } else { receipt.verifiedAbsent = true; break; }
+          } else { receipt.verifiedAbsent = true; delete receipt.error; break; }
         } else {
           ok(existing, 'cleanup lookup');
-          if (resource.kind !== 'cloudflare-worker' && !ownedIdentity(resource, existing.data)) throw new Error('RESOURCE_IDENTITY_CHANGED_REFUSING_DELETE');
+          if (resource.kind === 'cloudflare-worker') {
+            const deploymentId = await verifyWorkerIdentity(resource);
+            resource.deploymentId ??= deploymentId;
+            receipt.identityVerified = true;
+            receipt.versionId = resource.versionId;
+            receipt.deploymentId = deploymentId;
+            save();
+          } else if (!ownedIdentity(resource, existing.data)) throw new Error('RESOURCE_IDENTITY_CHANGED_REFUSING_DELETE');
           resource.owned = true;
           resource.uid ??= existing.data.uid || existing.data.uniqueId;
         }
@@ -378,7 +444,7 @@ async function cleanup() {
         const absent = await api(resourceLookupUrl(resource));
         receipt.lookupStatus = absent.status;
         receipt.verifiedAbsent = absent.status === 404;
-        if (receipt.verifiedAbsent) break;
+        if (receipt.verifiedAbsent) { delete receipt.error; break; }
         await pause(2000);
       } catch (error) {
         receipt.error = redact(error.message).slice(0, 800);

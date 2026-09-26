@@ -16,6 +16,222 @@ function section(start, end) {
 const identitySource = section('function ownedIdentity(', '\nasync function createResource(');
 const createSource = section('async function createResource(', '\nasync function inventory(');
 const cleanupSource = section('async function cleanup() {', '\nif (require.main === module)');
+const workerDeploySource = section('async function deployWorker(', '\nasync function workerRequest(');
+const wranglerSource = section('function wranglerCommand(', '\nasync function buildWorker(');
+
+const workerVersionId = '11111111-2222-4333-8444-555555555555';
+const workerDeploymentId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const workerVersion = () => ({ id: workerVersionId, annotations: { 'workers/tag': 'fixture-run' } });
+const workerDeployment = () => ({ id: workerDeploymentId,
+  versions: [{ version_id: workerVersionId, percentage: 100 }] });
+
+async function workerCleanup({ replacement = false, changedTag = false, changedDeployment = false,
+  ambiguous = false, missing = false, lookupFailure = false, deleteFailure = false,
+  versionMissing = false, retryDelete = false, collision = false, splitTraffic = false,
+  replacementAfterDelete = false, noDeployment = false, missingCapturedDeployment = false } = {}) {
+  const resource = { kind: 'cloudflare-worker', name: 'fixture-worker', url: 'https://fixture/worker',
+    attempted: true, owned: !ambiguous && !collision, absentBefore: true, ownershipTag: 'fixture-run',
+    ...(ambiguous ? { ambiguousCreate: true } : { versionId: workerVersionId,
+      ...(!missingCapturedDeployment ? { deploymentId: workerDeploymentId } : {}),
+      uploadAcknowledged: true, creationSettled: true }),
+    ...(collision ? { collision: true } : {}) };
+  const report = { run: 'fixture-run', resources: [resource], cleanup: [], status: 'passed' };
+  const events = [];
+  let deleted = false;
+  let deleteAttempts = 0;
+  const context = {
+    report, project: 'fixture-project', directory: undefined, before: undefined, accessToken: undefined,
+    root: '', reportFile: '', secret: value => value, gcloud: () => 'synthetic-token',
+    phase() {}, save() {}, redact: String, pause: async () => {}, onSignal() {},
+    process: { exitCode: 0, off() {} }, console: { log() {} }, path: { relative: () => '' },
+    ok(response) {
+      if (response.status < 200 || response.status >= 300 || response.data.success === false) {
+        throw new Error('Fixture HTTP ' + response.status);
+      }
+      return response.data;
+    },
+    async api(url, method = 'GET') {
+      events.push({ method, url });
+      assert.equal(collision, false, 'Never inspect or delete a collision');
+      if (method === 'DELETE') {
+        assert.equal(url, resource.url);
+        deleteAttempts++;
+        if (deleteFailure || (retryDelete && deleteAttempts === 1)) return { status: 503, data: {} };
+        deleted = true;
+        return { status: 200, data: { success: true } };
+      }
+      assert.equal(method, 'GET');
+      if (url === resource.url + '/settings') return {
+        status: (deleted && !replacementAfterDelete) || missing ? 404 : 200, data: { success: true, result: {} },
+      };
+      if (url === resource.url + '/deployments') {
+        if (lookupFailure) return { status: 403, data: { success: false } };
+        const deployment = workerDeployment();
+        if (replacement || (deleted && replacementAfterDelete)) deployment.versions[0].version_id = 'replacement-version';
+        if (changedDeployment) deployment.id = 'replacement-deployment';
+        if (splitTraffic) deployment.versions = [{ version_id: workerVersionId, percentage: 50 },
+          { version_id: 'another-version', percentage: 50 }];
+        return { status: 200, data: { success: true, result: { deployments: noDeployment ? [] : [deployment] } } };
+      }
+      assert.equal(url, resource.url + '/versions/' + workerVersionId);
+      if (versionMissing) return { status: 404, data: {} };
+      const version = workerVersion();
+      if (changedTag) version.annotations['workers/tag'] = 'another-run';
+      return { status: 200, data: { success: true, result: version } };
+    },
+  };
+  const isolated = vm.createContext(context, { codeGeneration: { strings: false, wasm: false } });
+  await vm.runInContext(identitySource + '\n(' + cleanupSource + ')', isolated)();
+  if (collision) {
+    assert.equal(events.length, 0);
+    assert.equal(report.cleanup.length, 0);
+    assert.equal(report.allCreatedResourcesDeleted, !ambiguous,
+      'A collision observed after an uncertain upload stays unresolved without being deleted');
+    return;
+  }
+  const receipt = report.cleanup[0];
+  assert.ok(receipt, 'Uncertain created resources must not disappear from cleanup accounting');
+  const passed = !(replacement || changedTag || changedDeployment || ambiguous || lookupFailure ||
+    deleteFailure || versionMissing || splitTraffic || replacementAfterDelete || noDeployment);
+  assert.equal(receipt.verifiedAbsent, passed);
+  assert.equal(report.allCreatedResourcesDeleted, passed);
+  assert.equal(context.process.exitCode, passed ? 0 : 1);
+  assert.equal(deleted, (passed && !missing) || replacementAfterDelete);
+  assert.equal(deleteAttempts, passed && !missing ? (retryDelete ? 2 : 1) : deleteFailure ? 3 : replacementAfterDelete ? 1 : 0);
+  if (passed) {
+    assert.equal(receipt.error, undefined, 'A recovered transient failure must not remain in the success receipt');
+    if (!missing) assert.equal(receipt.identityVerified, true);
+  } else {
+    assert.equal(report.status, 'cleanup-failed');
+    assert.ok(receipt.error, 'Failure reason must survive cleanup');
+    if (replacement || changedTag || changedDeployment || splitTraffic || replacementAfterDelete || noDeployment) {
+      assert.match(receipt.error, /IDENTITY_CHANGED_REFUSING_DELETE/);
+    }
+    if (ambiguous) assert.match(receipt.error, /CREATION_IDENTITY_UNPROVEN/);
+  }
+}
+
+function workerReceiptsAndEnvironment() {
+  const isolated = vm.createContext({}, { codeGeneration: { strings: false, wasm: false } });
+  const acknowledge = vm.runInContext(identitySource + '\nacknowledgeWorkerUpload', isolated);
+  const name = 'fixture-worker';
+  const valid = { type: 'deploy', version: 1, worker_name: name, version_id: workerVersionId, worker_tag: null };
+  for (const contents of [JSON.stringify(valid) + '\n' + JSON.stringify(valid),
+    JSON.stringify({ ...valid, version_id: '../other-worker' }), JSON.stringify({ ...valid, version: 2 }),
+    JSON.stringify({ ...valid, type: 'versions-upload' }), '']) {
+    const resource = { name, attempted: true, ambiguousCreate: true, owned: false };
+    assert.throws(() => acknowledge(resource, contents), /WORKER_UPLOAD_IDENTITY_UNPROVEN/);
+    assert.equal(resource.owned, false);
+    assert.equal(resource.ambiguousCreate, true);
+    assert.equal(resource.versionId, undefined);
+  }
+  const collision = { name, attempted: true, ambiguousCreate: true, owned: false };
+  assert.throws(() => acknowledge(collision, JSON.stringify({ ...valid, worker_tag: 'pre-existing-script-tag' })),
+    /CF_WORKER_NAME_COLLISION/);
+  assert.equal(collision.collision, true);
+  assert.equal(collision.owned, false);
+  assert.equal(collision.versionId, undefined);
+  let called = false;
+  const context = vm.createContext({
+    cfToken: 'synthetic-token', cfAccount: 'fixture-account', directory: '/virtual', wrangler: '/wrangler.js',
+    process: { execPath: '/node', env: { PATH: '/fixture/bin',
+      WRANGLER_OUTPUT_FILE_PATH: '/unrelated-output', WRANGLER_OUTPUT_FILE_DIRECTORY: '/unrelated-directory',
+      WRANGLER_CI_OVERRIDE_NAME: 'shared-worker', WRANGLER_CI_MATCH_TAG: 'shared-tag',
+      CLOUDFLARE_API_TOKEN: 'unrelated-token', CF_TOKEN: 'unrelated-token', WGA_TEST_KEY: 'unrelated-key' } },
+    command(program, args, { env }) {
+      called = true;
+      assert.equal(program, '/node');
+      assert.equal(args[0], '/wrangler.js');
+      assert.equal(env.PATH, '/fixture/bin');
+      assert.equal(env.WRANGLER_OUTPUT_FILE_PATH, '/owned-output');
+      for (const key of ['WRANGLER_OUTPUT_FILE_DIRECTORY', 'WRANGLER_CI_OVERRIDE_NAME', 'WRANGLER_CI_MATCH_TAG',
+        'CF_TOKEN', 'WGA_TEST_KEY']) assert.equal(env[key], undefined, 'No inherited deployment override: ' + key);
+      assert.equal(env.CLOUDFLARE_API_TOKEN, 'synthetic-token');
+      assert.equal(env.CLOUDFLARE_ACCOUNT_ID, 'fixture-account');
+    },
+  }, { codeGeneration: { strings: false, wasm: false } });
+  vm.runInContext('(' + wranglerSource + ')', context)(['deploy'], true, '/owned-output');
+  assert.equal(called, true);
+}
+
+async function workerUpload({ commandFails = false, missingReceipt = false, wrongWorker = false,
+  malformedReceipt = false, replacement = false, collision = false, interrupted = false,
+  lateCollision = false } = {}) {
+  const files = new Map();
+  const report = { run: 'fixture-run', bundle: { sha256: 'fixture-sha' }, resources: [] };
+  const events = [];
+  const context = {
+    report, directory: '/virtual', cfAccount: undefined, workerKey: 'synthetic-key',
+    accessToken: 'synthetic-token', identityToken: 'synthetic-identity', interrupted,
+    process: { env: {} }, path, save() {}, sha: () => 'fixture-sha',
+    fs: {
+      readFileSync(name) {
+        if (name === '/bundle/main.js') return 'fixture-script';
+        assert.ok(files.has(name), 'Missing virtual file: ' + name);
+        return files.get(name);
+      },
+      writeFileSync(name, data, options) {
+        if (name.endsWith('secrets.json') || name.endsWith('.ndjson')) assert.equal(options.mode, 0o600);
+        files.set(name, data);
+      },
+      rmSync(name) { files.delete(name); },
+    },
+    redact: String,
+    ok(response) {
+      if (response.status !== 200) throw new Error('Fixture HTTP ' + response.status);
+      return response.data;
+    },
+    wranglerCommand(args, authenticated, outputFile) {
+      events.push('deploy');
+      assert.equal(authenticated, true);
+      assert.equal(args[args.indexOf('--tag') + 1], report.run);
+      assert.ok(outputFile, 'Capture the immutable upload identity from structured Wrangler output');
+      if (!missingReceipt) files.set(outputFile, malformedReceipt ? 'invalid json' : JSON.stringify({
+        type: 'deploy', version: 1, worker_name: wrongWorker ? 'someone-elses-worker' : 'fixture-run-auto',
+        version_id: workerVersionId, worker_tag: lateCollision ? 'pre-existing-script-tag' : null,
+      }) + '\n');
+      if (commandFails) throw new Error('COMMAND_FAILED');
+    },
+    async api(url, method = 'GET') {
+      assert.equal(method, 'GET', 'All cloud mutations are replaced by the Wrangler mock');
+      events.push(url);
+      if (url.includes('/accounts?')) return { status: 200, data: { result: [{ id: 'fixture-account' }] } };
+      if (url.endsWith('/workers/subdomain')) return { status: 200, data: { result: { subdomain: 'fixture-subdomain' } } };
+      if (url.endsWith('/scripts/fixture-run-auto')) return { status: collision ? 200 : 404, data: {} };
+      if (url.endsWith('/settings')) return { status: 200, data: { result: { compatibility_flags: ['nodejs_compat'] } } };
+      if (url.endsWith('/deployments')) {
+        const deployment = workerDeployment();
+        if (replacement) deployment.versions[0].version_id = 'replacement-version';
+        return { status: 200, data: { result: { deployments: [deployment] } } };
+      }
+      assert.ok(url.endsWith('/versions/' + workerVersionId));
+      return { status: 200, data: { result: workerVersion() } };
+    },
+  };
+  const isolated = vm.createContext(context, { codeGeneration: { strings: false, wasm: false } });
+  const deploy = vm.runInContext(identitySource + '\n(' + workerDeploySource + ')', isolated);
+  const promise = deploy({ main: '/bundle/main.js', configFile: '/virtual/wrangler.json' }, {}, 'cloudflare');
+  const fails = commandFails || missingReceipt || wrongWorker || malformedReceipt || replacement || collision || interrupted || lateCollision;
+  if (fails) await assert.rejects(promise);
+  else await promise;
+  assert.equal(files.has('/virtual/secrets.json'), false, 'No credential file survives success or failure');
+  if (collision || interrupted) {
+    assert.equal(events.includes('deploy'), false);
+    assert.equal(report.resources.some(record => record.attempted), false);
+    return;
+  }
+  const record = report.resources[0];
+  assert.equal(record.attempted, true);
+  assert.equal(record.owned || record.ambiguousCreate, true, 'Every possible upload remains tracked');
+  const acknowledged = !(missingReceipt || wrongWorker || malformedReceipt || lateCollision);
+  assert.equal(record.uploadAcknowledged === true, acknowledged);
+  assert.equal(record.versionId, acknowledged ? workerVersionId : undefined);
+  if (lateCollision) assert.equal(record.collision, true);
+  if (acknowledged && !commandFails && !replacement) {
+    assert.equal(record.deploymentId, workerDeploymentId);
+    assert.equal(record.creationIdentityVerified, true);
+  }
+}
 
 async function scenario({ unresolved = false, identityMismatch = false } = {}) {
   const events = [];
@@ -232,10 +448,22 @@ async function main() {
   await accountPropagation({ replacement: true });
   await accountCreation();
   await accountCreation({ neverVisible: true });
+  for (const options of [{}, { replacement: true }, { changedTag: true }, { changedDeployment: true },
+    { ambiguous: true }, { ambiguous: true, missing: true }, { missing: true }, { lookupFailure: true },
+    { deleteFailure: true }, { versionMissing: true }, { retryDelete: true }, { collision: true },
+    { collision: true, ambiguous: true },
+    { splitTraffic: true }, { replacementAfterDelete: true }, { noDeployment: true },
+    { missingCapturedDeployment: true }]) {
+    await workerCleanup(options);
+  }
+  for (const options of [{}, { commandFails: true }, { commandFails: true, missingReceipt: true },
+    { missingReceipt: true }, { wrongWorker: true }, { malformedReceipt: true }, { replacement: true },
+    { collision: true }, { interrupted: true }, { lateCollision: true }]) await workerUpload(options);
+  workerReceiptsAndEnvironment();
   assert.equal(process.exitCode, originalExitCode, 'Runner cannot mutate the host process exit status');
   assert.deepEqual(['SIGINT', 'SIGTERM'].map(signal => process.listenerCount(signal)), signalListeners);
-  console.log(JSON.stringify({ status: 'passed', cases: 9, networkRequests: 0,
-    credentialReads: 0, scope: 'database cleanup ordering, unresolved operations, IAM propagation, immutable identity protection' }));
+  console.log(JSON.stringify({ status: 'passed', cases: 43, networkRequests: 0,
+    credentialReads: 0, scope: 'database cleanup ordering, unresolved operations, IAM propagation, Worker upload and cleanup identity protection' }));
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });
