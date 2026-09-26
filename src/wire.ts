@@ -241,8 +241,11 @@ export function encodeTimeout(milliseconds: number): string {
     }
     return '99999999H';
 }
-export function requestHeaders(metadata: Metadata, timeoutMs?: number, userAgent?: string): Headers {
-    const headers = new Headers({ 'content-type': 'application/grpc-web+proto', 'accept': 'application/grpc-web+proto',
+export function requestHeaders(metadata: Metadata, timeoutMs?: number, userAgent?: string, mode: 'cloudflare' | 'grpc-web' = 'grpc-web'): Headers {
+    // Bare gRPC-Web reaches Google native endpoints through edge conversion;
+    // the +proto variant is rejected there. Both use binary protobuf framing.
+    const contentType = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
+    const headers = new Headers({ 'content-type': contentType, 'accept': contentType,
         'x-grpc-web': '1', 'grpc-encoding': 'identity', 'grpc-accept-encoding': 'identity' });
     if (metadata.get('authorization').length > 1) {
         return wireError(status.INTERNAL, 'WGA_DUPLICATE_AUTHORIZATION');

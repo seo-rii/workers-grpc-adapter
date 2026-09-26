@@ -4,7 +4,7 @@ This is an experimental, client-only prototype. The package remains `private: tr
 
 ## Remaining release gates
 
-- Cloudflare account-level outbound gRPC translation and Google API calls from a deployed Worker.
+- Production validation of direct Google SDK calls after the conversion and content-type correction. The [conversion diagnosis](cloudflare-conversion.md) explains the wire-level evidence; finite Google SDK deployment results are recorded separately in the [GCP probe](gcp-cloud-probe.md).
 - Live service-account OAuth/JWT refresh, IAM and quota errors, workload identity federation, impersonation and ADC.
 - Production transaction conflicts and uncertain Commit outcomes under real network failures.
 - All 189 original planned cases, full public grpc-js API and exception-timing equivalence, and production performance budgets.
@@ -15,8 +15,8 @@ The checked-in `compatibility/test-evidence.json` maps each original case to rev
 
 Both `cloudflare` and `grpc-web` modes are implemented. They send binary gRPC-Web from the Worker; neither provides raw HTTP/2 gRPC inside the Worker.
 
-- `cloudflare` is the default. It sends directly to the logical service's HTTPS origin and relies on Cloudflare's private-beta outgoing conversion. The account capability must be enabled separately; this configuration does not turn it on. The [official announcement](https://blog.cloudflare.com/grpc-workers/) describes automatic translation without a special Fetch conversion flag.
-- `grpc-web` requires a map from logical service authorities to trusted gateway origins. Local Envoy and official emulator integrations verify this gateway path. A native gRPC endpoint without a translation layer does not accept the adapter's wire protocol.
+- `cloudflare` is the default. It sends directly to the logical service's HTTPS origin using binary `application/grpc-web` and explicitly requests conversion with `cf.grpcWeb: 'convert'`. No Worker-wide `auto_grpc_convert` flag is required. Conversion runs at Cloudflare's edge proxy, outside local workerd.
+- `grpc-web` requires a map from logical service authorities to trusted gateway origins. It sends `application/grpc-web+proto` with `cf.grpcWeb: 'passthrough'`, preserving gRPC-Web even when a Worker-wide flag enables conversion. Local Envoy and official emulator integrations verify this gateway path. A native gRPC endpoint without a translation layer does not accept the adapter's wire protocol.
 
 Local routing and framing checks do not prove Cloudflare's platform conversion or production Google service behavior. There is no automatic capability detection, route failover, or replay of a failed call through another mode. The gateway alternative must be selected explicitly before constructing a client. Neither mode switches to GAX's REST fallback. See [API configuration](api.md#global-configuration) for both examples.
 
@@ -27,6 +27,8 @@ The client, factory, interceptor, Metadata and call surfaces derive from grpc-js
 Pinned Google SDKs run against controlled local gRPC servers and official database emulators. Native grpc-js, the Node adapter and workerd use identical shared business code. Reports compare source hashes, assertions and RPC observations. Strict Node16, NodeNext and Bundler declaration checks use the pinned dependency graph, including the targeted Google auth 10.9.1 override.
 
 The Node-only build preset supports the pinned SDK/GAX/protobuf sources and schemas. It does not infer transformations for other versions. Worker tooling is locked, including the Miniflare alpha used by the installed Wrangler; reports identify the actual versions and compatibility date.
+
+Import the pinned SDK modules during Worker initialization: lazy Datastore initialization during a request can trigger a prohibited protobuf `eval`. GAX also caches service constructors by schema across per-instance facades. Different Google SDK transport modes therefore require separate Workers; the adapter's direct-client mode-isolation tests do not establish GAX isolation.
 
 Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; separate Worker SDK tests cover incremental transport cancellation.
 

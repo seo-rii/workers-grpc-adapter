@@ -5,7 +5,8 @@ const { encodeFrame } = require('../dist/wire.js');
 test('CLIENT unary makes one framed request and reports metadata/callback/status', async () => withFetch(async (url, init) => {
     assert.equal(url, 'https://echo.test/demo.Echo/Unary');
     assert.equal(init.redirect, 'manual');
-    assert.equal(init.headers.get('content-type'), 'application/grpc-web+proto');
+    assert.equal(init.headers.get('content-type'), 'application/grpc-web');
+    assert.deepEqual(init.cf, { grpcWeb: 'convert' });
     assert.deepEqual(deserialize(Buffer.from(init.body).subarray(5)), { text: 'request' });
     return response([{ text: 'reply' }], { headers: { 'x-initial': 'yes' }, extra: 'x-trailing: done\r\n', chunkSize: 1 });
 }, async () => {

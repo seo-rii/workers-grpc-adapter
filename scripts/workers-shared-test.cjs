@@ -189,7 +189,8 @@ async function main() {
     worker = new Miniflare(convertV4MiniflareOptions({ log: new Log(LogLevel.NONE), modules: true, script, compatibilityDate, compatibilityFlags: ['nodejs_compat'], outboundService: request => {
       const method = new URL(request.url).pathname;
       assert.equal(request.method, 'POST');
-      assert.equal(request.headers.get('content-type'), 'application/grpc-web+proto');
+      assert.equal(request.headers.get('content-type'), 'application/grpc-web');
+      assert.equal(request.headers.get('accept'), 'application/grpc-web');
       assert.equal(request.headers.get('authorization'), `Bearer fixture-shared-${invocation}`);
       const record = { invocation, method, contentType: request.headers.get('content-type'), authorizationSha256: digest(request.headers.get('authorization')) };
       report.requests.push(record);

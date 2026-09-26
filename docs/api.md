@@ -18,7 +18,14 @@ Client interceptors, interceptor providers, `InterceptingCall`, `ListenerBuilder
 
 ## Global configuration
 
-Import configuration from the `/config` subpath before constructing clients. Choose one of the following modes; both use binary `application/grpc-web+proto` requests and responses at the adapter's Fetch boundary.
+Import configuration from the `/config` subpath before constructing clients. Both modes use binary gRPC-Web at the adapter's Fetch boundary, with request settings selected by mode:
+
+| Mode | `Content-Type` and `Accept` | Fetch `cf.grpcWeb` |
+|---|---|---|
+| `cloudflare` | `application/grpc-web` | `convert` |
+| `grpc-web` | `application/grpc-web+proto` | `passthrough` |
+
+Both binary response content types are accepted. The protobuf framing is the same in either mode.
 
 ### Cloudflare automatic outgoing conversion
 
@@ -38,11 +45,19 @@ const client = new Client('datastore.googleapis.com:443', credentials.createSsl(
 
 For example, `/google.datastore.v1.Datastore/Lookup` targets `https://datastore.googleapis.com/google.datastore.v1.Datastore/Lookup`. The example constructs the transport client; a real RPC also needs its method codecs and service credentials.
 
-Cloudflare's private-beta capability automatically converts outgoing gRPC-Web to native gRPC. Its published client example uses ordinary `fetch()` with manual redirect handling, with no special conversion flag. The adapter uses that request shape, but configuration cannot enable the account capability. Confirm it is enabled before using this mode against a native gRPC service. This project's local tests do not establish deployed conversion behavior. See [Cloudflare's announcement](https://blog.cloudflare.com/grpc-workers/).
+Enable Node compatibility in the deployed Worker's Wrangler configuration:
+
+```jsonc
+{
+  "compatibility_flags": ["nodejs_compat"]
+}
+```
+
+The adapter explicitly sets Cloudflare's [per-request `cf.grpcWeb` control](https://github.com/cloudflare/workerd/blob/f4ebbae6562718e53afbc3bba0f882266bd89529/types/defines/cf.d.ts) to `convert`, so it does not require the Worker-wide `auto_grpc_convert` flag. It sends bare `application/grpc-web` to avoid the tested Google endpoints' `+proto` incompatibility. Local workerd cannot exercise the edge proxy conversion; see the [conversion diagnosis](cloudflare-conversion.md) for deployed evidence and the original failure analysis.
 
 ### Explicit gRPC-Web gateway
 
-`grpc-web` selects an explicit trusted gateway and requires an endpoint map:
+`grpc-web` selects an explicit trusted gateway and requires an endpoint map. The adapter sets `cf.grpcWeb: 'passthrough'`, so gRPC-Web requests reach the gateway unchanged even when the Worker's compatibility flags enable automatic conversion:
 
 ```ts
 import { Client, credentials } from '@grpc/grpc-js';
@@ -90,7 +105,7 @@ Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, 
 - `grpcOptions(existing?)`: channel options bound to the instance configuration.
 - `gaxOptions(existing)`: a scoped grpc facade with `fallback: false`.
 
-Instance configuration does not change the global snapshot. Existing channel overrides conflict with `grpcOptions()`. Existing `grpc`, `sslCreds` or `fallback` settings conflict with `gaxOptions()`. The GAX facade has construction tests but has not been exercised through real GAX; it is not the validated SDK installation path.
+Instance configuration does not change the global snapshot. Existing channel overrides conflict with `grpcOptions()`. Existing `grpc`, `sslCreds` or `fallback` settings conflict with `gaxOptions()`. The GAX facade is exercised by the [temporary Google SDK probe](gcp-cloud-probe.md), with one transport mode per Worker. The pinned GAX graph caches service constructors by schema across facades, so separate per-instance configurations do not isolate different Google SDK transport modes in one isolate. Use separate Workers for those modes. Direct grpc-js clients have separate mode-isolation tests.
 
 ## Credentials
 

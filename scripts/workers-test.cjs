@@ -31,15 +31,16 @@ async function main() {
             assert.ok(['/demo.Echo/Unary', '/demo.Echo/Stream'].includes(url.pathname));
             assert.equal(request.method, 'POST');
             assert.equal(request.headers.get('x-fixture'), 'worker-runtime');
-            assert.equal(request.headers.get('content-type'), 'application/grpc-web+proto');
-            assert.equal(request.headers.get('accept'), 'application/grpc-web+proto');
+            const contentType = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
+            assert.equal(request.headers.get('content-type'), contentType);
+            assert.equal(request.headers.get('accept'), contentType);
             assert.equal(request.headers.get('x-grpc-web'), '1');
             const requestBytes = Buffer.from(await request.arrayBuffer());
             assert.deepEqual(requestBytes, encodeFrame(Buffer.from([10, 2, 111, 107])));
-            requests.push({ mode, url: request.url });
+            requests.push({ mode, url: request.url, contentType });
             const messages = url.pathname.endsWith('/Stream') ? [requestBytes, requestBytes] : [requestBytes];
             // Controlled response only: local workerd does not emulate the beta edge translator.
-            return new Response(Buffer.concat([...messages, encodeFrame(Buffer.from('grpc-status: 0\r\n'), true)]), { headers: { 'content-type': 'application/grpc-web+proto' } });
+            return new Response(Buffer.concat([...messages, encodeFrame(Buffer.from('grpc-status: 0\r\n'), true)]), { headers: { 'content-type': contentType } });
         } }));
     try {
         const response = await runtime.dispatchFetch('https://fixture.test');

@@ -9,8 +9,10 @@ const target = 'Echo.Test:8443';
 const logicalOrigin = 'https://echo.test:8443';
 const gatewayOrigin = 'https://gateway.test:9443';
 const modes = [
-    { name: 'cloudflare', config: { mode: 'cloudflare' }, origin: logicalOrigin },
-    { name: 'grpc-web', config: { mode: 'grpc-web', endpoints: { 'echo.test:8443': gatewayOrigin } }, origin: gatewayOrigin },
+    { name: 'cloudflare', config: { mode: 'cloudflare' }, origin: logicalOrigin,
+        grpcWeb: 'convert', contentType: 'application/grpc-web' },
+    { name: 'grpc-web', config: { mode: 'grpc-web', endpoints: { 'echo.test:8443': gatewayOrigin } }, origin: gatewayOrigin,
+        grpcWeb: 'passthrough', contentType: 'application/grpc-web+proto' },
 ];
 
 function modeClient(mode, callCredentials) {
@@ -21,51 +23,57 @@ function modeClient(mode, callCredentials) {
     return new Echo(target, credentials, transport.grpcOptions());
 }
 
-test('MODES explicit Cloudflare and gateway routes preserve binary unary and server-stream results', async t => {
+test('MODES concurrent Cloudflare and gateway calls select conversion per request and accept both binary response types', async t => {
     const observed = [];
+    let responseContentType;
     await withFetch(async (url, init) => {
-        observed.push({ url, method: init.method, redirect: init.redirect, headers: init.headers, body: Buffer.from(init.body) });
+        observed.push({ url, method: init.method, redirect: init.redirect, cf: init.cf, headers: init.headers, body: Buffer.from(init.body) });
         const streaming = new URL(url).pathname.endsWith('/Stream');
         return response(streaming ? [{ text: 'first' }, { text: 'second' }] : [{ text: 'reply' }],
-            { chunkSize: 1, extra: 'x-terminal: complete\r\n' });
+            { chunkSize: 1, extra: 'x-terminal: complete\r\n', headers: { 'content-type': responseContentType } });
     }, async () => {
-        for (const mode of modes) {
-            const client = modeClient(mode);
-            t.after(() => client.close());
-            const invocation = unary(client, { text: mode.name });
-            const unaryStatuses = [];
-            invocation.call.on('status', status => unaryStatuses.push(status));
-            assert.deepEqual(await invocation.promise, { text: 'reply' });
-            assert.equal(unaryStatuses.length, 1);
-            assert.equal(unaryStatuses[0].code, grpc.status.OK);
-            assert.deepEqual(unaryStatuses[0].metadata.get('x-terminal'), ['complete']);
-
-            const stream = client.stream({ text: mode.name });
-            const values = [], statuses = [];
-            await new Promise((resolve, reject) => {
-                stream.on('data', value => values.push(value));
-                stream.on('status', status => statuses.push(status));
-                stream.on('error', reject);
-                stream.on('end', resolve);
-            });
-            assert.deepEqual(values, [{ text: 'first' }, { text: 'second' }]);
-            assert.equal(statuses.length, 1);
-            assert.equal(statuses[0].code, grpc.status.OK);
-            assert.deepEqual(statuses[0].metadata.get('x-terminal'), ['complete']);
-            assert.equal(client.getChannel().activeCallCount(), 0);
-            client.close();
+        for (const type of ['application/grpc-web', 'application/grpc-web+proto']) {
+            responseContentType = type;
+            await Promise.all(modes.map(async mode => {
+                const client = modeClient(mode);
+                t.after(() => client.close());
+                const invocation = unary(client, { text: mode.name });
+                const unaryStatuses = [];
+                invocation.call.on('status', status => unaryStatuses.push(status));
+                const stream = client.stream({ text: mode.name });
+                const values = [], statuses = [];
+                const streamComplete = new Promise((resolve, reject) => {
+                    stream.on('data', value => values.push(value));
+                    stream.on('status', status => statuses.push(status));
+                    stream.on('error', reject);
+                    stream.on('end', resolve);
+                });
+                const [reply] = await Promise.all([invocation.promise, streamComplete]);
+                assert.deepEqual(reply, { text: 'reply' });
+                assert.equal(unaryStatuses.length, 1);
+                assert.equal(unaryStatuses[0].code, grpc.status.OK);
+                assert.deepEqual(unaryStatuses[0].metadata.get('x-terminal'), ['complete']);
+                assert.deepEqual(values, [{ text: 'first' }, { text: 'second' }]);
+                assert.equal(statuses.length, 1);
+                assert.equal(statuses[0].code, grpc.status.OK);
+                assert.deepEqual(statuses[0].metadata.get('x-terminal'), ['complete']);
+                assert.equal(client.getChannel().activeCallCount(), 0);
+                client.close();
+            }));
         }
     });
-    assert.deepEqual(observed.map(item => item.url), modes.flatMap(mode =>
-        [`${mode.origin}/demo.Echo/Unary`, `${mode.origin}/demo.Echo/Stream`]));
-    for (const [index, item] of observed.entries()) {
+    assert.deepEqual(observed.map(item => item.url).sort(), modes.flatMap(mode =>
+        ['Unary', 'Stream'].flatMap(method => Array(2).fill(`${mode.origin}/demo.Echo/${method}`))).sort());
+    for (const item of observed) {
+        const mode = modes.find(candidate => candidate.origin === new URL(item.url).origin);
         assert.equal(item.method, 'POST');
         assert.equal(item.redirect, 'manual');
-        assert.equal(item.headers.get('content-type'), 'application/grpc-web+proto');
-        assert.equal(item.headers.get('accept'), 'application/grpc-web+proto');
+        assert.deepEqual(item.cf, { grpcWeb: mode.grpcWeb });
+        assert.equal(item.headers.get('content-type'), mode.contentType);
+        assert.equal(item.headers.get('accept'), mode.contentType);
         assert.equal(item.headers.get('x-grpc-web'), '1');
         assert.equal(item.headers.get('grpc-encoding'), 'identity');
-        assert.deepEqual(item.body, encodeFrame(serialize({ text: modes[Math.floor(index / 2)].name })));
+        assert.deepEqual(item.body, encodeFrame(serialize({ text: mode.name })));
     }
 });
 
@@ -86,7 +94,8 @@ test('MODES default Cloudflare and gateway clients isolate concurrent routes and
     });
     await withFetch(async (url, init) => {
         const index = new URL(url).origin === logicalOrigin ? 0 : 1;
-        arrivals.push({ url, authorization: init.headers.get('authorization') });
+        arrivals.push({ url, authorization: init.headers.get('authorization'), cf: init.cf,
+            contentType: init.headers.get('content-type'), accept: init.headers.get('accept') });
         return replies[index].promise;
     }, async () => {
         const calls = clients.map((client, index) => unary(client, { text: `request-${index}` }));
@@ -99,12 +108,15 @@ test('MODES default Cloudflare and gateway clients isolate concurrent routes and
             assert.equal(arrivals.length, 0);
             authReady[1].resolve();
             await immediate();
-            assert.deepEqual(arrivals, [{ url: `${gatewayOrigin}/demo.Echo/Unary`, authorization: 'Bearer mode-1' }]);
+            const expectedArrival = index => ({ url: `${modes[index].origin}/demo.Echo/Unary`,
+                authorization: `Bearer mode-${index}`, cf: { grpcWeb: modes[index].grpcWeb },
+                contentType: modes[index].contentType, accept: modes[index].contentType });
+            assert.deepEqual(arrivals, [expectedArrival(1)]);
             authReady[0].resolve();
             await immediate();
             assert.deepEqual(arrivals, [
-                { url: `${gatewayOrigin}/demo.Echo/Unary`, authorization: 'Bearer mode-1' },
-                { url: `${logicalOrigin}/demo.Echo/Unary`, authorization: 'Bearer mode-0' },
+                expectedArrival(1),
+                expectedArrival(0),
             ]);
             assert.deepEqual(clients.map(client => client.getChannel().activeCallCount()), [1, 1]);
             replies[0].resolve(response([{ text: 'direct-reply' }]));
@@ -121,6 +133,30 @@ test('MODES default Cloudflare and gateway clients isolate concurrent routes and
         }
     });
     assert.strictEqual(getWorkersGrpcConfig(), before);
+});
+
+test('MODES callers and credentials cannot replace conversion content negotiation through metadata', async t => {
+    let fetches = 0;
+    await withFetch(async () => { fetches++; return response(); }, async () => {
+        for (const mode of modes) {
+            for (const key of ['content-type', 'accept']) {
+                for (const source of ['call', 'credentials']) {
+                    const metadata = new grpc.Metadata();
+                    metadata.set(key, 'application/grpc');
+                    const auth = source === 'credentials'
+                        ? grpc.credentials.createFromMetadataGenerator((_options, callback) => callback(null, metadata))
+                        : undefined;
+                    const client = modeClient(mode, auth);
+                    t.after(() => client.close());
+                    const call = unary(client, { text: source }, source === 'call' ? metadata : new grpc.Metadata());
+                    await assert.rejects(call.promise, { code: grpc.status.INTERNAL, details: 'WGA_RESERVED_METADATA' });
+                    assert.equal(transportCall(call.call).diagnostics().fetchCount, 0);
+                    client.close();
+                }
+            }
+        }
+    });
+    assert.equal(fetches, 0);
 });
 
 test('MODES native gRPC responses fail without trying another destination', async t => {

@@ -2,7 +2,7 @@
 
 An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carries unary and server-streaming RPCs over binary gRPC-Web using `fetch()` while retaining the upstream client, metadata, interceptor, and stream APIs.
 
-**Prototype: `0.0.0-prototype.1`. Unpublished on npm, with `private: true`.** Local tests exercise real Google SDKs and official emulators. They do not establish complete grpc-js compatibility, live Google Cloud support, or production Cloudflare support.
+**Prototype: `0.0.0-prototype.1`. Unpublished on npm, with `private: true`.** Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
 
 ## Quick start
 
@@ -37,9 +37,9 @@ Google SDK or grpc-js client
 
 The client-side core is derived from `@grpc/grpc-js@1.14.0`. The adapter replaces its native HTTP/2 transport with per-call request handling, framing, deadlines, cancellation, and response streaming. CJS and ESM entry points share the same implementation and configuration. See [Architecture](docs/architecture.md) and the [API reference](docs/api.md).
 
-The adapter implements both routing modes. In `cloudflare` mode it addresses the service directly and relies on Cloudflare's private-beta outgoing gRPC-Web-to-gRPC conversion. Cloudflare describes automatic conversion using ordinary `fetch()` without a special conversion flag. Your account must have that capability enabled; selecting this mode does not enable it. See [Cloudflare's announcement](https://blog.cloudflare.com/grpc-workers/).
+The adapter implements both routing modes. In `cloudflare` mode it addresses the service directly and sets `cf.grpcWeb: 'convert'` on each Fetch to request Cloudflare's outgoing gRPC-Web-to-gRPC conversion. It uses binary `application/grpc-web` for compatibility with the tested Google endpoints. No Worker-wide `auto_grpc_convert` flag is required.
 
-In `grpc-web` mode it addresses a trusted gateway from an explicit endpoint map. This is the gateway alternative for environments without Cloudflare conversion and is the path exercised by the local Envoy and emulator integrations. Both modes send binary gRPC-Web from the Worker. The adapter does not probe capabilities, replay a failed call through the other mode, or use GAX's REST fallback. The deployed Cloudflare conversion path remains unverified by this project.
+In `grpc-web` mode it addresses a trusted gateway from an explicit endpoint map, sends `application/grpc-web+proto`, and sets `cf.grpcWeb: 'passthrough'` so requests reach the gateway unchanged even if the deployment enables automatic conversion. Local Envoy and emulator integrations exercise this gateway path. Both modes send binary gRPC-Web from the Worker. The adapter does not probe capabilities, replay a failed call through the other mode, or use GAX's REST fallback. See the [conversion diagnosis](docs/cloudflare-conversion.md) for the original failures and the evidence behind these settings.
 
 ## Using the local package
 
@@ -59,7 +59,15 @@ The fixture installs the adapter under the `@grpc/grpc-js` dependency name and o
 
 The tarball path is relative to that fixture; adjust it for another consumer. There is no published npm installation command yet. Use `npm run doctor` to check the fixture's dependency graph. The scoped auth override resolves a declaration compatibility issue while preserving Secret Manager's separate auth version.
 
-Choose one mode before constructing clients. For a Worker with Cloudflare's outgoing conversion enabled, use the default `cloudflare` mode without an endpoint map:
+Choose one mode before constructing clients. Enable Node compatibility in your Wrangler configuration; the adapter selects conversion per request:
+
+```jsonc
+{
+  "compatibility_flags": ["nodejs_compat"]
+}
+```
+
+Use the default `cloudflare` mode without an endpoint map:
 
 ```js
 import { Client, credentials } from '@grpc/grpc-js';
@@ -73,7 +81,7 @@ configureWorkersGrpc({
 const client = new Client('service.example:443', credentials.createSsl());
 ```
 
-An RPC on this client targets `https://service.example/package.Service/Method`; Cloudflare performs the outgoing conversion. Replace the example target with your native gRPC service. The adapter still encodes and reads binary gRPC-Web at its Fetch boundary.
+An RPC on this client targets `https://service.example/package.Service/Method` and requests outgoing conversion at Cloudflare's edge. Replace the example target with your native gRPC service. The adapter still encodes and reads binary gRPC-Web at its Fetch boundary; local workerd checks cannot exercise that edge conversion.
 
 For an explicit gateway, select `grpc-web` and map that same logical service to the gateway origin:
 
@@ -94,13 +102,15 @@ const client = new Client('service.example:443', credentials.createSsl());
 
 Here the RPC targets `https://gateway.example/package.Service/Method`. Replace the example service and gateway with your own; an ordinary native gRPC endpoint needs a translation layer to accept this wire protocol. These are alternative configurations, not sequential calls to the configuration API. Configure once before constructing clients; a later call cannot replace it with a different configuration. See the [API reference](docs/api.md) for credentials, limits, per-client configuration, and error behavior.
 
-The pinned Google SDK graph also needs the Node-only `@grpc/grpc-js/build` preset when bundling for Workers. It validates package and schema hashes and generates protobuf code at build time. It requires TypeScript and esbuild as development dependencies and does not patch `node_modules`. [The SDK Worker test](scripts/workers-sdk-test.cjs) is an executable build example. This preset supports its pinned dependency profile, not arbitrary SDK versions.
+The pinned Google SDK graph also needs the Node-only `@grpc/grpc-js/build` preset when bundling for Workers. It validates package and schema hashes and generates protobuf code at build time. It requires TypeScript and esbuild as development dependencies and does not patch `node_modules`. [The SDK Worker test](scripts/workers-sdk-test.cjs) is an executable build example. This preset supports its pinned dependency profile, not arbitrary SDK versions. Import the SDK modules during Worker initialization. For the pinned Google SDK graph, keep different transport modes in separate Workers: GAX caches service constructors across per-instance facades in the same isolate. See [Google test guidance](docs/google-tests.md).
 
 ## What is tested
 
 The fixtures pin Datastore **10.1.0**, Firestore **8.3.0**, and Secret Manager **7.1.0**. Checks include strict TypeScript consumers, actual tarball installation, native grpc-js comparisons, actual Envoy translation, and local workerd execution.
 
-Shared business modules run unchanged in native Node, Node with the adapter, and workerd. The harness compares source hashes, business assertions, RPC methods, and statuses. Official Firestore emulators in Native and Datastore modes cover CRUD, queries and aggregation, data types, transactions and rollback, missing results, backend errors, and write atomicity. Additional controlled-server cases cover cancellation, transaction retries, and a commit applied before its response is lost. Secret Manager uses a controlled local server, not a Google-hosted service or official emulator.
+Shared business modules run unchanged in native Node, Node with the adapter, and workerd. The harness compares source hashes, business assertions, RPC methods, and statuses. Official Firestore emulators in Native and Datastore modes cover CRUD, queries and aggregation, data types, transactions and rollback, missing results, backend errors, and write atomicity. Additional controlled-server cases cover cancellation, transaction retries, and a commit applied before its response is lost. Local Secret Manager tests use a controlled server, not an official emulator.
+
+The corrected [2026-09-26 GCP deployment test](docs/gcp-cloud-probe.md#corrected-results-2026-09-26) passed all five Google suites with native grpc-js and both deployed Worker modes: Datastore and Firestore CRUD/transactions, plus Secret Manager metadata `GetSecret`. Automatic conversion passed without a Worker-wide conversion flag. Both modes also passed unary echo, a ten-message stream and exact error-status checks against a private native origin. These tests did not read secret payloads or validate credential refresh, sustained load, or production recovery. Live results remain separate from the local verification gates.
 
 | Command | Focus |
 | --- | --- |

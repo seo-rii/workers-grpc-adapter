@@ -94,7 +94,8 @@ async function main() {
   const worker = runtime(script, async request => {
     const method = new URL(request.url).pathname;
     assert.equal(request.method, 'POST');
-    assert.equal(request.headers.get('content-type'), 'application/grpc-web+proto');
+    assert.equal(request.headers.get('content-type'), 'application/grpc-web');
+    assert.equal(request.headers.get('accept'), 'application/grpc-web');
     assert.equal(request.headers.get('authorization'), `Bearer fixture-${invocation}`);
     if (method === '/demo.Echo/Wait') {
       report.requests.push({ invocation, method, authorizationSha256: digest(request.headers.get('authorization')), contentType: request.headers.get('content-type') });

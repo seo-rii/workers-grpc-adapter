@@ -275,10 +275,15 @@ export class WorkersCall {
                 this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
                 return;
             }
-            const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent);
+            const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent, c.config.mode);
             const body = encodeFrame(this.request!);
+            const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' } } = {
+                method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
+                // Override Worker-wide defaults so different clients can coexist.
+                cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
+            };
             this.fetchCount++;
-            const response = await fetch(c.origin + c.path, { method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal });
+            const response = await fetch(c.origin + c.path, init);
             this.request = undefined;
             if (this.terminal) {
                 await response.body?.cancel().catch(() => {
