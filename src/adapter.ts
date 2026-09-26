@@ -1,10 +1,18 @@
 import * as grpc from './index';
 import { ClientOptions } from './client';
-import { WorkersGrpcConfig, validateConfig, INSTANCE_CONFIG } from './config-internal';
+import { WorkersGrpcConfig, validateConfig, INSTANCE_CONFIG, GAX_CONFIG_OPTION, createGaxConfigToken } from './config-internal';
 import { WorkersGrpcConfigurationError } from './status';
 export function createWorkersGrpcTransport(config: WorkersGrpcConfig = {}) {
     const snapshot = validateConfig(config);
+    const gaxToken = createGaxConfigToken(snapshot);
+    function assertNoInstanceOption(existing: Record<string | symbol, unknown>): void {
+        if (Object.hasOwn(existing, INSTANCE_CONFIG) || Object.hasOwn(existing, GAX_CONFIG_OPTION) ||
+            Object.hasOwn(existing, `grpc.${GAX_CONFIG_OPTION}`)) {
+            throw new WorkersGrpcConfigurationError('WGA_OPTION_CONFLICT', 'An adapter instance option already exists');
+        }
+    }
     function grpcOptions(existing: ClientOptions = {}): ClientOptions {
+        assertNoInstanceOption(existing);
         if (existing.channelFactoryOverride !== undefined || existing.channelOverride !== undefined) {
             throw new WorkersGrpcConfigurationError('WGA_OPTION_CONFLICT', 'A channel override already exists');
         }
@@ -16,44 +24,19 @@ export function createWorkersGrpcTransport(config: WorkersGrpcConfig = {}) {
             grpc: typeof grpc;
             fallback: false;
         } {
+            assertNoInstanceOption(existing);
             if (existing.grpc !== undefined || existing.sslCreds !== undefined || existing.fallback !== undefined) {
                 throw new WorkersGrpcConfigurationError('WGA_OPTION_CONFLICT', 'Existing grpc, sslCreds or fallback option conflicts with this adapter');
             }
-            // GAX prepends `grpc.` keys to grpc-js channel options, but symbols are not forwarded.
-            // A per-instance facade closes over this snapshot instead of mutating global configuration.
-            class BoundClient extends grpc.Client {
-                constructor(address: string, creds: grpc.ChannelCredentials, options: ClientOptions = {}) {
-                    super(address, creds, grpcOptions(options));
+            for (const key of ['channelOverride', 'channelFactoryOverride', 'grpc.channelOverride',
+                'grpc.channelFactoryOverride', 'grpc.grpc.channelOverride', 'grpc.grpc.channelFactoryOverride']) {
+                if (existing[key] !== undefined) {
+                    throw new WorkersGrpcConfigurationError('WGA_OPTION_CONFLICT', 'A channel override already exists');
                 }
             }
-            const make = (methods: grpc.ServiceDefinition, name: string): grpc.ServiceClientConstructor => {
-                const Base = grpc.makeGenericClientConstructor(methods, name);
-                class Bound extends Base {
-                    constructor(address: string, creds: grpc.ChannelCredentials, options: ClientOptions = {}) {
-                        super(address, creds, grpcOptions(options));
-                    }
-                }
-                return Bound;
-            };
-            const facade = { ...grpc, Client: BoundClient, makeGenericClientConstructor: make, makeClientConstructor: make,
-                loadPackageDefinition: (defs: Record<string, any>) => {
-                    const loaded = grpc.loadPackageDefinition(defs);
-                    function visit(node: Record<string, any>): void {
-                        for (const [key, value] of Object.entries(node)) {
-                            if (typeof value === 'function' && value.service) {
-                                node[key] = make(value.service, value.serviceName);
-                            }
-                            else {
-                                if (value && typeof value === 'object' && !value.format) {
-                                    visit(value);
-                                }
-                            }
-                        }
-                    }
-                    visit(loaded);
-                    return loaded;
-                } };
-            return { ...existing, grpc: facade as typeof grpc, fallback: false };
+            // GAX caches service constructors across clients. Configuration must
+            // travel with each new channel, never with a cached constructor.
+            return { ...existing, grpc, fallback: false, [GAX_CONFIG_OPTION]: gaxToken };
         },
     };
 }

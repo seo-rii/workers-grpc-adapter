@@ -145,3 +145,18 @@ export function routeFor(target: string, config: WorkersGrpcConfigSnapshot): {
 }
 /** Private brand shared by the per-client adapter and Channel; not a public config field. */
 export const INSTANCE_CONFIG = Symbol('workers-grpc-adapter.instance-config');
+/** GAX forwards grpc.* string options, but drops symbol options. */
+export const GAX_CONFIG_OPTION = 'grpc.workers-grpc-adapter.instance-config';
+const gaxConfigurations = new WeakMap<object, WorkersGrpcConfigSnapshot>();
+export function createGaxConfigToken(config: WorkersGrpcConfigSnapshot): object {
+    const token = Object.freeze({});
+    gaxConfigurations.set(token, config);
+    return token;
+}
+export function configFromGaxToken(token: unknown): WorkersGrpcConfigSnapshot {
+    const config = typeof token === 'object' && token !== null ? gaxConfigurations.get(token) : undefined;
+    if (!config) {
+        return fail('WGA_INVALID_CONFIG', 'Invalid adapter instance option');
+    }
+    return config;
+}

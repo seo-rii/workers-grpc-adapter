@@ -138,6 +138,102 @@ test('ADAPTER per-instance options and explicit conflict detection', () => {
     assert.equal(opts.fallback, false);
     assert.strictEqual(opts.grpc.Metadata, grpc.Metadata);
 });
+test('ADAPTER GAX uses shared constructors with per-channel identity tokens', async () => {
+    const { GAX_CONFIG_OPTION } = require('../dist/config-internal.js');
+    const { Echo, withFetch, unary, response } = require('./helpers.cjs');
+    const first = createWorkersGrpcTransport({ mode: 'grpc-web', endpoints: { 'echo.test': 'https://first.test' } });
+    const second = createWorkersGrpcTransport({ mode: 'grpc-web', endpoints: { 'echo.test': 'https://second.test' } });
+    const authClient = { marker: 'preserve-reference' };
+    const firstOptions = first.gaxOptions({ authClient, 'grpc.max_send_message_length': 200 });
+    const secondOptions = second.gaxOptions({ authClient });
+    assert.strictEqual(firstOptions.grpc, grpc);
+    assert.strictEqual(secondOptions.grpc, grpc);
+    assert.strictEqual(firstOptions.authClient, authClient);
+    assert.ok(Object.isFrozen(firstOptions[GAX_CONFIG_OPTION]));
+    assert.deepEqual(Object.keys(firstOptions[GAX_CONFIG_OPTION]), []);
+    assert.notStrictEqual(firstOptions[GAX_CONFIG_OPTION], secondOptions[GAX_CONFIG_OPTION]);
+    // Mirrors GAX's documented channel-option forwarding; constructors are
+    // deliberately created before either per-client transport is applied.
+    const channelOptions = options => Object.fromEntries(Object.entries(options).filter(([key]) => key.startsWith('grpc.')));
+    const clients = [new Echo('echo.test', grpc.credentials.createSsl()),
+        new Echo('echo.test', grpc.credentials.createSsl(), channelOptions(firstOptions)),
+        new Echo('echo.test', grpc.credentials.createSsl(), channelOptions(secondOptions)),
+        new Echo('echo.test', grpc.credentials.createSsl())];
+    const seen = [];
+    try {
+        await withFetch(async (url, init) => {
+            seen.push([new URL(url).origin, init.cf.grpcWeb, init.headers.get('content-type')]);
+            return response();
+        }, () => Promise.all(clients.map(client => unary(client).promise)));
+        assert.deepEqual(seen, [
+            ['https://echo.test', 'convert', 'application/grpc-web'],
+            ['https://first.test', 'passthrough', 'application/grpc-web+proto'],
+            ['https://second.test', 'passthrough', 'application/grpc-web+proto'],
+            ['https://echo.test', 'convert', 'application/grpc-web'],
+        ]);
+    } finally { clients.forEach(client => client.close()); }
+});
+test('ADAPTER GAX rejects forged tokens and conflicting reserved options', () => {
+    const { GAX_CONFIG_OPTION } = require('../dist/config-internal.js');
+    const transport = createWorkersGrpcTransport();
+    const valid = transport.gaxOptions({});
+    for (const value of [undefined, null, {}, { ...valid[GAX_CONFIG_OPTION] }, validateConfig(), 'private-input']) {
+        assert.throws(() => new grpc.Client('echo.test', grpc.credentials.createSsl(), { [GAX_CONFIG_OPTION]: value }),
+            error => error.code === 'WGA_INVALID_CONFIG' && !error.message.includes('private-input'));
+    }
+    for (const key of [GAX_CONFIG_OPTION, `grpc.${GAX_CONFIG_OPTION}`]) {
+        for (const value of [undefined, valid[GAX_CONFIG_OPTION]]) {
+            assert.throws(() => transport.gaxOptions({ [key]: value }), { code: 'WGA_OPTION_CONFLICT' });
+            assert.throws(() => transport.grpcOptions({ [key]: value }), { code: 'WGA_OPTION_CONFLICT' });
+        }
+    }
+    for (const key of ['channelOverride', 'channelFactoryOverride', 'grpc.channelOverride',
+        'grpc.channelFactoryOverride', 'grpc.grpc.channelOverride', 'grpc.grpc.channelFactoryOverride']) {
+        assert.throws(() => transport.gaxOptions({ [key]: () => {} }), { code: 'WGA_OPTION_CONFLICT' });
+    }
+    assert.throws(() => transport.grpcOptions(transport.grpcOptions()), { code: 'WGA_OPTION_CONFLICT' });
+    assert.throws(() => transport.gaxOptions(transport.grpcOptions()), { code: 'WGA_OPTION_CONFLICT' });
+    assert.throws(() => new grpc.Client('echo.test', grpc.credentials.createSsl(), {
+        ...transport.grpcOptions(), [GAX_CONFIG_OPTION]: valid[GAX_CONFIG_OPTION],
+    }), { code: 'WGA_OPTION_CONFLICT' });
+    assert.throws(() => new grpc.Client('echo.test', grpc.credentials.createSsl(), {
+        [GAX_CONFIG_OPTION]: valid[GAX_CONFIG_OPTION], 'grpc.arbitrary-option': 'value',
+    }), { code: 'WGA_UNSUPPORTED_OPTION' });
+});
+test('ADAPTER GAX token preserves the snapshot and enforces transport and channel ceilings', async () => {
+    const { GAX_CONFIG_OPTION } = require('../dist/config-internal.js');
+    const { Echo, withFetch, unary, response } = require('./helpers.cjs');
+    const endpoints = { 'echo.test': 'https://original-gateway.test' };
+    const input = { mode: 'grpc-web', endpoints, transportMaxSendBytes: 16 };
+    const transport = createWorkersGrpcTransport(input);
+    const token = transport.gaxOptions({})[GAX_CONFIG_OPTION];
+    endpoints['echo.test'] = 'https://mutated-gateway.test';
+    input.mode = 'cloudflare';
+    input.transportMaxSendBytes = 1024;
+    const ceiling = new Echo('echo.test', grpc.credentials.createSsl(), {
+        [GAX_CONFIG_OPTION]: token, 'grpc.max_send_message_length': 1024,
+    });
+    const smaller = new Echo('echo.test', grpc.credentials.createSsl(), {
+        [GAX_CONFIG_OPTION]: token, 'grpc.max_send_message_length': 3,
+    });
+    const seen = [];
+    try {
+        await withFetch(async (url, init) => {
+            seen.push([new URL(url).origin, init.cf.grpcWeb]);
+            return response();
+        }, async () => {
+            await assert.rejects(unary(ceiling, { text: 'x'.repeat(20) }).promise, { code: grpc.status.RESOURCE_EXHAUSTED });
+            await assert.rejects(unary(smaller, { text: 'ok' }).promise, { code: grpc.status.RESOURCE_EXHAUSTED });
+            assert.deepEqual(seen, [], 'Rejected payloads must never reach fetch');
+            await unary(ceiling, { text: 'ok' }).promise;
+            await unary(smaller, { text: '' }).promise;
+        });
+        assert.deepEqual(seen, [
+            ['https://original-gateway.test', 'passthrough'],
+            ['https://original-gateway.test', 'passthrough'],
+        ]);
+    } finally { ceiling.close(); smaller.close(); }
+});
 test('AUTH async generator rejection is handled, including rejection after callback', async () => {
     const before = grpc.credentials.createFromMetadataGenerator(async () => {
         throw new Error('failed');

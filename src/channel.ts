@@ -2,7 +2,7 @@ import { ChannelCredentials } from './credentials';
 import { WorkersCall, CallOptions } from './call';
 import { connectivityState, status, WorkersGrpcConfigurationError as ConfigError } from './status';
 import { ChannelOptions, validateOptions } from './options';
-import { INSTANCE_CONFIG, WorkersGrpcConfigSnapshot, lockConfiguration, routeFor } from './config-internal';
+import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, lockConfiguration, routeFor } from './config-internal';
 const workersChannels = new WeakSet<object>();
 export function isWorkersChannel(value: unknown): value is Channel {
     return typeof value === 'object' && value !== null && workersChannels.has(value);
@@ -17,9 +17,20 @@ export class Channel {
         if (!(creds instanceof ChannelCredentials)) {
             throw new TypeError('ChannelCredentials from this package are required');
         }
-        this.config = (options as ChannelOptions & {
+        const instanceConfig = (options as ChannelOptions & {
             [INSTANCE_CONFIG]?: WorkersGrpcConfigSnapshot;
-        })[INSTANCE_CONFIG] ?? lockConfiguration();
+        })[INSTANCE_CONFIG];
+        if (Object.hasOwn(options, GAX_CONFIG_OPTION)) {
+            if (instanceConfig !== undefined) {
+                throw new ConfigError('WGA_OPTION_CONFLICT', 'Multiple adapter instance options');
+            }
+            this.config = configFromGaxToken(options[GAX_CONFIG_OPTION]);
+            options = { ...options };
+            delete options[GAX_CONFIG_OPTION];
+        }
+        else {
+            this.config = instanceConfig ?? lockConfiguration();
+        }
         this.route = routeFor(target, this.config);
         this.limits = validateOptions(options, this.route.authority, this.config);
         if (this.route.insecure === creds._isSecure()) {
