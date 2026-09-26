@@ -1,7 +1,22 @@
 {
   "id": "google-static-v1",
-  "revision": 2,
+  "revision": 3,
   "packages": [
+    {
+      "path": "node_modules/gaxios",
+      "name": "gaxios",
+      "version": "7.3.1"
+    },
+    {
+      "path": "node_modules/google-auth-library",
+      "name": "google-auth-library",
+      "version": "10.9.1"
+    },
+    {
+      "path": "node_modules/@google-cloud/secret-manager/node_modules/google-auth-library",
+      "name": "google-auth-library",
+      "version": "11.1.0"
+    },
     {
       "path": "node_modules/@google-cloud/datastore",
       "name": "@google-cloud/datastore",
@@ -59,6 +74,14 @@
     }
   ],
   "files": [
+    {
+      "path": "node_modules/gaxios/build/cjs/src/gaxios.js",
+      "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c"
+    },
+    {
+      "path": "node_modules/gaxios/build/esm/src/gaxios.js",
+      "sha256": "68fd9281b268af396e1175a709dce9b33630cdcffa27af3e13029d58e007f9d5"
+    },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/request.js",
       "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112"

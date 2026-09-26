@@ -85,7 +85,19 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         const edits = [];
         let rootCalls = 0;
         let wellKnownLoads = 0;
+        let nativeFetchDefaults = 0;
+        const gaxiosTransport = /\/gaxios\/build\/(?:cjs|esm)\/src\/gaxios\.js$/.test(file.path);
         function visit(node) {
+          if (gaxiosTransport && ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'fetchImpl') {
+            const method = node.parent?.parent?.parent?.parent;
+            const expected = 'config.fetchImplementation||this.defaults.fetchImplementation||(await_a.#getFetch())';
+            if (!ts.isMethodDeclaration(method) || !ts.isIdentifier(method.name) || method.name.text !== '_defaultAdapter' || !node.initializer || node.initializer.getText(ast).replace(/\s/g, '') !== expected) fail('WGA_SCHEMA_MISMATCH', `${file.path}: unexpected Gaxios fetch selection`);
+            // Only the default changes. Per-request and per-client fetch hooks
+            // keep Gaxios's own precedence and credential ownership.
+            edits.push({ start: node.initializer.getStart(ast), end: node.initializer.getEnd(), text: 'config.fetchImplementation || this.defaults.fetchImplementation || globalThis.fetch' });
+            nativeFetchDefaults++;
+            return;
+          }
           if (file.path.endsWith('@google-cloud/datastore/build/src/request.js') && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'loadSync') {
             if (node.expression.expression.getText(ast) !== 'gax.protobuf' || node.arguments.length !== 1 || !ts.isStringLiteral(node.arguments[0]) || node.arguments[0].text !== 'google/protobuf/struct.proto' || !datastoreStructSchema) fail('WGA_SCHEMA_MISMATCH', `${file.path}: unexpected well-known schema load`);
             edits.push({ start: node.getStart(ast), end: node.getEnd(), text: `require(${JSON.stringify(registryFile)}).fromJSON(gax.protobuf,${JSON.stringify(datastoreStructSchema)})` });
@@ -107,11 +119,12 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
           ts.forEachChild(node, visit);
         }
         visit(ast);
+        if (gaxiosTransport && nativeFetchDefaults !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one Gaxios fetch selection`);
         if (file.path.endsWith('@google-cloud/datastore/build/src/request.js') && wellKnownLoads !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one well-known schema load`);
         if (!edits.length) fail('WGA_SCHEMA_MISMATCH', `${file.path}: no matching AST anchors`);
         let contents = original;
         for (const edit of edits.sort((a, b) => b.start - a.start)) contents = contents.slice(0, edit.start) + edit.text + contents.slice(edit.end);
-        transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, anchors: edits.map(({ start, end }) => ({ start, end })) });
+        transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, nativeFetchDefaults, anchors: edits.map(({ start, end }) => ({ start, end })) });
         return { contents, loader: 'js', resolveDir: path.dirname(args.path) };
       });
     },
