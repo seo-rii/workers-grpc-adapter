@@ -1,6 +1,6 @@
 {
   "id": "google-static-v1",
-  "revision": 1,
+  "revision": 2,
   "packages": [
     {
       "path": "node_modules/@google-cloud/datastore",
@@ -59,6 +59,10 @@
     }
   ],
   "files": [
+    {
+      "path": "node_modules/@google-cloud/datastore/build/src/request.js",
+      "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112"
+    },
     {
       "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/ext/descriptor/index.js",
       "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
@@ -125,6 +129,11 @@
     }
   ],
   "schemas": [
+    {
+      "path": "node_modules/google-gax/node_modules/protobufjs/src/common.js",
+      "sha256": "577786d95c5cb3e11eb475342735c7cf8c71ecb4456d9f07258d60af8a1bfe9a",
+      "common": "google/protobuf/struct.proto"
+    },
     {
       "path": "node_modules/@google-cloud/datastore/build/protos/protos.json",
       "sha256": "a6d5d4be4e2426e2fe53b27f63e3e86eefd4954d4f172aca80ddeb92fba447be"

@@ -54,16 +54,18 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   fs.mkdirSync(outdir, { recursive: true });
   const registryFile = path.join(outdir, 'static-protobuf.cjs');
   const unique = new Map();
-  let legacyKeySchema;
+  let legacyKeySchema, datastoreStructSchema;
   for (const schema of profile.schemas) {
     const file = path.join(projectRoot, schema.path);
     const req = createRequire(file);
     const P = req('protobufjs');
-    const json = file.endsWith('.proto') ? P.loadSync(file).toJSON() : JSON.parse(fs.readFileSync(file, 'utf8'));
+    const json = schema.common ? P.common[schema.common] : file.endsWith('.proto') ? P.loadSync(file).toJSON() : JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!json || typeof json !== 'object') fail('WGA_SCHEMA_MISMATCH', `${schema.path}: unknown common schema`);
     if (file.endsWith('app_engine_key.proto')) legacyKeySchema = json;
+    if (schema.common === 'google/protobuf/struct.proto') datastoreStructSchema = json;
     const key = hash(JSON.stringify(json));
     if (!unique.has(key)) {
-      unique.set(key, { ...generateHydrator(P, json), schema: schema.path, sha256: schema.sha256 });
+      unique.set(key, { ...generateHydrator(P, json), schema: schema.path, sha256: schema.sha256, common: schema.common });
     }
   }
   const registryPrefix = `${profile.id}:${profile.revision}:${hash(JSON.stringify(profile.loaderOptions))}:`;
@@ -82,7 +84,14 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         const ast = ts.createSourceFile(args.path, original, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
         const edits = [];
         let rootCalls = 0;
+        let wellKnownLoads = 0;
         function visit(node) {
+          if (file.path.endsWith('@google-cloud/datastore/build/src/request.js') && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'loadSync') {
+            if (node.expression.expression.getText(ast) !== 'gax.protobuf' || node.arguments.length !== 1 || !ts.isStringLiteral(node.arguments[0]) || node.arguments[0].text !== 'google/protobuf/struct.proto' || !datastoreStructSchema) fail('WGA_SCHEMA_MISMATCH', `${file.path}: unexpected well-known schema load`);
+            edits.push({ start: node.getStart(ast), end: node.getEnd(), text: `require(${JSON.stringify(registryFile)}).fromJSON(gax.protobuf,${JSON.stringify(datastoreStructSchema)})` });
+            wellKnownLoads++;
+            return;
+          }
           if (file.path.endsWith('@google-cloud/datastore/build/src/entity.js') && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'loadSync') {
             edits.push({start:node.getStart(ast),end:node.getEnd(),text:`require(${JSON.stringify(registryFile)}).fromJSON(Protobuf,${JSON.stringify(legacyKeySchema)})`});
             return;
@@ -98,10 +107,11 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
           ts.forEachChild(node, visit);
         }
         visit(ast);
+        if (file.path.endsWith('@google-cloud/datastore/build/src/request.js') && wellKnownLoads !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one well-known schema load`);
         if (!edits.length) fail('WGA_SCHEMA_MISMATCH', `${file.path}: no matching AST anchors`);
         let contents = original;
         for (const edit of edits.sort((a, b) => b.start - a.start)) contents = contents.slice(0, edit.start) + edit.text + contents.slice(edit.end);
-        transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rootFromJSONCalls: rootCalls, anchors: edits.map(({ start, end }) => ({ start, end })) });
+        transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, anchors: edits.map(({ start, end }) => ({ start, end })) });
         return { contents, loader: 'js', resolveDir: path.dirname(args.path) };
       });
     },
@@ -109,7 +119,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   return {
     plugin,
     registryFile,
-    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count })), registrySha256: hash(registrySource), transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
+    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count, ...(item.common ? { common: item.common } : {}) })), registrySha256: hash(registrySource), transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
   };
 }
 module.exports = { createGoogleWorkerBuild };
