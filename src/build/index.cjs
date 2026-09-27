@@ -88,9 +88,25 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         let nativeFetchDefaults = 0;
         let precompiledSetups = 0;
         let legacyBufferConversions = 0;
+        let firestoreWatchEndDeferrals = 0;
+        const firestoreInitializer = file.path === 'node_modules/@google-cloud/firestore/build/src/index.js';
         const modernDatastoreEntity = profile.id === 'google-modern-v1' && file.path.endsWith('@google-cloud/datastore/build/src/entity.js');
         const gaxiosTransport = /\/gaxios\/build\/(?:cjs|esm)\/src\/gaxios\.js$/.test(file.path);
         function visit(node) {
+          if (firestoreInitializer && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+            && node.expression.name.text === 'pipe' && node.expression.expression.getText(ast) === 'backendStream') {
+            let method = node.parent;
+            while (method && !ts.isMethodDeclaration(method)) method = method.parent;
+            if (!method || method.name.getText(ast) !== '_initializeStream'
+              || method.parameters.map(parameter => parameter.getText(ast)).join(',') !== 'backendStream,lifetime,requestTag,request'
+              || node.arguments.length !== 1 || node.arguments[0].getText(ast) !== 'resultStream'
+              || !ts.isExpressionStatement(node.parent)) fail('WGA_SCHEMA_MISMATCH', `${file.path}: unexpected Firestore stream pipe`);
+            // Only Listen passes a request. Its deferred error must reach Watch
+            // before EOF can cause an UNKNOWN reconnect and hide the status.
+            edits.push({ start: node.parent.getStart(ast), end: node.parent.getEnd(), text: "backendStream.pipe(resultStream, { end: !request });\nif (request) { backendStream.on('end', () => { setImmediate(() => resultStream.end()); }); }" });
+            firestoreWatchEndDeferrals++;
+            return;
+          }
           if (modernDatastoreEntity && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
             && node.expression.name.text === 'toString' && node.expression.expression.getText(ast) === 'buffer') {
             let method = node.parent;
@@ -150,6 +166,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
           ts.forEachChild(node, visit);
         }
         visit(ast);
+        if (firestoreInitializer && firestoreWatchEndDeferrals !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one Firestore stream pipe`);
         if (gaxiosTransport && nativeFetchDefaults !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one Gaxios fetch selection`);
         if (file.path.endsWith('@google-cloud/datastore/build/src/request.js') && wellKnownLoads !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one well-known schema load`);
         if (modernDatastoreEntity && precompiledSetups !== 1) fail('WGA_SCHEMA_MISMATCH', `${file.path}: expected one legacy codec setup`);
@@ -158,6 +175,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         let contents = original;
         for (const edit of edits.sort((a, b) => b.start - a.start)) contents = contents.slice(0, edit.start) + edit.text + contents.slice(edit.end);
         transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, nativeFetchDefaults,
+          ...(firestoreInitializer ? { firestoreWatchEndDeferrals } : {}),
           ...(modernDatastoreEntity ? { precompiledSetups, legacyBufferConversions } : {}), anchors: edits.map(({ start, end }) => ({ start, end })) });
         return { contents, loader: 'js', resolveDir: path.dirname(args.path) };
       });

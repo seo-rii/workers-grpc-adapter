@@ -1,6 +1,6 @@
 {
   "id": "google-modern-v1",
-  "revision": 1,
+  "revision": 2,
   "packages": [
     {
       "path": "node_modules/gaxios",
@@ -64,6 +64,10 @@
     }
   ],
   "files": [
+    {
+      "path": "node_modules/@google-cloud/firestore/build/src/index.js",
+      "sha256": "cf93c25415eb5360867a8d108838ebabdaef34ef932d89107223d8344c11e97a"
+    },
     {
       "path": "node_modules/gaxios/build/cjs/src/gaxios.js",
       "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c"
