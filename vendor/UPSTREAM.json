@@ -14,9 +14,9 @@
       "source": "vendor/client/client.ts",
       "sha256": "215d41d55165e9c21656a043894eccc9065745f8735f0818c1cb05124168df53",
       "target": "src/client.ts",
-      "patchedSha256": "c18abd65ceffe73c4118c978555f9a0064b44802b5e032eca4d78d947161cc01",
+      "patchedSha256": "304cd14c367f2187c0006d801718d70fda3f76758a7db7ce5509ce8452800d48",
       "patch": "vendor/patches/client.ts.patch",
-      "patchSha256": "d5f29cff855f382fed8eef7882d7efc1e9578d4d1f5f60ece41f875e45fce028"
+      "patchSha256": "f2679fe549d2320cc13a1236259af3a64392f38fbcd571206c14308377eed6ee"
     },
     {
       "upstreamPath": "src/make-client.ts",
@@ -113,9 +113,9 @@
       "source": "vendor/client/index.ts",
       "sha256": "00bab7607ea5ac648a7d78e53767071947c1121ecfa989a185ca6573d5a705f7",
       "target": "src/index.ts",
-      "patchedSha256": "2e058ce1423f09ae33ea5335515d736a5a27941a98b621044d4fa79b6101df35",
+      "patchedSha256": "e0288ca15e1f631f46e74909ce3ed44218f1b322dc8daad4574ac1fc9f13a739",
       "patch": "vendor/patches/index.ts.patch",
-      "patchSha256": "c609c16dfca3dcb484a19b59025e33afec05a94e680fc6626237c994a642b6f2"
+      "patchSha256": "fd10ce4b320c6129f9cf546a5f36101dfd595312d21fc52ee8167a421d7b950f"
     }
   ],
   "patchPolicy": {
@@ -124,6 +124,6 @@
     "P-03": "Factory imports the same vendored Client",
     "P-04": "HTTPS credentials implemented by src/credentials.ts, not copied from native TLS source",
     "P-05": "Client-only root exports and module closure",
-    "P-06": "Type-only http2/tls imports; omit unsupported server parent types; use node: builtins"
+    "P-06": "Type-only http2/tls imports; use structural ParentCall deadline/cancellation subset instead of native server types; use node: builtins"
   }
 }

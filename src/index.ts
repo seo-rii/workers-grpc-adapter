@@ -7,6 +7,7 @@ export { ChannelCredentials, CallCredentials, credentials } from './credentials'
 export type { CallMetadataOptions, MetadataGenerator, GoogleCredential, LegacyGoogleCredential } from './credentials';
 export { Client, closeClient, getClientChannel, waitForClientReady } from './client';
 export type { ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream } from './call-surface';
+export type { ParentCall } from './call';
 export type { ClientOptions, CallOptions, UnaryCallback, ServiceError, Deadline, StatusObject, CallProperties, CallInvocationTransformer, ClientMethodDefinition } from './client';
 export { Channel } from './channel';
 export type { ChannelOptions } from './options';

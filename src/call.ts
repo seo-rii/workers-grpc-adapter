@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { CallCredentials, ChannelCredentials } from './credentials';
-import { status, authErrorCode, TransportError, httpStatusToGrpc } from './status';
+import { status, propagate, authErrorCode, TransportError, httpStatusToGrpc } from './status';
 import { WorkersGrpcConfigSnapshot, normalizeAuthority } from './config-internal';
 import { ValidatedOptions } from './options';
 import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders } from './wire';
@@ -9,11 +9,18 @@ import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot } from './retry';
 import { RequestStreamBody } from './request-stream';
 export type Deadline = Date | number;
+/** The cancellation/deadline subset of grpc-js ServerSurfaceCall used by clients. */
+export interface ParentCall {
+    readonly cancelled: boolean;
+    getDeadline(): Deadline;
+    on(event: 'cancelled', listener: () => void): unknown;
+    removeListener(event: 'cancelled', listener: () => void): unknown;
+}
 export interface CallOptions {
     deadline?: Deadline;
     credentials?: CallCredentials;
     host?: string;
-    parent?: unknown;
+    parent?: ParentCall | null;
     propagate_flags?: number;
     interceptors?: Interceptor[];
     interceptor_providers?: InterceptorProvider[];
@@ -66,6 +73,7 @@ export class WorkersCall {
     private terminalDelivered = false;
     private writeCallback?: (error?: Error | null) => void;
     private timer?: ReturnType<typeof setTimeout>;
+    private removeParentListener?: () => void;
     private deadline: number = Infinity;
     private credentials: CallCredentials;
     private readonly aborter = new AbortController();
@@ -138,7 +146,8 @@ export class WorkersCall {
                 return;
             }
         }
-        if (c.options.parent != null || (c.options.propagate_flags !== undefined && ![0, 65535].includes(c.options.propagate_flags)) || (c.options.interceptors?.length ?? 0) > 0 || (c.options.interceptor_providers?.length ?? 0) > 0) {
+        const flags = c.options.propagate_flags === undefined ? propagate.DEFAULTS : c.options.propagate_flags;
+        if (!Number.isInteger(flags) || flags < 0 || flags > propagate.DEFAULTS || (c.options.interceptors?.length ?? 0) > 0 || (c.options.interceptor_providers?.length ?? 0) > 0) {
             this.finish(status.UNIMPLEMENTED, 'WGA_CALL_OPTION');
             return;
         }
@@ -175,6 +184,7 @@ export class WorkersCall {
             this.finish(status.INTERNAL, 'WGA_INVALID_DEADLINE');
             return;
         }
+        if (!this.attachParent(flags)) return;
         if (this.deadline <= Date.now()) {
             this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
             return;
@@ -185,6 +195,41 @@ export class WorkersCall {
             return;
         }
         void this.refreshCredentials().then(() => this.maybeFetch());
+    }
+    private attachParent(flags: number): boolean {
+        const parent = this.context.options.parent;
+        if (parent == null) return true;
+        let detach: (() => void) | undefined;
+        try {
+            if (typeof parent.cancelled !== 'boolean' || typeof parent.getDeadline !== 'function' ||
+                typeof parent.on !== 'function' || typeof parent.removeListener !== 'function') throw new Error();
+            if (flags & propagate.DEADLINE) {
+                const value = parent.getDeadline();
+                const deadline = value instanceof Date ? value.getTime() : value;
+                if (typeof deadline !== 'number' || Number.isNaN(deadline) || deadline === -Infinity) throw new Error();
+                this.deadline = Math.min(this.deadline, deadline);
+            }
+            if (flags & propagate.CANCELLATION) {
+                const cancelled = () => this.finish(status.CANCELLED, 'Cancelled by parent call');
+                if (parent.cancelled) { cancelled(); return false; }
+                const remove = parent.removeListener.bind(parent);
+                detach = () => { remove('cancelled', cancelled); };
+                // Install cleanup before subscribing: a custom parent can emit
+                // synchronously, including from EventEmitter's newListener hook.
+                this.removeParentListener = detach;
+                parent.on('cancelled', cancelled);
+                if (this.terminal) { detach(); return false; }
+                if (parent.cancelled) { cancelled(); return false; }
+            }
+            return !this.terminal;
+        } catch {
+            // on() can emit before it installs its listener, then throw after
+            // installation; terminal cleanup may already have run in between.
+            try { detach?.(); } catch { /* Preserve sanitized terminal status. */ }
+            this.removeParentListener = undefined;
+            this.finish(status.INTERNAL, 'WGA_INVALID_PARENT');
+            return false;
+        }
     }
     private async refreshCredentials(): Promise<void> {
         if (this.terminal) return;
@@ -423,6 +468,9 @@ export class WorkersCall {
             return;
         }
         this.terminal = result;
+        const detachParent = this.removeParentListener;
+        this.removeParentListener = undefined;
+        try { detachParent?.(); } catch { /* A malformed parent cannot prevent terminal cleanup. */ }
         if (this.timer !== undefined) {
             clearTimeout(this.timer);
             this.timer = undefined;

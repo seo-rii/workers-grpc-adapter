@@ -2,10 +2,11 @@ import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import type { ServerMethodDefinition } from './factory';
 import type { CompressionEncoding } from './compression';
+import type { ParentCall } from './call';
 import { compressionAlgorithms, status, TransportError, WorkersGrpcConfigurationError } from './status';
 import { decodeFrames, encodeFrame, encodeMessageFrame, metadataFromHeaders, METADATA_LIMIT, responseCompression } from './wire';
 
-export interface GrpcWebServerContext {
+export interface GrpcWebServerContext extends ParentCall {
     readonly method: string;
     readonly metadata: Metadata;
     readonly signal: AbortSignal;
@@ -197,6 +198,18 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
             try { input = route.definition.requestDeserialize(message); }
             catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
             const context: GrpcWebServerContext = { method: route.definition.path, metadata, signal: aborter.signal, deadline,
+                get cancelled() { return aborter.signal.aborted; },
+                getDeadline() { return deadline; },
+                on(event, listener) {
+                    if (event !== 'cancelled') throw new TypeError('Unsupported parent event');
+                    aborter.signal.addEventListener('abort', listener);
+                    return this;
+                },
+                removeListener(event, listener) {
+                    if (event !== 'cancelled') throw new TypeError('Unsupported parent event');
+                    aborter.signal.removeEventListener('abort', listener);
+                    return this;
+                },
                 sendMetadata(value) {
                     if (headersSent || aborter.signal.aborted) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA_SENT');
                     metadataPairs(value);

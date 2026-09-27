@@ -44,7 +44,7 @@ import {
   InterceptorArguments,
   InterceptingCallInterface,
 } from './client-interceptors';
-import type { Deadline } from './call';
+import type { Deadline, ParentCall } from './call';
 
 const CHANNEL_SYMBOL = Symbol();
 const INTERCEPTOR_SYMBOL = Symbol();
@@ -65,8 +65,8 @@ export interface UnaryCallback<ResponseType> {
 export interface CallOptions {
   deadline?: Deadline;
   host?: string;
-  /** Parent/server call propagation is unsupported by the Workers transport. */
-  parent?: unknown;
+  /** Propagate deadline/cancellation from a server call or Fetch handler context. */
+  parent?: ParentCall | null;
   propagate_flags?: number;
   credentials?: CallCredentials;
   interceptors?: Interceptor[];

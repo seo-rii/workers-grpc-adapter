@@ -76,6 +76,7 @@ function main() {
     run('workers-compression', ['scripts/test-workers-compression.cjs']);
     run('workers-retries', ['scripts/test-workers-retries.cjs']);
     run('health', ['scripts/test-health.cjs']);
+    run('parent-calls', ['scripts/test-parent-calls.cjs']);
     run('workers-server', ['scripts/test-workers-server.cjs']);
     run('modern-sdk', ['scripts/test-modern-sdk.cjs']);
     run('request-streaming', ['scripts/test-request-streaming.cjs']);
@@ -121,7 +122,7 @@ function main() {
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
-        googleEmulators, firestoreWatch, modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
+        googleEmulators, firestoreWatch, parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),

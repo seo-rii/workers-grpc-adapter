@@ -28,6 +28,7 @@
   "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/limitations.md"],
   "engines": {"node": ">=22"},
   "scripts": {
+    "test:parent-calls": "node scripts/test-parent-calls.cjs",
     "test:modern-firestore-watch": "node scripts/test-modern-firestore-watch.cjs",
     "build": "node scripts/build.cjs",
     "test": "npm run build && node --test test/*.test.cjs",

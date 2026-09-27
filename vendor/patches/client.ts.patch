@@ -36,7 +36,7 @@
 -  ServerDuplexStream,
 -} from './server-call';
 -import { Deadline } from './deadline';
-+import type { Deadline } from './call';
++import type { Deadline, ParentCall } from './call';
  
  const CHANNEL_SYMBOL = Symbol();
  const INTERCEPTOR_SYMBOL = Symbol();
@@ -49,8 +49,8 @@
 -    | ServerReadableStream<any, any>
 -    | ServerWritableStream<any, any>
 -    | ServerDuplexStream<any, any>;
-+  /** Parent/server call propagation is unsupported by the Workers transport. */
-+  parent?: unknown;
++  /** Propagate deadline/cancellation from a server call or Fetch handler context. */
++  parent?: ParentCall | null;
    propagate_flags?: number;
    credentials?: CallCredentials;
    interceptors?: Interceptor[];

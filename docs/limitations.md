@@ -66,7 +66,7 @@ convert a production-only verification obligation into a solved feature.
 
 ## Unsupported features
 
-Cloudflare automatic-mode request streaming, native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+Cloudflare automatic-mode request streaming, native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. `WriteThrough` is also unsupported. [Parent-call deadline and cancellation propagation](parent-calls.md) is supported in both modes, including forwarding from a Fetch handler context; this does not add native server lifecycle semantics.
 
 Identity, deflate and gzip message codecs are implemented and compared with native grpc-js and workerd peers. Compressed trailers and cross-call peer-encoding caches remain unsupported. Configured request compression never triggers an automatic identity retry. Deployed Cloudflare conversion with compressed messages remains a separate live check; see [compression](compression.md).
 

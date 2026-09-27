@@ -35,6 +35,7 @@ Every application handler receives its decoded request and a context containing:
 - `metadata`: decoded request metadata, including binary values.
 - `signal`: aborted when the caller disconnects, the deadline expires or the response is cancelled.
 - `deadline`: absolute epoch milliseconds, or `Infinity`.
+- `cancelled`, `getDeadline()`, `on('cancelled', listener)` and `removeListener('cancelled', listener)`: the [ParentCall](parent-calls.md) surface for forwarding deadline and cancellation to child RPCs.
 - `sendMetadata(metadata)`: merges initial metadata before response headers are committed.
 - `setTrailer(metadata)`: replaces application trailing metadata before completion.
 
