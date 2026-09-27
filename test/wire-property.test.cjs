@@ -23,7 +23,7 @@ function oracle(bytes, maxMessageBytes) {
         const header = Array.from(bytes.slice(position, position + 5));
         if (header.length !== 5 || frames.at(-1)?.trailer) return fail(13);
         const [flag, a, b, c, d] = header;
-        if (flag === 1 || flag === 129) return fail(12);
+        if (flag === 129) return fail(12);
         if (flag !== 0 && flag !== 128) return fail(13);
         const size = a * 16777216 + b * 65536 + c * 256 + d;
         if (size > (flag === 128 ? 65536 : maxMessageBytes)) return fail(8);

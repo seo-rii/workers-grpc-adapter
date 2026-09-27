@@ -16,7 +16,7 @@ const report = { startedAt: new Date().toISOString(), status: 'running', runtime
   liveGoogle: false, productionLoad: false, compatibilityDate, invocations: [], requests: [] };
 const trailer = code => encodeFrame(Buffer.from(`grpc-status: ${code}\r\n`), true);
 async function main() {
-  const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require: '+name);};`;
+  const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';import * as _zlib from 'node:zlib';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream,'node:zlib':_zlib};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require: '+name);};`;
   const bundle = await req('esbuild').build({ entryPoints: [path.join(root, 'fixtures/worker/resilience.mjs')], bundle: true, write: false,
     format: 'esm', platform: 'neutral', target: 'es2022', external: ['node:*'], banner: { js: banner } });
   report.bundleSha256 = digest(bundle.outputFiles[0].contents);

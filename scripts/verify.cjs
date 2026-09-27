@@ -73,6 +73,7 @@ function main() {
     run('workers-federated-auth', ['scripts/test-workers-federated-auth.cjs']);
     run('workers-legacy-auth', ['scripts/test-workers-legacy-auth.cjs']);
     run('workers-fetcher', ['scripts/test-workers-fetcher.cjs']);
+    run('workers-compression', ['scripts/test-workers-compression.cjs']);
     run('secret-manager-extended', ['scripts/test-secret-manager-extended.cjs']);
     run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
@@ -114,7 +115,7 @@ function main() {
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
-        workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), secretManagerExtended,
+        workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), secretManagerExtended,
         datastorePagination, workersResilience: read('workers-resilience.json'),
         workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,

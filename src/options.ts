@@ -1,5 +1,6 @@
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
 import { normalizeAuthority, WorkersGrpcConfigSnapshot } from './config-internal';
+import type { CompressionEncoding } from './compression';
 export interface ChannelOptions {
     'grpc.max_send_message_length'?: number;
     'grpc.max_receive_message_length'?: number;
@@ -17,6 +18,7 @@ export interface ValidatedOptions {
     maxSend: number;
     maxReceive: number;
     userAgent: string;
+    compression: CompressionEncoding;
 }
 export function validateOptions(options: ChannelOptions, authority: string, config: WorkersGrpcConfigSnapshot): ValidatedOptions {
     const allowed = ['grpc.max_send_message_length', 'grpc.max_receive_message_length', 'grpc.initial_reconnect_backoff_ms',
@@ -30,10 +32,14 @@ export function validateOptions(options: ChannelOptions, authority: string, conf
             fail(key);
         }
     }
-    for (const key of ['grpc.default_compression_algorithm', 'grpc.enable_retries', 'grpc.enable_channelz']) {
+    for (const key of ['grpc.enable_retries', 'grpc.enable_channelz']) {
         if (options[key] !== undefined && options[key] !== 0) {
             fail(key);
         }
+    }
+    const compression = options['grpc.default_compression_algorithm'] === undefined ? 0 : options['grpc.default_compression_algorithm'];
+    if (typeof compression !== 'number' || ![0, 1, 2].includes(compression)) {
+        fail('grpc.default_compression_algorithm');
     }
     if (options['grpc.initial_reconnect_backoff_ms'] !== undefined && options['grpc.initial_reconnect_backoff_ms'] !== 1000) {
         fail('grpc.initial_reconnect_backoff_ms');
@@ -61,5 +67,6 @@ export function validateOptions(options: ChannelOptions, authority: string, conf
         }
     }
     return { maxSend: limit('grpc.max_send_message_length', -1, config.transportMaxSendBytes),
-        maxReceive: limit('grpc.max_receive_message_length', 4 * 1024 * 1024, config.transportMaxReceiveBytes), userAgent: agents.join(' ') };
+        maxReceive: limit('grpc.max_receive_message_length', 4 * 1024 * 1024, config.transportMaxReceiveBytes), userAgent: agents.join(' '),
+        compression: (['identity', 'deflate', 'gzip'] as const)[compression] };
 }

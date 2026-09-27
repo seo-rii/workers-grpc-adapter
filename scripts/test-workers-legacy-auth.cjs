@@ -17,7 +17,7 @@ const report = { startedAt: new Date().toISOString(), status: 'running', runtime
 const successful = ['sync', 'async', 'duplicate', 'empty', 'modern', 'success-throw'];
 function check(value, diagnostic) { assert.ok(value, diagnostic); }
 async function main() {
-    const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require');};`;
+    const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';import * as _zlib from 'node:zlib';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream,'node:zlib':_zlib};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require');};`;
     const bundle = await req('esbuild').build({ entryPoints: [path.join(root, 'fixtures/worker/legacy-auth.mjs')], bundle: true, write: false,
         format: 'esm', platform: 'neutral', target: 'es2022', external: ['node:*'], banner: { js: banner },
         ...(sourceBuild ? { alias: { '@grpc/grpc-js/adapter': path.join(root, 'dist/adapter.mjs'), '@grpc/grpc-js': path.join(root, 'dist/index.mjs') } } : {}) });

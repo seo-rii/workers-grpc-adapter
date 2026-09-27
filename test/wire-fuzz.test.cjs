@@ -63,10 +63,9 @@ test('FUZZ every byte truncation is accepted only at complete frame boundaries',
 test('FUZZ all 254 noncanonical flag values fail with exact protocol/compression status', async () => {
     for (let flag = 0; flag <= 255; flag++) {
         if (flag === 0 || flag === 128) continue;
-        const compressed = flag === 1 || flag === 129;
         await assert.rejects(parse(frame(Buffer.alloc(0), flag), SEED + flag), {
-            code: compressed ? 12 : 13,
-            diagnostic: compressed ? 'WGA_COMPRESSION' : 'WGA_FRAME_FLAGS',
+            code: flag === 129 ? 12 : 13,
+            diagnostic: flag === 129 ? 'WGA_COMPRESSED_TRAILER' : flag === 1 ? 'WGA_COMPRESSED_WITH_IDENTITY' : 'WGA_FRAME_FLAGS',
         });
     }
 });

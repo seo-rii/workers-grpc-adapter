@@ -128,7 +128,7 @@ The adapter delegates token acquisition to the supplied Google auth client. With
 | Network failure or channel close | `UNAVAILABLE` |
 | Truncated frame or invalid metadata | `INTERNAL` |
 | Message or metadata budget exceeded | `RESOURCE_EXHAUSTED` |
-| Unsupported RPC or message compression | `UNIMPLEMENTED` |
+| Unsupported RPC or compression algorithm | `UNIMPLEMENTED` |
 | HTTP 200 without gRPC status | `UNKNOWN` |
 | Authentication failure | Preserves permitted explicit codes; absent codes become `UNKNOWN`, invalid control-plane codes become `INTERNAL` |
 
@@ -142,4 +142,6 @@ Install TypeScript and esbuild as development dependencies. Keep `/build` out of
 
 Profile revision 3 selects `globalThis.fetch` as the pinned Gaxios transport's default inside the Worker bundle, allowing normal OAuth2Client/JWT token responses to be parsed using Workers' response headers. Gaxios's per-request and per-client `fetchImplementation` overrides retain their original precedence. The build records the transformation in its manifest; it does not mutate installed dependencies, global Fetch, or credential providers. See `scripts/test-workers-auth.cjs` for token-refresh and JWT exchange examples using synthetic credentials.
 
-Native HTTP/2, arbitrary upstream deep imports, gzip, channelz, load balancing and remote connection health are unavailable. Connectivity reports only `IDLE` or `SHUTDOWN`; `waitForReady()` never reports a ready connection. Identity-encoded writes accept flags `0`, `BufferHint` (`1`), `NoCompress` (`2`) or their combination. `WriteThrough` and actual parent-call propagation are unsupported.
+Native HTTP/2, arbitrary upstream deep imports, channelz, load balancing and remote connection health are unavailable. Connectivity reports only `IDLE` or `SHUTDOWN`; `waitForReady()` never reports a ready connection. Writes accept flags `0`, `BufferHint` (`1`), `NoCompress` (`2`) or their combination. `WriteThrough` and actual parent-call propagation are unsupported.
+
+Message compression supports identity, deflate and gzip through `grpc.default_compression_algorithm`; identity remains the default. `NoCompress` bypasses the codec for an individual message. Decoded message limits and encoded transport ceilings are enforced independently. See [compression](compression.md) for negotiation, cancellation and native/workerd verification.

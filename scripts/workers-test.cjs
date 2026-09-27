@@ -18,7 +18,7 @@ async function main() {
         return;
     }
     // Finite CJS builtin bridge for this prototype's three Node imports. Not a general require polyfill.
-    const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require: '+name);};`;
+    const banner = `import * as _buffer from 'node:buffer';import * as _events from 'node:events';import * as _stream from 'node:stream';import * as _zlib from 'node:zlib';const _builtins={'node:buffer':_buffer,'node:events':_events,'node:stream':_stream,'node:zlib':_zlib};const require=name=>{if(Object.hasOwn(_builtins,name))return _builtins[name];throw new Error('Unsupported runtime require: '+name);};`;
     const bundle = await esbuild.build({ entryPoints: [path.join(root, 'fixtures/worker/smoke.mjs')], bundle: true, write: false, format: 'esm', platform: 'neutral', target: 'es2022', external: ['node:*'], banner: { js: banner } });
     const { encodeFrame } = require('../dist/wire.js');
     const requests = [];

@@ -29,7 +29,7 @@ test('WIRE truncated payload rejects', async () => assert.rejects(collect(encode
 for (const flag of [1, 0x81, 2, 0x40, 0xff]) {
     test(`WIRE flags ${flag}`, async () => {
         const b = Buffer.from([flag, 0, 0, 0, 0]);
-        await assert.rejects(collect(b), { code: [1, 0x81].includes(flag) ? status.UNIMPLEMENTED : status.INTERNAL });
+        await assert.rejects(collect(b), { code: flag === 0x81 ? status.UNIMPLEMENTED : status.INTERNAL });
     });
 }
 test('WIRE huge declared size rejects before allocation', async () => assert.rejects(collect(Buffer.from([0, 255, 255, 255, 255])), { code: status.RESOURCE_EXHAUSTED }));

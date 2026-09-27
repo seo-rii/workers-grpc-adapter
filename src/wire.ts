@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { status, TransportError } from './status';
+import { transformMessage, type CompressionEncoding } from './compression';
 export const METADATA_LIMIT = 65536;
 export interface StatusObject {
     code: status;
@@ -26,8 +27,25 @@ export function encodeFrame(payload: Uint8Array, trailer = false): Buffer {
     out.set(payload, 5);
     return out;
 }
+/** Apply gRPC message compression; HTTP content encoding is a separate layer. */
+export async function encodeMessageFrame(payload: Uint8Array, encoding: CompressionEncoding,
+    maxWireBytes: number, signal?: AbortSignal, noCompress = false): Promise<Buffer> {
+    if (signal?.aborted) return wireError(status.CANCELLED, 'WGA_ABORTED');
+    const compressed = encoding !== 'identity' && !noCompress;
+    const bytes = compressed ? await transformMessage(payload, encoding, false, maxWireBytes, signal) : payload;
+    if (signal?.aborted) return wireError(status.CANCELLED, 'WGA_ABORTED');
+    if (bytes.byteLength > maxWireBytes) return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
+    const frame = encodeFrame(bytes);
+    if (compressed) frame[0] = 1;
+    return frame;
+}
+export function responseCompression(headers: Headers): string {
+    // Like grpc-js, an unknown codec matters only if a message uses flag 1.
+    return headers.get('grpc-encoding') ?? 'identity';
+}
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
-export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal): AsyncGenerator<Frame> {
+export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
+    compression: { encoding?: string; maxWireBytes?: number } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
     let chunk: Uint8Array = new Uint8Array(0), offset = 0, ended = false;
     const abort = () => {
@@ -44,6 +62,9 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
             }
             if (offset === chunk.byteLength) {
                 const item = await reader.read();
+                if (signal?.aborted) {
+                    return wireError(status.CANCELLED, 'WGA_ABORTED');
+                }
                 if (item.done) {
                     ended = true;
                     if (allowEOF && filled === 0) {
@@ -78,19 +99,28 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 return wireError(status.INTERNAL, 'WGA_FRAME_AFTER_TRAILER');
             }
             const flag = header[0];
-            if (flag !== 0 && flag !== 0x80) {
-                if (flag === 1 || flag === 0x81) {
-                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION');
+            if (flag !== 0 && flag !== 1 && flag !== 0x80) {
+                if (flag === 0x81) {
+                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSED_TRAILER');
                 }
                 return wireError(status.INTERNAL, 'WGA_FRAME_FLAGS');
             }
             const trailer = flag === 0x80, length = header.readUInt32BE(1);
-            if (length > (trailer ? METADATA_LIMIT : maxMessageBytes)) {
+            const encoding = compression.encoding ?? 'identity';
+            if (flag === 1 && encoding === 'identity') {
+                return wireError(status.INTERNAL, 'WGA_COMPRESSED_WITH_IDENTITY');
+            }
+            if (flag === 1 && encoding !== 'gzip' && encoding !== 'deflate') {
+                return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION_ENCODING');
+            }
+            const wireLimit = compression.maxWireBytes ?? maxMessageBytes;
+            if (length > (trailer ? METADATA_LIMIT : flag === 1 ? wireLimit : Math.min(wireLimit, maxMessageBytes))) {
                 return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
             }
             const payload = await readExact(length);
             hadTrailer = trailer;
-            yield { trailer, payload: payload! };
+            yield { trailer, payload: flag === 1 && (encoding === 'gzip' || encoding === 'deflate')
+                ? await transformMessage(payload!, encoding, true, maxMessageBytes, signal) : payload! };
         }
     }
     finally {
@@ -241,12 +271,12 @@ export function encodeTimeout(milliseconds: number): string {
     }
     return '99999999H';
 }
-export function requestHeaders(metadata: Metadata, timeoutMs?: number, userAgent?: string, mode: 'cloudflare' | 'grpc-web' = 'grpc-web'): Headers {
+export function requestHeaders(metadata: Metadata, timeoutMs?: number, userAgent?: string, mode: 'cloudflare' | 'grpc-web' = 'grpc-web', encoding: CompressionEncoding = 'identity'): Headers {
     // Bare gRPC-Web reaches Google native endpoints through edge conversion;
     // the +proto variant is rejected there. Both use binary protobuf framing.
     const contentType = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
     const headers = new Headers({ 'content-type': contentType, 'accept': contentType,
-        'x-grpc-web': '1', 'grpc-encoding': 'identity', 'grpc-accept-encoding': 'identity' });
+        'x-grpc-web': '1', 'grpc-encoding': encoding, 'grpc-accept-encoding': 'identity,deflate,gzip' });
     if (metadata.get('authorization').length > 1) {
         return wireError(status.INTERNAL, 'WGA_DUPLICATE_AUTHORIZATION');
     }

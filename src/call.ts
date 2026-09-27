@@ -4,7 +4,7 @@ import { CallCredentials, ChannelCredentials } from './credentials';
 import { status, authErrorCode, TransportError, httpStatusToGrpc } from './status';
 import { WorkersGrpcConfigSnapshot, normalizeAuthority } from './config-internal';
 import { ValidatedOptions } from './options';
-import { StatusObject, decodeFrames, encodeFrame, metadataFromHeaders, parseTrailers, requestHeaders, statusFromHeaders } from './wire';
+import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders } from './wire';
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
 export type Deadline = Date | number;
 export interface CallOptions {
@@ -50,6 +50,7 @@ export class WorkersCall {
     private listener?: CallListener;
     private metadata?: Metadata;
     private request?: Buffer;
+    private noCompress = false;
     private halfClosed = false;
     private started = false;
     private fetching = false;
@@ -192,8 +193,8 @@ export class WorkersCall {
         callback?: (error?: Error | null) => void;
         flags?: number;
     }, message: Buffer): void {
-        // Upstream BufferHint=1 and NoCompress=2 preserve the single buffered,
-        // identity-encoded request. WriteThrough=4 cannot promise a fetch flush.
+        // BufferHint=1 keeps the single request buffered; NoCompress=2 bypasses
+        // the configured message codec. WriteThrough=4 cannot promise a fetch flush.
         if (context.flags !== undefined && (!Number.isInteger(context.flags) || context.flags < 0 || context.flags > 3)) {
             context.callback?.(new Error('WGA_WRITE_FLAGS'));
             this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
@@ -218,6 +219,7 @@ export class WorkersCall {
             return;
         }
         this.request = Buffer.from(message);
+        this.noCompress = ((context.flags ?? 0) & 2) !== 0;
         this.ackWrite();
         this.maybeFetch();
     }
@@ -275,8 +277,13 @@ export class WorkersCall {
                 this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
                 return;
             }
-            const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent, c.config.mode);
-            const body = encodeFrame(this.request!);
+            const body = await encodeMessageFrame(this.request!, c.limits.compression, c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress);
+            if (this.terminal) return;
+            if (this.deadline <= Date.now()) {
+                this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+                return;
+            }
+            const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent, c.config.mode, c.limits.compression);
             const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' } } = {
                 method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
                 // Override Worker-wide defaults so different clients can coexist.
@@ -326,7 +333,8 @@ export class WorkersCall {
             }
             let final: StatusObject | null = headerStatus;
             if (response.body) {
-                for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal)) {
+                for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
+                    { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes })) {
                     if (this.terminal) {
                         return;
                     }
