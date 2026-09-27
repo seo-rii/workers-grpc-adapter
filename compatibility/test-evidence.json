@@ -779,195 +779,167 @@
     },
     {
       "id": "CFG-001",
-      "coverage": "partial",
-      "reason": "Default receive cap and absence of an implicit deadline are asserted.",
-      "gaps": [
-        "Explicitly assert the default mode at first Channel creation."
-      ],
+      "coverage": "covered",
+      "reason": "A fresh public Channel uses cloudflare routing, the exact default caps, no implicit deadline and no construction Fetch; a real adapter call verifies the default request options.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG defaults and frozen endpoint snapshot"
-        },
-        {
-          "kind": "tap",
-          "source": "test/lifecycle-stream.test.cjs",
-          "command": "tests",
-          "name": "LIFE no implicit timeout without a configured default"
+          "name": "CFG-001 first unconfigured Channel uses cloudflare defaults and no implicit deadline"
         }
       ],
       "catalogCaseSha256": "9da98a8bb91e8311c192ec8668cdefa9f1f4d29447872bb639850c0f7d8023c5"
     },
     {
       "id": "CFG-002",
-      "coverage": "partial",
-      "reason": "Canonical endpoint ordering and repeated empty configuration are tested separately.",
-      "gaps": [
-        "Invoke configure twice using the reordered nonempty mapping."
-      ],
+      "coverage": "covered",
+      "reason": "Nonempty endpoint maps with reordered keys, casing, default ports and trailing slashes normalize to the identical snapshot before and after Channel locking.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG canonical endpoint order does not depend on input case"
-        },
-        {
-          "kind": "tap",
-          "source": "test/config-auth.test.cjs",
-          "command": "tests",
-          "name": "CONFIG idempotent configure and lock; public surface has no reset"
+          "name": "CFG-002 reordered nonempty canonical mappings configure idempotently before and after lock"
         }
       ],
       "catalogCaseSha256": "125537daa0692fd7313635a199d4c37ab7abfb2145e113d1e2c471484359bdec"
     },
     {
       "id": "CFG-003",
-      "coverage": "partial",
-      "reason": "Conflicting configuration produces the exact before-channel or after-lock error code.",
-      "gaps": [
-        "Read the stored configuration after the rejected change and verify the original state remains unchanged; the current test checks only the thrown error."
-      ],
+      "coverage": "covered",
+      "reason": "A rejected pre-Channel reconfiguration returns WGA_CONFIG_ALREADY_SET, preserves snapshot identity and all stored values, and permits the original configuration to create a Channel.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG idempotent configure and lock; public surface has no reset"
+          "name": "CFG-003 rejected pre-lock changes preserve the original configuration and recovery"
         }
       ],
       "catalogCaseSha256": "17d0c7a22942302daca918ecec01d66428d4d4292086b953c36dea8324ba3d99"
     },
     {
       "id": "CFG-004",
-      "coverage": "partial",
-      "reason": "Conflicting configuration produces the exact before-channel or after-lock error code.",
-      "gaps": [
-        "Read the stored configuration after the rejected change and verify the original state remains unchanged; the current test checks only the thrown error."
-      ],
+      "coverage": "covered",
+      "reason": "A rejected post-Channel reconfiguration returns WGA_CONFIG_LOCKED, preserves snapshot identity and all stored values, and leaves the original configuration usable.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG idempotent configure and lock; public surface has no reset"
+          "name": "CFG-004 rejected post-lock changes preserve the original configuration and recovery"
         }
       ],
       "catalogCaseSha256": "12e44c1417a8a09f9e49caa49161bffa875de2b93d1bba2e48461923023e87ad"
     },
     {
       "id": "CFG-005",
-      "coverage": "partial",
-      "reason": "Returned default snapshot and endpoints are frozen.",
-      "gaps": [
-        "Mutate both a nonempty original input and a returned nested snapshot to prove internal isolation."
-      ],
+      "coverage": "covered",
+      "reason": "Mutating nonempty caller inputs cannot affect stored endpoints, retries or resource limits; nested returned objects and arrays are frozen and reject mutation.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG defaults and frozen endpoint snapshot"
+          "name": "CFG-005 original nested inputs and frozen returned snapshots cannot mutate stored configuration"
         }
       ],
       "catalogCaseSha256": "6a6b766071f130b4f995d945fbe0d954c1842d0c3402d3496fae654d62680d40"
     },
     {
       "id": "CFG-006",
-      "coverage": "partial",
-      "reason": "Zero, negative, NaN, Infinity and string timeout inputs are rejected.",
-      "gaps": [
-        "Add fraction/cap variants, exact error code and no-state-change assertions."
-      ],
+      "coverage": "covered",
+      "reason": "Timeout and transport caps reject zero, negative, nonfinite, fractional, unsafe and wrong-type values with WGA_INVALID_CONFIG without changing fresh, configured or locked state.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG invalid numeric values and mode combinations"
+          "name": "CFG-006 invalid timeout and cap numbers fail exactly without changing fresh configured or locked state"
         }
       ],
       "catalogCaseSha256": "a6bb2a0167d818cc7a6dd1c329b860e35b761bed790cdd5c747451ec8f3f59c8"
     },
     {
       "id": "CFG-007",
-      "coverage": "partial",
-      "reason": "An empty grpc-web endpoint mapping is rejected.",
-      "gaps": [
-        "Assert unknown-authority call failure with zero fallback fetches."
-      ],
+      "coverage": "covered",
+      "reason": "Empty mappings and unmapped authorities fail through Channel, Client and generated alias constructors with unchanged state and zero authentication, configured Fetch or fallback Fetch.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/config-auth.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CONFIG invalid numeric values and mode combinations"
+          "name": "CFG-007 empty mappings and unmapped authorities fail without authentication or fallback Fetch"
         }
       ],
       "catalogCaseSha256": "992a8752fe55bd0f67d9ce6dbe0ea4519054c0816e0665803386e5ec603ab225"
     },
     {
       "id": "CFG-008",
-      "coverage": "partial",
-      "reason": "Unknown keys, retries and keepalive are rejected explicitly.",
-      "gaps": [
-        "Exercise service_config and the complete registered option matrix."
-      ],
+      "coverage": "covered",
+      "reason": "Every registered Channel option has accepted values and rejected controls; unregistered keys and active native keepalive, retries and service configuration fail explicitly with zero Fetch.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/client.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "CLIENT unsupported channel features fail explicitly"
+          "name": "CFG-008 every registered Channel option has exact accepted and rejected value controls"
         }
       ],
       "catalogCaseSha256": "503e1256a256137714da413c1f06a7e72944075fa9ef85bf59fe60bdcb073026"
     },
     {
       "id": "CFG-009",
-      "coverage": "partial",
-      "reason": "Unlimited GAX-style receive option does not impose a hidden 4 MiB ceiling.",
-      "gaps": [
-        "Record actual GAX defaults and reject deviations from the allowed backoff values."
-      ],
+      "coverage": "covered",
+      "reason": "All four pinned GAX package paths emit exactly -1/-1 size and 1000ms backoff defaults; actual calls retain adapter send/receive safety caps and reject altered backoffs.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/lifecycle-stream.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "LIMIT receive -1 accepts >4 MiB under safety ceiling"
+          "name": "CFG-009 pinned GAX runtimes emit exact defaults and retain adapter safety caps"
         }
       ],
       "catalogCaseSha256": "303a35043eed6d1c6ccb23d4f55c30c037bd25e243a893f0c2366634b4437e5e"
     },
     {
       "id": "CFG-010",
-      "coverage": "partial",
-      "reason": "A foreign transformed channel is rejected synchronously.",
-      "gaps": [
-        "Exercise native and arbitrary channelOverride through the alias constructor path."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed SDK aliases reject native and arbitrary channelOverride and channelFactoryOverride through direct and generated constructors before Fetch or foreign-channel activity.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
+          "source": "test/config-catalog.test.cjs",
           "command": "tests",
-          "name": "UPSTREAM interceptor configuration conflicts and foreign transformer channels are synchronous"
+          "name": "CFG-010 installed alias constructors reject arbitrary and native channelOverride before any call"
         }
       ],
       "catalogCaseSha256": "47a1e5ab0e1ae60db9d5b21915afa2178ded5cb97f5c55e0e863f310369d299f"
     },
     {
       "id": "CFG-011",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: metadata wait/cork.",
-      "gaps": [
-        "waitForReady=true 또는 corked=true를 설정한다",
-        "비지원 호출 오류, fetch 0회"
+      "coverage": "covered",
+      "reason": "Both transport modes reject waitForReady and corked metadata with one callback/status and zero authentication or Fetch, release the call, then successfully reuse the client.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "tap",
+          "source": "test/config-catalog.test.cjs",
+          "command": "tests",
+          "name": "CFG-011 waitForReady and corked metadata fail once before auth and Fetch in both modes"
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "1a635b83ff57ea3a3c5417c99fbb7c13bfadc7d36cb5c0357f9ae70a6e82f853"
     },
     {
