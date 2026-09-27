@@ -52,7 +52,7 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
     const chunkScope = compression.budget?.scope();
     const chunkLease = chunkScope?.reserve(0);
@@ -88,6 +88,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 if (!(item.value instanceof Uint8Array)) {
                     return wireError(status.INTERNAL, 'WGA_INVALID_CHUNK');
                 }
+                compression.onChunk?.(item.value.byteLength);
                 chunkLease?.resize(item.value.byteLength);
                 chunk = item.value;
                 offset = 0;

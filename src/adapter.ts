@@ -3,6 +3,7 @@ import { ClientOptions } from './client';
 import { WorkersGrpcConfig, validateConfig, INSTANCE_CONFIG, GAX_CONFIG_OPTION, createGaxConfigToken, resourcesFor } from './config-internal';
 import { WorkersGrpcConfigurationError } from './status';
 export type { ResourceLimits as WorkersGrpcResourceLimits, ResourceDiagnostics as WorkersGrpcResourceUsage } from './resources';
+export type { WorkersGrpcObserver, WorkersGrpcEvent, WorkersGrpcTraffic } from './observer';
 export function createWorkersGrpcTransport(config: WorkersGrpcConfig = {}) {
     const snapshot = validateConfig(config);
     const gaxToken = createGaxConfigToken(snapshot);

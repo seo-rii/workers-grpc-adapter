@@ -8,6 +8,7 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [Limitations](limitations.md) | Supported scope and remaining compatibility gates |
 | [Architecture](architecture.md) | Request flow, module boundaries and call lifecycle |
 | [Resource limits](resources.md) | Shared admission, queue and buffer limits, readable queues and usage counts |
+| [Observability](observability.md) | Logical-call and attempt events, durations, traffic counters and privacy boundaries |
 | [Call and stream lifetime](call-lifecycle.md) | Cancellation, destruction, iterator exit and pending writes |
 | [Interceptors](interceptors.md) | Asynchronous ordering, transformations and logical completion |
 | [Testing](testing.md) | Local setup, test layers, generated evidence and CI artifacts |

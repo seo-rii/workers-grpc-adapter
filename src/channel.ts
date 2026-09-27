@@ -5,6 +5,7 @@ import { connectivityState, status, WorkersGrpcConfigurationError as ConfigError
 import { ChannelOptions, validateOptions } from './options';
 import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, getWorkersGrpcConfig, lockConfiguration, routeFor, resourcesFor } from './config-internal';
 import type { ResourceBudget } from './resources';
+import { CallObservation } from './observer';
 const workersChannels = new WeakSet<object>();
 export function isWorkersChannel(value: unknown): value is Channel {
     return typeof value === 'object' && value !== null && workersChannels.has(value);
@@ -87,7 +88,8 @@ export class Channel {
     }
     /** The logical call stays registered through asynchronous interceptors. */
     createCallLifetime(options: CallOptions): CallLifetime {
-        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); }, this.resources);
+        const observation = this.config.observer ? new CallObservation(this.config.observer) : undefined;
+        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); }, this.resources, observation);
         this.active.add(lifetime);
         if (this.closed) lifetime.cancelWithStatus(status.UNAVAILABLE, 'WGA_CHANNEL_CLOSED');
         return lifetime;

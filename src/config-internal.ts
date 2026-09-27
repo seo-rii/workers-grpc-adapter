@@ -1,6 +1,7 @@
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
 import { validateRetryPolicy, type WorkersGrpcRetryPolicy, type RetryPolicySnapshot } from './retry';
 import { ResourceBudget, validateResourceLimits, type ResourceLimits } from './resources';
+import type { WorkersGrpcObserver } from './observer';
 export { WorkersGrpcConfigurationError } from './status';
 /** A Workers mTLS/service binding, or another trusted Fetch implementation. */
 export interface WorkersGrpcFetcher {
@@ -10,6 +11,7 @@ export type WorkersGrpcConfig = {
     fetcher?: WorkersGrpcFetcher;
     retryPolicy?: WorkersGrpcRetryPolicy;
     resourceLimits?: ResourceLimits;
+    observer?: WorkersGrpcObserver;
     defaultTimeoutMs?: number;
     transportMaxSendBytes?: number;
     transportMaxReceiveBytes?: number;
@@ -29,6 +31,7 @@ export interface WorkersGrpcConfigSnapshot {
     readonly fetcher?: WorkersGrpcFetcher;
     readonly retryPolicy?: RetryPolicySnapshot;
     readonly resourceLimits: Readonly<ResourceLimits>;
+    readonly observer?: WorkersGrpcObserver;
     readonly mode: 'cloudflare' | 'grpc-web';
     readonly endpoints: Readonly<Record<string, string>>;
     readonly defaultTimeoutMs?: number;
@@ -109,10 +112,12 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         return fail('WGA_INVALID_CONFIG', 'Configuration must be an object');
     }
     for (const key of Object.keys(input)) {
-        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy', 'resourceLimits', 'experimentalRequestStreaming'].includes(key)) {
+        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy', 'resourceLimits', 'observer', 'experimentalRequestStreaming'].includes(key)) {
             return fail('WGA_INVALID_CONFIG', 'Unknown configuration key');
         }
     }
+    const observer = input.observer;
+    if (observer !== undefined && typeof observer !== 'function') return fail('WGA_INVALID_CONFIG', 'Observer must be a function');
     const mode = input.mode ?? 'cloudflare';
     if (mode !== 'cloudflare' && mode !== 'grpc-web') {
         return fail('WGA_INVALID_CONFIG', 'Invalid transport mode');
@@ -161,6 +166,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         fetcher: snapshotFetcher(input.fetcher),
         retryPolicy: validateRetryPolicy(input.retryPolicy),
         resourceLimits: validateResourceLimits(input.resourceLimits),
+        observer,
         defaultTimeoutMs: budget(input.defaultTimeoutMs, 'defaultTimeoutMs'),
         transportMaxSendBytes: budget(input.transportMaxSendBytes, 'transportMaxSendBytes', 32 * 1024 * 1024)!,
         transportMaxReceiveBytes: budget(input.transportMaxReceiveBytes, 'transportMaxReceiveBytes', 32 * 1024 * 1024)!,
@@ -181,7 +187,8 @@ export function configureWorkersGrpc(config: WorkersGrpcConfig): WorkersGrpcConf
     const next = validateConfig(config);
     const previousFetcher = snapshot.fetcher && fetcherIdentities.get(snapshot.fetcher);
     const nextFetcher = next.fetcher && fetcherIdentities.get(next.fetcher);
-    if (previousFetcher?.receiver === nextFetcher?.receiver && previousFetcher?.method === nextFetcher?.method && JSON.stringify(next) === JSON.stringify(snapshot)) {
+    if (previousFetcher?.receiver === nextFetcher?.receiver && previousFetcher?.method === nextFetcher?.method
+        && next.observer === snapshot.observer && JSON.stringify(next) === JSON.stringify(snapshot)) {
         configured = true;
         return snapshot;
     }

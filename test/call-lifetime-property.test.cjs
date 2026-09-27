@@ -36,7 +36,7 @@ async function runSchedule(schedule, deadlineKind, mode) {
     const saved = { now: Date.now, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout };
     let now = 1000, timerId = 0, client;
     const timers = new Map(), auth = gate(), reply = gate();
-    const codes = [], statuses = [], events = [];
+    const codes = [], statuses = [], events = [], observations = [];
     let start, message, fetches = 0, authCalls = 0, expectedCode, expectedFetches = 0;
     let didStart = false, didMessage = false, didAuth = false, didReply = false, bodyCancels = 0;
     let responseBody, signal;
@@ -59,6 +59,11 @@ async function runSchedule(schedule, deadlineKind, mode) {
     try {
         const config = { mode, ...(mode === 'grpc-web' ? { endpoints: { 'lifetime.test': 'https://gateway.test' } } : {}),
             ...(deadlineKind === 'default' ? { defaultTimeoutMs: 40 } : {}),
+            observer(event) {
+                observations.push(event);
+                if (event.type === 'fetch-start') throw new Error('observer throw must not affect schedules');
+                if (event.type === 'auth-end') return Promise.reject(new Error('observer rejection must be observed'));
+            },
             fetcher: { async fetch(_url, init) {
                 fetches++; signal = init.signal;
                 assert.deepEqual(JSON.parse(Buffer.from(init.body).subarray(5).toString()), { tenant: 'rewritten' });
@@ -100,7 +105,19 @@ async function runSchedule(schedule, deadlineKind, mode) {
             assert.equal(client.getChannel().activeCallCount(), terminal ? 0 : 1);
             assert.equal(parent.listenerCount('cancelled'), terminal ? 0 : 1);
             assert.equal(timers.size, !terminal && deadlineKind !== 'infinite' ? 1 : 0);
+            assert.equal(observations.filter(value => value.type === 'call-start').length, 1);
+            assert.equal(new Set(observations.map(value => value.logicalCallId)).size, 1);
+            assert.ok(observations.every(Object.isFrozen));
+            assert.equal(observations.filter(value => value.type === 'fetch-start').length, fetches);
+            const endings = observations.filter(value => value.type === 'call-end');
+            assert.equal(endings.length, Number(terminal));
             if (terminal) {
+                assert.equal(endings[0], observations.at(-1), 'no observer events may follow local completion');
+                assert.equal(endings[0].statusCode, expectedCode);
+                assert.equal(endings[0].fetchCount, fetches);
+                assert.equal(endings[0].attemptCount, Number(didStart));
+                assert.equal(observations.filter(value => value.type === 'attempt-end').length, Number(didStart));
+                assert.ok(observations.every((value, index) => index === 0 || value.elapsedMs >= observations[index - 1].elapsedMs));
                 const info = wire.diagnostics();
                 assert.equal(info.terminal, true);
                 assert.equal(info.timerActive, false);

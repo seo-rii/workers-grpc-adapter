@@ -41,9 +41,10 @@ try {
     for (const [name, module, moduleResolution] of [['node16', ts.ModuleKind.Node16, ts.ModuleResolutionKind.Node16], ['nodenext', ts.ModuleKind.NodeNext, ts.ModuleResolutionKind.NodeNext], ['bundler', ts.ModuleKind.ESNext, ts.ModuleResolutionKind.Bundler]]) {
         const legacySource = fs.readFileSync(path.join(root, 'test/types-legacy-google-auth.cts'), 'utf8');
         const transportSource = fs.readFileSync(path.join(root, 'test/types-transport-features.cts'), 'utf8');
-        const files = ['consumer.mts', 'consumer.cts', 'legacy.mts', 'legacy.cts', 'transport.mts', 'transport.cts'].map(n => {
+        const observerSource = fs.readFileSync(path.join(root, 'test/types-observer.cts'), 'utf8');
+        const files = ['consumer.mts', 'consumer.cts', 'legacy.mts', 'legacy.cts', 'transport.mts', 'transport.cts', 'observer.mts', 'observer.cts'].map(n => {
             const file = path.join(dir, n);
-            fs.writeFileSync(file, n.startsWith('legacy.') ? legacySource : n.startsWith('transport.') ? transportSource : source);
+            fs.writeFileSync(file, n.startsWith('legacy.') ? legacySource : n.startsWith('transport.') ? transportSource : n.startsWith('observer.') ? observerSource : source);
             return file;
         });
         compile({ module, moduleResolution, noEmit: true, declaration: false, rootDir: dir }, files);

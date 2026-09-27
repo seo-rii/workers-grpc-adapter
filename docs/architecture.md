@@ -45,6 +45,7 @@ All paths below are relative to `src/`.
 | `call-lifetime.ts` | Logical deadline, parent cancellation, admission, and completion outside interceptors |
 | `call.ts` | Authentication, Fetch attempts, transport cancellation and buffer ownership |
 | `resources.ts` | Snapshot-scoped FIFO admission and buffer reservations |
+| `observer.ts` | Optional logical-call and attempt events, monotonic timing and cumulative traffic counters |
 | `wire.ts` | Incremental frame parsing, length checks, trailers and metadata |
 | `compression.ts` | Bounded identity/gzip/deflate message transforms |
 | `retry.ts` | Exact-method unary replay policy and bounded backoff |
@@ -69,6 +70,8 @@ Logical completion does not wait for a stalled interceptor continuation or a res
 The decoder consumes the current Fetch chunk and frame instead of assembling the whole response. The transport can read one message ahead. Optional buffer reservations account for request snapshots, framing, current chunks and exposed codec buffers across calls sharing one transport. They persist while an outstanding Fetch still owns an encoded body, even after local cancellation. Readable object queues have a separate configurable high-water mark; arbitrary decoded objects and runtime allocations remain outside the byte budget.
 
 Long deadlines use timer intervals no greater than `2^31 − 1` milliseconds. An explicit infinite deadline is preserved rather than replaced with the configured default. This timer does not cover all SDK initialization before the Call exists.
+
+An optional [observer](observability.md) captures lifecycle transitions into immutable events and invokes application callbacks in microtasks. One logical identifier spans adapter retries; SDK retries create new calls. Completion events report cumulative traffic, while resource diagnostics report retained reservations. Observer failures are isolated from RPC status and cleanup, and no telemetry dependency or remote exporter is included. Logical completion still does not prove that an uncooperative Fetch released its body or a remote handler stopped.
 
 ## Module identity
 

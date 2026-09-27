@@ -1,6 +1,7 @@
 import { Metadata } from './metadata';
 import { status, propagate, TransportError } from './status';
 import type { ResourceBudget } from './resources';
+import type { CallObservation } from './observer';
 import type { CallOptions, WorkersCall } from './call';
 import type { InterceptingCallInterface } from './client-interceptors';
 import type { InterceptingListener, MessageContext, StatusObject } from './call-interface';
@@ -24,7 +25,7 @@ export class CallLifetime implements InterceptingCallInterface {
     private readonly transports = new Set<WorkersCall>();
     private readonly writes = new Set<(error?: Error | null) => void>();
     constructor(options: CallOptions, private readonly defaultTimeoutMs: number | undefined,
-        private readonly onFinish: () => void, private readonly resources?: ResourceBudget) {
+        private readonly onFinish: () => void, private readonly resources?: ResourceBudget, readonly observation?: CallObservation) {
         this.options = options;
         this.applyOptions(options);
     }
@@ -48,6 +49,7 @@ export class CallLifetime implements InterceptingCallInterface {
     start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
         if (this.started) throw new Error('Call already started');
         this.started = true;
+        this.observation?.start();
         this.listener = listener;
         if (this.terminal) { this.deliver(); return; }
         if (typeof this.deadline !== 'number' || Number.isNaN(this.deadline) || this.deadline === -Infinity) {
@@ -63,10 +65,12 @@ export class CallLifetime implements InterceptingCallInterface {
         const begin = () => {
             if (this.terminal) return;
             this.chainStarted = true;
+            this.observation?.admitted();
             this.startChain(metadata);
             while (!this.terminal && this.pending.length) this.pending.shift()!();
         };
         if (!this.resources) { begin(); return; }
+        if (this.resources.limits.maxConcurrentCalls !== undefined) this.observation?.queue();
         const admission = this.resources.acquire(this.admissionAborter.signal);
         void admission.then(release => {
             if (this.terminal) { release(); return; }
@@ -186,6 +190,7 @@ export class CallLifetime implements InterceptingCallInterface {
         try { this.nextCall?.disposePending?.(); } catch { /* Custom cleanup cannot veto completion. */ }
         for (const call of this.transports) call.cancelWithStatus(result.code, result.details);
         this.transports.clear();
+        this.observation?.finish(result.code);
         if (fromListener) this.deliver(true);
         for (const done of this.writes) queueMicrotask(() => done(new Error('WGA_CALL_TERMINATED')));
         this.writes.clear();

@@ -10,6 +10,7 @@ import { retryDelay, type RetryPolicySnapshot } from './retry';
 import { RequestStreamBody } from './request-stream';
 import type { CallLifetime } from './call-lifetime';
 import type { ResourceBudget, ResourceScope } from './resources';
+import { CallObservation } from './observer';
 export type Deadline = Date | number;
 /** The cancellation/deadline subset of grpc-js ServerSurfaceCall used by clients. */
 export interface ParentCall {
@@ -86,12 +87,15 @@ export class WorkersCall {
     private readonly aborter = new AbortController();
     private fetchCount = 0;
     private responseBytes = 0;
+    private readonly observation?: CallObservation;
     constructor(private readonly context: CallContext) {
+        this.observation = context.lifetime?.observation ?? (context.config.observer ? new CallObservation(context.config.observer) : undefined);
         this.credentials = context.credentials._getCallCredentials();
         if (context.requestStream && context.config.mode === 'grpc-web' && context.config.experimentalRequestStreaming) {
             this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
                 maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
                 budget: context.resources,
+                onFrame: this.observation ? bytes => this.observation!.sent(bytes) : undefined,
                 // Fetch can cancel an upload after an early server response.
                 // Stop producers, but let that response (or the logical call
                 // deadline/abort) determine the RPC's terminal status.
@@ -130,6 +134,7 @@ export class WorkersCall {
             throw new Error('Call already started');
         }
         this.started = true;
+        if (!this.context.lifetime) this.observation?.start();
         this.listener = listener;
         if (this.terminal) {
             this.deliverTerminal();
@@ -203,15 +208,20 @@ export class WorkersCall {
             return;
         }
         if (!c.lifetime && c.resources) {
+            if (c.resources.limits.maxConcurrentCalls !== undefined) this.observation?.queue();
             void c.resources.acquire(this.aborter.signal).then(release => {
                 if (this.terminal) { release(); return; }
                 this.releaseAdmission = release;
+                this.observation?.admitted();
                 return this.refreshCredentials().then(() => this.maybeFetch());
             }).catch(error => {
                 if (!this.terminal) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
                     error instanceof TransportError ? error.diagnostic : 'WGA_CALL_ADMISSION');
             });
-        } else void this.refreshCredentials().then(() => this.maybeFetch());
+        } else {
+            if (!c.lifetime) this.observation?.admitted();
+            void this.refreshCredentials().then(() => this.maybeFetch());
+        }
     }
     private attachParent(flags: number): boolean {
         const parent = this.context.options.parent;
@@ -250,6 +260,7 @@ export class WorkersCall {
     }
     private async refreshCredentials(): Promise<void> {
         if (this.terminal) return;
+        this.observation?.beginAttempt();
         const c = this.context;
         const service = c.path.slice(0, c.path.lastIndexOf('/'));
         const authOrigin = new URL('https://' + c.authority).origin;
@@ -262,8 +273,13 @@ export class WorkersCall {
             this.metadata = this.baseMetadata!.clone();
             this.metadata.merge(auth);
             this.authReady = true;
+            this.observation?.authEnd(status.OK);
         } catch (error) {
-            if (!this.terminal) this.finish(authErrorCode(error), 'WGA_AUTH_METADATA');
+            if (!this.terminal) {
+                const code = authErrorCode(error);
+                this.observation?.authEnd(code);
+                this.finish(code, 'WGA_AUTH_METADATA');
+            }
         }
     }
     sendMessageWithContext(context: {
@@ -385,6 +401,7 @@ export class WorkersCall {
             try {
                 const outcome = await this.executeAttempt(policy, attempt);
                 if (!outcome || this.terminal) return;
+                this.observation?.endAttempt(outcome.result.code);
                 const delay = policy && outcome.retryable && policy.retryableStatusCodes.includes(outcome.result.code)
                     ? retryDelay(policy, attempt, outcome.result.metadata.get('grpc-retry-pushback-ms')) : undefined;
                 if (delay === undefined) {
@@ -392,6 +409,7 @@ export class WorkersCall {
                     this.finishObject(outcome.result);
                     return;
                 }
+                this.observation?.retry(attempt, delay, outcome.result.code);
                 await new Promise<void>(resolve => {
                     const signal = this.aborter.signal;
                     let timer: ReturnType<typeof setTimeout>;
@@ -451,6 +469,7 @@ export class WorkersCall {
                 cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
             };
             this.fetchCount++;
+            this.observation?.fetchStart(Buffer.isBuffer(body) ? body.length : 0);
             let response: Response;
             try {
                 response = await (c.config.fetcher ? c.config.fetcher.fetch(c.origin + c.path, init) : fetch(c.origin + c.path, init));
@@ -465,6 +484,7 @@ export class WorkersCall {
                 void response.body?.cancel().catch(() => {});
                 return;
             }
+            this.observation?.headers();
             if (response.status >= 300 && response.status < 400) {
                 void response.body?.cancel().catch(() => {});
                 this.finish(status.UNKNOWN, 'WGA_REDIRECT_BLOCKED');
@@ -493,7 +513,8 @@ export class WorkersCall {
             if (headerStatus) this.closeUploadFromResponse();
             if (response.body) {
                 for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
-                    { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes, budget: c.resources })) {
+                    { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes,
+                        budget: c.resources, onChunk: this.observation ? bytes => this.observation!.received(bytes) : undefined })) {
                     if (this.terminal) return;
                     if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
                     if (frame.trailer) {
@@ -502,6 +523,7 @@ export class WorkersCall {
                         continue;
                     }
                     committed = true;
+                    this.observation?.message(frame.payload.length);
                     this.releaseRequest();
                     if (pendingInitial) {
                         const metadata = pendingInitial; pendingInitial = undefined;
@@ -542,6 +564,8 @@ export class WorkersCall {
             return;
         }
         this.terminal = result;
+        this.observation?.endAttempt(result.code);
+        if (!this.context.lifetime) this.observation?.finish(result.code);
         const detachParent = this.removeParentListener;
         this.removeParentListener = undefined;
         try { detachParent?.(); } catch { /* A malformed parent cannot prevent terminal cleanup. */ }

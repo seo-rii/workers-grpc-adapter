@@ -11,6 +11,8 @@ export interface RequestStreamBodyOptions {
     /** Fetch cancelled the request body; emitted at most once. */
     onCancel?: (error: Error) => void;
     budget?: ResourceBudget;
+    /** Internal wire counter: a frame has been accepted by the body reader. */
+    onFrame?: (bytes: number) => void;
 }
 interface PendingWrite {
     bytes: number;
@@ -34,6 +36,7 @@ export class RequestStreamBody {
     private readonly compression: CompressionEncoding;
     private readonly onCancel?: (error: Error) => void;
     private readonly budget?: ResourceBudget;
+    private readonly onFrame?: (bytes: number) => void;
     constructor(options: RequestStreamBodyOptions) {
         for (const [size, minimum] of [[options.maxMessageBytes, 0], [options.maxWireBytes, 1]]) {
             if (!Number.isSafeInteger(size) || size < minimum || size > 2147483647) {
@@ -48,6 +51,7 @@ export class RequestStreamBody {
         this.compression = options.compression;
         this.onCancel = options.onCancel;
         this.budget = options.budget;
+        this.onFrame = options.onFrame;
         this.body = new ReadableStream<Uint8Array>({
             start: controller => { this.controller = controller; },
             pull: () => { this.demand = true; this.flush(); },
@@ -139,6 +143,7 @@ export class RequestStreamBody {
         this.demand = false;
         try {
             this.controller.enqueue(pending.frame);
+            this.onFrame?.(pending.frame.byteLength);
             pending.scope?.close();
             pending.resolve();
             if (this.ending) { this.closed = true; this.controller.close(); }
