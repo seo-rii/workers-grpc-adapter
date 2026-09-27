@@ -309,27 +309,52 @@
     },
     {
       "id": "TYPE-001",
-      "coverage": "partial",
-      "reason": "Identical real SDK ESM/CommonJS consumers compile in node16 with strict and skipLibCheck=false.",
-      "gaps": [
-        "The present consumer does not exhaust all planned root/config/deep or tuple/Key/Transaction/Query contracts."
-      ],
+      "coverage": "covered",
+      "reason": "Identical installed native/replacement SDK and generated-client consumers pass strict Node16 in ESM/CommonJS, including root/config/deep imports and inferred SDK tuple, Key, Query and Transaction contracts.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-001",
             "runtime": "native",
             "mode": "node16"
           },
-          "anchor": "node16",
+          "anchor": "TYPE-001",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query"
+              ]
             }
           ]
         },
@@ -338,16 +363,44 @@
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-001",
             "runtime": "replacement",
             "mode": "node16"
           },
-          "anchor": "node16",
+          "anchor": "TYPE-001",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query",
+                "adapter-config"
+              ]
             }
           ]
         }
@@ -356,27 +409,52 @@
     },
     {
       "id": "TYPE-002",
-      "coverage": "partial",
-      "reason": "Identical real SDK ESM/CommonJS consumers compile in nodenext with strict and skipLibCheck=false.",
-      "gaps": [
-        "The present consumer does not exhaust all planned root/config/deep or tuple/Key/Transaction/Query contracts."
-      ],
+      "coverage": "covered",
+      "reason": "Identical installed native/replacement SDK and generated-client consumers pass strict NodeNext in ESM/CommonJS, including root/config/deep imports and inferred SDK tuple, Key, Query and Transaction contracts.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-002",
             "runtime": "native",
             "mode": "nodenext"
           },
-          "anchor": "nodenext",
+          "anchor": "TYPE-002",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query"
+              ]
             }
           ]
         },
@@ -385,16 +463,44 @@
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-002",
             "runtime": "replacement",
             "mode": "nodenext"
           },
-          "anchor": "nodenext",
+          "anchor": "TYPE-002",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query",
+                "adapter-config"
+              ]
             }
           ]
         }
@@ -403,27 +509,52 @@
     },
     {
       "id": "TYPE-003",
-      "coverage": "partial",
-      "reason": "Identical real SDK ESM/CommonJS consumers compile in bundler with strict and skipLibCheck=false.",
-      "gaps": [
-        "The present consumer does not exhaust all planned root/config/deep or tuple/Key/Transaction/Query contracts."
-      ],
+      "coverage": "covered",
+      "reason": "Identical installed native/replacement SDK and generated-client consumers pass strict Bundler resolution in ESM/CommonJS, preserving inferred SDK tuple, Key, Query and Transaction contracts.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-003",
             "runtime": "native",
             "mode": "bundler"
           },
-          "anchor": "bundler",
+          "anchor": "TYPE-003",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query"
+              ]
             }
           ]
         },
@@ -432,16 +563,44 @@
           "report": "compatibility/google-types.json",
           "source": "scripts/test-sdk-types.cjs",
           "command": "sdk-types",
-          "array": "/results",
+          "array": "/catalogCases",
           "where": {
+            "id": "TYPE-003",
             "runtime": "replacement",
             "mode": "bundler"
           },
-          "anchor": "bundler",
+          "anchor": "TYPE-003",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "installed-root-and-deep",
+                "sdk-tuple-key-transaction-query",
+                "adapter-config"
+              ]
             }
           ]
         }
@@ -450,46 +609,1325 @@
     },
     {
       "id": "TYPE-004",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: unary overload.",
-      "gaps": [
-        "generated와 직접 Client에 네 unary overload를 각각 사용한다",
-        "request/metadata/options/callback 및 반환 call 타입 유지"
+      "coverage": "covered",
+      "reason": "All four direct and actual generated-client unary overloads retain callback/request and inferred return types in both installed runtimes and all three resolutions; invalid call shapes fail compilation.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "native",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "native",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "native",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "replacement",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "replacement",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-004",
+            "runtime": "replacement",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-004",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/invalidCallsRejected",
+              "equals": true
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "9adee57d5984957c88bb8f4f3ba60bba47673f88f126c145844afbb50c8ad4cf"
     },
     {
       "id": "TYPE-005",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: server-stream overload.",
-      "gaps": [
-        "네 readable stream overload와 listener를 사용한다",
-        "typed message/metadata/error 및 cancel 표면 유지"
+      "coverage": "covered",
+      "reason": "All four direct and generated readable overloads retain inferred stream/deserializer types and cancel; metadata/status are inferred, message/error listeners are explicitly typed as the pinned EventEmitter surface permits broad fallback signatures.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "native",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "native",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "native",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "replacement",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "replacement",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-005",
+            "runtime": "replacement",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-005",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/directCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/generatedCallShapes",
+              "equals": 4
+            },
+            {
+              "pointer": "/cancel",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitMessageListener",
+              "equals": true
+            },
+            {
+              "pointer": "/explicitServiceErrorListener",
+              "equals": true
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "f2a7b1bd9b7ae3c670fcab538281377b4d7274c5e4ff9c471af78db5bb1ac5f0"
     },
     {
       "id": "TYPE-006",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: 잘못된 공개 설정.",
-      "gaps": [
-        "mode 누락 mapping, 잘못된 숫자 타입, readonly 수정 예제를 typecheck한다",
-        "의도한 compile-time 오류가 발생"
+      "coverage": "covered",
+      "reason": "Ten invalid mapping, numeric and readonly configuration examples produce exact compiler diagnostics in every replacement resolution, with no unrelated diagnostics and strict checking enabled.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-006",
+            "runtime": "replacement",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-006",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/rejectedCases",
+              "equals": [
+                {
+                  "name": "missing-mode",
+                  "line": 8,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "missing-mapping",
+                  "line": 10,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "numeric-timeout",
+                  "line": 12,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-send",
+                  "line": 14,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-receive",
+                  "line": 16,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "readonly-mode",
+                  "line": 18,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-timeout",
+                  "line": 20,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-mapping",
+                  "line": 22,
+                  "codes": [
+                    2542
+                  ]
+                },
+                {
+                  "name": "readonly-resources",
+                  "line": 24,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "cloudflare-mapping",
+                  "line": 26,
+                  "codes": [
+                    2345
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-006",
+            "runtime": "replacement",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-006",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/rejectedCases",
+              "equals": [
+                {
+                  "name": "missing-mode",
+                  "line": 8,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "missing-mapping",
+                  "line": 10,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "numeric-timeout",
+                  "line": 12,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-send",
+                  "line": 14,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-receive",
+                  "line": 16,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "readonly-mode",
+                  "line": 18,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-timeout",
+                  "line": 20,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-mapping",
+                  "line": 22,
+                  "codes": [
+                    2542
+                  ]
+                },
+                {
+                  "name": "readonly-resources",
+                  "line": 24,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "cloudflare-mapping",
+                  "line": 26,
+                  "codes": [
+                    2345
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-006",
+            "runtime": "replacement",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-006",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/rejectedCases",
+              "equals": [
+                {
+                  "name": "missing-mode",
+                  "line": 8,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "missing-mapping",
+                  "line": 10,
+                  "codes": [
+                    2345
+                  ]
+                },
+                {
+                  "name": "numeric-timeout",
+                  "line": 12,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-send",
+                  "line": 14,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "numeric-receive",
+                  "line": 16,
+                  "codes": [
+                    2322
+                  ]
+                },
+                {
+                  "name": "readonly-mode",
+                  "line": 18,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-timeout",
+                  "line": 20,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "readonly-mapping",
+                  "line": 22,
+                  "codes": [
+                    2542
+                  ]
+                },
+                {
+                  "name": "readonly-resources",
+                  "line": 24,
+                  "codes": [
+                    2540
+                  ]
+                },
+                {
+                  "name": "cloudflare-mapping",
+                  "line": 26,
+                  "codes": [
+                    2345
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "50032168f27975c79a19dd48295fc2fba4f5b0e73059fa967dc84dc235532d02"
     },
     {
       "id": "TYPE-007",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: server type-only 소비.",
-      "gaps": [
-        "필요한 server 타입 선언만 참조한 SDK를 build한다",
-        "선언은 해결하되 runtime server 기능을 끌어오지 않음"
+      "coverage": "covered",
+      "reason": "Installed native/replacement SDK consumers resolve the supported root Server, ServerCredentials and ServerMethodDefinition types; emitted ESM/CommonJS retain the sentinel and erase all runtime imports in every resolution.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "native",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "native",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "native",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "replacement",
+            "mode": "node16"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "replacement",
+            "mode": "nodenext"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "compatibility/google-types.json",
+          "source": "scripts/test-sdk-types.cjs",
+          "command": "sdk-types",
+          "array": "/catalogCases",
+          "where": {
+            "id": "TYPE-007",
+            "runtime": "replacement",
+            "mode": "bundler"
+          },
+          "anchor": "TYPE-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/consumers",
+              "equals": [
+                "esm",
+                "commonjs"
+              ]
+            },
+            {
+              "pointer": "/diagnostics",
+              "equals": []
+            },
+            {
+              "pointer": "/emitted/0/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/emitted/1/runtimeImports",
+              "equals": 0
+            },
+            {
+              "pointer": "/scope",
+              "equals": "Supported root server type surface, not native server handler implementation parity"
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "1f07ad1a9639511b902d813964ae8d0ab9637103626cda7ca6d66e2035b65d45"
     },
     {

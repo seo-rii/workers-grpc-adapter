@@ -6,7 +6,9 @@ const root = path.resolve(__dirname, '..');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-types-'));
 const target = path.join(dir, 'node_modules/@grpc');
 fs.mkdirSync(target, { recursive: true });
-fs.symlinkSync(root, path.join(target, 'grpc-js'), 'dir');
+const installed = path.join(root, 'fixtures/google/node_modules/@grpc/grpc-js');
+if (!fs.existsSync(path.join(installed, 'package.json'))) throw new Error('Run npm run fixtures:install before checking packed declarations');
+fs.symlinkSync(installed, path.join(target, 'grpc-js'), 'dir');
 const source = `import { Client, Metadata, credentials, status } from '@grpc/grpc-js';
 import { Client as DeepClient } from '@grpc/grpc-js/build/src/client';
 import { configureWorkersGrpc, WorkersGrpcConfig } from '@grpc/grpc-js/config';
@@ -45,7 +47,8 @@ try {
         const sources = { consumer: source, legacy: legacySource, transport: transportSource, observer: observerSource,
             statusDetails: fs.readFileSync(path.join(root, 'test/types-status-details.cts'), 'utf8'),
             retryThrottling: fs.readFileSync(path.join(root, 'test/types-retry-throttling.cts'), 'utf8'),
-            serverStreaming: fs.readFileSync(path.join(root, 'test/types-server-streaming.cts'), 'utf8') };
+            serverStreaming: fs.readFileSync(path.join(root, 'test/types-server-streaming.cts'), 'utf8'),
+            catalogConfig: fs.readFileSync(path.join(root, 'test/types-catalog-config.cts'), 'utf8') };
         const files = Object.entries(sources).flatMap(([name, content]) => ['mts', 'cts'].map(extension => {
             const file = path.join(dir, `${name}.${extension}`);
             fs.writeFileSync(file, content); return file;
@@ -53,7 +56,7 @@ try {
         compile({ module, moduleResolution, noEmit: true, declaration: false, rootDir: dir }, files);
         results.push({ mode: name, status: 'passed', skipLibCheck: false, strict: true });
     }
-    fs.writeFileSync(path.join(root, 'verification/types.json'), JSON.stringify({ scope: 'prototype API declarations, not Google SDK types', results }, null, 2) + '\n');
+    fs.writeFileSync(path.join(root, 'verification/types.json'), JSON.stringify({ scope: 'installed packed adapter API declarations; real Google SDK consumers use google-types.json', package: require(path.join(installed, 'package.json')).name, results }, null, 2) + '\n');
     console.log(JSON.stringify(results, null, 2));
 }
 finally {
