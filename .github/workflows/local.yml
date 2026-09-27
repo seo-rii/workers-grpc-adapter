@@ -171,7 +171,9 @@ jobs:
           with tarfile.open(archive, 'w:gz') as output:
               if reports.is_dir():
                   for file in sorted(reports.rglob('*')):
-                      if file.is_file() and not file.is_symlink() and file.suffix in {'.json', '.log', '.tap'}:
+                      generated_contract = file.relative_to(reports).parts[0] in {'api-contracts', 'type-contracts'}
+                      if file.is_file() and not file.is_symlink() and (file.suffix in {'.json', '.log', '.tap'}
+                              or generated_contract and file.suffix in {'.ts', '.mjs', '.cjs'}):
                           output.add(file, arcname=str(file.relative_to(root)), recursive=False)
               for name in generated:
                   file = root / 'compatibility' / name

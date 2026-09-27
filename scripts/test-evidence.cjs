@@ -9,9 +9,12 @@ const ts = require('typescript');
 const { validateWorkerdServerStreamingReport } = require('./server-streaming-evidence.cjs');
 const { validateSdkBenchmarkReport } = require('./sdk-benchmark-evidence.cjs');
 const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
+const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
+const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
+    'verification/api-contracts.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
@@ -522,7 +525,7 @@ function validateProvenance(root, report) {
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
-        ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
+        ['nativeDifferential', 'verification/native-differential.json'], ['apiContracts', 'verification/api-contracts.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
         ['workersFederatedAuth', 'verification/workers-federated-auth.json'], ['workersLegacyAuth', 'verification/workers-legacy-auth.json'], ['secretManagerExtended', 'verification/secret-manager-extended.json'],
@@ -556,10 +559,12 @@ function validateProvenance(root, report) {
     validateWorkerdServerStreamingReport(report.workerdServerStreaming);
     validateSdkBenchmarkReport(report.sdkBenchmark);
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
-    for (const [id, result] of [['workerd-server-streaming', report.workerdServerStreaming],
+    validateApiContractsReport(report.apiContracts);
+    for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
-        for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs })) {
+        for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,
+            ...result.nativeInputs, ...result.generatedArtifacts })) {
             need(hash(root, file) === expected, `${file}: ${id} execution input drift`);
         }
     }
@@ -577,6 +582,11 @@ function validateProvenance(root, report) {
             && run.result.generatedRuns === 16000, 'required Node fuzz properties are incomplete');
     }
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);
+    validateTypeContractReport(report.googleSdk.declarations);
+    for (const [file, expected] of Object.entries({ ...report.googleSdk.declarations.evidence,
+        ...report.googleSdk.declarations.installedInputs, ...report.googleSdk.declarations.generatedArtifacts })) {
+        need(hash(root, file) === expected, `${file}: type contract execution input/artifact drift`);
+    }
     const packaging = report.packaging;
     const artifact = `artifacts/${packaging.actualReplacementTarball}`;
     const bytes = fs.readFileSync(location(root, artifact));
@@ -645,7 +655,9 @@ function assemble(root = ROOT) {
     const provenance = validateProvenance(root, report);
     const emulatorArtifacts = validateEmulatorArtifacts(root, report.googleEmulators);
     const lifecycleArtifacts = validateLifecycleArtifacts(root, report.emulatorLifecycle);
-    const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)), ...report.commands.map(command => `verification/${command.log}`),
+    const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)),
+        ...Object.keys(report.googleSdk.declarations.generatedArtifacts || {}), ...Object.keys(report.apiContracts.generatedArtifacts || {}),
+        ...report.commands.map(command => `verification/${command.log}`),
         ...report.fuzzCampaign.runs.flatMap(run => [run.report, run.log, ...(run.kind === 'node' ? [run.result.log] : [])])];
     return { schemaVersion: 1, status: 'passed', scope: 'offline provenance and reviewed case evidence; not full release certification',
         releaseEligible: false, inputs, artifactHashes: { ...Object.fromEntries([...new Set(artifacts)].sort().map(file => [file, hash(root, file)])), ...emulatorArtifacts.artifactHashes }, externalArtifactHashes: { ...emulatorArtifacts.externalArtifactHashes, ...lifecycleArtifacts }, provenance,

@@ -53,6 +53,7 @@ function main() {
     run('vendor', ['vendor/verify.cjs']);
     run('exports-contract', ['scripts/test-contract.cjs']);
     run('native-differential', ['test/native-differential.cjs']);
+    run('api-contracts', ['scripts/test-api-contracts.cjs']);
     run('sdk-types', ['scripts/test-sdk-types.cjs']);
     run('sdk-local', ['scripts/google-local-test.cjs']);
     run('google-auth', ['scripts/test-google-auth.cjs']);
@@ -145,6 +146,7 @@ function main() {
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
+        apiContracts: read('api-contracts.json'),
         workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
         workerdServerStreaming: read('workerd-server-streaming.json'), workerdTransportExtensions: read('workerd-transport-extensions.json'), sdkBenchmark: read('sdk-benchmark.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
