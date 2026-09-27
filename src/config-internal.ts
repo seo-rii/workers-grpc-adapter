@@ -1,5 +1,5 @@
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
-import { validateRetryPolicy, type WorkersGrpcRetryPolicy, type RetryPolicySnapshot } from './retry';
+import { validateRetryPolicy, validateRetryThrottling, RetryThrottle, type WorkersGrpcRetryPolicy, type RetryPolicySnapshot, type WorkersGrpcRetryThrottling } from './retry';
 import { ResourceBudget, validateResourceLimits, type ResourceLimits } from './resources';
 import type { WorkersGrpcObserver } from './observer';
 export { WorkersGrpcConfigurationError } from './status';
@@ -10,6 +10,7 @@ export interface WorkersGrpcFetcher {
 export type WorkersGrpcConfig = {
     fetcher?: WorkersGrpcFetcher;
     retryPolicy?: WorkersGrpcRetryPolicy;
+    retryThrottling?: WorkersGrpcRetryThrottling;
     resourceLimits?: ResourceLimits;
     observer?: WorkersGrpcObserver;
     defaultTimeoutMs?: number;
@@ -30,6 +31,7 @@ export type WorkersGrpcConfig = {
 export interface WorkersGrpcConfigSnapshot {
     readonly fetcher?: WorkersGrpcFetcher;
     readonly retryPolicy?: RetryPolicySnapshot;
+    readonly retryThrottling?: Readonly<WorkersGrpcRetryThrottling>;
     readonly resourceLimits: Readonly<ResourceLimits>;
     readonly observer?: WorkersGrpcObserver;
     readonly mode: 'cloudflare' | 'grpc-web';
@@ -112,11 +114,12 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         return fail('WGA_INVALID_CONFIG', 'Configuration must be an object');
     }
     for (const key of Object.keys(input)) {
-        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy', 'resourceLimits', 'observer', 'experimentalRequestStreaming'].includes(key)) {
+        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy', 'retryThrottling', 'resourceLimits', 'observer', 'experimentalRequestStreaming'].includes(key)) {
             return fail('WGA_INVALID_CONFIG', 'Unknown configuration key');
         }
     }
     const observer = input.observer;
+    if (input.retryThrottling !== undefined && input.retryPolicy === undefined) return fail('WGA_INVALID_RETRY_THROTTLING', 'Retry throttling requires an explicit retry policy');
     if (observer !== undefined && typeof observer !== 'function') return fail('WGA_INVALID_CONFIG', 'Observer must be a function');
     const mode = input.mode ?? 'cloudflare';
     if (mode !== 'cloudflare' && mode !== 'grpc-web') {
@@ -165,6 +168,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         experimentalRequestStreaming: input.experimentalRequestStreaming === true,
         fetcher: snapshotFetcher(input.fetcher),
         retryPolicy: validateRetryPolicy(input.retryPolicy),
+        retryThrottling: validateRetryThrottling(input.retryThrottling),
         resourceLimits: validateResourceLimits(input.resourceLimits),
         observer,
         defaultTimeoutMs: budget(input.defaultTimeoutMs, 'defaultTimeoutMs'),
@@ -173,6 +177,16 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         allowInsecureLocalhost: input.allowInsecureLocalhost === true });
 }
 const resourceBudgets = new WeakMap<WorkersGrpcConfigSnapshot, ResourceBudget>();
+const retryBudgets = new WeakMap<WorkersGrpcConfigSnapshot, Map<string, RetryThrottle>>();
+export function retryThrottleFor(config: WorkersGrpcConfigSnapshot, authority: string, origin: string): RetryThrottle | undefined {
+    if (!config.retryThrottling) return undefined;
+    let budgets = retryBudgets.get(config);
+    if (!budgets) { budgets = new Map(); retryBudgets.set(config, budgets); }
+    const key = JSON.stringify([authority, origin]);
+    let budget = budgets.get(key);
+    if (!budget) { budget = new RetryThrottle(config.retryThrottling); budgets.set(key, budget); }
+    return budget;
+}
 /** One transport snapshot owns one admission and buffer budget across its channels. */
 export function resourcesFor(config: WorkersGrpcConfigSnapshot): ResourceBudget {
     let resources = resourceBudgets.get(config);

@@ -22,6 +22,7 @@ export type WorkersGrpcEvent = EventBase & (
     | ({ readonly type: 'attempt-end'; readonly attempt: number; readonly durationMs: number;
         readonly authDurationMs: number; readonly fetchStarted: boolean; readonly statusCode: status } & WorkersGrpcTraffic)
     | { readonly type: 'retry-scheduled'; readonly attempt: number; readonly delayMs: number; readonly statusCode: status }
+    | { readonly type: 'retry-throttled'; readonly attempt: number; readonly statusCode: status }
     | ({ readonly type: 'call-end'; readonly attemptCount: number; readonly fetchCount: number;
         readonly queueMs: number; readonly statusCode: status } & WorkersGrpcTraffic)
 );
@@ -131,6 +132,9 @@ export class CallObservation {
     }
     retry(attempt: number, delayMs: number, statusCode: status): void {
         if (!this.closed) this.emit({ type: 'retry-scheduled', attempt, delayMs, statusCode });
+    }
+    throttled(attempt: number, statusCode: status): void {
+        if (!this.closed) this.emit({ type: 'retry-throttled', attempt, statusCode });
     }
     finish(statusCode: status): void {
         if (this.closed) return;

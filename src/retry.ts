@@ -1,5 +1,46 @@
 import { status, WorkersGrpcConfigurationError } from './status';
 
+/** Shared overload control, scoped to one transport and logical endpoint. */
+export interface WorkersGrpcRetryThrottling {
+    maxTokens: number;
+    tokenRatio: number;
+}
+export interface WorkersGrpcRetryUsage {
+    readonly tokens: number;
+    readonly maxTokens: number;
+    readonly tokenRatio: number;
+    readonly retriesAllowed: boolean;
+    readonly suppressedRetries: number;
+}
+export function validateRetryThrottling(input: WorkersGrpcRetryThrottling | undefined): Readonly<WorkersGrpcRetryThrottling> | undefined {
+    if (input === undefined) return undefined;
+    const fail = (): never => { throw new WorkersGrpcConfigurationError('WGA_INVALID_RETRY_THROTTLING', 'Invalid retry throttling'); };
+    if (!input || typeof input !== 'object' || Array.isArray(input)
+        || Object.keys(input).some(key => !['maxTokens', 'tokenRatio'].includes(key))) return fail();
+    if (!Number.isInteger(input.maxTokens) || input.maxTokens < 1 || input.maxTokens > 1000
+        || typeof input.tokenRatio !== 'number' || !Number.isFinite(input.tokenRatio)
+        || input.tokenRatio < 0.001 || input.tokenRatio > 1000) return fail();
+    // This bounded range uses ordinary decimal notation in Number#toString.
+    // Floating multiplication can turn 1.001 into 1000.9999999999999 and
+    // incorrectly discard a whole milli-token at the recovery threshold.
+    const [whole, fraction = ''] = String(input.tokenRatio).split('.');
+    const milliTokens = Number(whole) * 1000 + Number((fraction + '000').slice(0, 3));
+    return Object.freeze({ maxTokens: input.maxTokens, tokenRatio: milliTokens / 1000 });
+}
+/** Integer milli-tokens avoid accumulated floating point errors at the threshold. */
+export class RetryThrottle {
+    private tokens: number;
+    private suppressed = 0;
+    constructor(private readonly settings: Readonly<WorkersGrpcRetryThrottling>) { this.tokens = settings.maxTokens * 1000; }
+    allowed(): boolean { return this.tokens > this.settings.maxTokens * 500; }
+    failure(): void { this.tokens = Math.max(0, this.tokens - 1000); }
+    success(): void { this.tokens = Math.min(this.settings.maxTokens * 1000, this.tokens + Math.round(this.settings.tokenRatio * 1000)); }
+    suppress(): void { this.suppressed++; }
+    diagnostics(): WorkersGrpcRetryUsage {
+        return Object.freeze({ tokens: this.tokens / 1000, ...this.settings, retriesAllowed: this.allowed(), suppressedRetries: this.suppressed });
+    }
+}
+
 /** Explicit replay policy. List only unary methods whose requests are safe to repeat. */
 export interface WorkersGrpcRetryPolicy {
     methods: readonly string[];

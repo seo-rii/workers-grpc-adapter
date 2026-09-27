@@ -59,6 +59,7 @@ An adapter retry stays under the same `logicalCallId` and increments the attempt
 | `first-message` | `attempt`: the first response message was decoded, before protobuf deserialization, response interceptors, or user delivery. |
 | `attempt-end` | `attempt`, `durationMs`, `authDurationMs`, `fetchStarted`, `statusCode`, and the traffic counters below. |
 | `retry-scheduled` | `attempt`, `delayMs`, `statusCode`: a retry was scheduled after the numbered attempt ended with this status. The next attempt would be `attempt + 1`; cancellation or deadline expiry can prevent it from starting. |
+| `retry-throttled` | `attempt`, `statusCode`: the shared retry budget suppressed replay of the numbered failed attempt. It may follow `retry-scheduled` when another call exhausts the budget during backoff, authentication or compression. |
 | `call-end` | `attemptCount`, `fetchCount`, `queueMs`, `statusCode`, and traffic counters summed across the call's attempts. |
 
 Pre-attempt failures, including admission rejection, a queued deadline, or an interceptor failure, can produce `call-end` with zero attempts and Fetches. Authentication failure can end an attempt without `fetch-start`. A queued call that terminates before admission has no `call-admitted` event, but its `call-end.queueMs` includes the time spent waiting. Events for response headers and messages are absent if those stages are never reached.

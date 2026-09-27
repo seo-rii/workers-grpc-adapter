@@ -2,11 +2,11 @@ import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { CallCredentials, ChannelCredentials } from './credentials';
 import { status, propagate, authErrorCode, TransportError, httpStatusToGrpc } from './status';
-import { WorkersGrpcConfigSnapshot, normalizeAuthority } from './config-internal';
+import { WorkersGrpcConfigSnapshot, normalizeAuthority, retryThrottleFor } from './config-internal';
 import { ValidatedOptions } from './options';
 import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders } from './wire';
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
-import { retryDelay, type RetryPolicySnapshot } from './retry';
+import { retryDelay, type RetryPolicySnapshot, type RetryThrottle } from './retry';
 import { RequestStreamBody } from './request-stream';
 import type { CallLifetime } from './call-lifetime';
 import type { ResourceBudget, ResourceScope } from './resources';
@@ -49,6 +49,13 @@ export interface CallContext {
     lifetime?: CallLifetime;
     resources?: ResourceBudget;
 }
+interface AttemptOutcome {
+    result: StatusObject;
+    retryable: boolean;
+    countFailure?: boolean;
+    throttled?: boolean;
+    initial?: Metadata;
+}
 /** Invoke observers outside the transport error model, after updating state. */
 function notify(fn: () => void): void {
     try {
@@ -88,7 +95,9 @@ export class WorkersCall {
     private fetchCount = 0;
     private responseBytes = 0;
     private readonly observation?: CallObservation;
+    private readonly retryThrottle?: RetryThrottle;
     constructor(private readonly context: CallContext) {
+        this.retryThrottle = retryThrottleFor(context.config, context.authority, context.origin);
         this.observation = context.lifetime?.observation ?? (context.config.observer ? new CallObservation(context.config.observer) : undefined);
         this.credentials = context.credentials._getCallCredentials();
         if (context.requestStream && context.config.mode === 'grpc-web' && context.config.experimentalRequestStreaming) {
@@ -397,13 +406,24 @@ export class WorkersCall {
         const c = this.context;
         const policy = !c.requestStream && !c.responseStream && c.config.retryPolicy?.methods.includes(c.path)
             ? c.config.retryPolicy : undefined;
+        let previous: AttemptOutcome | undefined;
         for (let attempt = 1; !this.terminal; attempt++) {
             try {
-                const outcome = await this.executeAttempt(policy, attempt);
+                const outcome = await this.executeAttempt(policy, attempt, previous);
                 if (!outcome || this.terminal) return;
                 this.observation?.endAttempt(outcome.result.code);
-                const delay = policy && outcome.retryable && policy.retryableStatusCodes.includes(outcome.result.code)
+                if (outcome.throttled) {
+                    this.retryThrottle?.suppress();
+                    this.observation?.throttled(attempt - 1, outcome.result.code);
+                } else if (outcome.result.code === status.OK) this.retryThrottle?.success();
+                else if (outcome.countFailure && policy?.retryableStatusCodes.includes(outcome.result.code)) this.retryThrottle?.failure();
+                let delay = policy && outcome.retryable && policy.retryableStatusCodes.includes(outcome.result.code)
                     ? retryDelay(policy, attempt, outcome.result.metadata.get('grpc-retry-pushback-ms')) : undefined;
+                if (delay !== undefined && this.retryThrottle && !this.retryThrottle.allowed()) {
+                    this.retryThrottle.suppress();
+                    this.observation?.throttled(attempt, outcome.result.code);
+                    delay = undefined;
+                }
                 if (delay === undefined) {
                     if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
                     this.finishObject(outcome.result);
@@ -419,6 +439,15 @@ export class WorkersCall {
                     if (signal.aborted) done();
                 });
                 if (this.terminal) return;
+                // Another call may have exhausted the shared budget during backoff.
+                if (this.retryThrottle && !this.retryThrottle.allowed()) {
+                    this.retryThrottle.suppress();
+                    this.observation?.throttled(attempt, outcome.result.code);
+                    if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
+                    this.finishObject(outcome.result);
+                    return;
+                }
+                previous = outcome;
                 await this.refreshCredentials();
             } catch (error) {
                 if (!this.terminal) {
@@ -429,9 +458,7 @@ export class WorkersCall {
             }
         }
     }
-    private async executeAttempt(policy: RetryPolicySnapshot | undefined, attempt: number): Promise<{
-        result: StatusObject; retryable: boolean; initial?: Metadata;
-    } | undefined> {
+    private async executeAttempt(policy: RetryPolicySnapshot | undefined, attempt: number, previous?: AttemptOutcome): Promise<AttemptOutcome | undefined> {
         const c = this.context;
         // Attempt buffers outlive logical cancellation when a custom Fetch
         // ignores abort. Keep their leases until the actual owner unwinds.
@@ -461,6 +488,11 @@ export class WorkersCall {
                 this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
                 return;
             }
+            // Authentication and compression can yield. Recheck at the actual
+            // Fetch boundary, without charging the previous failure twice.
+            if (attempt > 1 && previous && this.retryThrottle && !this.retryThrottle.allowed()) {
+                return { ...previous, retryable: false, throttled: true };
+            }
             const headers = requestHeaders(this.metadata!, remaining, c.limits.userAgent, c.config.mode, c.limits.compression);
             if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
             const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
@@ -475,7 +507,7 @@ export class WorkersCall {
                 response = await (c.config.fetcher ? c.config.fetcher.fetch(c.origin + c.path, init) : fetch(c.origin + c.path, init));
             } catch {
                 return { result: { code: status.UNAVAILABLE, details: 'WGA_FETCH_FAILED', metadata: new Metadata() },
-                    retryable: policy?.retryOnFetchError === true };
+                    retryable: policy?.retryOnFetchError === true, countFailure: policy?.retryOnFetchError === true };
             }
             if (!policy) this.releaseRequest();
             // Source cancellation may never settle. Begin cleanup without
@@ -540,7 +572,7 @@ export class WorkersCall {
             }
             if (this.terminal) return;
             return { result: final ?? { code: httpStatusToGrpc(response.status), details: 'WGA_MISSING_GRPC_STATUS', metadata: new Metadata() },
-                retryable: !!final && !committed, initial: pendingInitial };
+                retryable: !!final && !committed, countFailure: !!final, initial: pendingInitial };
         } finally { attemptScope?.close(); }
     }
     private releaseRequest(): void {

@@ -1,9 +1,10 @@
 import * as grpc from './index';
 import { ClientOptions } from './client';
-import { WorkersGrpcConfig, validateConfig, INSTANCE_CONFIG, GAX_CONFIG_OPTION, createGaxConfigToken, resourcesFor } from './config-internal';
+import { WorkersGrpcConfig, validateConfig, INSTANCE_CONFIG, GAX_CONFIG_OPTION, createGaxConfigToken, resourcesFor, routeFor, retryThrottleFor } from './config-internal';
 import { WorkersGrpcConfigurationError } from './status';
 export type { ResourceLimits as WorkersGrpcResourceLimits, ResourceDiagnostics as WorkersGrpcResourceUsage } from './resources';
 export type { WorkersGrpcObserver, WorkersGrpcEvent, WorkersGrpcTraffic } from './observer';
+export type { WorkersGrpcRetryThrottling, WorkersGrpcRetryUsage } from './retry';
 export function createWorkersGrpcTransport(config: WorkersGrpcConfig = {}) {
     const snapshot = validateConfig(config);
     const gaxToken = createGaxConfigToken(snapshot);
@@ -24,6 +25,10 @@ export function createWorkersGrpcTransport(config: WorkersGrpcConfig = {}) {
         channelCredentials: grpc.credentials.createSsl(), grpcOptions,
         /** Adapter-owned counts only: excludes deserialized objects and platform connection state. */
         resourceUsage() { return resourcesFor(snapshot).diagnostics(); },
+        retryUsage(target: string) {
+            const route = routeFor(target, snapshot);
+            return retryThrottleFor(snapshot, route.authority, route.origin)?.diagnostics();
+        },
         gaxOptions<T extends Record<string, unknown>>(existing: T): T & {
             grpc: typeof grpc;
             fallback: false;

@@ -46,3 +46,48 @@ SDK/GAX retries are separate calls and can multiply this policy's attempts. Keep
 one retry owner where possible. `grpc.enable_retries` and native service-config
 retry policies remain unsupported; setting this adapter policy is the explicit
 opt-in. Server-streaming, client-streaming and bidirectional calls are not replayed.
+
+## Shared retry throttling
+
+An optional transport-wide budget limits retries during sustained endpoint failures:
+
+```js
+const transport = createWorkersGrpcTransport({
+  retryPolicy: {
+    methods: ['/example.Reader/Get'], maxAttempts: 3,
+    initialBackoffMs: 100, maxBackoffMs: 2_000,
+    retryableStatusCodes: [grpc.status.UNAVAILABLE],
+  },
+  retryThrottling: { maxTokens: 10, tokenRatio: 0.1 },
+});
+console.log(transport.retryUsage('reader.example'));
+// { tokens, maxTokens, tokenRatio, retriesAllowed, suppressedRetries }
+```
+
+Each transport snapshot owns independent state for each logical authority and
+resolved origin. Clients sharing that snapshot share the budget; separate
+factories, logical services and gateway configurations do not. State lives as
+long as the snapshot, so closing and recreating a client does not reset it.
+SDK retries create new calls against this same budget when they use that transport.
+
+The first attempt always remains eligible. Each validated retryable server status
+for a configured unary method subtracts one token, including its last attempt or
+a negative-pushback response. Fetch exceptions subtract only when Fetch-error
+replay is enabled. Local credential, protocol, cancellation and deadline failures
+do not subtract tokens. A successful transport RPC, including an unlisted or
+streaming method, restores `tokenRatio`, capped at `maxTokens`.
+
+Additional attempts stop when tokens are at or below half the maximum. The
+adapter returns the last status, without an extra queue or a synthetic error.
+The budget is rechecked after backoff and immediately before Fetch, since another
+call may consume it during authentication or compression. An already-started
+Fetch is never canceled by budget changes. A prepared retry may therefore end
+without Fetch; the observer emits `retry-throttled` referencing the prior failed
+attempt, and diagnostics increment `suppressedRetries` once for that call.
+
+`maxTokens` is an integer from 1 to 1000. `tokenRatio` is finite, between 0.001 and
+1000, and truncated to three decimal places. Integer milli-tokens keep threshold
+comparisons stable. Throttling requires an explicit retry policy and is disabled
+by default. The model follows [gRPC retry throttling](https://github.com/grpc/proposal/blob/master/A6-client-retries.md#throttling-retry-attempts-and-hedged-rpcs),
+but this adapter still uses its explicit method policy and Fetch commitment rules;
+it does not implement native service-config retries or hedging.
