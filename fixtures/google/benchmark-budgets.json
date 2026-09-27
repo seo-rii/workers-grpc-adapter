@@ -1,0 +1,66 @@
+{
+  "revision": 2,
+  "description": "Local workerd smoke regression ceilings; not production latency or Cloudflare memory limits.",
+  "coldSamples": 2,
+  "warmSamples": 4,
+  "concurrency": 4,
+  "messages": 64,
+  "payloadBytes": 65536,
+  "consumerDelayMs": 2,
+  "profiles": {
+    "google-static-v1": {
+      "fixture": "google",
+      "bundleCeilings": {
+        "datastore": {
+          "bytes": 6000000,
+          "gzipBytes": 850000
+        },
+        "firestore": {
+          "bytes": 6000000,
+          "gzipBytes": 900000
+        },
+        "secret-manager": {
+          "bytes": 6000000,
+          "gzipBytes": 850000
+        },
+        "combined": {
+          "bytes": 9000000,
+          "gzipBytes": 1400000
+        }
+      },
+      "maxStartupMs": 15000,
+      "maxFirstRpcMs": 10000,
+      "maxWarmRpcMs": 5000,
+      "maxScenarioMs": 15000,
+      "maxSampledHeapUsedBytes": 100663296,
+      "maxSampledBackingStorageBytes": 67108864
+    },
+    "google-modern-v1": {
+      "fixture": "modern",
+      "bundleCeilings": {
+        "datastore": {
+          "bytes": 7500000,
+          "gzipBytes": 920000
+        },
+        "firestore": {
+          "bytes": 9600000,
+          "gzipBytes": 1250000
+        },
+        "secret-manager": {
+          "bytes": 7300000,
+          "gzipBytes": 870000
+        },
+        "combined": {
+          "bytes": 11600000,
+          "gzipBytes": 1500000
+        }
+      },
+      "maxStartupMs": 15000,
+      "maxFirstRpcMs": 10000,
+      "maxWarmRpcMs": 5000,
+      "maxScenarioMs": 15000,
+      "maxSampledHeapUsedBytes": 100663296,
+      "maxSampledBackingStorageBytes": 67108864
+    }
+  }
+}
