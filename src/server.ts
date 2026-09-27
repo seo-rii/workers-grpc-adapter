@@ -259,6 +259,9 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                 async pull(controller) {
                     if (closed) return;
                     try {
+                        // Caller abort may already have disposed the iterator
+                        // while the consumer was not requesting response data.
+                        if (aborter.signal.aborted) await interruption;
                         const item = buffered ?? await race(iterator!.next());
                         buffered = undefined;
                         if (aborter.signal.aborted) await interruption;

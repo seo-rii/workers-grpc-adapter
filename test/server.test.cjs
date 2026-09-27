@@ -146,6 +146,33 @@ test('SERVER streaming pulls at most one item ahead and invokes iterator return 
     reader.releaseLock();
 });
 
+test('SERVER request abort after a response message sends CANCELLED without pulling a disposed iterator', async () => {
+    let next = 0, returned = 0, signal;
+    const controller = new AbortController();
+    const handler = createGrpcWebHandler({ stream }, { stream(_value, context) {
+        signal = context.signal;
+        return { [Symbol.asyncIterator]() { return this; },
+            async next() { next++; return { done: false, value: Buffer.from('message') }; },
+            async return() { returned++; return { done: true }; },
+        };
+    } });
+    const response = await handler(request(undefined, { path: stream.path, signal: controller.signal }));
+    const reader = response.body.getReader(), chunks = [];
+    try {
+        chunks.push((await reader.read()).value);
+        assert.equal(next, 1);
+        controller.abort();
+        assert.equal(signal.aborted, true);
+        assert.equal(returned, 1);
+        for (;;) { const item = await reader.read(); if (item.done) break; chunks.push(item.value); }
+        const result = await observe(new Response(Buffer.concat(chunks)));
+        assert.deepEqual(result.messages, [Buffer.from('message')]);
+        assert.equal(result.status.code, status.CANCELLED);
+        assert.equal(next, 1, 'Reading the terminal trailer must not execute application iteration again');
+        assert.equal(returned, 1);
+    } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+});
+
 test('SERVER deadlines and caller cancellation stop pending work and contain late completion', async () => {
     for (const kind of ['deadline', 'cancel']) {
         let entered, release, returned = false, signal;
