@@ -5,7 +5,7 @@ This is an experimental, client-only prototype. The package remains `private: tr
 ## Remaining release gates
 
 - Sustained production traffic, resource budgets, quotas and recovery. Finite direct and gateway Google SDK deployment results are recorded separately in the [GCP probe](gcp-cloud-probe.md); those runs do not establish long-running reliability.
-- Live service-account OAuth/JWT refresh, IAM and quota errors, workload identity federation, impersonation and ADC.
+- Live service-account OAuth/JWT refresh, issuer/STS/IAM behavior for federation and impersonation, IAM and quota errors, and automatic ADC discovery.
 - Production transaction conflicts and uncertain Commit outcomes under real network failures.
 - All 189 original planned cases, full public grpc-js API and exception-timing equivalence, and production performance budgets.
 
@@ -32,6 +32,8 @@ The pinned build profile supports SDK imports during startup and bundled dynamic
 
 The profile also selects Workers' native Fetch for the pinned Gaxios default transport. Without this transformation, its Node fallback can lose response headers and fail to parse OAuth token responses in workerd. Explicit caller-supplied fetch implementations keep precedence. Local workerd tests exercise real OAuth/JWT refresh and exchange, credential isolation, cancellation/deadlines during refresh and recovery after rejection; they use controlled token endpoints and do not establish live Google authentication behavior.
 
+URL-sourced external-account credentials, chained service-account impersonation and standalone `Impersonated` clients run through the pinned Google auth libraries in workerd. Tests cover text/JSON subject-token responses, STS/IAM request contents, cache reuse and forced expiry, isolated identities, denial recovery and late completion after cancellation/deadlines. The Secret Manager SDK also creates its GoogleAuth client directly from explicit external-account credential JSON. Subject tokens and endpoint responses are synthetic: real IdP trust, Google IAM permissions, AWS/Azure/executable/file credential sources and ADC environment/file/metadata discovery remain unverified. Concurrent exchange coalescing is checked for external-account clients, not standalone impersonation.
+
 Google SDK clients can use different per-instance transport configurations in one Worker. `gaxOptions()` passes the configuration through each client's channel options, so GAX's shared service-constructor cache cannot select another client's mode or gateway. Local workerd tests cover all three pinned SDKs, multiple gateway destinations, ordinary default clients, different cache initialization orders and repeated invocations. These controlled local tests do not add a new deployed-cloud certification.
 
 Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; the resilience gate checks cancellation of interrupted loopback responses.
@@ -39,6 +41,8 @@ Controlled Commit-response-loss tests apply a mutation, withhold the response an
 Repeated local workerd fault waves verify concurrent calls, slow streams, deadlines, cancellation, message limits, client reuse and adapter-visible resource cleanup in both modes. The loopback server observes interrupted response closure before runtime disposal. These are finite regression tests, not sustained traffic, total memory measurements or production recovery certification.
 
 Official Firestore 1.22.0 Native and Datastore modes run through real Envoy locally. These tests cover the explicitly asserted data, query, stream and error behavior. Emulator results do not establish production IAM, composite-index requirements, quotas or transaction concurrency. Secret Manager still uses a controlled server. The emulator-only synthetic owner header is injected by local Envoy and is not authentication evidence.
+
+Controlled Secret Manager tests cover pagination, async-iterator early exit, binary and empty secret-version payloads, callback/Promise results and remote errors. The pinned SDK returns `dataCrc32c` without validating it; consumers must verify payload integrity themselves. The fixture checks a deliberately incorrect checksum at the consumer boundary. It does not read production secret versions or establish live Secret Manager behavior.
 
 ## Unsupported features
 
@@ -51,7 +55,7 @@ Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, compr
 - `getPeer()` returns the logical URL rather than a remote IP. `getAuthContext()` returns null, and the channelz reference is an unregistered placeholder.
 - Invocation-transformed arguments and interceptor-modified method definitions reach the transport. Vendor patches record these upstream differences.
 - User callback exceptions are rethrown in a microtask. Complete upstream exception-timing equivalence is unverified.
-- HTTPS credentials use Fetch TLS. Legacy callback-only Google credential shapes are unsupported.
+- HTTPS credentials use Fetch TLS. Modern Google header providers and the pinned grpc-js legacy `getRequestMetadata(url, callback)` form are supported; this does not imply compatibility with every historical auth library.
 
 ## Datastore query streams
 

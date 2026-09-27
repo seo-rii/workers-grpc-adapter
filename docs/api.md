@@ -111,9 +111,13 @@ Instance configuration does not change the global snapshot. Existing channel ove
 
 `credentials.createSsl()` uses Fetch TLS. Custom certificate authorities, mTLS certificates and TLS verification callbacks are unsupported. `createInsecure()` is limited by the explicit local-test routing policy; credentials cannot be sent over that route.
 
-`createFromGoogleCredential()` accepts an object whose `getRequestHeaders()` returns headers synchronously or as a Promise. Legacy callback-only Google credential shapes are unsupported. `createEmpty()` produces empty call credentials.
+`createFromGoogleCredential()` accepts an object whose `getRequestHeaders()` returns headers synchronously or as a Promise, or the legacy `getRequestMetadata(url, callback)` form. The legacy callback receives `(error, headers)`, where `headers` is a string-valued object; an empty object is valid. The modern method takes precedence when both exist. `GoogleCredential` and `LegacyGoogleCredential` describe these two forms. `createEmpty()` produces empty call credentials.
 
 Metadata generators use callbacks. The first callback wins; a rejected Promise returned by a generator is also handled. Composed credentials preserve input order. The authentication `service_url` identifies the logical service, not the gateway origin.
+
+Legacy providers must invoke the callback; a returned value or fulfilled Promise cannot substitute for it. Only their own string-valued header entries are used, and invalid or missing header objects fail authentication. If both Google methods exist, a failed modern method does not fall back to the legacy provider.
+
+The adapter delegates token acquisition to the supplied Google auth client. With the pinned Worker build preset, local tests exercise URL-sourced external-account credentials, optional service-account impersonation and standalone `Impersonated` clients. The Secret Manager SDK's explicit `credentials` JSON option also works in those controlled tests. This does not add automatic ADC discovery or configure external issuers and IAM grants. See [authentication verification](testing.md#native-sdk-comparisons) for the exact scope.
 
 ## Failure semantics
 

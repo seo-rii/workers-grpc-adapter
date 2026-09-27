@@ -112,6 +112,10 @@ The GCP probe keeps static SDK imports and one Worker per transport mode for a c
 
 The local authentication gate now exercises normal OAuth2Client/JWT constructors and token refresh through Workers Fetch, including an actual Secret Manager SDK client. Profile revision 3 changes Gaxios's default fetch selection in the bundle; explicit fetch overrides remain supported. Controlled token responses and ephemeral RSA signatures verify runtime integration, but do not add live OAuth, service-account IAM or ADC certification. The separate pagination gate compares native and adapter Datastore clients: use `runQueryStream().end()` to stop future pages, since bare `destroy()` can continue fetching them. Already in-flight pages remain subject to their RPC deadline.
 
+Federated-auth tests extend this to URL-sourced external-account credentials, STS exchange and optional IAM impersonation, as well as standalone `Impersonated` clients. They use ordinary library constructors and the SDK's explicit credential configuration, checking renewal, isolated identities and failure recovery. All issuer, STS and IAM responses remain controlled local fixtures; this does not certify real provider setup or automatic ADC discovery.
+
+The extended Secret Manager comparison covers ListSecrets pagination and AccessSecretVersion payloads in native Node, adapter Node and both workerd modes. It uses synthetic bytes only. The pinned SDK does not automatically check `dataCrc32c`; application code must verify it. The shared test detects an intentionally invalid checksum after the SDK returns it, rather than expecting an SDK error that does not exist.
+
 ## Interpreting failures
 
 Missing configuration is blocked, not passed. REST fallback does not count as adapter success: Firestore uses `preferRest: false`, and applicable GAPIC clients use `fallback: false`; transport observations must confirm the RPC path.

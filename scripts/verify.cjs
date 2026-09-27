@@ -70,6 +70,9 @@ function main() {
     run('workers-gax-modes', ['scripts/test-gax-mode-isolation.cjs']);
     run('workers-lazy-sdk', ['scripts/test-workers-lazy-sdk.cjs']);
     run('workers-auth', ['scripts/test-workers-auth.cjs']);
+    run('workers-federated-auth', ['scripts/test-workers-federated-auth.cjs']);
+    run('workers-legacy-auth', ['scripts/test-workers-legacy-auth.cjs']);
+    run('secret-manager-extended', ['scripts/test-secret-manager-extended.cjs']);
     run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
@@ -89,10 +92,12 @@ function main() {
     const sdkGraph = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-graph.json')));
     const googleEmulators = read('google-emulators.json');
     const datastorePagination = read('datastore-pagination.json');
+    const secretManagerExtended = read('secret-manager-extended.json');
     const shared = filesIn(path.join(root, 'fixtures/google/shared')).filter(p => p.endsWith('.mjs')).map(file => ({ file: path.relative(root, file), sha256: hash(file),
         nativeBaselineCompared: Boolean((sdkLocal.sameSharedFiles && sdkLocal.sourceHashes.native[path.basename(file)] === hash(file))
             || (googleEmulators.sameSharedFiles && googleEmulators.sourceHashes.native[path.basename(file)] === hash(file))
-            || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))) }));
+            || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))
+            || (secretManagerExtended.sameSharedSource && secretManagerExtended.sourceHashes.native[path.basename(file)] === hash(file))) }));
     const catalog = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/test-catalog.json')));
     const sourceFiles = ['src', 'scripts', 'test', 'fixtures'].flatMap(dir => filesIn(path.join(root, dir))).filter(p => /\.(ts|cts|mts|mjs|cjs|proto|json|jsonc|yaml)$/.test(p));
     const sourceHashes = Object.fromEntries(sourceFiles.sort().map(file => [path.relative(root, file), hash(file)]));
@@ -108,6 +113,7 @@ function main() {
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
+        workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), secretManagerExtended,
         datastorePagination, workersResilience: read('workers-resilience.json'),
         workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,

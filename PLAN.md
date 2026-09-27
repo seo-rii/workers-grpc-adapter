@@ -1,6 +1,6 @@
 # Roadmap
 
-Status: `0.0.0-prototype.1`, September 23, 2026. This is an experimental client
+Status: `0.0.0-prototype.1`, September 27, 2026. This is an experimental client
 transport, not a certified replacement for all of `@grpc/grpc-js`.
 
 The project implements the client-side unary and server-streaming surface over
@@ -19,8 +19,9 @@ differences are documented in [Limitations](docs/limitations.md).
   deadlines, cancellation, message limits, and one Fetch request per Call.
 - [x] Support direct service routing for Cloudflare automatic translation
   (`cloudflare`, the default) and explicit gRPC-Web gateway fallback (`grpc-web`).
-  Verify both modes with unary and server-streaming calls in local workerd;
-  deployed private-beta translation remains a separate cloud gate below.
+  Verify both modes with unary and server-streaming calls in local workerd.
+  Finite deployed conversion and Google SDK results are recorded separately;
+  local workerd does not emulate Cloudflare's edge translator.
 - [x] Install pinned Datastore, Firestore and Secret Manager SDKs in isolated
   native and replacement fixtures. Verify alias/override resolution and clean
   `npm ci` reproduction.
@@ -35,6 +36,14 @@ differences are documented in [Limitations](docs/limitations.md).
   cancellation, and temporary service-account JWT signing and exchange.
 - [x] Bundle the pinned Google SDKs with the version/hash-checked build preset
   and run static imports, protobuf initialization, auth and RPCs in workerd.
+- [x] Support bundled first-request dynamic SDK imports and same-isolate
+  GAX clients with independent modes, gateway origins and credentials.
+- [x] Use native Workers Fetch for the pinned Gaxios default, preserving explicit
+  overrides. Verify real OAuth/JWT refresh and exchange in both pinned auth versions.
+- [x] Support the pinned legacy Google callback credential contract, with native
+  comparisons, strict types and workerd cancellation/deadline checks.
+- [x] Exercise URL-sourced federation and standalone/chained impersonation in
+  workerd, including SDK credential JSON, renewal and denied-exchange recovery.
 - [x] Run identical shared business modules in native Node, replacement Node
   and workerd. Compare consumed source hashes, assertions and RPC/status counts.
 - [x] Run the official Firestore emulator in Native and Datastore modes through
@@ -47,6 +56,10 @@ differences are documented in [Limitations](docs/limitations.md).
   performance measurement harness.
 - [x] Add bounded property fuzzing with counterexample shrinking and seed/path
   replay for protocol parsing and asynchronous call lifecycle in both modes.
+- [x] Repeat concurrent fault/recovery waves in workerd, checking channel/call
+  cleanup, slow-consumer buffering and loopback response closure before disposal.
+- [x] Compare multi-page Datastore queries and `end()`/`destroy()` behavior
+  against native grpc-js, including a pending page and subsequent client reuse.
 - [x] Map the original 189 planned cases to named execution evidence, keeping
   complete, partial and unimplemented cases distinct. Detect drift in sources,
   locks, installed code, artifacts, profiles and generated reports.
@@ -63,11 +76,10 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 ### Datastore
 
 - [ ] Add deferred lookup results and the remaining batch/error combinations.
-- [ ] Extend SDK stream tests to remote errors, multiple pages and all relevant
-  event-order and internal cleanup contracts. Current emulator tests cover
-  normal data/info/end, found/missing entities, early destroy and subsequent
-  client use. These SDK readables wrap unary query pages; they do not establish
-  HTTP/2 stream cancellation.
+- [ ] Extend SDK stream tests to remaining remote-error, event-order and
+  internal cleanup contracts. Controlled multi-page tests now distinguish
+  `end()` stopping later pages from `destroy()` stopping only entity delivery.
+  These SDK readables do not expose cancellation of an in-flight unary page.
 - [ ] Broaden callback/Promise overload and GAX-option coverage beyond the
   pinned dependency graph. Allocation and reservation of IDs are already tested.
 - [ ] Complete the retry and transaction error matrix. Controlled tests already
@@ -86,9 +98,12 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 
 ### Secret Manager and additional SDKs
 
-- [ ] Add pagination and the remaining metadata/error cases. Controlled local
-  tests already cover reads, NOT_FOUND and PERMISSION_DENIED.
-- [ ] Test accessSecretVersion with assertions that never log secret payloads.
+- [x] Compare manual/automatic/async-iterator pagination, early iterator exit,
+  callback/Promise binary secret-version access and remote errors across native,
+  adapter and workerd. Use synthetic payloads with no secret contents in reports.
+- [x] Check consumer CRC32C handling, including empty bytes and a corrupted
+  checksum returned successfully by the SDK. The SDK does not validate it.
+- [ ] Complete the remaining metadata and method-specific error combinations.
 - [ ] Add further SDKs only after inspecting their required exports, options,
   schemas and runtime behavior. Do not infer universal Google Cloud support.
 
@@ -98,21 +113,27 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 - [ ] Measure exact adapter-owned bytes, parser CPU, cold initialization,
   bundle size and p50/p95 latency under large, fragmented, slow and concurrent
   workloads. Define numerical budgets from reproducible measurements.
-- [ ] Extend authentication coverage to legacy callbacks, WIF, impersonation
-  and ADC combinations that are not currently certified.
+- [ ] Extend authentication beyond the tested URL external-account and
+  impersonation combinations to file/executable/AWS/Azure sources and automatic
+  ADC discovery. Live provider trust and IAM authorization remain cloud gates.
 
 ## Cloud and release gates
 
 These require a separately authorized test environment. Normal CI stays local.
 
-- [ ] Verify outbound gRPC translation availability on the target Cloudflare
-  account and run deployed unary, streaming, non-OK, deadline and cancel tests.
+- [x] Verify per-request Cloudflare conversion and explicit gateway paths with
+  deployed unary, streaming and non-OK calls. See the corrected 2026-09-26 probe;
+  historical deployment results do not certify later changes automatically.
+- [ ] Extend deployed checks to controlled deadline/cancellation faults and
+  prolonged traffic, quotas and recovery.
 - [ ] Prepare a dedicated Google Cloud project with least-privilege credentials,
   enabled APIs, databases and bounded quotas.
-- [ ] Run live Datastore, Firestore and Secret Manager tests through a protected
-  Worker endpoint with fixed suites and explicit write opt-in.
-- [ ] Record and recover incomplete cleanup safely. A canceled client request
-  does not prove that a server-side write was canceled.
+- [x] Run finite live Datastore/Firestore CRUD and transaction suites plus
+  Secret Manager metadata GetSecret through protected temporary Workers in both
+  modes, with explicit write opt-in and all created resources deleted.
+- [x] Record resource ownership and incomplete cleanup, and verify cleanup
+  failure behavior locally. Name-based Cloudflare mutations remain non-atomic;
+  a canceled client request does not prove a server-side write was canceled.
 - [ ] Validate production IAM, token renewal, database constraints and
   performance separately from emulator behavior.
 - [ ] Complete dependency, security, license and release-allowlist review before
