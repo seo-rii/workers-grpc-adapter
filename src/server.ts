@@ -4,7 +4,7 @@ import type { ServerMethodDefinition } from './factory';
 import type { CompressionEncoding } from './compression';
 import type { ParentCall } from './call';
 import { compressionAlgorithms, status, TransportError, WorkersGrpcConfigurationError } from './status';
-import { decodeFrames, encodeFrame, encodeMessageFrame, metadataFromHeaders, METADATA_LIMIT, responseCompression } from './wire';
+import { decodeFrames, encodeFrame, encodeMessageFrame, headerBudget, metadataFromHeaders, METADATA_LIMIT, responseCompression } from './wire';
 
 export interface GrpcWebServerContext extends ParentCall {
     readonly method: string;
@@ -45,19 +45,17 @@ const reserved = new Set(['content-type', 'content-length', 'content-encoding', 
     'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'grpc-timeout']);
 function metadataPairs(metadata: Metadata): [string, string][] {
     if (!(metadata instanceof Metadata)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA');
-    const result: [string, string][] = [];
-    let size = 0;
-    for (const [key, values] of metadata.entries()) {
-        if (!/^[0-9a-z_.-]+$/.test(key) || reserved.has(key)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA');
-        for (const value of values) {
-            const text = Buffer.isBuffer(value) ? value.toString('base64') : value;
-            if (typeof text !== 'string' || /[^\x20-\x7e]/.test(text)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA');
-            size += Buffer.byteLength(key) + Buffer.byteLength(text) + 32;
-            if (size > METADATA_LIMIT) throw new TransportError(status.RESOURCE_EXHAUSTED, 'WGA_SERVER_METADATA_SIZE');
-            result.push([key, text]);
+    function* pairs(): Generator<[string, string]> {
+        for (const [key, values] of metadata.entries()) {
+            if (!/^[0-9a-z_.-]+$/.test(key) || reserved.has(key)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA');
+            for (const value of values) {
+                const text = Buffer.isBuffer(value) ? value.toString('base64') : value;
+                if (typeof text !== 'string' || /[^\x20-\x7e]/.test(text)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_METADATA');
+                yield [key, text];
+            }
         }
     }
-    return result;
+    return headerBudget(pairs(), 'WGA_SERVER_METADATA_SIZE');
 }
 function trailer(code: status, details: string, metadata = new Metadata()): Buffer {
     if (!Number.isInteger(code) || code < 0 || code > 16 || typeof details !== 'string') {
@@ -67,15 +65,27 @@ function trailer(code: status, details: string, metadata = new Metadata()): Buff
     let message: string;
     try { message = encodeURIComponent(details); }
     catch { throw new TransportError(status.INTERNAL, 'WGA_SERVER_STATUS'); }
-    const text = [`grpc-status: ${code}\r\n`, `grpc-message: ${message}\r\n`,
-        ...metadataPairs(metadata).map(([key, value]) => `${key}: ${value}\r\n`)].join('');
-    if (Buffer.byteLength(text) > METADATA_LIMIT) throw new TransportError(status.RESOURCE_EXHAUSTED, 'WGA_SERVER_METADATA_SIZE');
+    const pairs = headerBudget([['grpc-status', String(code)], ['grpc-message', message], ...metadataPairs(metadata)], 'WGA_SERVER_METADATA_SIZE');
+    const text = pairs.map(([key, value]) => `${key}: ${value}\r\n`).join('');
     return encodeFrame(Buffer.from(text), true);
 }
 function failure(error: unknown): { code: status; details: string; metadata: Metadata } {
     if (error instanceof GrpcWebServerError) return { code: error.code, details: error.details, metadata: error.metadata };
     if (error instanceof TransportError) return { code: error.code, details: error.diagnostic, metadata: new Metadata() };
     return { code: status.INTERNAL, details: 'WGA_SERVER_HANDLER', metadata: new Metadata() };
+}
+function errorTrailer(error: unknown, trailing: Metadata): Buffer {
+    const result = failure(error);
+    try {
+        const metadata = trailing.clone();
+        metadata.merge(result.metadata);
+        return trailer(result.code, result.details, metadata);
+    } catch (trailerError) {
+        // Discard application metadata if its final encoded form is too large.
+        // The fallback itself must remain readable by the same client parser.
+        const fallback = failure(trailerError);
+        return trailer(fallback.code, fallback.details);
+    }
 }
 function deadlineFor(header: string | null, fallback?: number): number {
     if (header === null) return fallback === undefined ? Infinity : Math.min(Number.MAX_SAFE_INTEGER, Date.now() + fallback);
@@ -126,7 +136,15 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
         if (contentType !== 'application/grpc-web' && contentType !== 'application/grpc-web+proto') {
             return early(new Response('Unsupported media type', { status: 415 }));
         }
-        const baseHeaders = { 'content-type': contentType, 'grpc-accept-encoding': 'identity,deflate,gzip' };
+        const accepted = (request.headers.get('grpc-accept-encoding') ?? 'identity').split(',').map(value => value.trim());
+        const encoding: CompressionEncoding = accepted.includes(selected) ? selected : 'identity';
+        const baseHeaders = { 'content-type': contentType, 'grpc-accept-encoding': 'identity,deflate,gzip', 'grpc-encoding': encoding };
+        const responseHeaders = (metadata: Metadata): Headers => {
+            const headers = new Headers(baseHeaders);
+            for (const [key, value] of metadataPairs(metadata)) headers.append(key, value);
+            headerBudget(headers.entries(), 'WGA_SERVER_METADATA_SIZE');
+            return headers;
+        };
         const url = new URL(request.url);
         const route = !url.search && routes.get(url.pathname);
         if (!route) return early(new Response(trailer(status.UNIMPLEMENTED, 'WGA_SERVER_METHOD'), { headers: baseHeaders }));
@@ -165,12 +183,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
         const errorResponse = (error: unknown): Response => {
             const result = failure(error);
             stop(result.code, result.details);
-            let bytes: Buffer;
-            try { const metadata = trailing.clone(); metadata.merge(result.metadata); bytes = trailer(result.code, result.details, metadata); }
-            catch { bytes = trailer(status.INTERNAL, 'WGA_SERVER_STATUS'); }
-            const headers = new Headers(baseHeaders);
-            for (const [key, value] of metadataPairs(initial)) headers.append(key, value);
-            return new Response(bytes, { headers });
+            return new Response(errorTrailer(error, trailing), { headers: responseHeaders(initial) });
         };
         try {
             const deadline = deadlineFor(request.headers.get('grpc-timeout'), timeout);
@@ -215,12 +228,12 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                     metadataPairs(value);
                     const merged = initial.clone();
                     merged.merge(value.clone());
-                    metadataPairs(merged);
+                    responseHeaders(merged);
                     initial = merged;
                 },
                 setTrailer(value) {
                     if (closed || aborter.signal.aborted) throw new TransportError(status.INTERNAL, 'WGA_SERVER_TRAILER_SENT');
-                    metadataPairs(value);
+                    trailer(status.OK, '', value);
                     trailing = value.clone();
                 },
             };
@@ -248,11 +261,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                 first = { done: false, value: output };
                 iterator = { next: async () => ({ done: true, value: undefined }) };
             }
-            const headers = new Headers(baseHeaders);
-            for (const [key, value] of metadataPairs(initial)) headers.append(key, value);
-            const accepted = (request.headers.get('grpc-accept-encoding') ?? 'identity').split(',').map(value => value.trim());
-            const encoding: CompressionEncoding = accepted.includes(selected) ? selected : 'identity';
-            headers.set('grpc-encoding', encoding);
+            const headers = responseHeaders(initial);
             headersSent = true;
             let buffered: IteratorResult<unknown> | undefined = first;
             const body = new ReadableStream<Uint8Array>({
@@ -286,10 +295,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                         if (closed) return;
                         const result = failure(error);
                         stop(result.code, result.details);
-                        let bytes: Buffer;
-                        try { const metadata = trailing.clone(); metadata.merge(result.metadata); bytes = trailer(result.code, result.details, metadata); }
-                        catch { bytes = trailer(status.INTERNAL, 'WGA_SERVER_STATUS'); }
-                        controller.enqueue(bytes);
+                        controller.enqueue(errorTrailer(error, trailing));
                         closed = true;
                         controller.close();
                     }

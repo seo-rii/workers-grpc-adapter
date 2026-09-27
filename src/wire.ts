@@ -161,10 +161,11 @@ function addHeader(metadata: Metadata, key: string, value: string): void {
         wireError(status.INTERNAL, 'WGA_INVALID_METADATA');
     }
 }
-function headerBudget(entries: Iterable<[
+/** Budget the complete encoded field set, including transport control fields. */
+export function headerBudget(entries: Iterable<[
     string,
     string
-]>): [
+]>, diagnostic = 'WGA_METADATA_SIZE'): [
     string,
     string
 ][] {
@@ -176,7 +177,7 @@ function headerBudget(entries: Iterable<[
     for (const [key, value] of entries) {
         size += Buffer.byteLength(key) + Buffer.byteLength(value) + 32;
         if (size > METADATA_LIMIT) {
-            return wireError(status.RESOURCE_EXHAUSTED, 'WGA_METADATA_SIZE');
+            return wireError(status.RESOURCE_EXHAUSTED, diagnostic);
         }
         result.push([key.toLowerCase(), value]);
     }
