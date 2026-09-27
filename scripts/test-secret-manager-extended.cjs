@@ -23,7 +23,8 @@ const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('m
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const report = { status: 'running', startedAt: new Date().toISOString(), liveGoogle: false,
   cloudflareTranslation: false, officialEmulator: false, controlledNativeGrpcServer: true,
-  scope: 'Pinned SDK list pagination and synthetic AccessSecretVersion responses; no Google IAM, live secret or edge-conversion certification',
+  scope: 'Pinned SDK GetSecret, ListSecrets and AccessSecretVersion controlled error/metadata and pagination contracts; no other methods, Google IAM, live secret or edge-conversion certification',
+  sourceBuild: false, retryDisabled: true, installedInputs: {}, nativeInputs: {},
   payloadsRecorded: false, sdkValidatesChecksum: false, consumerChecksumValidationTested: true,
   sameSharedSource: false, sourceHashes: {}, runtime: process.version,
   nativeGrpcVersion: nativeRequire('@grpc/grpc-js/package.json').version,
@@ -43,7 +44,7 @@ function safeError(error) {
 }
 function trailer(headers) {
   const bytes = Buffer.from(Object.entries(headers).filter(([key]) => !key.startsWith(':'))
-    .map(([key, value]) => `${key}: ${value}\r\n`).join(''));
+    .flatMap(([key, value]) => (Array.isArray(value) ? value : [value]).map(item => `${key}: ${item}\r\n`)).join(''));
   const prefix = Buffer.alloc(5);
   prefix[0] = 128;
   prefix.writeUInt32BE(bytes.length, 1);
@@ -60,11 +61,13 @@ async function main() {
   invariant(report.sdkVersion === '7.1.0' && googleRequire('@google-cloud/secret-manager/package.json').version === report.sdkVersion,
     'pinned-sdk-version');
   report.evidence = Object.fromEntries(['scripts/test-secret-manager-extended.cjs', 'fixtures/google/secret-manager-worker.mjs',
-    'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json']
+    'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json',
+    'fixtures/google/shared/secret-manager-extended.mjs', 'fixtures/google/shared/assert.mjs', 'scripts/secret-manager-evidence.cjs']
     .map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
   const shared = await import(pathToFileURL(path.join(root, 'fixtures/google/shared/secret-manager-extended.mjs')).href);
-  const { secretManagerScenarios: scenarios, secretManagerParent: parent, secretManagerVersion: version,
-    syntheticPayload, crc32c } = shared;
+  const { secretManagerScenarios: scenarios, secretManagerContracts: contracts, secretManagerParent: parent, secretManagerVersion: version,
+    syntheticPayload, crc32c, secretManagerObservation } = shared;
+  report.contracts = contracts;
   invariant(crc32c(new TextEncoder().encode('123456789')) === 0xe3069283 && crc32c(new Uint8Array()) === 0, 'backend-checksum-reference-vector');
   const states = new Map();
   const proto = path.join(path.dirname(nativeRequire.resolve('@google-cloud/secret-manager/package.json')), 'build/protos/protos.json');
@@ -79,10 +82,19 @@ async function main() {
     const resource = call.request[key];
     invariant(call.metadata.get('x-goog-request-params')[0] === `${key}=${encodeURIComponent(resource)}`, 'resource-routing-metadata');
     invariant(call.metadata.get('x-goog-user-project')[0] === 'wga-billing-fixture', 'quota-project-metadata');
-    if (!['native', 'adapter'].includes(state.runtime)) invariant(call.metadata.get('authorization')[0] === 'Bearer secret-manager-local-fixture', 'oauth-metadata');
+    if (state.runtime !== 'native') invariant(call.metadata.get('authorization')[0] === 'Bearer secret-manager-local-fixture', 'oauth-metadata');
     invariant(String(call.metadata.get('x-goog-api-client')[0]).includes('gapic/7.1.0'), 'sdk-client-metadata');
+    state.metadataChecks++;
     state.trace.push({ method, ...(method === 'ListSecrets' ? { pageToken: call.request.pageToken } : {}) });
     return state;
+  }
+  function remoteError(callback, code) {
+    const metadata = new native.Metadata();
+    metadata.add('x-wga-result', 'synthetic-error');
+    metadata.add('x-wga-result', 'synthetic-repeated');
+    metadata.add('x-wga-result-bin', Buffer.from([0, 255, 128, 10]));
+    metadata.add('x-wga-result-bin', Buffer.from([13, 128, 0, 254]));
+    callback({ code, details: 'synthetic error: 한글 % value', metadata });
   }
   function fail(callback, error) {
     failures.push(safeError(error));
@@ -99,6 +111,10 @@ async function main() {
           const page = state.trace.filter(item => item.method === 'ListSecrets').length - 1;
           invariant(page < 3, 'bounded-list-pages');
           invariant(call.request.pageToken === (page === 0 ? '' : `page-${page}`), 'list-page-token-order');
+          const contract = contracts[state.scenario];
+          if (contract.kind === 'error' || contract.kind === 'page-error' && page === 1) {
+            remoteError(callback, contract.errorCode); return;
+          }
           callback(null, { secrets: [page * 2, page * 2 + 1].map(index => ({
             name: `${parent}/secrets/item-${index}`, labels: { fixture: 'synthetic' }, replication: { automatic: {} },
           })), nextPageToken: page === 2 ? '' : `page-${page + 1}`, totalSize: 6 });
@@ -106,7 +122,11 @@ async function main() {
       },
       getSecret(call, callback) {
         try {
-          requestState(call, 'GetSecret', 'name');
+          const state = requestState(call, 'GetSecret', 'name');
+          const contract = contracts[state.scenario];
+          if (call.request.name === `${parent}/secrets/synthetic` && contract.method === 'GetSecret' && contract.kind === 'error') {
+            remoteError(callback, contract.errorCode); return;
+          }
           invariant(call.request.name === `${parent}/secrets/marker`, 'marker-resource');
           callback(null, { name: call.request.name, labels: { fixture: 'synthetic' }, replication: { automatic: {} } });
         } catch (error) { fail(callback, error); }
@@ -115,14 +135,8 @@ async function main() {
         try {
           const state = requestState(call, 'AccessSecretVersion', 'name');
           invariant(call.request.name === version, 'access-resource');
-          if (['access-not-found', 'access-denied'].includes(state.scenario)) {
-            const metadata = new native.Metadata();
-            metadata.set('x-wga-result', 'synthetic-error');
-            metadata.set('x-wga-result-bin', Buffer.from([0, 255, 128, 10]));
-            callback({ code: state.scenario === 'access-not-found' ? native.status.NOT_FOUND : native.status.PERMISSION_DENIED,
-              details: 'synthetic error: 한글 % value', metadata });
-            return;
-          }
+          const contract = contracts[state.scenario];
+          if (contract.kind === 'error') { remoteError(callback, contract.errorCode); return; }
           const size = state.scenario === 'access-callback' ? 65536 : state.scenario === 'access-empty' ? 0
             : state.scenario === 'access-bad-crc' ? 257 : 1024;
           const data = syntheticPayload(size);
@@ -175,61 +189,84 @@ async function main() {
     temporary = fs.mkdtempSync(path.join(buildBase, 'secret-manager-'));
     function setup(runtime, scenario) {
       const caseId = `${runtime}-${scenario}`;
-      states.set(caseId, { runtime, scenario, trace: [] });
+      states.set(caseId, { runtime, scenario, trace: [], metadataChecks: 0 });
       return caseId;
     }
-    function verify(runtime, scenario, caseId, result, before) {
+    function verify(runtime, scenario, caseId, result, before, observer) {
       invariant(failures.length === 0, 'backend-and-bridge-invariants');
       const state = states.get(caseId);
-      const pages = scenario.startsWith('list-') ? scenario === 'list-async-break' ? 1 : 3 : 0;
+      const contract = contracts[scenario];
+      const pages = contract.pages;
       invariant(state.trace.filter(item => item.method === 'ListSecrets').length === pages, 'exact-list-rpc-count');
-      invariant(state.trace.length === (pages ? pages + 1 : 1), 'exact-total-rpc-count');
+      invariant(state.trace.length === contract.rpcCount && state.metadataChecks === contract.rpcCount, 'exact-total-rpc-count');
       if (pages) {
         invariant(state.trace.at(-1).method === 'GetSecret', 'reuse-after-final-page');
         invariant(state.trace.filter(item => item.method === 'ListSecrets').every((item, index) =>
           item.pageToken === (index === 0 ? '' : `page-${index}`)), 'observed-page-order');
       }
+      if (contract.kind !== 'success') invariant(state.trace.at(-1).method === 'GetSecret', 'reuse-after-error');
+      if (runtime !== 'native') {
+        invariant(observer.calls.length === contract.rpcCount, 'observer-call-count');
+        const codes = contract.kind === 'success' ? state.trace.map(() => 0)
+          : contract.kind === 'page-error' ? [0, contract.errorCode, 0] : [contract.errorCode, 0];
+        invariant(observer.calls.every((call, index) => call.statusCode === codes[index]), 'observer-terminal-status');
+      }
       const requests = grpcWebRequests - before;
       invariant(requests === (runtime === 'native' ? 0 : state.trace.length), 'bridge-rpc-count');
       report.results.push({ runtime, scenario, status: 'passed', rpcCount: state.trace.length,
-        grpcWebRequests: requests, trace: state.trace, result });
+        grpcWebRequests: requests, trace: state.trace, metadataChecks: state.metadataChecks,
+        authMetadataChecks: runtime === 'native' ? 0 : state.metadataChecks, observer, result });
     }
     const helperNames = ['secret-manager-extended.mjs', 'assert.mjs'];
     report.sharedSourceHashes = Object.fromEntries(helperNames.map(file => [file,
       digest(fs.readFileSync(path.join(root, 'fixtures/google/shared', file)))]));
-    for (const runtime of ['native', 'adapter']) {
+    for (const runtime of ['native', 'adapter-grpc-web', 'adapter-cloudflare']) {
       const fixture = path.join(root, 'fixtures', runtime === 'native' ? 'native' : 'google');
       const req = createRequire(path.join(fixture, 'package.json'));
       const grpc = req('@grpc/grpc-js');
       const consumer = fs.mkdtempSync(path.join(fixture, '.secret-manager-'));
       try {
-        report.sourceHashes[runtime] = {};
+        const sourceRuntime = runtime === 'native' ? 'native' : 'adapter';
+        report.sourceHashes[sourceRuntime] = {};
         for (const file of helperNames) {
           const source = fs.readFileSync(path.join(root, 'fixtures/google/shared', file));
           fs.writeFileSync(path.join(consumer, file), source);
-          report.sourceHashes[runtime][file] = digest(fs.readFileSync(path.join(consumer, file)));
-          invariant(report.sourceHashes[runtime][file] === report.sharedSourceHashes[file], 'node-shared-source');
+          report.sourceHashes[sourceRuntime][file] = digest(fs.readFileSync(path.join(consumer, file)));
+          invariant(report.sourceHashes[sourceRuntime][file] === report.sharedSourceHashes[file], 'node-shared-source');
         }
         const { runSecretManagerExtended } = await import(pathToFileURL(path.join(consumer, 'secret-manager-extended.mjs')).href);
         const authClient = new (req('google-auth-library').OAuth2Client)();
         authClient.setCredentials({ access_token: 'secret-manager-local-fixture' });
         const base = { projectId: 'wga-sm-fixture', apiEndpoint: '127.0.0.1', port, authClient, sslCreds: grpc.credentials.createInsecure() };
-        // Plain Node uses explicit loopback credentials with the package alias.
-        // Workers below use gaxOptions with normal secure OAuth credentials.
-        if (runtime === 'adapter') req('@grpc/grpc-js/config').configureWorkersGrpc({
-          mode: 'grpc-web', allowInsecureLocalhost: true, endpoints: { [`127.0.0.1:${port}`]: bridgeOrigin },
-        });
-        const options = base;
         for (const scenario of scenarios) {
           stage = `${runtime}-${scenario}`;
           const caseId = setup(runtime, scenario), before = grpcWebRequests;
-          const result = await bounded(runSecretManagerExtended({ options, scenario, caseId }));
-          verify(runtime, scenario, caseId, result, before);
+          const events = [];
+          const mode = runtime.slice('adapter-'.length);
+          const transport = runtime === 'native' ? null : req('@grpc/grpc-js/adapter').createWorkersGrpcTransport({
+            observer: event => events.push(event),
+            ...(mode === 'cloudflare' ? { mode } : { mode, endpoints: { 'secretmanager.googleapis.com': 'https://secret-manager-gateway.invalid' } }),
+            fetcher: { fetch: async (input, init) => {
+              const url = new URL(input);
+              invariant(url.hostname === (mode === 'cloudflare' ? 'secretmanager.googleapis.com' : 'secret-manager-gateway.invalid'), 'node-endpoint');
+              const headers = new Headers(init.headers);
+              invariant(headers.get('content-type') === (mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto'), 'node-content-type');
+              return fetch(`${bridgeOrigin}${url.pathname}`, { ...init, cf: undefined });
+            } },
+          });
+          const options = transport ? transport.gaxOptions({ projectId: 'wga-sm-fixture', authClient }) : base;
+          let observer = null;
+          const result = await bounded(runSecretManagerExtended({ options, scenario, caseId,
+            beforeClientClose: transport ? async () => { observer = await secretManagerObservation(events, transport); } : undefined }));
+          verify(runtime, scenario, caseId, result, before, observer);
         }
       } finally { fs.rmSync(consumer, { recursive: true, force: true }); }
     }
     stage = 'worker-build';
     const bundle = await buildGoogleWorker({ entry: path.join(root, 'fixtures/google/secret-manager-worker.mjs'), outdir: temporary });
+    for (const file of bundle.manifest.inputs.filter(file => file.includes('/node_modules/') && fs.existsSync(path.join(root, file)))) {
+      report.installedInputs[file] = digest(fs.readFileSync(path.join(root, file)));
+    }
     report.buildProfile = { name: bundle.manifest.profile, revision: bundle.manifest.revision,
       sha256: bundle.manifest.profileSha256, registrySha256: bundle.manifest.registrySha256 };
     report.sourceHashes.workerd = Object.fromEntries(helperNames.map(file => [file,
@@ -280,25 +317,40 @@ async function main() {
           if (response.status !== 200 || body.status !== 'passed') {
             invariant(false, /^sm-[a-z0-9-]+$/.test(body.error) ? body.error.slice(3) : 'worker-response');
           }
-          verify(`workerd-${mode}`, scenario, caseId, body.result, before);
+          verify(`workerd-${mode}`, scenario, caseId, body.result, before, body.observer);
         }
       } finally { await worker.dispose(); }
     }
     stage = 'cross-runtime-parity';
     const comparable = item => ({ scenario: item.scenario, trace: item.trace, result: item.result });
-    for (const runtime of ['adapter', 'workerd-grpc-web', 'workerd-cloudflare']) {
+    for (const runtime of ['adapter-grpc-web', 'adapter-cloudflare', 'workerd-grpc-web', 'workerd-cloudflare']) {
       invariant(JSON.stringify(report.results.filter(item => item.runtime === runtime).map(comparable))
         === JSON.stringify(report.results.filter(item => item.runtime === 'native').map(comparable)), 'native-sdk-parity');
     }
-    invariant(report.results.length === 44, 'exact-case-count');
+    report.caseCount = report.results.length;
+    invariant(report.caseCount === 200, 'exact-case-count');
     report.rpcCount = report.results.reduce((total, item) => total + item.rpcCount, 0);
-    invariant(report.rpcCount === 96, 'aggregate-rpc-count');
+    invariant(report.rpcCount === 445, 'aggregate-rpc-count');
     report.grpcWebRequests = grpcWebRequests;
+    invariant(grpcWebRequests === 356, 'aggregate-fetch-count');
+    for (const [fixture, inputs] of [['google', report.installedInputs], ['native', report.nativeInputs]]) {
+      const prefix = path.join(root, `fixtures/${fixture}/node_modules/`);
+      for (const file of Object.keys(require.cache).filter(file => file.startsWith(prefix))) inputs[path.relative(root, file)] = digest(fs.readFileSync(file));
+      const req = fixture === 'native' ? nativeRequire : googleRequire;
+      for (const name of ['@grpc/grpc-js', '@google-cloud/secret-manager', 'google-gax', 'google-auth-library']) {
+        const file = path.join(root, `fixtures/${fixture}/node_modules/${name}/package.json`); inputs[path.relative(root, file)] = digest(fs.readFileSync(file));
+      }
+      const file = path.join(path.dirname(req.resolve('@google-cloud/secret-manager/package.json')), 'build/protos/protos.json');
+      inputs[path.relative(root, file)] = digest(fs.readFileSync(file));
+    }
     report.checks = ['manual-promise-and-callback-pages', 'automatic-pagination', 'async-iterator-pagination',
       'async-break-suppresses-following-pages', 'same-client-reuse-after-pagination', 'exact-page-and-rpc-counts',
       'resource-and-quota-routing-metadata', 'binary-empty-and-64k-payload-roundtrip', 'promise-and-callback-access',
       'consumer-checksum-validation', 'sdk-forwards-invalid-checksum', 'not-found-and-permission-denied',
-      'unicode-details-and-binary-error-metadata', 'no-payload-or-raw-exception-output', 'native-adapter-workerd-parity'];
+      'unicode-details-and-binary-error-metadata', 'repeated-text-and-binary-error-trailers',
+      'three-method-error-matrix-promise-and-callback', 'pagination-second-page-error-manual-auto-async',
+      'error-terminal-exactly-once-and-result-absent', 'same-client-reuse-after-error',
+      'adapter-observer-one-attempt-one-fetch-per-rpc', 'adapter-resources-idle-before-disposal', 'no-payload-or-raw-exception-output', 'native-adapter-workerd-parity'];
     report.status = 'passed';
   } finally {
     // Shut down the native listener first, and attempt every remaining cleanup
@@ -320,9 +372,15 @@ async function main() {
       catch { cleanupFailed = true; }
     }
     invariant(!cleanupFailed, 'resource-cleanup-failed');
+    report.runtimeDisposed = true;
+    report.resourcesCheckedBeforeClientClose = report.results.length === 200;
   }
 }
-main().catch(error => {
+main().then(() => {
+  stage = 'report-validation';
+  report.finishedAt = new Date().toISOString();
+  require('./secret-manager-evidence.cjs').validateSecretManagerReport(report);
+}).catch(error => {
   report.status = 'failed'; report.error = safeError(error); report.failureStage = stage;
   report.fixtureFailures = failures;
   process.exitCode = 1;

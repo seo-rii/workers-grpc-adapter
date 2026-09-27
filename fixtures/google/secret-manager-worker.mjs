@@ -1,6 +1,6 @@
 import { createWorkersGrpcTransport } from '@grpc/grpc-js/adapter';
 import { OAuth2Client } from 'google-auth-library';
-import { runSecretManagerExtended, secretManagerScenarios, safeSecretManagerError } from './shared/secret-manager-extended.mjs';
+import { runSecretManagerExtended, secretManagerScenarios, safeSecretManagerError, secretManagerObservation } from './shared/secret-manager-extended.mjs';
 
 export default {
   async fetch(request, env) {
@@ -8,13 +8,18 @@ export default {
     if (!secretManagerScenarios.includes(scenario)) return new Response('Not found', { status: 404 });
     const authClient = new OAuth2Client();
     authClient.setCredentials({ access_token: 'secret-manager-local-fixture' });
-    const transport = createWorkersGrpcTransport(env.MODE === 'cloudflare' ? { mode: 'cloudflare' } : {
-      mode: 'grpc-web', endpoints: { 'secretmanager.googleapis.com': 'https://secret-manager-gateway.invalid' },
+    const events = [];
+    const transport = createWorkersGrpcTransport({ observer: event => events.push(event),
+      ...(env.MODE === 'cloudflare' ? { mode: 'cloudflare' } : {
+        mode: 'grpc-web', endpoints: { 'secretmanager.googleapis.com': 'https://secret-manager-gateway.invalid' },
+      }),
     });
     try {
+      let observer;
       const result = await runSecretManagerExtended({ options: transport.gaxOptions({ projectId: 'wga-sm-fixture', authClient }),
-        scenario, caseId: `${env.MODE}-${scenario}` });
-      return Response.json({ status: 'passed', result });
+        scenario, caseId: `${env.MODE}-${scenario}`,
+        beforeClientClose: async () => { observer = await secretManagerObservation(events, transport); } });
+      return Response.json({ status: 'passed', result, observer });
     } catch (error) {
       // Never echo raw SDK exceptions: they may hold request or payload data.
       return Response.json({ status: 'failed', error: safeSecretManagerError(error) }, { status: 500 });
