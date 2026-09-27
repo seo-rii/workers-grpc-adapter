@@ -9,7 +9,7 @@ const ts = require('typescript');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
-    'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/fuzz-campaign-ci.json',
+    'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
     'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
@@ -395,12 +395,115 @@ function validateWorkerdLifecycleReport(report) {
             && (item.kind !== 'resource-receive-budget' || item.compressed === true), 'workerd byte budget rejection was not proven');
     }
 }
+function validateWorkerdObserverReport(report) {
+    need(report?.status === 'passed' && report.sourceBuild === false && report.liveCloud === false
+        && report.incomingCloudflareTranslation === false && report.nativeHttp2 === false && report.serviceBindings === false
+        && report.controlledPeer === true && report.runtimeDisposed === true && report.cleanupVerifiedBeforeDispose === true
+        && report.externalRequests === 0, 'workerd observer execution is incomplete or misrepresents its scope');
+    need(report.installedInputs && Object.keys(report.installedInputs).length > 0
+        && Object.entries(report.installedInputs).every(([file, value]) => file.startsWith('fixtures/worker/node_modules/@grpc/grpc-js/')
+            && /^[a-f0-9]{64}$/.test(value)), 'workerd observer installed package hashes are missing');
+    const required = ['scripts/test-workerd-observer.cjs', 'fixtures/worker/observer.mjs', 'fixtures/worker/package-lock.json'];
+    need(required.every(file => /^[a-f0-9]{64}$/.test(report.evidence?.[file])), 'workerd observer source hashes are incomplete');
+    need(report.runs?.length === 1, 'workerd observer invocation is missing');
+    const run = report.runs[0];
+    need(run.status === 'passed' && run.activeClientCalls === 0 && run.resourcesIdle === true
+        && run.caseCount === 14 && report.caseCount === 14 && run.results?.length === 14
+        && run.rpcCount === 18 && report.rpcCount === 18 && run.attemptCount === 16 && report.attemptCount === 16
+        && run.fetchCount === 14 && report.fetchCount === 14, 'workerd observer matrix or cleanup is incomplete');
+    const fields = {
+        'call-start': [], 'call-admitted': ['queueMs'], 'attempt-start': ['attempt'],
+        'auth-end': ['attempt', 'durationMs', 'statusCode'], 'fetch-start': ['attempt'],
+        'response-headers': ['attempt'], 'first-message': ['attempt'],
+        'attempt-end': ['attempt', 'durationMs', 'authDurationMs', 'fetchStarted', 'statusCode', 'sentBytes', 'receivedBytes', 'responseMessages', 'responseMessageBytes'],
+        'retry-scheduled': ['attempt', 'delayMs', 'statusCode'],
+        'call-end': ['attemptCount', 'fetchCount', 'queueMs', 'statusCode', 'sentBytes', 'receivedBytes', 'responseMessages', 'responseMessageBytes'],
+    };
+    const matrix = { retry: [[0], [2], [2]], 'queue-terminal': [[0, 1, 4], [1, 0, 0], [1, 0, 0]],
+        'auth-cancel': [[1], [1], [0]], 'stream-destroy': [[1], [1], [1]],
+        'observer-throw': [[0], [1], [1]], 'observer-reject': [[0], [1], [1]], recovery: [[0], [1], [1]] };
+    const ids = new Set(); let events = 0, attempts = 0, fetches = 0, sentBytes = 0, receivedBytes = 0;
+    for (const mode of ['cloudflare', 'grpc-web']) for (const [kind, [codes, attemptCounts, fetchCounts]] of Object.entries(matrix)) {
+        const selected = run.results.filter(item => item.mode === mode && item.kind === kind);
+        need(selected.length === 1, `${mode}/${kind}: workerd observer case missing or duplicated`);
+        const row = selected[0];
+        need(row.privacyVerified === true && row.frozenEvents === true && row.calls?.length === codes.length,
+            `${mode}/${kind}: workerd observer event privacy or call receipts missing`);
+        row.calls.forEach((call, index) => {
+            need(typeof call.logicalCallId === 'string' && /^wga-[1-9][0-9]*$/.test(call.logicalCallId) && !ids.has(call.logicalCallId)
+                && call.terminalCode === codes[index] && call.attemptCount === attemptCounts[index] && call.fetchCount === fetchCounts[index]
+                && call.statuses === 1 && Array.isArray(call.events), 'workerd observer logical call identity or terminal counts drifted');
+            ids.add(call.logicalCallId); let elapsed = 0;
+            for (const event of call.events) {
+                need(event && Object.hasOwn(fields, event.type) && event.logicalCallId === call.logicalCallId
+                    && isDeepStrictEqual(Object.keys(event).sort(), ['type', 'logicalCallId', 'elapsedMs', ...fields[event.type]].sort())
+                    && Number.isFinite(event.elapsedMs) && event.elapsedMs >= elapsed, 'workerd observer event fields or clock order drifted');
+                elapsed = event.elapsedMs;
+                for (const key of fields[event.type]) need(key === 'fetchStarted' ? typeof event[key] === 'boolean'
+                    : Number.isFinite(event[key]) && event[key] >= 0, 'workerd observer counter or duration is invalid');
+            }
+            const of = type => call.events.filter(event => event.type === type);
+            const ends = of('call-end'), starts = of('call-start'), attemptEnds = of('attempt-end');
+            need(starts.length === 1 && call.events[0] === starts[0] && ends.length === 1 && call.events.at(-1) === ends[0]
+                && of('attempt-start').length === call.attemptCount && of('auth-end').length === call.attemptCount
+                && of('fetch-start').length === call.fetchCount && attemptEnds.length === call.attemptCount
+                && isDeepStrictEqual(attemptEnds.map(event => event.attempt), Array.from({ length: call.attemptCount }, (_, i) => i + 1)),
+                'workerd observer start/attempt/terminal event counts drifted');
+            const end = ends[0];
+            need(end.statusCode === call.terminalCode && end.attemptCount === call.attemptCount && end.fetchCount === call.fetchCount,
+                'workerd observer terminal event differs from RPC receipt');
+            for (const event of call.events.filter(item => item.attempt !== undefined)) need(Number.isSafeInteger(event.attempt)
+                && event.attempt >= 1 && event.attempt <= call.attemptCount, 'workerd observer attempt identity drifted');
+            for (const attempt of attemptEnds) {
+                const matching = type => call.events.filter(event => event.type === type && event.attempt === attempt.attempt);
+                const begin = matching('attempt-start'), auth = matching('auth-end'), fetch = matching('fetch-start'), headers = matching('response-headers');
+                const at = event => call.events.indexOf(event);
+                need(begin.length === 1 && auth.length === 1 && at(begin[0]) < at(auth[0]) && at(auth[0]) < at(attempt)
+                    && fetch.length === (attempt.fetchStarted ? 1 : 0) && headers.length === fetch.length
+                    && attempt.durationMs >= attempt.authDurationMs
+                    && attempt.statusCode === (kind === 'retry' && attempt.attempt === 1 ? 14 : call.terminalCode),
+                    'workerd observer attempt phases or status drifted');
+                if (attempt.fetchStarted) need(at(auth[0]) < at(fetch[0]) && at(fetch[0]) < at(headers[0]) && at(headers[0]) < at(attempt),
+                    'workerd observer authentication/Fetch/header ordering drifted');
+                else need(attempt.sentBytes === 0 && attempt.receivedBytes === 0 && attempt.responseMessages === 0,
+                    'workerd observer attempt without Fetch reported transport traffic');
+            }
+            for (const key of ['sentBytes', 'receivedBytes', 'responseMessages', 'responseMessageBytes']) need(Number.isSafeInteger(end[key])
+                && end[key] === attemptEnds.reduce((sum, event) => sum + event[key], 0), 'workerd observer cumulative traffic is inconsistent');
+            if (kind === 'retry') need(of('retry-scheduled').length === 1
+                && isDeepStrictEqual(attemptEnds.map(event => event.statusCode), [14, 0])
+                && isDeepStrictEqual(attemptEnds.map(event => event.responseMessages), [0, 1]) && row.authCalls === 2 && row.retryCount === 1,
+                'workerd observer retry identity/authentication was not proven');
+            if (kind === 'queue-terminal' && index > 0) need(end.sentBytes === 0 && end.receivedBytes === 0
+                && of('call-admitted').length === 0 && row.queuedFetches === 0, 'workerd queued termination started transport work');
+            if (kind === 'auth-cancel') need(row.lateEvents === 0 && end.sentBytes === 0 && end.receivedBytes === 0,
+                'workerd cancelled authentication produced late observer events');
+            if (kind === 'stream-destroy') need(row.messages === 1 && row.bytesVerified === true && end.responseMessages === 1
+                && end.responseMessageBytes > 0 && end.receivedBytes === end.responseMessageBytes + 5 && of('first-message').length === 1,
+                'workerd stream observer traffic or cancellation was not proven');
+            if (kind.startsWith('observer-')) need(row.rpcUnaffected === true, 'workerd observer failure affected RPC');
+            events += call.events.length; attempts += call.attemptCount; fetches += call.fetchCount;
+            sentBytes += end.sentBytes; receivedBytes += end.receivedBytes;
+        });
+    }
+    need(ids.size === run.rpcCount && attempts === run.attemptCount && fetches === run.fetchCount
+        && events === run.eventCount && events === report.eventCount, 'workerd observer aggregate counts drifted');
+    need(run.cleanup?.length === run.fetchCount && run.cleanup.every(item => item.bodyLocked === false
+        && typeof item.ended === 'boolean' && item.cancellations === (item.ended ? 0 : 1)
+        && Number.isSafeInteger(item.deliveredBytes) && item.deliveredBytes > 0)
+        && run.cleanup.filter(item => item.cancellations === 1).length === 2
+        && run.peerReceipts?.length === run.fetchCount
+        && run.peerReceipts.every(item => Number.isSafeInteger(item.sentBytes) && item.sentBytes > 0)
+        && run.peerReceipts.reduce((sum, item) => sum + item.sentBytes, 0) === sentBytes
+        && run.cleanup.reduce((sum, item) => sum + item.deliveredBytes, 0) === receivedBytes,
+        'workerd observer response cleanup or independent traffic accounting was not proven');
+}
 function validateProvenance(root, report) {
     const pkg = read(root, 'package.json');
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
-        ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
+        ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
@@ -425,6 +528,12 @@ function validateProvenance(root, report) {
     }
     for (const [file, expected] of Object.entries(report.workerdLifecycle.evidence)) {
         need(hash(root, file) === expected, `${file}: lifecycle execution input drift`);
+    }
+    validateWorkerdObserverReport(report.workerdObserver);
+    need(report.commands.some(command => command.id === 'workerd-observer' && command.status === 'passed' && command.exitCode === 0),
+        'workerd observer command did not pass');
+    for (const [file, expected] of Object.entries({ ...report.workerdObserver.installedInputs, ...report.workerdObserver.evidence })) {
+        need(hash(root, file) === expected, `${file}: observer execution input drift`);
     }
     need(campaign?.status === 'passed' && campaign.profile === 'ci' && campaign.liveCloud === false
         && campaign.runs?.length === 4, 'required Node/workerd fuzz campaign is incomplete');
@@ -523,7 +632,7 @@ function checkEvidence(root = ROOT) {
     need(typeof generatedAt === 'string' && isDeepStrictEqual(rest, current), 'recorded evidence is stale or its coverage/status was edited');
     return saved;
 }
-module.exports = { captureInputs, writeEvidence, checkEvidence, validateSnapshot, validateMapping, tapResults, namedTests, pointer, validateProvenance, validateRuntimeCopies, validateProfileManifest, validateEmulatorReport, validateEmulatorArtifacts, validateSupplementalCases, validateLifecycleReport, validateLifecycleArtifacts, validateWorkerdLifecycleReport };
+module.exports = { captureInputs, writeEvidence, checkEvidence, validateSnapshot, validateMapping, tapResults, namedTests, pointer, validateProvenance, validateRuntimeCopies, validateProfileManifest, validateEmulatorReport, validateEmulatorArtifacts, validateSupplementalCases, validateLifecycleReport, validateLifecycleArtifacts, validateWorkerdLifecycleReport, validateWorkerdObserverReport };
 if (require.main === module) {
     try {
         need(process.argv.length <= 3 && [undefined, '--check', '--record'].includes(process.argv[2]), 'usage: node scripts/test-evidence.cjs [--check|--record]');

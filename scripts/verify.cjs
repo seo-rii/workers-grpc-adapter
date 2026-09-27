@@ -81,6 +81,7 @@ function main() {
     run('workers-server', ['scripts/test-workers-server.cjs']);
     run('workerd-integration', ['scripts/test-workerd-integration.cjs']);
     run('workerd-lifecycle', ['scripts/test-workerd-lifecycle.cjs']);
+    run('workerd-observer', ['scripts/test-workerd-observer.cjs']);
     run('fuzz-campaign', ['scripts/fuzz-campaign.cjs', '--profile=ci']);
     run('modern-sdk', ['scripts/test-modern-sdk.cjs']);
     run('request-streaming', ['scripts/test-request-streaming.cjs']);
@@ -141,7 +142,7 @@ function main() {
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
-        workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
+        workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
