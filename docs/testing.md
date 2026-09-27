@@ -38,6 +38,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 |---|---|---|
 | `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
 | `npm run test:workerd:integration` | Two real Workers using the public client/server APIs through a service binding; 72 cases and 96 RPCs | `verification/workerd-integration.json` |
+| `npm run test:workerd:lifecycle` | Installed client/server APIs in two real Workers; 39 interceptor, termination, metadata, resource, configuration and deadline cases with 70 logical RPCs | `verification/workerd-lifecycle.json` |
 | `npm run test:workerd:fuzz` | Independent hostile Worker peer; generated and fixed malformed responses, compression, fragments, cleanup and channel reuse | `verification/workerd-fuzz.json` |
 | `npm run test:fuzz:ci` | Required two-seed Node/workerd campaign: 1,000 / 150 executions per property | `verification/fuzz-campaign-ci.json` |
 | `npm run test:fuzz:extended` | Four-seed campaign: 5,000 / 750 executions per Node/workerd property | `verification/fuzz-campaign-extended.json` |
@@ -127,13 +128,51 @@ The controlled outbound responder does not emulate Cloudflare's edge translator;
 
 Protocol tests include frame flags, deterministic message/chunk splits, every truncation position in fixed vectors, base64 forms and budgets. Native differential tests compare selected callback/metadata/status/data/error/end behavior. Real Envoy tests are distinct from the hand-built controlled bridge.
 
+The required `test:workerd:lifecycle` gate exercises the installed package through
+two separate Workers and an HTTP service binding. Its 39 cases include all four
+synchronous/asynchronous interceptor startup and send combinations, both deferred
+completion orders, stalled-start cancellation/default deadlines/channel closure,
+late continuations, raw stream destruction/iterator exit, and successful reuse.
+It also checks oversized initial/trailing metadata returns a readable gRPC error,
+failed channel construction leaves global configuration available, and deterministic
+clock boundaries retain the correct deadline status and timeout encoding.
+
+The gate makes 70 logical calls and 54 binding Fetch calls. All response readers,
+timers and active calls must be released before runtime disposal, including six
+cancelled response readers. Backend finalization may use the RPC deadline when
+an idle service binding does not promptly propagate cancellation. Two upload cases
+use an independent peer to verify client/bidirectional streaming frames and EOF;
+the public Fetch server still does not register request-streaming handlers. The
+positive deadline-boundary case asserts the original `1m` timeout header, then
+widens it to five seconds only for the separate backend echo, avoiding a test that
+depends on completing cross-Worker I/O within one millisecond. Reports retain
+installed runtime and fixture hashes; source builds cannot satisfy the CI gate.
+Eight resource cases share admission across clients from one transport, terminate
+queued calls on cancellation/deadline before Fetch, reject queue overflow, and
+recover capacity. They also reject oversized outgoing buffers and compressed
+responses within a shared byte budget, then reuse the same client. A gzip stream
+with readable high-water mark one advances one queued message at a time while an
+independent call from the same transport proceeds during held authentication.
+Every resource case requires zero admitted/queued calls and adapter-owned bytes at
+completion. These counters exclude arbitrary deserialized objects, platform
+buffers and total isolate memory. See [resource limits](resources.md).
+
+See [interceptor ordering](interceptors.md) and [call lifecycle](call-lifecycle.md).
+
 ### Reproducible property fuzzing
 
 `test/wire-fuzz.test.cjs` retains the fixed regression corpus. Additional `*-property.test.cjs` files use the pinned development dependency [fast-check](https://fast-check.dev/docs/configuration/). These are generated, property-based tests with shrinking, not coverage-guided native fuzzing. They run automatically in `npm test`, `npm run verify`, and the existing GitHub Actions workflow.
 
 The framing properties compare bounded arbitrary and mutated byte streams against an independent whole-buffer protocol oracle. They also vary empty chunks, fragmentation, byte offsets, early consumer exit and errors, checking frame preservation and reader cleanup. Lifecycle properties vary controlled asynchronous events in both transport modes and check single terminal delivery, routing isolation and resource cleanup. They use synthetic local responses, not cloud services.
 
-The standalone default is up to 200 cases per property (individual bounded stream/server properties use 80–120) with seed `1470698469` (`0x57a913e5`), including explicit boundary examples where supplied. Inputs and action lists have explicit size bounds. Each property has a 120-second test timeout; exceeding it fails the run. Increase the run count and vary the seed for a longer local campaign:
+Two schedule properties specifically vary interceptor metadata/message/half-close
+continuations and their interaction with authentication, deadlines, parent
+cancellation and channel closure. They retain transformed requests, check ordering
+after each generated transition, reject duplicate terminal delivery, and verify
+that late continuations cannot start Fetch after termination. The fixed ordering
+regressions preserve the smallest previously failing two-message schedule.
+
+The standalone default is 80–250 cases per property, depending on the bounded protocol or schedule test, with seed `1470698469` (`0x57a913e5`), including explicit boundary examples where supplied. Inputs and action lists have explicit size bounds. Asynchronous properties have a 120-second test timeout, and the Node fuzz subprocess has a 180-second bound; exceeding either fails the run. Increase the run count and vary the seed for a longer local campaign:
 
 ```sh
 npm run test:fuzz
@@ -149,8 +188,8 @@ WGA_FUZZ_SEED=1470698469 WGA_FUZZ_PATH='0' npm run test:fuzz -- \
   '--test-name-pattern=^FUZZ property arbitrary and mutated wire bytes match an independent framing oracle$'
 ```
 
-`verify` also requires `test:fuzz:ci`, which runs all 14 Node properties at 1,000
-executions each for seeds `1470698469` and `20260927`: 28,000 property executions.
+`verify` also requires `test:fuzz:ci`, which runs all 16 Node properties at 1,000
+executions each for seeds `1470698469` and `20260927`: 32,000 property executions.
 It runs four workerd properties at 150 executions each for the same seeds: 1,200
 generated samples. Each sample executes both modes and a recovery RPC on the same
 channel. Another 46 fixed protocol boundaries run per seed, making 5,168 workerd
@@ -191,6 +230,8 @@ WGA_WORKER_FUZZ_PROPERTY=malformed-response WGA_WORKER_FUZZ_PATH='0' \
 
 `test:fuzz:extended` uses four fixed seeds (the CI pair plus `-314159` and
 `8675309`), 5,000 executions per Node property and 750 per workerd property.
+That is 320,000 Node property executions, 12,000 generated workerd samples and
+48,736 workerd RPCs including fixed boundaries and recovery calls.
 It runs nightly at 18:30 UTC and when **extended_fuzz** is selected in the manual
 workflow dispatch. Pushes and pull requests require the smaller campaign as
 part of the full gate. CI uploads per-seed JSON reports and private process logs

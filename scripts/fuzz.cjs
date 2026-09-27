@@ -31,7 +31,8 @@ try {
     if (!expected.length) throw new Error('No property tests discovered');
     report.expectedProperties = expected.length;
     report.replay = process.env.WGA_FUZZ_PATH !== undefined;
-    report.sources = Object.fromEntries([...files, 'test/property-helpers.cjs', 'scripts/fuzz.cjs', 'package-lock.json'].map(file =>
+    const helpers = ['test/interceptor-helpers.cjs', 'test/helpers.cjs'].filter(file => fs.existsSync(path.join(root, file)));
+    report.sources = Object.fromEntries([...files, 'test/property-helpers.cjs', ...helpers, 'scripts/fuzz.cjs', 'package-lock.json'].map(file =>
         [file, createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex')]));
     receipts = fs.mkdtempSync(path.join(path.dirname(output), '.fuzz-receipts-'));
     const log = output.replace(/\.json$/, '') + '.log', fd = fs.openSync(log, 'w', 0o600); fs.fchmodSync(fd, 0o600);

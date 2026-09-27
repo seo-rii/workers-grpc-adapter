@@ -41,6 +41,7 @@
     "test:fuzz:ci": "node scripts/fuzz-campaign.cjs --profile=ci",
     "test:fuzz:extended": "node scripts/fuzz-campaign.cjs --profile=extended",
     "test:workerd:integration": "node scripts/test-workerd-integration.cjs",
+    "test:workerd:lifecycle": "node scripts/test-workerd-lifecycle.cjs",
     "test:workerd:fuzz": "node scripts/test-workerd-fuzz.cjs",
     "test:pack": "node scripts/test-pack.cjs",
     "test:types": "node scripts/test-types.cjs",

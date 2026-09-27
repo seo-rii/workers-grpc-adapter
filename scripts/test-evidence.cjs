@@ -9,7 +9,7 @@ const ts = require('typescript');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
-    'verification/workerd-integration.json', 'verification/fuzz-campaign-ci.json',
+    'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/fuzz-campaign-ci.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
     'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
@@ -333,12 +333,74 @@ function validateLifecycleArtifacts(root, report) {
     }
     return artifacts;
 }
+function validateWorkerdLifecycleReport(report) {
+    need(report?.status === 'passed' && report.sourceBuild === false && report.liveCloud === false
+        && report.serviceBindings === true && report.productionServerHandler === true && report.independentUploadPeer === true
+        && report.incomingCloudflareTranslation === false && report.nativeHttp2 === false
+        && report.runtimeDisposed === true && report.cleanupVerifiedBeforeDispose === true && report.externalRequests === 0,
+        'workerd lifecycle integration is incomplete or used source/cloud execution');
+    need(report.installedInputs && Object.keys(report.installedInputs).length > 0,
+        'workerd lifecycle installed package hashes are missing');
+    const required = ['scripts/test-workerd-lifecycle.cjs', 'fixtures/worker/lifecycle-client.mjs',
+        'fixtures/worker/lifecycle-server.mjs', 'fixtures/worker/package-lock.json'];
+    need(required.every(file => typeof report.evidence?.[file] === 'string'), 'workerd lifecycle source hashes are incomplete');
+    need(report.runs?.length === 1, 'workerd lifecycle invocation is missing');
+    const run = report.runs[0];
+    need(run.status === 'passed' && run.results?.length >= 39 && run.results.every(item => typeof item.kind === 'string')
+        && run.caseCount === run.results.length
+        && report.caseCount === run.caseCount && run.coreCaseCount >= 31 && run.resourceCaseCount >= 8
+        && run.coreCaseCount + run.resourceCaseCount === run.caseCount
+        && report.coreCaseCount === run.coreCaseCount && report.resourceCaseCount === run.resourceCaseCount
+        && run.rpcCount >= 70 && run.callReceipts?.length === run.rpcCount && report.rpcCount === run.rpcCount
+        && run.fetchCount >= 54 && report.fetchCount === run.fetchCount && run.activeClientCalls === 0,
+        'workerd lifecycle client completion or execution counts were not proven');
+    need(run.callReceipts.every(item => item.statuses === 1 && [0, 1].includes(item.callbacks)
+        && [0, 1].includes(item.fetchCount) && item.diagnostics?.terminal === true
+        && item.diagnostics.fetchCount === item.fetchCount && item.diagnostics.requestBytes === 0
+        && item.diagnostics.responseBytes === 0 && item.diagnostics.timerActive === false)
+        && run.callReceipts.reduce((sum, item) => sum + item.fetchCount, 0) === run.fetchCount,
+        'workerd lifecycle per-call terminal or buffer cleanup was not proven');
+    need(run.backend?.active === 0 && run.backend.receipts?.length === run.fetchCount
+        && run.backend.receipts.every(item => item.finalized === true && item.active === false)
+        && report.backendAbortCount >= 4 && run.backend.receipts.filter(item => item.aborted).length === report.backendAbortCount,
+        'workerd lifecycle backend cleanup was not proven before disposal');
+    const uploads = run.backend.receipts.filter(item => item.uploadEOF);
+    need(uploads.length === 2 && uploads.every(item => item.readerReleased === true && item.input?.length === 3),
+        'workerd lifecycle upload readers or EOF were not verified');
+    need(report.responseReaderCount === run.fetchCount && run.cleanup?.length === run.fetchCount
+        && run.cleanup.every(item => item.released === true && item.bodyLocked === false && item.sourceLocked === false
+            && typeof item.ended === 'boolean' && item.cancellations === (item.ended ? 0 : 1))
+        && report.cancelledResponseReaderCount >= 6
+        && run.cleanup.filter(item => item.cancellations === 1).length === report.cancelledResponseReaderCount,
+        'workerd lifecycle response reader cleanup was not proven');
+    const resources = run.results.filter(item => item.kind.startsWith('resource-'));
+    need(resources.length === run.resourceCaseCount, 'workerd resource case count drifted');
+    for (const mode of ['cloudflare', 'grpc-web']) {
+        for (const kind of ['resource-admission', 'resource-send-budget', 'resource-receive-budget', 'resource-slow-compressed']) {
+            need(resources.filter(item => item.mode === mode && item.kind === kind).length === 1,
+                `${mode}/${kind}: required workerd resource case missing or duplicated`);
+        }
+    }
+    need(resources.every(item => item.usage?.activeCalls === 0 && item.usage.queuedCalls === 0
+        && item.usage.bufferedBytes === 0 && item.usage.peakBufferedBytes <= item.limits?.maxBufferedBytes && item.recovered === true),
+        'workerd shared resource budget cleanup or recovery was not proven');
+    for (const item of resources) {
+        if (item.kind === 'resource-admission') need(item.usage.peakActiveCalls === 1 && item.usage.peakQueuedCalls === 1
+            && item.overloadCode === 8 && item.queuedFetches === 0 && item.sharedClients >= 2
+            && isDeepStrictEqual(item.queuedTerminalCodes, [1, 4]), 'workerd shared admission or queue termination was not proven');
+        if (item.kind === 'resource-slow-compressed') need(item.peakReadableLength === 1 && item.messages === 8
+            && item.compressed === true && item.peerDuringAuth === true && item.usage.peakActiveCalls === 2,
+            'workerd slow-reader compression/authentication concurrency was not proven');
+        if (item.kind === 'resource-send-budget' || item.kind === 'resource-receive-budget') need(item.code === 8
+            && (item.kind !== 'resource-receive-budget' || item.compressed === true), 'workerd byte budget rejection was not proven');
+    }
+}
 function validateProvenance(root, report) {
     const pkg = read(root, 'package.json');
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
-        ['workerdIntegration', 'verification/workerd-integration.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
+        ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
@@ -355,11 +417,24 @@ function validateProvenance(root, report) {
     for (const [file, expected] of Object.entries(report.workerdIntegration.installedInputs || {})) {
         need(hash(root, file) === expected, `${file}: integration package drift`);
     }
+    validateWorkerdLifecycleReport(report.workerdLifecycle);
+    need(report.commands.some(command => command.id === 'workerd-lifecycle' && command.status === 'passed' && command.exitCode === 0),
+        'workerd lifecycle command did not pass');
+    for (const [file, expected] of Object.entries(report.workerdLifecycle.installedInputs)) {
+        need(hash(root, file) === expected, `${file}: lifecycle package drift`);
+    }
+    for (const [file, expected] of Object.entries(report.workerdLifecycle.evidence)) {
+        need(hash(root, file) === expected, `${file}: lifecycle execution input drift`);
+    }
     need(campaign?.status === 'passed' && campaign.profile === 'ci' && campaign.liveCloud === false
         && campaign.runs?.length === 4, 'required Node/workerd fuzz campaign is incomplete');
+    need(campaign.nodeGeneratedRuns === 32000 && campaign.workerGeneratedRuns === 1200 && campaign.workerRpcCalls === 5168,
+        'required fuzz campaign execution counts drifted');
     for (const run of campaign.runs) {
         need(run.exitCode === 0 && run.result?.status === 'passed', 'fuzz subprocess did not pass');
         need(hash(root, run.report) === run.sha256 && isDeepStrictEqual(read(root, run.report), run.result), `${run.report}: fuzz receipt drift`);
+        if (run.kind === 'node') need(run.result.expectedProperties === 16 && run.result.properties?.length === 16
+            && run.result.generatedRuns === 16000, 'required Node fuzz properties are incomplete');
     }
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);
     const packaging = report.packaging;
@@ -448,7 +523,7 @@ function checkEvidence(root = ROOT) {
     need(typeof generatedAt === 'string' && isDeepStrictEqual(rest, current), 'recorded evidence is stale or its coverage/status was edited');
     return saved;
 }
-module.exports = { captureInputs, writeEvidence, checkEvidence, validateSnapshot, validateMapping, tapResults, namedTests, pointer, validateProvenance, validateRuntimeCopies, validateProfileManifest, validateEmulatorReport, validateEmulatorArtifacts, validateSupplementalCases, validateLifecycleReport, validateLifecycleArtifacts };
+module.exports = { captureInputs, writeEvidence, checkEvidence, validateSnapshot, validateMapping, tapResults, namedTests, pointer, validateProvenance, validateRuntimeCopies, validateProfileManifest, validateEmulatorReport, validateEmulatorArtifacts, validateSupplementalCases, validateLifecycleReport, validateLifecycleArtifacts, validateWorkerdLifecycleReport };
 if (require.main === module) {
     try {
         need(process.argv.length <= 3 && [undefined, '--check', '--record'].includes(process.argv[2]), 'usage: node scripts/test-evidence.cjs [--check|--record]');
