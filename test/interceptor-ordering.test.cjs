@@ -164,3 +164,39 @@ for (const kind of ['unary', 'clientStream', 'bidi']) {
         }
     });
 }
+
+test('INTERCEPTOR logical lifetime preserves custom sendMessage overrides', async () => {
+    const { grpc, response, serialize, deserialize } = require('./helpers.cjs');
+    const { createWorkersGrpcTransport } = require('../dist/adapter.js');
+    for (const streaming of [false, true]) {
+        let overrides = 0, fetches = 0;
+        class NoCompressCall extends grpc.InterceptingCall {
+            sendMessage(message) { overrides++; this.sendMessageWithContext({ flags: 2 }, message); }
+        }
+        const factory = createWorkersGrpcTransport({
+            fetcher: { async fetch(_url, init) {
+                fetches++;
+                assert.equal(init.headers.get('grpc-encoding'), 'gzip');
+                assert.equal(init.body[0], 0, 'NoCompress override must reach the transport');
+                assert.deepEqual(init.body.subarray(5), serialize({ text: 'request' }));
+                return response();
+            } },
+        });
+        const client = new grpc.Client('echo.test', factory.channelCredentials, factory.grpcOptions({
+            'grpc.default_compression_algorithm': 2,
+            interceptors: [(options, next) => new NoCompressCall(next(options))],
+        }));
+        try {
+            if (streaming) {
+                const stream = client.makeServerStreamRequest('/demo.Echo/Stream', serialize, deserialize, { text: 'request' });
+                const values = []; for await (const value of stream) values.push(value);
+                assert.deepEqual(values, [{ text: 'ok' }]);
+            } else {
+                const value = await new Promise((resolve, reject) => client.makeUnaryRequest('/demo.Echo/Unary',
+                    serialize, deserialize, { text: 'request' }, (error, result) => error ? reject(error) : resolve(result)));
+                assert.deepEqual(value, { text: 'ok' });
+            }
+            assert.equal(overrides, 1); assert.equal(fetches, 1);
+        } finally { client.close(); }
+    }
+});

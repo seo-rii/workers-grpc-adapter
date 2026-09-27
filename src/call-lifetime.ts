@@ -111,7 +111,12 @@ export class CallLifetime implements InterceptingCallInterface {
         try { this.nextCall!.sendMessageWithContext({ ...context, ...(context.callback ? { callback: done } : {}) }, message); }
         catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
     }
-    sendMessage(message: unknown): void { this.sendMessageWithContext({}, message); }
+    sendMessage(message: unknown): void {
+        if (this.terminal) return;
+        // Preserve custom InterceptingCall.sendMessage overrides and flags.
+        try { this.nextCall!.sendMessage(message); }
+        catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+    }
     startRead(): void { if (!this.terminal) this.nextCall?.startRead(); }
     halfClose(): void {
         if (this.terminal) return;
