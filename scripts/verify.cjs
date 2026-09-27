@@ -92,6 +92,7 @@ function main() {
     run('workers-shared', ['scripts/workers-shared-test.cjs']);
     run('envoy', ['scripts/envoy-test.cjs'], [0, 2]);
     run('google-emulators', ['scripts/google-emulator-test.cjs']);
+    run('firestore-watch', ['scripts/test-firestore-watch.cjs']);
     run('emulator-lifecycle', ['fixtures/emulators/lifecycle.cjs']);
     // Forces live flag off even if the caller's environment opted in.
     run('google-preflight', ['scripts/google-test.cjs'], [0, 2]);
@@ -99,11 +100,13 @@ function main() {
     const sdkTypes = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-types.json')));
     const sdkGraph = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-graph.json')));
     const googleEmulators = read('google-emulators.json');
+    const firestoreWatch = read('firestore-watch.json');
     const datastorePagination = read('datastore-pagination.json');
     const secretManagerExtended = read('secret-manager-extended.json');
     const shared = filesIn(path.join(root, 'fixtures/google/shared')).filter(p => p.endsWith('.mjs')).map(file => ({ file: path.relative(root, file), sha256: hash(file),
         nativeBaselineCompared: Boolean((sdkLocal.sameSharedFiles && sdkLocal.sourceHashes.native[path.basename(file)] === hash(file))
             || (googleEmulators.sameSharedFiles && googleEmulators.sourceHashes.native[path.basename(file)] === hash(file))
+            || (firestoreWatch.nativeBusinessEquivalent && firestoreWatch.sources.native === hash(file))
             || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))
             || (secretManagerExtended.sameSharedSource && secretManagerExtended.sourceHashes.native[path.basename(file)] === hash(file))) }));
     const catalog = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/test-catalog.json')));
@@ -117,7 +120,7 @@ function main() {
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
-        googleEmulators, emulatorLifecycle: read('emulator-lifecycle.json'),
+        googleEmulators, firestoreWatch, emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),

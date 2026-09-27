@@ -187,3 +187,10 @@ verifies deadline cleanup while documenting delayed status delivery. The separat
 raw `streaming-feasibility` gate records this boundary for both mode-shaped Fetch
 requests without claiming deployed conversion. Three seeded request-body properties
 exercise 320 bounded operation/codec cases in addition to focused stream tests.
+
+`node scripts/test-firestore-watch.cjs` runs identical document/query listener code
+under native grpc-js, the installed adapter, and two workerd invocations. Eight
+cases assert 52 callbacks and 84 official-emulator RPC arrivals, including 16 real
+Listen calls. It checks unsubscribe, reuse, response delivery before upload ends,
+exact native comparisons and data/process cleanup. It provides no IAM or live-edge
+certification and does not certify Firestore 9.2 Listen.

@@ -184,3 +184,8 @@ methods. The default remains disabled. Each message retains its own size/codec
 limits; half-close ends the Fetch body, and no streaming call is retried. Honor
 Writable backpressure and supply a deadline. See [request streaming](request-streaming.md)
 for early server rejection behavior and the tested gateway boundary.
+
+Firestore 8.3.0 `DocumentReference.onSnapshot()` and `Query.onSnapshot()` are
+verified through the experimental gateway path. SDK listener lifetime is owned
+by the application: install an error callback, unsubscribe before leaving the
+Worker lifetime, then terminate the client. See [Firestore listeners](firestore-watch.md).
