@@ -34,13 +34,18 @@ All paths below are relative to `src/`.
 
 | Module | Responsibility |
 |---|---|
-| `index.ts` | Client exports and explicit failures for server APIs |
+| `index.ts` | Client/health exports and explicit failures for native server sockets |
 | `factory.ts` | Generated constructors, package definitions and original-name aliases |
 | `client.ts`, `call-surface.ts` | Upstream overloads, callbacks, streams and invocation transforms |
 | `client-interceptors.ts` | Interceptor order, asynchronous listeners, serialization and final call options |
 | `channel.ts` | Target/configuration/credentials, active calls and channel closure |
-| `call.ts` | Authentication preparation, one Fetch attempt, deadlines, cancellation and terminal cleanup |
+| `call.ts` | Authentication, Fetch attempts, deadlines, cancellation and terminal cleanup |
 | `wire.ts` | Incremental frame parsing, length checks, trailers and metadata |
+| `compression.ts` | Bounded identity/gzip/deflate message transforms |
+| `retry.ts` | Exact-method unary replay policy and bounded backoff |
+| `health.ts` | Standard remote health checks and reconnecting Watch |
+| `request-stream.ts` | Experimental gateway upload body with one pending frame |
+| `server.ts` | Separate Fetch-native unary/server-streaming endpoints |
 | `credentials.ts` | Credential composition and Google `getRequestHeaders()` integration |
 | `config-internal.ts` | Configuration validation, immutable snapshots and canonical routing |
 | `config.ts` | Public configuration exports |
@@ -50,9 +55,9 @@ All paths below are relative to `src/`.
 
 ## Call lifecycle
 
-A call progresses through `start → prepare authentication/request → halfClose → fetch → consume frames → terminal`. Authentication and the request can become ready independently. Once a terminal result is chosen, late authentication or Fetch completion cannot start another request.
+A call progresses through `start → prepare authentication/request → halfClose → fetch → consume frames → terminal`. Authentication and the request can become ready independently. Experimental gateway request streaming starts Fetch once authentication is ready and writes frames until half-close; it does not wait for the whole request. Its callback means Fetch accepted a frame, not that a socket flushed it. Once a terminal result is chosen, late authentication or Fetch completion cannot start another request.
 
-`finishObject()` records terminal state before notifying listeners. It clears timers, request buffers and pending reader demand. The adapter makes at most one data Fetch attempt per Call. A retry initiated by an SDK creates another Call; it is not an adapter retry.
+`finishObject()` records terminal state before notifying listeners. It clears timers, request buffers and pending reader demand. By default the adapter makes at most one data Fetch attempt per Call. An explicit retry policy can replay listed unary methods before the first response message, within the same deadline. Every attempt refreshes credential metadata and obtains a new body. SDK retries still create separate Calls and may multiply the adapter policy; see [retries](retries.md).
 
 The decoder consumes the current Fetch chunk and frame instead of assembling the whole response. The transport can read one message ahead. The upstream object-mode Readable buffer and the Fetch implementation's allocations are additional buffers, so this is not a bound on total process memory.
 
@@ -71,3 +76,19 @@ The transport preserves remote gRPC status and details. It does not copy arbitra
 `channel.createCallForMethod()` receives the final method definition and call options. It removes already-consumed interceptor options, composes credentials once, and distinguishes an absent deadline from an explicit infinite deadline. Patches also make transformed arguments and interceptor-modified method definitions reach the transport. These differences remain recorded in `vendor/patches/`.
 
 Local native-client comparisons produce `verification/native-differential.json`. See [testing](testing.md) for generation commands and CI artifacts.
+
+## Platform-owned behavior
+
+A trusted Fetcher can select a preconfigured service or mTLS binding per transport.
+The adapter snapshots the method and receiver; credentials continue to identify the
+logical service. Fetch owns TLS trust, physical connections, pooling and HTTP/2
+flow control, so these are not exposed as native grpc-js configuration.
+
+Health monitors operate through ordinary RPCs and do not turn Fetch into a channel
+with observable READY connectivity. The separate `./server` endpoint accepts
+binary gRPC-Web requests; applications supply routing and authentication.
+
+Both SDK build profiles validate exact source/schema hashes. The modern profile
+additionally preserves precompiled Datastore legacy codecs and converts their
+Uint8Array output to Buffer before base64 encoding. Existing profile transforms
+remain unchanged; dependency graphs require their own checked profile.

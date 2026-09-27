@@ -1,6 +1,6 @@
 # workers-grpc-adapter
 
-An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carries unary and server-streaming RPCs over binary gRPC-Web using `fetch()` while retaining the upstream client, metadata, interceptor, and stream APIs.
+An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carries unary and server-streaming RPCs over binary gRPC-Web using `fetch()` while retaining the upstream client, metadata, interceptor, and stream APIs. Explicit gateway mode also offers experimental client/bidirectional streaming and verified Firestore listeners.
 
 **Prototype: `0.0.0-prototype.1`. Unpublished on npm, with `private: true`.** Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
 
@@ -132,6 +132,7 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 - [Client and bidirectional streaming](docs/request-streaming.md) are available experimentally in explicit gateway mode with `experimentalRequestStreaming: true`. They remain disabled by default and unsupported in automatic conversion mode. [Firestore Listen/Watch](docs/firestore-watch.md) is verified for the pinned Firestore 8.3.0 graph against the official emulator.
 - A separate [Fetch server API](docs/server.md) supports unary and server-streaming endpoints. Native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, and native connection pooling remain unsupported. Preconfigured Workers mTLS and HTTP service bindings can be selected using the [custom Fetcher](docs/fetcher.md) option; deployed TLS behavior requires separate verification.
 - Identity, deflate and gzip [message compression](docs/compression.md) are supported with bounded decompression. Compressed trailers and automatic codec fallback are unsupported.
+- Explicit [Health Check/Watch](docs/health.md) provides remote probes and a reconnecting observer.
 - Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic channel health checking remain unsupported; SDK retries are separate calls.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
 - Two exact SDK graphs are supported: the original `google-static-v1` and [modern `google-modern-v1`](docs/modern-sdk.md) (Datastore 11.1.0, Firestore 9.2.0, Secret Manager 7.1.0). Other graphs require separate profiles and verification.
@@ -145,5 +146,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, changes, and pull requests. Re
 ## License
 
 Original adapter code is licensed under [MIT](LICENSE). Vendored grpc-js code is licensed under [Apache-2.0](vendor/LICENSE); its notices, original sources, hashes, and reproducible patches are retained in [vendor/](vendor/README.md). See [NOTICE](NOTICE) for attribution. This project is not affiliated with or endorsed by Google, Cloudflare, or the gRPC project.
-
-[Health Check/Watch](docs/health.md) provides explicit remote probes and a reconnecting observer.

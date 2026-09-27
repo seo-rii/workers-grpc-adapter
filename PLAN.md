@@ -16,7 +16,8 @@ differences are documented in [Limitations](docs/limitations.md).
   code with a small transport boundary. Preserve upstream sources, licenses,
   patches, npm integrity and file hashes under `vendor/`.
 - [x] Implement binary framing and trailers, metadata, endpoint mapping,
-  deadlines, cancellation, message limits, and one Fetch request per Call.
+  deadlines, cancellation, message limits, and one Fetch request per Call by default.
+  Explicit bounded unary retry policies can opt into multiple attempts.
 - [x] Support direct service routing for Cloudflare automatic translation
   (`cloudflare`, the default) and explicit gRPC-Web gateway fallback (`grpc-web`).
   Verify both modes with unary and server-streaming calls in local workerd.
@@ -92,9 +93,10 @@ See [Testing](docs/testing.md) for the commands and report inventory.
   stream failures and event variants.
 - [ ] Broaden transaction contention and retry cases beyond controlled local
   faults and the emulator's simplified locking behavior.
-- [ ] Complete method/version-specific compatibility evidence. Keep Listen and
-  other bidirectional methods explicitly unsupported; do not substitute REST
-  or polling for those methods.
+- [ ] Complete method/version-specific compatibility evidence for experimental
+  gateway Listen and other bidirectional methods. Require actual streaming
+  emulator evidence; do not substitute REST or polling. Cloudflare automatic
+  request streaming requires separate platform verification.
 
 ### Secret Manager and additional SDKs
 
@@ -143,3 +145,22 @@ Generated reports must continue to state `releaseEligible: false` until the
 release gates are met. See the [original specification](docs/spec/v0.3.md)
 (Korean, historical), [case catalog](compatibility/test-catalog.json) and
 [case mappings](compatibility/test-evidence.json) for the detailed requirements.
+
+## Limitation implementation follow-up
+
+- [x] Add isolated trusted Fetchers, including preconfigured Workers mTLS bindings.
+- [x] Implement bounded identity/gzip/deflate message compression and independent
+  decoded/wire limits, with native and workerd verification.
+- [x] Add explicit bounded unary retry policies and standard remote health APIs.
+- [x] Add a separate Fetch server API for unary/server-streaming methods.
+- [x] Support a second exact modern Google SDK dependency graph with strict types,
+  native comparisons, static codec guards and cold/warm workerd tests.
+- [x] Verify experimental gateway request streaming, cancellation and bounded
+  upload lifecycle through real Envoy/workerd, including seeded operation races.
+- [x] Verify pinned Firestore 8.3.0 document/query Listen through the official
+  emulator: native, Node adapter and repeated workerd invocations, actual
+  bidirectional responses, unsubscribe, reuse and cleanup.
+- [ ] Separately validate newly added behavior in deployed Workers, including TLS
+  handshakes and edge conversion; historical cloud receipts do not certify it.
+- [ ] Keep custom Fetch TLS roots, native HTTP/2 servers, physical pooling and
+  connection readiness outside this transport's supported architecture.

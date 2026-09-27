@@ -44,6 +44,26 @@ Official Firestore 1.22.0 Native and Datastore modes run through real Envoy loca
 
 Controlled Secret Manager tests cover pagination, async-iterator early exit, binary and empty secret-version payloads, callback/Promise results and remote errors. The pinned SDK returns `dataCrc32c` without validating it; consumers must verify payload integrity themselves. The fixture checks a deliberately incorrect checksum at the consumer boundary. It does not read production secret versions or establish live Secret Manager behavior.
 
+## Capability boundaries after implementation
+
+| Earlier limitation | Current support | Remaining boundary |
+|---|---|---|
+| Client/bidirectional streaming | Experimental explicit gateway option, bounded producer, real Envoy/workerd tests | Disabled by default; automatic edge conversion unverified; early completed errors can be delayed |
+| Firestore Listen/Watch | Firestore 8.3.0 document/query listeners through the experimental gateway, official emulator/native comparison | Automatic conversion, Firestore 9.2 Listen, reconnect/resume tokens and long-lived deployed listeners unverified |
+| Server APIs | Separate Fetch unary/server-streaming handlers | Native grpc-js HTTP/2 sockets and server lifecycle APIs are outside this architecture |
+| mTLS | Preconfigured Workers binding through isolated Fetcher | Actual certificate exchange and deployed binding behavior require live verification |
+| Custom CA / inline certificates | No Fetch trust-store or per-call PEM API | Requires a different transport or platform capability |
+| Compression | Identity, deflate and gzip with decoded/wire bounds | Compressed trailers and cross-call codec negotiation cache are unsupported |
+| Retries | Exact-method unary policies, bounded attempts, fresh credentials and pushback | No native HTTP/2 transparent retry or service-config policy equivalence |
+| Health checks | Standard Check/Watch and reconnecting service monitor | Does not expose connection READY or automatically gate unrelated calls |
+| Connection pooling | Platform Fetch controls connections | Native pooling, keepalive and HTTP/2 flow-control tuning are not exposed |
+| SDK dependency graph | Original and modern exact profiles | Arbitrary versions still need deliberate profile work and verification |
+| Emulator coverage | Real protocol and SDK behavior for asserted cases | IAM, quota, index enforcement, production contention and deployed edge behavior need independent live evidence |
+
+These boundaries distinguish implemented features, experimental routing, missing
+platform controls and verification obligations. A passing local suite does not
+convert a production-only verification obligation into a solved feature.
+
 ## Unsupported features
 
 Cloudflare automatic-mode request streaming, native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.

@@ -27,7 +27,10 @@ Initial metadata for an eligible call is held until the first response message o
 the final attempt. Failed-attempt metadata is not emitted to the caller. This is
 an explicit adapter replay policy, not native grpc-js transparent retry or its
 HTTP/2 response-header commitment semantics. Protocol errors, malformed responses,
-authentication failures, cancellation and expired deadlines are not retried.
+credential-generation failures, cancellation and expired deadlines are not retried.
+A server UNAUTHENTICATED or PERMISSION_DENIED status can be replayed only when
+explicitly included in `retryableStatusCodes`; this differs from a local credential
+generator rejecting before Fetch.
 
 Fetch exceptions are not retried unless `retryOnFetchError: true` is also set.
 An exception or lost response can hide a write that already committed; enabling

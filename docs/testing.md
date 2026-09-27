@@ -194,3 +194,9 @@ cases assert 52 callbacks and 84 official-emulator RPC arrivals, including 16 re
 Listen calls. It checks unsubscribe, reuse, response delivery before upload ends,
 exact native comparisons and data/process cleanup. It provides no IAM or live-edge
 certification and does not certify Firestore 9.2 Listen.
+
+The supplemental implementations retain the original catalog's denominator.
+The final implementation campaign also runs every fuzz/property file with
+`WGA_FUZZ_RUNS=2500` and seeds `20260927` and `-179048`; this includes request-body
+operation races and codec limits. These finite campaigns are regression evidence,
+not proof that every malformed input or concurrency schedule is covered.
