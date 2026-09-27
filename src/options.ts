@@ -5,6 +5,8 @@ export interface ChannelOptions {
     'grpc.max_send_message_length'?: number;
     'grpc.max_receive_message_length'?: number;
     'grpc.initial_reconnect_backoff_ms'?: number;
+    'grpc-node.flow_control_window'?: 262144;
+    'grpc.use_local_subchannel_pool'?: 1;
     'grpc.default_compression_algorithm'?: number;
     'grpc.enable_retries'?: number;
     'grpc.enable_channelz'?: number;
@@ -23,7 +25,7 @@ export interface ValidatedOptions {
 export function validateOptions(options: ChannelOptions, authority: string, config: WorkersGrpcConfigSnapshot): ValidatedOptions {
     const allowed = ['grpc.max_send_message_length', 'grpc.max_receive_message_length', 'grpc.initial_reconnect_backoff_ms',
         'grpc.default_compression_algorithm', 'grpc.enable_retries', 'grpc.enable_channelz', 'grpc.primary_user_agent', 'grpc.secondary_user_agent',
-        'grpc.default_authority', 'grpc.ssl_target_name_override'];
+        'grpc.default_authority', 'grpc.ssl_target_name_override', 'grpc-node.flow_control_window', 'grpc.use_local_subchannel_pool'];
     const fail = (key: string): never => {
         throw new ConfigError('WGA_UNSUPPORTED_OPTION', `Unsupported channel option: ${key}`);
     };
@@ -43,6 +45,14 @@ export function validateOptions(options: ChannelOptions, authority: string, conf
     }
     if (options['grpc.initial_reconnect_backoff_ms'] !== undefined && options['grpc.initial_reconnect_backoff_ms'] !== 1000) {
         fail('grpc.initial_reconnect_backoff_ms');
+    }
+    // Firestore 9.2 supplies these native HTTP/2 defaults unconditionally. Fetch
+    // owns connection pooling and flow control, so only those exact inert hints
+    // are accepted; callers cannot configure native transport behavior here.
+    for (const [key, expected] of [['grpc-node.flow_control_window', 262144], ['grpc.use_local_subchannel_pool', 1]] as const) {
+        if (options[key] !== undefined && options[key] !== expected) {
+            fail(key);
+        }
     }
     for (const key of ['grpc.default_authority', 'grpc.ssl_target_name_override']) {
         if (options[key] !== undefined && normalizeAuthority(options[key] as string) !== authority) {

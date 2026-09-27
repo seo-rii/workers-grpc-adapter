@@ -1,0 +1,16 @@
+{
+  "name": "wga-modern-google-sdk-fixtures",
+  "private": true,
+  "type": "module",
+  "description": "Separately pinned Node 22 Google SDK graph for the modern static Worker profile",
+  "dependencies": {
+    "@google-cloud/datastore": "11.1.0",
+    "@google-cloud/firestore": "9.2.0",
+    "@google-cloud/secret-manager": "7.1.0",
+    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "$@grpc/grpc-js",
+    "google-auth-library@10.5.0": "10.9.1"
+  }
+}

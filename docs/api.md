@@ -167,3 +167,11 @@ Close monitors within the Worker lifetime. See [health](health.md).
 Handlers consume ordinary method definitions and expose a `Request` → `Response`
 endpoint for binary gRPC-Web unary or server-streaming methods. The root native
 `Server` and `ServerCredentials` stubs still reject construction. See [server](server.md).
+
+## Additional SDK build profile
+
+`createGoogleWorkerBuild({ projectRoot, outdir, typescript, profile: 'google-modern-v1' })`
+selects the separate exact Datastore 11.1.0 / Firestore 9.2.0 / Secret Manager 7.1.0
+graph. The default remains `google-static-v1`. Source/schema hashes are enforced
+for either profile. See [modern SDKs](modern-sdk.md) for its pinned auth versions and
+the two Firestore native defaults accepted as inert Fetch hints.

@@ -134,7 +134,7 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 - Identity, deflate and gzip [message compression](docs/compression.md) are supported with bounded decompression. Compressed trailers and automatic codec fallback are unsupported.
 - Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic channel health checking remain unsupported; SDK retries are separate calls.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
-- The Workers build profile and SDK versions are pinned. Other dependency graphs require separate work and verification.
+- Two exact SDK graphs are supported: the original `google-static-v1` and [modern `google-modern-v1`](docs/modern-sdk.md) (Datastore 11.1.0, Firestore 9.2.0, Secret Manager 7.1.0). Other graphs require separate profiles and verification.
 
 The project remains in prototype status with `releaseEligible: false`. See [Limitations](docs/limitations.md), [Google test guidance](docs/google-tests.md), and [the implementation plan](PLAN.md) before evaluating an integration.
 

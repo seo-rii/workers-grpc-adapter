@@ -174,3 +174,9 @@ across both modes, three compression codecs and cold/warm calls. Eight additiona
 inbound wire cases use a native protobuf byte oracle. Unit tests compare actual
 grpc-js server responses and cover invalid framing, metadata, lazy iteration,
 timeout cleanup and late handler completion after cancellation.
+
+`node scripts/test-modern-sdk.cjs` verifies the additional exact modern dependency
+graph with six strict compiler configurations, shared native/adapter business
+code, and cold/warm workerd requests in both modes (18 scenarios, 66 RPCs). It
+compares Datastore legacy-key bytes with native encoders and rejects altered
+schemas, versions and profile names. The original graph retains its existing gates.

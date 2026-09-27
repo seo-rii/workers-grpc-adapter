@@ -1,7 +1,7 @@
 export interface GoogleWorkerBuildOptions {
   projectRoot: string;
   outdir: string;
-  profile?: 'google-static-v1';
+  profile?: 'google-static-v1' | 'google-modern-v1';
   typescript: typeof import('typescript');
 }
 export declare function createGoogleWorkerBuild(options: GoogleWorkerBuildOptions): {

@@ -26,7 +26,7 @@ The client, factory, interceptor, Metadata and call surfaces derive from grpc-js
 
 Pinned Google SDKs run against controlled local gRPC servers and official database emulators. Native grpc-js, the Node adapter and workerd use identical shared business code. Reports compare source hashes, assertions and RPC observations. Strict Node16, NodeNext and Bundler declaration checks use the pinned dependency graph, including the targeted Google auth 10.9.1 override.
 
-The Node-only build preset supports the pinned SDK/GAX/protobuf sources and schemas. It does not infer transformations for other versions. Worker tooling is locked, including the Miniflare alpha used by the installed Wrangler; reports identify the actual versions and compatibility date.
+The Node-only build preset supports two exact SDK/GAX/protobuf graphs: `google-static-v1` and `google-modern-v1`. The modern graph adds Datastore 11.1.0 and Firestore 9.2.0 with their extracted API packages; see [modern SDKs](modern-sdk.md). It does not infer transformations for other versions. Worker tooling is locked, including the Miniflare alpha used by the installed Wrangler; reports identify the actual versions and compatibility date.
 
 The pinned build profile supports SDK imports during startup and bundled dynamic imports during the first request. It generates Datastore's well-known `Struct` codecs at build time, including the codecs used to decode query explain metrics. Arbitrary SDK versions, unknown protobuf schemas and unbundled dynamic module loading remain outside this profile.
 

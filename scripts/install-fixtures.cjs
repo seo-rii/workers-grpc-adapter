@@ -50,4 +50,11 @@ fs.writeFileSync(path.join(root, 'compatibility/google-native-graph.json'), JSON
 const worker = path.join(root, 'fixtures/worker');
 refreshLock(worker);
 npm(['ci', '--no-audit', '--no-fund'], worker);
-console.log(JSON.stringify({ status: 'passed', graphReproduced: reproduced, native: baseline.passed, workerInstalled: true, tarballIntegrity: integrity }));
+const modern = path.join(root, 'fixtures/modern');
+refreshLock(modern);
+npm(['ci', '--ignore-scripts', '--no-audit', '--no-fund'], modern);
+if (!inspect(modern).passed) throw new Error('Modern SDK graph failed replacement resolution');
+const modernNative = path.join(root, 'fixtures/modern-native');
+npm(['ci', '--ignore-scripts', '--no-audit', '--no-fund'], modernNative);
+if (!inspect(modernNative, undefined, '@grpc/grpc-js').passed) throw new Error('Modern native baseline graph failed');
+console.log(JSON.stringify({ status: 'passed', modernInstalled: true, graphReproduced: reproduced, native: baseline.passed, workerInstalled: true, tarballIntegrity: integrity }));
