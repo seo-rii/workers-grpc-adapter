@@ -104,12 +104,36 @@ missing EOF, deadlines and pending write callbacks have separate regression test
 No REST/polling replacement, SDK retry bypass or synthetic resume-token handling
 is added to the adapter. The SDK owns its listener state and reconnect decisions.
 
-One upstream boundary remains: in a separate native Firestore 8.3.0 diagnostic,
-a gRPC PERMISSION_DENIED received after an initial snapshot was followed by an
-`end` event before Firestore forwarded its error with `setImmediate`. Watch
-reopened with the previous token after treating that end as UNKNOWN. This was
-reproduced without the adapter or Envoy. Do not assume a transport status 7 always
-stops this pinned SDK's listener immediately; target REMOVE denial is the bounded
-permanent-error case above. Applications must still bound listener lifetime and
-unsubscribe explicitly. This gate does not certify all error sequences, prolonged
-outages, modern-profile recovery, real IAM failures or deployed Worker lifetimes.
+The same six scenarios also run with Firestore 9.2.0 through
+`npm run test:modern-firestore-recovery`: another 24 cases with the modern-only
+Worker bundle, native SDK graph and exact resume-token comparisons.
+
+## Preserving terminal RPC errors
+
+`google-static-v1` revision 4 and `google-modern-v1` revision 2 include a guarded
+Firestore Listen transformation. The pinned SDKs defer their error event using
+`setImmediate`, but previously piped EOF to Watch first. A permission-denied RPC
+after a snapshot could therefore reconnect as UNKNOWN and lose its original error.
+The native grpc-js baseline reproduces this behavior without the adapter.
+
+For Listen only, the build now defers pipe completion until the already queued
+error has been delivered. Ordinary server streams keep their original behavior.
+Whole-file source hashes, an exact AST anchor and a required single replacement
+reject dependency drift. Build manifests record `firestoreWatchEndDeferrals: 1`;
+installed SDK files and global prototypes are not modified. Direct Node consumers
+that do not use this build preset retain the original SDK behavior.
+
+`npm run test:firestore-watch-errors` executes the same business-source bytes with
+both pinned SDKs: native grpc-js, the Node adapter and two invocations of each
+Worker bundle. Its 24 cases cover permission-denied RPC termination, transient
+UNAVAILABLE and clean EOF after an initial snapshot, then unsubscribe and reuse
+the same Firestore client. The corrected Worker must deliver the original code 7
+and message exactly once without reconnecting. Raw SDK permission cases explicitly
+record the upstream reconnect and terminate it with a distinct target REMOVE;
+they are a diagnostic baseline, not behavioral equivalence. Transient and clean
+EOF cases must reconnect with the exact opaque resume token.
+
+This controlled-peer gate records 68 Listen attempts, 50 adapter Fetch requests
+and 72 snapshot/error callbacks in `verification/firestore-watch-errors.json`.
+It does not validate real IAM, every error sequence, prolonged outages or deployed
+Worker lifetimes. Applications must still bound listener lifetime and unsubscribe.

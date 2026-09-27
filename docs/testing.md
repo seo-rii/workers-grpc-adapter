@@ -44,6 +44,9 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:differential` | Callback, metadata, status and stream events against native grpc-js | `verification/native-differential.json` |
 | `npm run test:envoy` | Real Envoy gRPC-Web → native grpc-js, including cancellation/deadlines | `verification/envoy.json` |
 | `npm run test:auth` | Real OAuth2Client and JWT logic over injected token/RPC transports | `verification/google-auth.json` |
+| `npm run test:firestore-watch-errors` | Both pinned SDKs: raw permission-error baseline, corrected Worker error delivery, transient/EOF resume and client reuse | `verification/firestore-watch-errors.json` |
+| `npm run test:modern-firestore-recovery` | Firestore 9.2.0 resume tokens, disconnects, resets, filters, removals and target denial | `verification/modern-firestore-recovery.json` |
+| `npm run test:datastore-lookup` | Native/adapter/workerd deferred Lookup, get overloads, partial errors, retries and per-RPC deadlines | `verification/datastore-lookup.json` |
 | `npm run test:contract` | Root/deep CJS/ESM identity and transport import boundaries | `compatibility/exports-contract.json` |
 | `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
 | `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |

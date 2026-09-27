@@ -42,6 +42,8 @@ Repeated local workerd fault waves verify concurrent calls, slow streams, deadli
 
 Official Firestore 1.22.0 Native and Datastore modes run through real Envoy locally. These tests cover the explicitly asserted data, query, stream and error behavior. Emulator results do not establish production IAM, composite-index requirements, quotas or transaction concurrency. Secret Manager still uses a controlled server. The emulator-only synthetic owner header is injected by local Envoy and is not authentication evidence.
 
+Controlled [Datastore Lookup tests](datastore-lookup.md) cover mixed found/missing/deferred rounds, get overloads, partial stream errors, bounded explicit SDK retries and per-RPC deadlines. Successful deferred rounds can continue beyond one RPC timeout; ending an SDK read stream stops later rounds but does not cancel an already pending unary Lookup. These checks use the pinned Datastore 10.1.0 graph and a controlled peer, not production Datastore storage.
+
 Controlled Secret Manager tests cover pagination, async-iterator early exit, binary and empty secret-version payloads, callback/Promise results and remote errors. The pinned SDK returns `dataCrc32c` without validating it; consumers must verify payload integrity themselves. The fixture checks a deliberately incorrect checksum at the consumer boundary. It does not read production secret versions or establish live Secret Manager behavior.
 
 ## Capability boundaries after implementation
@@ -80,7 +82,7 @@ The separate `./server` entry point implements binary gRPC-Web Fetch handlers fo
 
 Client-streaming and bidirectional RPCs are implemented experimentally for explicit gateway mode through `experimentalRequestStreaming: true`. Real local Envoy/workerd tests verify duplex delivery, per-message bounds, compression and cancellation. After a validated terminal status, the upload closes and response EOF is still checked. Rejection can still be delayed when Fetch has not exposed the response; deadlines/cancellation are required for bounded use. This does not certify arbitrary gateways or automatic edge conversion. See [request streaming](request-streaming.md) and [feasibility](streaming-feasibility.md).
 
-Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are verified experimentally through the gateway with actual Listen RPCs against the official emulator. The same business code passes native, Node-adapter and workerd cases. A separate Firestore 8.3.0 controlled-peer gate checks resume-token reuse, HTTP/2 resets, target resets, filter mismatches and target denial; it is not Cloudflare automatic-mode, production authorization or long-lived deployment certification. See [Firestore Watch](firestore-watch.md).
+Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are verified experimentally through the gateway with actual Listen RPCs against the official emulator. The same business code passes native, Node-adapter and workerd cases. Separate controlled-peer gates for both versions check resume-token reuse, HTTP/2 resets, target resets, filter mismatches and target denial; it is not Cloudflare automatic-mode, production authorization or long-lived deployment certification. The pinned Worker build presets also correct a Listen error/EOF ordering race: terminal permission errors reach the public error callback without reconnecting. Raw Node SDK consumers retain the upstream behavior. See [Firestore Watch](firestore-watch.md).
 
 ## Intentional differences
 

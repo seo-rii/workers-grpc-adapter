@@ -185,7 +185,14 @@ limits; half-close ends the Fetch body, and no streaming call is retried. Honor
 Writable backpressure and supply a deadline. See [request streaming](request-streaming.md)
 for early server rejection behavior and the tested gateway boundary.
 
-Firestore 8.3.0 `DocumentReference.onSnapshot()` and `Query.onSnapshot()` are
+Firestore 8.3.0 and 9.2.0 `DocumentReference.onSnapshot()` and `Query.onSnapshot()` are
 verified through the experimental gateway path. SDK listener lifetime is owned
 by the application: install an error callback, unsubscribe before leaving the
 Worker lifetime, then terminate the client. See [Firestore listeners](firestore-watch.md).
+
+The `google-static-v1` revision 4 and `google-modern-v1` revision 2 presets also
+preserve Firestore Listen terminal errors before EOF reaches Watch. This guarded
+build transformation changes only Listen stream completion and records
+`firestoreWatchEndDeferrals: 1` in its manifest. Direct Node SDK consumers without
+the preset retain upstream event ordering. See [Firestore Watch](firestore-watch.md)
+for the exact scope and regression evidence.

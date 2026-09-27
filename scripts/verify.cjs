@@ -83,6 +83,7 @@ function main() {
     run('streaming-feasibility', ['scripts/test-streaming-feasibility.cjs']);
     run('secret-manager-extended', ['scripts/test-secret-manager-extended.cjs']);
     run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
+    run('datastore-lookup', ['scripts/test-datastore-lookup.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
@@ -96,6 +97,8 @@ function main() {
     run('firestore-watch', ['scripts/test-firestore-watch.cjs']);
     run('modern-firestore-watch', ['scripts/test-modern-firestore-watch.cjs']);
     run('firestore-recovery', ['scripts/test-firestore-recovery.cjs']);
+    run('modern-firestore-recovery', ['scripts/test-modern-firestore-recovery.cjs']);
+    run('firestore-watch-errors', ['scripts/test-firestore-watch-errors.cjs']);
     run('emulator-lifecycle', ['fixtures/emulators/lifecycle.cjs']);
     // Forces live flag off even if the caller's environment opted in.
     run('google-preflight', ['scripts/google-test.cjs'], [0, 2]);
@@ -105,6 +108,8 @@ function main() {
     const googleEmulators = read('google-emulators.json');
     const firestoreWatch = read('firestore-watch.json');
     const firestoreRecovery = read('firestore-recovery.json');
+    const firestoreWatchErrors = read('firestore-watch-errors.json');
+    const datastoreLookup = read('datastore-lookup.json');
     const datastorePagination = read('datastore-pagination.json');
     const secretManagerExtended = read('secret-manager-extended.json');
     const shared = filesIn(path.join(root, 'fixtures/google/shared')).filter(p => p.endsWith('.mjs')).map(file => ({ file: path.relative(root, file), sha256: hash(file),
@@ -112,6 +117,11 @@ function main() {
             || (googleEmulators.sameSharedFiles && googleEmulators.sourceHashes.native[path.basename(file)] === hash(file))
             || (firestoreWatch.nativeBusinessEquivalent && firestoreWatch.sources.native === hash(file))
             || (firestoreRecovery.nativeBusinessEquivalent && firestoreRecovery.sources.native === hash(file))
+            // The Watch error gate compares raw SDK behavior with an intentional
+            // build correction; baseline comparison does not mean equivalence.
+            || (firestoreWatchErrors.status === 'passed' && firestoreWatchErrors.sharedSha256 === hash(file)
+                && firestoreWatchErrors.sources['google-static-v1/native'] === hash(file))
+            || (datastoreLookup.sameSharedSource && datastoreLookup.sourceHashes.native[path.basename(file)] === hash(file))
             || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))
             || (secretManagerExtended.sameSharedSource && secretManagerExtended.sourceHashes.native[path.basename(file)] === hash(file))) }));
     const catalog = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/test-catalog.json')));
@@ -125,12 +135,12 @@ function main() {
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
-        googleEmulators, firestoreWatch, firestoreRecovery, parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
+        googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
-        datastorePagination, workersResilience: read('workers-resilience.json'),
+        datastorePagination, datastoreLookup, workersResilience: read('workers-resilience.json'),
         workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },

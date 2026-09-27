@@ -16,6 +16,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/workers-federated-auth.json', 'verification/workers-legacy-auth.json', 'verification/secret-manager-extended.json',
     'verification/workers-fetcher.json',
     'verification/workers-compression.json', 'verification/workers-retries.json', 'verification/health.json', 'verification/workers-server.json', 'verification/modern-sdk.json', 'verification/request-streaming.json', 'verification/streaming-feasibility.json', 'verification/firestore-watch.json', 'verification/modern-firestore-watch.json', 'verification/firestore-recovery.json', 'verification/parent-calls.json',
+    'verification/modern-firestore-recovery.json', 'verification/firestore-watch-errors.json', 'verification/datastore-lookup.json',
     'verification/workers-sdk-build.json', 'verification/workers-shared.json', 'verification/google-emulators.json', 'verification/emulator-lifecycle.json', 'verification/envoy.json', 'verification/google-preflight.json',
     ...[...GENERATED_COMPATIBILITY].map(file => `compatibility/${file}`)];
 function fail(message) { throw new Error(`WGA_EVIDENCE_INVALID: ${message}`); }
@@ -342,6 +343,7 @@ function validateProvenance(root, report) {
         ['workersFederatedAuth', 'verification/workers-federated-auth.json'], ['workersLegacyAuth', 'verification/workers-legacy-auth.json'], ['secretManagerExtended', 'verification/secret-manager-extended.json'],
         ['workersFetcher', 'verification/workers-fetcher.json'],
         ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'], ['requestStreaming', 'verification/request-streaming.json'], ['streamingFeasibility', 'verification/streaming-feasibility.json'], ['firestoreWatch', 'verification/firestore-watch.json'], ['modernFirestoreWatch', 'verification/modern-firestore-watch.json'], ['firestoreRecovery', 'verification/firestore-recovery.json'], ['parentCalls', 'verification/parent-calls.json'],
+        ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);

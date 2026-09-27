@@ -76,7 +76,9 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 
 ### Datastore
 
-- [ ] Add deferred lookup results and the remaining batch/error combinations.
+- [x] Compare deferred Lookup rounds, mixed found/missing results, callback/Promise
+  get overloads, partial errors, bounded retries and deadlines against native grpc-js.
+- [ ] Complete the remaining batch/error combinations beyond this controlled matrix.
 - [ ] Extend SDK stream tests to remaining remote-error, event-order and
   internal cleanup contracts. Controlled multi-page tests now distinguish
   `end()` stopping later pages from `destroy()` stopping only entity delivery.
@@ -163,7 +165,9 @@ release gates are met. See the [original specification](docs/spec/v0.3.md)
 - [x] Propagate parent deadlines/cancellation, including real native server parents
   and Fetch handler forwarding in workerd.
 - [x] Close streaming uploads after a validated terminal status without skipping
-  response EOF checks; verify bounded Firestore 8.3.0 resume/reset recovery.
+  response EOF checks; verify bounded Firestore 8.3.0 and 9.2.0 resume/reset recovery.
+- [x] Preserve terminal Listen errors before EOF in both pinned Worker build
+  profiles; compare raw SDK behavior and verify transient/clean-EOF recovery.
 - [ ] Separately validate newly added behavior in deployed Workers, including TLS
   handshakes and edge conversion; historical cloud receipts do not certify it.
 - [ ] Keep custom Fetch TLS roots, native HTTP/2 servers, physical pooling and
