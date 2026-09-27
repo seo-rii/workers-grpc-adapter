@@ -11,6 +11,7 @@ const { validateSdkBenchmarkReport } = require('./sdk-benchmark-evidence.cjs');
 const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
 const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
 const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
+const { validateSecretManagerReport } = require('./secret-manager-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
@@ -560,8 +561,10 @@ function validateProvenance(root, report) {
     validateSdkBenchmarkReport(report.sdkBenchmark);
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
     validateApiContractsReport(report.apiContracts);
+    validateSecretManagerReport(report.secretManagerExtended);
     for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
-        ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark]]) {
+        ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
+        ['secret-manager-extended', report.secretManagerExtended]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {
