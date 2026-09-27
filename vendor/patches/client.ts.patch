@@ -95,6 +95,9 @@
 +    call.sendMessage(callProperties.argument);
 @@ -475,0 +430 @@
 +        markCallSurfaceTerminal(emitter);
+@@ -564 +519 @@
+-      call: new ClientReadableStreamImpl<ResponseType>(deserialize),
++      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
 @@ -608,0 +564 @@
 +        markCallSurfaceTerminal(stream);
 @@ -610 +566 @@
@@ -103,12 +106,16 @@
 @@ -620 +576 @@
 -    call.sendMessage(argument);
 +    call.sendMessage(callProperties.argument);
-@@ -702,0 +659 @@
+@@ -658 +614,2 @@
+-        deserialize
++        deserialize,
++        this[CHANNEL_SYMBOL].getReadQueueLimit()
+@@ -702,0 +660 @@
 +        markCallSurfaceTerminal(stream);
-@@ -704 +661 @@
+@@ -704 +662 @@
 -        if (status.code !== Status.OK) {
 +        if (status.code !== Status.OK && !stream.destroyed) {
-@@ -716,0 +674,9 @@
+@@ -716,0 +675,9 @@
 +
 +export type { Deadline } from './call';
 +export type { StatusObject } from './call-interface';

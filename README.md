@@ -135,6 +135,7 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 - [Parent calls](docs/parent-calls.md) propagate deadlines and cancellation, including Fetch handler forwarding.
 - Explicit [Health Check/Watch](docs/health.md) provides remote probes and a reconnecting observer.
 - Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic channel health checking remain unsupported; SDK retries are separate calls.
+- Optional [resource limits](docs/resources.md) provide shared call admission, bounded waiting queues, adapter-buffer budgets, smaller readable queues, and counts-only usage diagnostics. They do not measure or limit the entire Worker heap.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
 - Two exact SDK graphs are supported: the original `google-static-v1` and [modern `google-modern-v1`](docs/modern-sdk.md) (Datastore 11.1.0, Firestore 9.2.0, Secret Manager 7.1.0). Other graphs require separate profiles and verification.
 

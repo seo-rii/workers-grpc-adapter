@@ -25,7 +25,7 @@
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/limitations.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/limitations.md", "docs/resources.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:firestore-watch-errors": "node scripts/test-firestore-watch-errors.cjs",

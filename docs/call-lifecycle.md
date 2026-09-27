@@ -1,6 +1,6 @@
 # Call and stream lifetime
 
-The adapter treats a raw gRPC stream's Node lifetime as part of its RPC lifetime. Destroying a stream releases the adapter's request and response resources and cancels an unfinished RPC. This is an intentional adapter extension: the pinned native grpc-js 1.14.0 stream surface does not forward `destroy()` or an async iterator's early return to RPC cancellation.
+The adapter treats a raw gRPC stream's Node lifetime as part of its RPC lifetime. Destroying a stream cancels an unfinished RPC and starts request and response cleanup. Local completion does not wait for a custom Fetch or stream cancellation promise that never settles; buffer reservations follow their actual owner lifetime, as described in [Resource limits](resources.md). This is an intentional adapter extension: the pinned native grpc-js 1.14.0 stream surface does not forward `destroy()` or an async iterator's early return to RPC cancellation.
 
 | Consumer action | RPC outcome | Node stream behavior |
 | --- | --- | --- |

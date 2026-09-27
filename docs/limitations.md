@@ -88,9 +88,20 @@ Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are ver
 
 - Per-message transport ceilings default to 32 MiB. A channel limit of `-1` does not remove them.
 - Transport lookahead is one message; upstream Readable buffering and Fetch allocations are additional memory.
+- Optional [resource limits](resources.md) bound admitted/queued calls and adapter-visible buffer reservations per transport, and can reduce the Readable object queue. They do not bound total isolate memory: metadata, arbitrary protobuf objects, SDK/application state, runtime Fetch buffers and codec internals are outside the byte budget. An uncooperative Fetch retains its request-body reservation until it settles even after RPC cancellation.
 - `getPeer()` returns the logical URL rather than a remote IP. `getAuthContext()` returns null, and the channelz reference is an unregistered placeholder.
 - Invocation-transformed arguments and interceptor-modified method definitions reach the transport. Vendor patches record these upstream differences.
 - User callback exceptions are rethrown in a microtask. Complete upstream exception-timing equivalence is unverified.
+
+## Follow-up work from the September 2026 review
+
+The review's request ordering, termination, metadata-budget, configuration-lock and deadline-boundary defects have regression coverage. Shared admission, buffer reservations and readable queue controls are implemented. The following recommendations remain extensions requiring their own implementation and verification:
+
+- Per-logical-call and per-attempt observer events; `resourceUsage()` currently exposes aggregate counts only.
+- Shared retry throttling across calls. Existing retries are bounded per call.
+- Actual Google SDK Worker bundle/startup/latency and isolate-memory baselines. The current Node microbenchmark and finite workerd tests do not establish these performance budgets.
+- Declarative SDK profile manifests, more detailed profile diagnostics and transformer-aware cache identities.
+- Fetch-server request streaming, optional structured-status decoding, and narrower handler-kind types.
 - HTTPS credentials use Fetch TLS. Modern Google header providers and the pinned grpc-js legacy `getRequestMetadata(url, callback)` form are supported; this does not imply compatibility with every historical auth library.
 
 ## Datastore query streams

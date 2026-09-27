@@ -5,9 +5,13 @@ import {
 } from '@grpc/grpc-js';
 import {
     configureWorkersGrpc, getWorkersGrpcConfig, WorkersGrpcConfig, WorkersGrpcConfigSnapshot,
-    WorkersGrpcFetcher, WorkersGrpcRetryPolicy,
+    WorkersGrpcFetcher, WorkersGrpcRetryPolicy, WorkersGrpcResourceLimits, WorkersGrpcResourceUsage,
 } from '@grpc/grpc-js/config';
-import { createWorkersGrpcTransport } from '@grpc/grpc-js/adapter';
+import {
+    createWorkersGrpcTransport,
+    WorkersGrpcResourceLimits as AdapterResourceLimits,
+    WorkersGrpcResourceUsage as AdapterResourceUsage,
+} from '@grpc/grpc-js/adapter';
 
 // A binding object is passed intact: its public method uses the platform Fetch API.
 class ServiceBinding {
@@ -24,14 +28,31 @@ const retry: WorkersGrpcRetryPolicy = {
     methods, maxAttempts: 3, initialBackoffMs: 100, maxBackoffMs: 1000,
     backoffMultiplier: 2, retryableStatusCodes: codes, retryOnFetchError: false,
 };
+const resourceLimits: WorkersGrpcResourceLimits = {
+    maxConcurrentCalls: 4, maxQueuedCalls: 8, maxBufferedBytes: 1024 * 1024, readableHighWaterMark: 1,
+};
+const adapterLimits: AdapterResourceLimits = resourceLimits;
 const config: WorkersGrpcConfig = {
     mode: 'grpc-web', endpoints: { 'catalog.example': 'https://gateway.example' },
-    fetcher: binding, retryPolicy: retry, defaultTimeoutMs: 5000,
+    fetcher: binding, retryPolicy: retry, resourceLimits: adapterLimits, defaultTimeoutMs: 5000,
 };
 const snapshot: WorkersGrpcConfigSnapshot = configureWorkersGrpc(config);
 const saved: WorkersGrpcConfigSnapshot = getWorkersGrpcConfig();
 const automatic: WorkersGrpcConfig = { mode: 'cloudflare', fetcher: binding, retryPolicy: retry };
 const transport = createWorkersGrpcTransport(config);
+const usage: WorkersGrpcResourceUsage = transport.resourceUsage();
+const adapterUsage: AdapterResourceUsage = usage;
+const resourceCounts: number[] = [adapterUsage.activeCalls, adapterUsage.queuedCalls, adapterUsage.bufferedBytes,
+    adapterUsage.peakActiveCalls, adapterUsage.peakQueuedCalls, adapterUsage.peakBufferedBytes];
+const configuredQueue: number | undefined = snapshot.resourceLimits.maxQueuedCalls;
+// @ts-expect-error resource snapshots cannot change admission after client construction
+snapshot.resourceLimits.maxConcurrentCalls = 2;
+// @ts-expect-error unknown resource limits are rejected instead of silently ignored
+createWorkersGrpcTransport({ resourceLimits: { maxConnections: 6 } });
+// @ts-expect-error resource byte budgets require numeric byte counts
+const badResourceLimits: WorkersGrpcResourceLimits = { maxBufferedBytes: '1 MiB' };
+// @ts-expect-error usage snapshots expose numeric counts
+const badResourceUsage: AdapterResourceUsage = { ...usage, activeCalls: 'one' };
 const client = new Client('catalog.example', credentials.createSsl(), transport.grpcOptions());
 const sdkOptions = transport.gaxOptions({ projectId: 'type-fixture' });
 const project: string = sdkOptions.projectId;
@@ -95,4 +116,5 @@ state.phase = 'serving';
 const badHealthResponse: HealthCheckResponse = { status: 'SERVING' };
 
 void [automatic, project, fallback, retryAttempts, response, badFetcher, badRetry, badMethod,
-    missingAttempts, check, serving, phase, servingCode, badHealthResponse];
+    missingAttempts, check, serving, phase, servingCode, badHealthResponse, resourceCounts, configuredQueue,
+    badResourceLimits, badResourceUsage];

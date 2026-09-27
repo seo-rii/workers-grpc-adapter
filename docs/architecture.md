@@ -7,9 +7,12 @@ The adapter preserves a selected grpc-js client surface while replacing its nati
 ```mermaid
 flowchart TD
     SDK[SDK or generated client] --> Alias["@grpc/grpc-js alias and root override"]
-    Alias --> Client[Vendored client, factory, interceptors and Metadata]
+    Alias --> Client[Vendored client, factory and Metadata]
     Client --> Channel[Workers Channel]
-    Channel --> Call[Call lifecycle and authentication]
+    Channel --> Lifetime[Logical deadline and cancellation]
+    Lifetime --> Admission[Shared call admission]
+    Admission --> Interceptors[Asynchronous interceptors]
+    Interceptors --> Call[Authentication and Fetch attempt]
     Call --> Wire[Binary gRPC-Web framing]
     Wire --> Fetch[Fetch]
     Fetch -->|"cloudflare: service HTTPS origin"| Cloudflare[Cloudflare automatic outgoing conversion]
@@ -39,7 +42,9 @@ All paths below are relative to `src/`.
 | `client.ts`, `call-surface.ts` | Upstream overloads, callbacks, streams and invocation transforms |
 | `client-interceptors.ts` | Interceptor order, asynchronous listeners, serialization and final call options |
 | `channel.ts` | Target/configuration/credentials, active calls and channel closure |
-| `call.ts` | Authentication, Fetch attempts, deadlines, cancellation and terminal cleanup |
+| `call-lifetime.ts` | Logical deadline, parent cancellation, admission, and completion outside interceptors |
+| `call.ts` | Authentication, Fetch attempts, transport cancellation and buffer ownership |
+| `resources.ts` | Snapshot-scoped FIFO admission and buffer reservations |
 | `wire.ts` | Incremental frame parsing, length checks, trailers and metadata |
 | `compression.ts` | Bounded identity/gzip/deflate message transforms |
 | `retry.ts` | Exact-method unary replay policy and bounded backoff |
@@ -55,11 +60,13 @@ All paths below are relative to `src/`.
 
 ## Call lifecycle
 
-A call progresses through `start → prepare authentication/request → halfClose → fetch → consume frames → terminal`. Authentication and the request can become ready independently. Experimental gateway request streaming starts Fetch once authentication is ready and writes frames until half-close; it does not wait for the whole request. Its callback means Fetch accepted a frame, not that a socket flushed it. Once a terminal result is chosen, late authentication or Fetch completion cannot start another request.
+A logical call owns its deadline and parent cancellation before asynchronous interceptor startup. It progresses through `admission → interceptors → prepare authentication/request → halfClose → fetch → consume frames → terminal`. Authentication and the request can become ready independently. Experimental gateway request streaming starts Fetch once authentication is ready and writes frames until half-close; it does not wait for the whole request. Its callback means Fetch accepted a frame, not that a socket flushed it. Once a terminal result is chosen, late interceptor, authentication or Fetch completion cannot start another request.
+
+Logical completion does not wait for a stalled interceptor continuation or a response source's cancellation promise. Pending outgoing and incoming interceptor queues are discarded, and callback/status delivery is guarded against late continuations. [Resource limits](resources.md) optionally bound admitted and queued calls before outgoing startup; their deadlines remain active while queued.
 
 `finishObject()` records terminal state before notifying listeners. It clears timers, request buffers and pending reader demand. By default the adapter makes at most one data Fetch attempt per Call. An explicit retry policy can replay listed unary methods before the first response message, within the same deadline. Every attempt refreshes credential metadata and obtains a new body. SDK retries still create separate Calls and may multiply the adapter policy; see [retries](retries.md).
 
-The decoder consumes the current Fetch chunk and frame instead of assembling the whole response. The transport can read one message ahead. The upstream object-mode Readable buffer and the Fetch implementation's allocations are additional buffers, so this is not a bound on total process memory.
+The decoder consumes the current Fetch chunk and frame instead of assembling the whole response. The transport can read one message ahead. Optional buffer reservations account for request snapshots, framing, current chunks and exposed codec buffers across calls sharing one transport. They persist while an outstanding Fetch still owns an encoded body, even after local cancellation. Readable object queues have a separate configurable high-water mark; arbitrary decoded objects and runtime allocations remain outside the byte budget.
 
 Long deadlines use timer intervals no greater than `2^31 − 1` milliseconds. An explicit infinite deadline is preserved rather than replaced with the configured default. This timer does not cover all SDK initialization before the Call exists.
 

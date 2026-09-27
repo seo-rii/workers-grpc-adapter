@@ -175,8 +175,8 @@ export class ClientReadableStreamImpl<ResponseType>
 {
   public call?: InterceptingCallInterface;
   private readonly lifecycle = new ClientStreamLifecycle(this);
-  constructor(readonly deserialize: (chunk: Buffer) => ResponseType) {
-    super({ objectMode: true });
+  constructor(readonly deserialize: (chunk: Buffer) => ResponseType, readableHighWaterMark?: number) {
+    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { highWaterMark: readableHighWaterMark }) });
   }
 
   cancel(): void {
@@ -251,9 +251,10 @@ export class ClientDuplexStreamImpl<RequestType, ResponseType>
   private readonly lifecycle = new ClientStreamLifecycle(this);
   constructor(
     readonly serialize: (value: RequestType) => Buffer,
-    readonly deserialize: (chunk: Buffer) => ResponseType
+    readonly deserialize: (chunk: Buffer) => ResponseType,
+    readableHighWaterMark?: number
   ) {
-    super({ objectMode: true });
+    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { readableHighWaterMark }) });
   }
 
   cancel(): void {

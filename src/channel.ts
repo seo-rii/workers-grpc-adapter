@@ -3,7 +3,8 @@ import { WorkersCall, CallOptions } from './call';
 import { CallLifetime } from './call-lifetime';
 import { connectivityState, status, WorkersGrpcConfigurationError as ConfigError } from './status';
 import { ChannelOptions, validateOptions } from './options';
-import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, getWorkersGrpcConfig, lockConfiguration, routeFor } from './config-internal';
+import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, getWorkersGrpcConfig, lockConfiguration, routeFor, resourcesFor } from './config-internal';
+import type { ResourceBudget } from './resources';
 const workersChannels = new WeakSet<object>();
 export function isWorkersChannel(value: unknown): value is Channel {
     return typeof value === 'object' && value !== null && workersChannels.has(value);
@@ -14,6 +15,7 @@ export class Channel {
     private readonly config: WorkersGrpcConfigSnapshot;
     private readonly route: ReturnType<typeof routeFor>;
     private readonly limits: ReturnType<typeof validateOptions>;
+    private readonly resources: ResourceBudget;
     constructor(private readonly target: string, private readonly creds: ChannelCredentials, options: ChannelOptions = {}) {
         if (!(creds instanceof ChannelCredentials)) {
             throw new TypeError('ChannelCredentials from this package are required');
@@ -38,12 +40,17 @@ export class Channel {
         if (this.route.insecure === creds._isSecure()) {
             throw new ConfigError('WGA_UNSUPPORTED_TLS', 'Credential security must match the route; HTTP is test-only');
         }
+        this.resources = resourcesFor(this.config);
         // A rejected constructor must not prevent correcting the global config.
         if (usesGlobalConfig) lockConfiguration();
         workersChannels.add(this);
     }
     getTarget(): string {
         return this.target;
+    }
+    /** Object count, independent of encoded-byte accounting. */
+    getReadQueueLimit(): number | undefined {
+        return this.resources.limits.readableHighWaterMark;
     }
     close(): void {
         if (this.closed) {
@@ -73,14 +80,14 @@ export class Channel {
     /** Internal bridge: the method kind is passed per call, never cached by method name. */
     createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall {
         const call = new WorkersCall({ path, requestStream, responseStream, options, ...this.route, credentials: this.creds,
-            config: this.config, limits: this.limits, closed: this.closed, lifetime, onFinish: () => { if (!lifetime) this.active.delete(call); } });
+            config: this.config, limits: this.limits, resources: this.resources, closed: this.closed, lifetime, onFinish: () => { if (!lifetime) this.active.delete(call); } });
         if (lifetime) lifetime.addTransport(call);
         else this.active.add(call);
         return call;
     }
     /** The logical call stays registered through asynchronous interceptors. */
     createCallLifetime(options: CallOptions): CallLifetime {
-        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); });
+        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); }, this.resources);
         this.active.add(lifetime);
         if (this.closed) lifetime.cancelWithStatus(status.UNAVAILABLE, 'WGA_CHANNEL_CLOSED');
         return lifetime;

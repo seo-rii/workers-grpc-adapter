@@ -165,15 +165,16 @@ for (const kind of ['unary', 'clientStream', 'bidi']) {
     });
 }
 
-test('INTERCEPTOR logical lifetime preserves custom sendMessage overrides', async () => {
+test('INTERCEPTOR logical lifetime preserves custom sendMessage overrides before and after admission', async () => {
     const { grpc, response, serialize, deserialize } = require('./helpers.cjs');
     const { createWorkersGrpcTransport } = require('../dist/adapter.js');
-    for (const streaming of [false, true]) {
+    for (const limited of [false, true]) for (const streaming of [false, true]) {
         let overrides = 0, fetches = 0;
         class NoCompressCall extends grpc.InterceptingCall {
             sendMessage(message) { overrides++; this.sendMessageWithContext({ flags: 2 }, message); }
         }
         const factory = createWorkersGrpcTransport({
+            ...(limited ? { resourceLimits: { maxConcurrentCalls: 1 } } : {}),
             fetcher: { async fetch(_url, init) {
                 fetches++;
                 assert.equal(init.headers.get('grpc-encoding'), 'gzip');

@@ -516,7 +516,7 @@ export class Client {
     let callProperties: CallProperties<RequestType, ResponseType> = {
       argument: argument,
       metadata: checkedArguments.metadata,
-      call: new ClientReadableStreamImpl<ResponseType>(deserialize),
+      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,
       callOptions: checkedArguments.options,
@@ -611,7 +611,8 @@ export class Client {
       metadata: checkedArguments.metadata,
       call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
         serialize,
-        deserialize
+        deserialize,
+        this[CHANNEL_SYMBOL].getReadQueueLimit()
       ),
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,

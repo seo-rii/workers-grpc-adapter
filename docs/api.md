@@ -89,6 +89,7 @@ This is an explicitly selected gateway alternative, not automatic failover. A fa
 | `defaultTimeoutMs` | Unset; if supplied, a positive safe integer in milliseconds |
 | `transportMaxSendBytes` | 32 MiB per message |
 | `transportMaxReceiveBytes` | 32 MiB per message |
+| `resourceLimits` | Unset: no aggregate admission/byte limits; optional shared call, queue, buffer and readable-object limits described in [Resource limits](resources.md) |
 | `allowInsecureLocalhost` | `false`; permits credential-free HTTP tests only for literal `127.0.0.1` or `[::1]` in `grpc-web` mode |
 
 These message ceilings are adapter policy, not Google or Cloudflare service limits. A smaller grpc-js channel limit takes precedence. A channel limit of `-1` removes that channel restriction but retains the transport ceiling. The default channel receive limit is 4 MiB; a GAX client that explicitly supplies `-1` uses the transport ceiling.
@@ -104,6 +105,9 @@ Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, 
 - `channelCredentials`: default HTTPS channel credentials.
 - `grpcOptions(existing?)`: channel options bound to the instance configuration.
 - `gaxOptions(existing)`: Google SDK options bound to this transport, using the shared grpc module and `fallback: false`.
+- `resourceUsage()`: current and peak admitted-call, waiting-call, and adapter-buffer reservation counts shared by this transport's clients.
+
+`WorkersGrpcResourceLimits` and `WorkersGrpcResourceUsage` are exported types from `/config` and `/adapter`. Resource budgets belong to configuration snapshots: clients of one factory share them, while separate factories remain independent. See [Resource limits](resources.md) for FIFO admission, cancellation, queue defaults, and the boundary between reserved bytes and whole-Worker memory.
 
 Instance configuration does not change the global snapshot. Existing channel overrides conflict with `grpcOptions()`. Existing `grpc`, `sslCreds`, `fallback` or channel-override settings conflict with `gaxOptions()`, including GAX's prefixed override forms. Both helpers reject options already bound to a transport instead of silently rebinding them. The generated GAX options carry the transport configuration through each client's channel creation, rather than capturing it in service constructors. This allows different SDK modes and gateway mappings in the same isolate, including clients created before or after a shared GAX cache entry. Keep the generated options intact when passing them to SDK constructors. [Local workerd tests](../scripts/test-gax-mode-isolation.cjs) exercise this with all three pinned SDKs; the historical [cloud probe](gcp-cloud-probe.md) uses separate deployments for comparison.
 

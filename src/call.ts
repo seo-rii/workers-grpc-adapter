@@ -9,6 +9,7 @@ import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot } from './retry';
 import { RequestStreamBody } from './request-stream';
 import type { CallLifetime } from './call-lifetime';
+import type { ResourceBudget, ResourceScope } from './resources';
 export type Deadline = Date | number;
 /** The cancellation/deadline subset of grpc-js ServerSurfaceCall used by clients. */
 export interface ParentCall {
@@ -45,6 +46,7 @@ export interface CallContext {
     onFinish: () => void;
     closed: boolean;
     lifetime?: CallLifetime;
+    resources?: ResourceBudget;
 }
 /** Invoke observers outside the transport error model, after updating state. */
 function notify(fn: () => void): void {
@@ -62,6 +64,8 @@ export class WorkersCall {
     private metadata?: Metadata;
     private baseMetadata?: Metadata;
     private request?: Buffer;
+    private requestScope?: ResourceScope;
+    private releaseAdmission?: () => void;
     private requestBody?: RequestStreamBody;
     private uploadCancelled = false;
     private noCompress = false;
@@ -87,6 +91,7 @@ export class WorkersCall {
         if (context.requestStream && context.config.mode === 'grpc-web' && context.config.experimentalRequestStreaming) {
             this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
                 maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
+                budget: context.resources,
                 // Fetch can cancel an upload after an early server response.
                 // Stop producers, but let that response (or the logical call
                 // deadline/abort) determine the RPC's terminal status.
@@ -197,7 +202,16 @@ export class WorkersCall {
             this.finish(status.UNAUTHENTICATED, 'WGA_INSECURE_AUTH');
             return;
         }
-        void this.refreshCredentials().then(() => this.maybeFetch());
+        if (!c.lifetime && c.resources) {
+            void c.resources.acquire(this.aborter.signal).then(release => {
+                if (this.terminal) { release(); return; }
+                this.releaseAdmission = release;
+                return this.refreshCredentials().then(() => this.maybeFetch());
+            }).catch(error => {
+                if (!this.terminal) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
+                    error instanceof TransportError ? error.diagnostic : 'WGA_CALL_ADMISSION');
+            });
+        } else void this.refreshCredentials().then(() => this.maybeFetch());
     }
     private attachParent(flags: number): boolean {
         const parent = this.context.options.parent;
@@ -298,7 +312,15 @@ export class WorkersCall {
             this.finish(status.RESOURCE_EXHAUSTED, 'WGA_REQUEST_SIZE');
             return;
         }
-        this.request = Buffer.from(message);
+        try {
+            this.requestScope = this.context.resources?.scope();
+            this.requestScope?.reserve(message.length);
+            this.request = Buffer.from(message);
+        } catch (error) {
+            this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
+                error instanceof TransportError ? error.diagnostic : 'WGA_REQUEST_BUFFER');
+            return;
+        }
         this.noCompress = ((context.flags ?? 0) & 2) !== 0;
         this.ackWrite();
         this.maybeFetch();
@@ -393,93 +415,115 @@ export class WorkersCall {
         result: StatusObject; retryable: boolean; initial?: Metadata;
     } | undefined> {
         const c = this.context;
-        if (this.deadline <= Date.now()) {
-            this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
-            return;
-        }
-        const body = this.requestBody?.body ?? await encodeMessageFrame(this.request!, c.limits.compression, c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress);
-        if (this.terminal) return;
-        // Use one post-encoding snapshot for both expiry and grpc-timeout. A
-        // second clock read could otherwise pass a negative value to the encoder.
-        const remaining = this.deadline === Infinity ? undefined : this.deadline - Date.now();
-        if (remaining !== undefined && remaining <= 0) {
-            this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
-            return;
-        }
-        const headers = requestHeaders(this.metadata!, remaining, c.limits.userAgent, c.config.mode, c.limits.compression);
-        if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
-        const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
-            method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
-            ...(this.requestBody ? { duplex: 'half' as const } : {}),
-            cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
-        };
-        this.fetchCount++;
-        let response: Response;
+        // Attempt buffers outlive logical cancellation when a custom Fetch
+        // ignores abort. Keep their leases until the actual owner unwinds.
+        const attemptScope = c.resources?.scope();
         try {
-            response = await (c.config.fetcher ? c.config.fetcher.fetch(c.origin + c.path, init) : fetch(c.origin + c.path, init));
-        } catch {
-            return { result: { code: status.UNAVAILABLE, details: 'WGA_FETCH_FAILED', metadata: new Metadata() },
-                retryable: policy?.retryOnFetchError === true };
-        }
-        if (!policy) this.request = undefined;
-        if (this.terminal) {
-            await response.body?.cancel().catch(() => {});
-            return;
-        }
-        if (response.status >= 300 && response.status < 400) {
-            await response.body?.cancel().catch(() => {});
-            this.finish(status.UNKNOWN, 'WGA_REDIRECT_BLOCKED');
-            return;
-        }
-        let initial: Metadata, headerStatus: StatusObject | null;
-        try {
-            initial = metadataFromHeaders(response.headers);
-            headerStatus = statusFromHeaders(response.headers);
-        } catch (error) {
-            await response.body?.cancel().catch(() => {});
-            throw error;
-        }
-        const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
-        if (contentType !== 'application/grpc-web+proto' && contentType !== 'application/grpc-web') {
-            await response.body?.cancel().catch(() => {});
-            return { result: headerStatus ?? { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
-        }
-        let pendingInitial: Metadata | undefined = policy ? initial : undefined;
-        if (!policy) notify(() => this.listener!.onReceiveMetadata(initial));
-        if (this.terminal) {
-            await response.body?.cancel().catch(() => {});
-            return;
-        }
-        let final: StatusObject | null = headerStatus, committed = false;
-        if (headerStatus) this.closeUploadFromResponse();
-        if (response.body) {
-            for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
-                { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes })) {
-                if (this.terminal) return;
-                if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
-                if (frame.trailer) {
-                    final = parseTrailers(frame.payload);
-                    if (final) this.closeUploadFromResponse();
-                    continue;
-                }
-                committed = true;
-                this.request = undefined;
-                if (pendingInitial) {
-                    const metadata = pendingInitial; pendingInitial = undefined;
-                    notify(() => this.listener!.onReceiveMetadata(metadata));
-                }
-                if (this.terminal) return;
-                this.responseBytes = frame.payload.length;
-                while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
-                if (this.terminal) return;
-                this.readDemand = !c.responseStream;
-                this.responseBytes = 0;
-                notify(() => this.listener!.onReceiveMessage(frame.payload));
+            if (this.deadline <= Date.now()) {
+                this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+                return;
             }
-        }
-        if (this.terminal) return;
-        return { result: final ?? { code: httpStatusToGrpc(response.status), details: 'WGA_MISSING_GRPC_STATUS', metadata: new Metadata() },
-            retryable: !!final && !committed, initial: pendingInitial };
+            let body: ReadableStream<Uint8Array> | Buffer;
+            if (this.requestBody) body = this.requestBody.body;
+            else {
+                const inputScope = attemptScope?.scope();
+                try {
+                    // Reserve borrowed input while an async codec can still hold it
+                    // after terminal cleanup releases the retry/request snapshot.
+                    inputScope?.reserve(this.request!.length);
+                    body = await encodeMessageFrame(this.request!, c.limits.compression,
+                        c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress, attemptScope);
+                } finally { inputScope?.close(); }
+            }
+            if (this.terminal) return;
+            // Use one post-encoding snapshot for both expiry and grpc-timeout. A
+            // second clock read could otherwise pass a negative value to the encoder.
+            const remaining = this.deadline === Infinity ? undefined : this.deadline - Date.now();
+            if (remaining !== undefined && remaining <= 0) {
+                this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+                return;
+            }
+            const headers = requestHeaders(this.metadata!, remaining, c.limits.userAgent, c.config.mode, c.limits.compression);
+            if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
+            const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
+                method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
+                ...(this.requestBody ? { duplex: 'half' as const } : {}),
+                cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
+            };
+            this.fetchCount++;
+            let response: Response;
+            try {
+                response = await (c.config.fetcher ? c.config.fetcher.fetch(c.origin + c.path, init) : fetch(c.origin + c.path, init));
+            } catch {
+                return { result: { code: status.UNAVAILABLE, details: 'WGA_FETCH_FAILED', metadata: new Metadata() },
+                    retryable: policy?.retryOnFetchError === true };
+            }
+            if (!policy) this.releaseRequest();
+            // Source cancellation may never settle. Begin cleanup without
+            // delaying the local terminal result or retaining attempt leases.
+            if (this.terminal) {
+                void response.body?.cancel().catch(() => {});
+                return;
+            }
+            if (response.status >= 300 && response.status < 400) {
+                void response.body?.cancel().catch(() => {});
+                this.finish(status.UNKNOWN, 'WGA_REDIRECT_BLOCKED');
+                return;
+            }
+            let initial: Metadata, headerStatus: StatusObject | null;
+            try {
+                initial = metadataFromHeaders(response.headers);
+                headerStatus = statusFromHeaders(response.headers);
+            } catch (error) {
+                void response.body?.cancel().catch(() => {});
+                throw error;
+            }
+            const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+            if (contentType !== 'application/grpc-web+proto' && contentType !== 'application/grpc-web') {
+                void response.body?.cancel().catch(() => {});
+                return { result: headerStatus ?? { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
+            }
+            let pendingInitial: Metadata | undefined = policy ? initial : undefined;
+            if (!policy) notify(() => this.listener!.onReceiveMetadata(initial));
+            if (this.terminal) {
+                void response.body?.cancel().catch(() => {});
+                return;
+            }
+            let final: StatusObject | null = headerStatus, committed = false;
+            if (headerStatus) this.closeUploadFromResponse();
+            if (response.body) {
+                for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
+                    { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes, budget: c.resources })) {
+                    if (this.terminal) return;
+                    if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
+                    if (frame.trailer) {
+                        final = parseTrailers(frame.payload);
+                        if (final) this.closeUploadFromResponse();
+                        continue;
+                    }
+                    committed = true;
+                    this.releaseRequest();
+                    if (pendingInitial) {
+                        const metadata = pendingInitial; pendingInitial = undefined;
+                        notify(() => this.listener!.onReceiveMetadata(metadata));
+                    }
+                    if (this.terminal) return;
+                    this.responseBytes = frame.payload.length;
+                    while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
+                    if (this.terminal) return;
+                    this.readDemand = !c.responseStream;
+                    this.responseBytes = 0;
+                    notify(() => this.listener!.onReceiveMessage(frame.payload));
+                }
+            }
+            if (this.terminal) return;
+            return { result: final ?? { code: httpStatusToGrpc(response.status), details: 'WGA_MISSING_GRPC_STATUS', metadata: new Metadata() },
+                retryable: !!final && !committed, initial: pendingInitial };
+        } finally { attemptScope?.close(); }
+    }
+    private releaseRequest(): void {
+        this.request = undefined;
+        this.requestScope?.close(); this.requestScope = undefined;
     }
     private closeUploadFromResponse(): void {
         if (!this.requestBody) return;
@@ -505,13 +549,14 @@ export class WorkersCall {
             clearTimeout(this.timer);
             this.timer = undefined;
         }
-        this.request = undefined;
+        this.releaseRequest();
         this.requestBody?.abort(new Error('WGA_CALL_TERMINATED'));
         this.metadata = undefined;
         this.baseMetadata = undefined;
         this.responseBytes = 0;
         this.ackWrite(new Error('WGA_CALL_TERMINATED'));
         this.aborter.abort();
+        this.releaseAdmission?.(); this.releaseAdmission = undefined;
         const wake = this.wakeRead;
         this.wakeRead = undefined;
         wake?.();

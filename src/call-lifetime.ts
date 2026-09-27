@@ -1,5 +1,6 @@
 import { Metadata } from './metadata';
-import { status, propagate } from './status';
+import { status, propagate, TransportError } from './status';
+import type { ResourceBudget } from './resources';
 import type { CallOptions, WorkersCall } from './call';
 import type { InterceptingCallInterface } from './client-interceptors';
 import type { InterceptingListener, MessageContext, StatusObject } from './call-interface';
@@ -16,10 +17,14 @@ export class CallLifetime implements InterceptingCallInterface {
     private started = false;
     private timer?: ReturnType<typeof setTimeout>;
     private removeParent?: () => void;
+    private chainStarted = false;
+    private readonly pending: Array<() => void> = [];
+    private readonly admissionAborter = new AbortController();
+    private releaseAdmission?: () => void;
     private readonly transports = new Set<WorkersCall>();
     private readonly writes = new Set<(error?: Error | null) => void>();
     constructor(options: CallOptions, private readonly defaultTimeoutMs: number | undefined,
-        private readonly onFinish: () => void) {
+        private readonly onFinish: () => void, private readonly resources?: ResourceBudget) {
         this.options = options;
         this.applyOptions(options);
     }
@@ -55,6 +60,27 @@ export class CallLifetime implements InterceptingCallInterface {
         if (!this.attachParent(flags)) return;
         this.armTimer();
         if (this.terminal) return;
+        const begin = () => {
+            if (this.terminal) return;
+            this.chainStarted = true;
+            this.startChain(metadata);
+            while (!this.terminal && this.pending.length) this.pending.shift()!();
+        };
+        if (!this.resources) { begin(); return; }
+        const admission = this.resources.acquire(this.admissionAborter.signal);
+        void admission.then(release => {
+            if (this.terminal) { release(); return; }
+            this.releaseAdmission = release;
+            if (!this.chainStarted) begin();
+        }, error => {
+            if (!this.terminal) this.cancelWithStatus(error instanceof TransportError ? error.code : status.INTERNAL,
+                error instanceof TransportError ? error.diagnostic : 'WGA_CALL_ADMISSION');
+        });
+        // With no admission limit the slot is claimed synchronously. Preserve
+        // grpc-js's synchronous requester startup for existing configurations.
+        if (this.resources.limits.maxConcurrentCalls === undefined) begin();
+    }
+    private startChain(metadata: Metadata): void {
         try {
             this.nextCall!.start(metadata, {
                 onReceiveMetadata: value => { if (!this.terminal) this.listener?.onReceiveMetadata?.(value); },
@@ -108,19 +134,33 @@ export class CallLifetime implements InterceptingCallInterface {
             settled = true; this.writes.delete(done); context.callback?.(error);
         };
         if (context.callback) this.writes.add(done);
-        try { this.nextCall!.sendMessageWithContext({ ...context, ...(context.callback ? { callback: done } : {}) }, message); }
-        catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+        const send = () => {
+            try { this.nextCall!.sendMessageWithContext({ ...context, ...(context.callback ? { callback: done } : {}) }, message); }
+            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+        };
+        if (this.chainStarted) send(); else this.pending.push(send);
     }
     sendMessage(message: unknown): void {
         if (this.terminal) return;
-        // Preserve custom InterceptingCall.sendMessage overrides and flags.
-        try { this.nextCall!.sendMessage(message); }
-        catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+        // Preserve the public entry point: custom InterceptingCall subclasses
+        // may override sendMessage to supply flags such as NoCompress.
+        const send = () => {
+            try { this.nextCall!.sendMessage(message); }
+            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+        };
+        if (this.chainStarted) send(); else this.pending.push(send);
     }
-    startRead(): void { if (!this.terminal) this.nextCall?.startRead(); }
+    startRead(): void {
+        if (this.terminal) return;
+        if (this.chainStarted) this.nextCall?.startRead();
+        else this.pending.push(() => this.nextCall?.startRead());
+    }
     halfClose(): void {
         if (this.terminal) return;
-        try { this.nextCall!.halfClose(); } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_HALF_CLOSE'); }
+        const close = () => {
+            try { this.nextCall!.halfClose(); } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_HALF_CLOSE'); }
+        };
+        if (this.chainStarted) close(); else this.pending.push(close);
     }
     cancelWithStatus(code: status, details: string): void {
         if (this.terminal) return;
@@ -140,6 +180,9 @@ export class CallLifetime implements InterceptingCallInterface {
         // listener already runs asynchronously: preserve its status-before-write
         // order instead of inserting another microtask in that path.
         if (!fromListener) this.deliver();
+        this.pending.length = 0;
+        this.admissionAborter.abort();
+        this.releaseAdmission?.(); this.releaseAdmission = undefined;
         try { this.nextCall?.disposePending?.(); } catch { /* Custom cleanup cannot veto completion. */ }
         for (const call of this.transports) call.cancelWithStatus(result.code, result.details);
         this.transports.clear();

@@ -70,10 +70,19 @@
 +  }
 +}
 +
-@@ -115,0 +177 @@
-+  private readonly lifecycle = new ClientStreamLifecycle(this);
-@@ -121 +183,5 @@
+@@ -116,6 +177,11 @@
+-  constructor(readonly deserialize: (chunk: Buffer) => ResponseType) {
+-    super({ objectMode: true });
+-  }
+-
+-  cancel(): void {
 -    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++  private readonly lifecycle = new ClientStreamLifecycle(this);
++  constructor(readonly deserialize: (chunk: Buffer) => ResponseType, readableHighWaterMark?: number) {
++    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { highWaterMark: readableHighWaterMark }) });
++  }
++
++  cancel(): void {
 +    this.lifecycle.cancel();
 +  }
 +
@@ -101,13 +110,25 @@
 +      callback: this.lifecycle.writeCallback(cb),
 @@ -179,0 +251 @@
 +  private readonly lifecycle = new ClientStreamLifecycle(this);
-@@ -188 +260,5 @@
+@@ -182 +254,2 @@
+-    readonly deserialize: (chunk: Buffer) => ResponseType
++    readonly deserialize: (chunk: Buffer) => ResponseType,
++    readableHighWaterMark?: number
+@@ -184,5 +257,9 @@
+-    super({ objectMode: true });
+-  }
+-
+-  cancel(): void {
 -    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { readableHighWaterMark }) });
++  }
++
++  cancel(): void {
 +    this.lifecycle.cancel();
 +  }
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
-@@ -205 +281 @@
+@@ -205 +282 @@
 -      callback: cb,
 +      callback: this.lifecycle.writeCallback(cb),

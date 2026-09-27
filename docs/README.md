@@ -7,6 +7,9 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [API reference](api.md) | Client surface, configuration, credentials and build-time SDK support |
 | [Limitations](limitations.md) | Supported scope and remaining compatibility gates |
 | [Architecture](architecture.md) | Request flow, module boundaries and call lifecycle |
+| [Resource limits](resources.md) | Shared admission, queue and buffer limits, readable queues and usage counts |
+| [Call and stream lifetime](call-lifecycle.md) | Cancellation, destruction, iterator exit and pending writes |
+| [Interceptors](interceptors.md) | Asynchronous ordering, transformations and logical completion |
 | [Testing](testing.md) | Local setup, test layers, generated evidence and CI artifacts |
 | [Google SDK tests](google-tests.md) | Pinned fixtures, emulators, adding scenarios and live opt-in |
 | [Design decisions](decisions.md) | Reasons for the implementation boundaries |
