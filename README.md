@@ -130,7 +130,7 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 ## Limitations
 
 - Client streaming, bidirectional streaming, and Firestore Listen/Watch are unsupported.
-- Server APIs, custom certificate authorities, mTLS, compression, and native connection pooling are unsupported.
+- Server APIs, custom certificate authorities, inline TLS client certificates, compression, and native connection pooling are unsupported. Preconfigured Workers mTLS and HTTP service bindings can be selected using the [custom Fetcher](docs/fetcher.md) option; deployed TLS behavior requires separate verification.
 - The adapter does not implement native grpc-js retry or health-check behavior. It sends at most one fetch per adapter call; an SDK retry creates a separate call.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
 - The Workers build profile and SDK versions are pinned. Other dependency graphs require separate work and verification.

@@ -1,6 +1,11 @@
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
 export { WorkersGrpcConfigurationError } from './status';
+/** A Workers mTLS/service binding, or another trusted Fetch implementation. */
+export interface WorkersGrpcFetcher {
+    fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
 export type WorkersGrpcConfig = {
+    fetcher?: WorkersGrpcFetcher;
     defaultTimeoutMs?: number;
     transportMaxSendBytes?: number;
     transportMaxReceiveBytes?: number;
@@ -14,6 +19,7 @@ export type WorkersGrpcConfig = {
     allowInsecureLocalhost?: boolean;
 });
 export interface WorkersGrpcConfigSnapshot {
+    readonly fetcher?: WorkersGrpcFetcher;
     readonly mode: 'cloudflare' | 'grpc-web';
     readonly endpoints: Readonly<Record<string, string>>;
     readonly defaultTimeoutMs?: number;
@@ -55,13 +61,45 @@ function budget(value: unknown, name: string, fallback?: number): number | undef
     }
     return value;
 }
+const fetcherIdentities = new WeakMap<WorkersGrpcFetcher, { receiver: WorkersGrpcFetcher; method: WorkersGrpcFetcher['fetch'] }>();
+function snapshotFetcher(input: unknown): WorkersGrpcFetcher | undefined {
+    if (input === undefined) {
+        return undefined;
+    }
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+        return fail('WGA_INVALID_CONFIG', 'Fetcher must be an object with a fetch method');
+    }
+    const receiver = input as WorkersGrpcFetcher;
+    if (fetcherIdentities.has(receiver)) {
+        return receiver;
+    }
+    let method: WorkersGrpcFetcher['fetch'];
+    try {
+        method = receiver.fetch;
+    }
+    catch {
+        return fail('WGA_INVALID_CONFIG', 'Fetcher must provide a fetch method');
+    }
+    if (typeof method !== 'function') {
+        return fail('WGA_INVALID_CONFIG', 'Fetcher must provide a fetch method');
+    }
+    // Snapshot the callable and retain its platform receiver without freezing or
+    // modifying the binding itself. Replacing binding.fetch cannot change a channel.
+    const wrapper: WorkersGrpcFetcher = Object.freeze({
+        fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+            return Reflect.apply(method, receiver, [input, init]);
+        },
+    });
+    fetcherIdentities.set(wrapper, { receiver, method });
+    return wrapper;
+}
 /** Internal pure validator. The documented public API is configure/get below. */
 export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfigSnapshot {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         return fail('WGA_INVALID_CONFIG', 'Configuration must be an object');
     }
     for (const key of Object.keys(input)) {
-        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes'].includes(key)) {
+        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher'].includes(key)) {
             return fail('WGA_INVALID_CONFIG', 'Unknown configuration key');
         }
     }
@@ -103,6 +141,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         }
     }
     return Object.freeze({ mode, endpoints: Object.freeze(Object.assign(Object.create(null), Object.fromEntries(Object.keys(entries).sort().map(k => [k, entries[k]])))),
+        fetcher: snapshotFetcher(input.fetcher),
         defaultTimeoutMs: budget(input.defaultTimeoutMs, 'defaultTimeoutMs'),
         transportMaxSendBytes: budget(input.transportMaxSendBytes, 'transportMaxSendBytes', 32 * 1024 * 1024)!,
         transportMaxReceiveBytes: budget(input.transportMaxReceiveBytes, 'transportMaxReceiveBytes', 32 * 1024 * 1024)!,
@@ -111,7 +150,9 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
 let configured = false, locked = false, snapshot = validateConfig();
 export function configureWorkersGrpc(config: WorkersGrpcConfig): WorkersGrpcConfigSnapshot {
     const next = validateConfig(config);
-    if (JSON.stringify(next) === JSON.stringify(snapshot)) {
+    const previousFetcher = snapshot.fetcher && fetcherIdentities.get(snapshot.fetcher);
+    const nextFetcher = next.fetcher && fetcherIdentities.get(next.fetcher);
+    if (previousFetcher?.receiver === nextFetcher?.receiver && previousFetcher?.method === nextFetcher?.method && JSON.stringify(next) === JSON.stringify(snapshot)) {
         configured = true;
         return snapshot;
     }

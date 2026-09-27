@@ -109,7 +109,7 @@ Instance configuration does not change the global snapshot. Existing channel ove
 
 ## Credentials
 
-`credentials.createSsl()` uses Fetch TLS. Custom certificate authorities, mTLS certificates and TLS verification callbacks are unsupported. `createInsecure()` is limited by the explicit local-test routing policy; credentials cannot be sent over that route.
+`credentials.createSsl()` uses Fetch TLS. Certificate buffers, custom certificate authorities and TLS verification callbacks are unsupported. Configure `fetcher: env.MTLS_BINDING` on the transport to use a preconfigured Workers mTLS binding; HTTP service bindings and other trusted Fetchers use the same option. The selected method and receiver are captured per transport. See [custom Fetchers](fetcher.md) for setup, isolation and verification boundaries. `createInsecure()` is limited by the explicit local-test routing policy; credentials cannot be sent over that route.
 
 `createFromGoogleCredential()` accepts an object whose `getRequestHeaders()` returns headers synchronously or as a Promise, or the legacy `getRequestMetadata(url, callback)` form. The legacy callback receives `(error, headers)`, where `headers` is a string-valued object; an empty object is valid. The modern method takes precedence when both exist. `GoogleCredential` and `LegacyGoogleCredential` describe these two forms. `createEmpty()` produces empty call credentials.
 

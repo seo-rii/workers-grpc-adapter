@@ -53,6 +53,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-workers-auth.cjs` | Actual workerd Fetch token exchange, refresh, isolation, failure recovery and JWT signatures | `verification/workers-auth.json` |
 | `node scripts/test-workers-federated-auth.cjs` | Controlled URL-sourced federation, token exchange and service-account impersonation in workerd | `verification/workers-federated-auth.json` |
 | `node scripts/test-workers-legacy-auth.cjs` | Legacy Google callback credentials, native compatibility and workerd termination behavior | `verification/workers-legacy-auth.json` |
+| `node scripts/test-workers-fetcher.cjs` | Actual workerd service bindings, per-client Fetcher isolation and default Fetch | `verification/workers-fetcher.json` |
 | `node scripts/test-secret-manager-extended.cjs` | Native/adapter/workerd Secret Manager pagination, binary payloads, checksum handling and errors | `verification/secret-manager-extended.json` |
 | `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |

@@ -283,7 +283,7 @@ export class WorkersCall {
                 cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
             };
             this.fetchCount++;
-            const response = await fetch(c.origin + c.path, init);
+            const response = await (c.config.fetcher ? c.config.fetcher.fetch(c.origin + c.path, init) : fetch(c.origin + c.path, init));
             this.request = undefined;
             if (this.terminal) {
                 await response.body?.cancel().catch(() => {

@@ -46,7 +46,9 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 
 ## Unsupported features
 
-Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, compression, custom certificate authorities, mTLS, connection pools, keepalive, load balancing, adapter retries, remote health checks, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, compression, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, adapter retries, remote health checks, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+
+Preconfigured Workers mTLS and HTTP service bindings can be selected using the transport's `fetcher` option. Local workerd tests verify actual service-binding dispatch, receiver preservation and client isolation. They do not verify an mTLS handshake or deployed binding/conversion behavior; see [Fetchers](fetcher.md).
 
 ## Intentional differences
 
