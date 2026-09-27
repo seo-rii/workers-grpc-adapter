@@ -9,6 +9,11 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [Architecture](architecture.md) | Request flow, module boundaries and call lifecycle |
 | [Resource limits](resources.md) | Shared admission, queue and buffer limits, readable queues and usage counts |
 | [Observability](observability.md) | Logical-call and attempt events, durations, traffic counters and privacy boundaries |
+| [Retries](retries.md) | Explicit replay policy and shared endpoint throttling |
+| [Fetch server](server.md) | All four RPC shapes, typed handlers and service-binding lifecycle |
+| [Structured status details](status-details.md) | Optional bounded error envelopes and isolated detail decoders |
+| [SDK profiles](profiles.md) | Declarative pins, diagnostics and transformer-aware generation identity |
+| [SDK performance](sdk-performance.md) | Actual SDK Worker bundle, startup, latency and sampled heap baselines |
 | [Call and stream lifetime](call-lifecycle.md) | Cancellation, destruction, iterator exit and pending writes |
 | [Interceptors](interceptors.md) | Asynchronous ordering, transformations and logical completion |
 | [Testing](testing.md) | Local setup, test layers, generated evidence and CI artifacts |

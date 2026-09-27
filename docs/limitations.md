@@ -52,11 +52,11 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 |---|---|---|
 | Client/bidirectional streaming | Experimental explicit gateway option, bounded producer, real Envoy/workerd tests | Disabled by default; automatic edge conversion unverified; early completed errors can be delayed |
 | Firestore Listen/Watch | Firestore 8.3.0 and 9.2.0 document/query listeners through the experimental gateway, official emulator/native comparison | Automatic conversion and long-lived deployed listeners unverified; bounded recovery is checked with a controlled peer |
-| Server APIs | Separate Fetch unary/server-streaming handlers | Native grpc-js HTTP/2 sockets and server lifecycle APIs are outside this architecture |
+| Server APIs | Separate Fetch handlers for all four RPC shapes, lazy request streams and handler-kind types | Native grpc-js HTTP/2 sockets and server lifecycle APIs are outside this architecture |
 | mTLS | Preconfigured Workers binding through isolated Fetcher | Actual certificate exchange and deployed binding behavior require live verification |
 | Custom CA / inline certificates | No Fetch trust-store or per-call PEM API | Requires a different transport or platform capability |
 | Compression | Identity, deflate and gzip with decoded/wire bounds | Compressed trailers and cross-call codec negotiation cache are unsupported |
-| Retries | Exact-method unary policies, bounded attempts, fresh credentials and pushback | No native HTTP/2 transparent retry or service-config policy equivalence |
+| Retries | Exact-method unary policies, bounded attempts, fresh credentials, pushback and shared endpoint throttling | No native HTTP/2 transparent retry or service-config policy equivalence |
 | Health checks | Standard Check/Watch and reconnecting service monitor | Does not expose connection READY or automatically gate unrelated calls |
 | Connection pooling | Platform Fetch controls connections | Native pooling, keepalive and HTTP/2 flow-control tuning are not exposed |
 | SDK dependency graph | Original and modern exact profiles | Arbitrary versions still need deliberate profile work and verification |
@@ -78,7 +78,7 @@ Explicit method-scoped unary retry policies are available, with bounded attempts
 
 Explicit `HealthClient.check()` and `monitor()` implement the standard remote health protocol, including Watch reconnects and `UNIMPLEMENTED` disablement. Applications can await SERVING before calls; this does not change channel READY or intercept requests automatically. See [health](health.md).
 
-The separate `./server` entry point implements binary gRPC-Web Fetch handlers for unary and server-streaming methods, including bounded codecs, deadlines and cooperative cancellation. It does not open HTTP/2 sockets or implement the native `Server` API. Incoming edge conversion and deployment authentication remain application responsibilities. See [server](server.md).
+The separate `./server` entry point implements binary gRPC-Web Fetch handlers for all four RPC shapes, including lazy request decoding, bounded codecs, deadlines and cooperative cancellation. Literal method flags select handler-kind types. It does not open HTTP/2 sockets or implement the native `Server` API. Incoming edge conversion and deployment authentication remain application responsibilities. See [server](server.md).
 
 Client-streaming and bidirectional RPCs are implemented experimentally for explicit gateway mode through `experimentalRequestStreaming: true`. Real local Envoy/workerd tests verify duplex delivery, per-message bounds, compression and cancellation. After a validated terminal status, the upload closes and response EOF is still checked. Rejection can still be delayed when Fetch has not exposed the response; deadlines/cancellation are required for bounded use. This does not certify arbitrary gateways or automatic edge conversion. See [request streaming](request-streaming.md) and [feasibility](streaming-feasibility.md).
 
@@ -96,13 +96,17 @@ Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are ver
 
 ## Follow-up work from the September 2026 review
 
-The review's request ordering, termination, metadata-budget, configuration-lock and deadline-boundary defects have regression coverage. Shared admission, buffer reservations and readable queue controls are implemented. Optional per-logical-call and per-attempt [observer events](observability.md) now complement aggregate `resourceUsage()` diagnostics. The following recommendations remain extensions requiring their own implementation and verification:
+The review's request ordering, termination, metadata-budget, configuration-lock and deadline-boundary defects have regression coverage. Shared admission, buffer reservations and readable queue controls are implemented. Per-logical-call and per-attempt [observer events](observability.md) complement aggregate `resourceUsage()` diagnostics. The remaining implementation recommendations are now covered:
 
-- Shared retry throttling across calls. Existing retries are bounded per call.
-- Actual Google SDK Worker bundle/startup/latency and isolate-memory baselines. The current Node microbenchmark and finite workerd tests do not establish these performance budgets.
-- Declarative SDK profile manifests, more detailed profile diagnostics and transformer-aware cache identities.
-- Fetch-server request streaming, optional structured-status decoding, and narrower handler-kind types.
-- HTTPS credentials use Fetch TLS. Modern Google header providers and the pinned grpc-js legacy `getRequestMetadata(url, callback)` form are supported; this does not imply compatibility with every historical auth library.
+- [Shared retry throttling](retries.md#shared-retry-throttling) spans calls within a transport and endpoint, with recovery, isolation, diagnostics and observer events.
+- [Actual SDK Worker baselines](sdk-performance.md) measure bundle size, fresh startup, first/warm/authenticated RPCs, concurrent compressed slow streams and sampled V8 heap/backing storage. Local CI ceilings detect regressions; sampled heap is not peak total isolate memory or a production capacity guarantee.
+- [Declarative SDK profiles](profiles.md) include exact package/schema/source hashes, transform rules, capabilities, required checks, detailed diagnostics and transformer/input-aware generation identities.
+- [Fetch-server request streaming and handler-kind types](server.md) cover lazy input, early termination and independent directions, including finite two-Worker service-binding checks.
+- [Optional structured-status decoding](status-details.md) preserves original RPC status on absent, malformed, oversized or mismatched rich errors.
+
+The production release gates above remain verification obligations. These local
+implementations and finite tests do not establish IAM, quotas, live certificate
+exchange, automatic edge request streaming or sustained production reliability.
 
 ## Datastore query streams
 

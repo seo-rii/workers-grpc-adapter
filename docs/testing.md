@@ -39,6 +39,10 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
 | `npm run test:workerd:integration` | Two real Workers using the public client/server APIs through a service binding; 72 cases and 96 RPCs | `verification/workerd-integration.json` |
 | `npm run test:workerd:lifecycle` | Installed client/server APIs in two real Workers; 39 interceptor, termination, metadata, resource, configuration and deadline cases with 70 logical RPCs | `verification/workerd-lifecycle.json` |
+| `npm run test:workerd:observer` | Logical call/attempt timing, privacy, traffic and callback isolation in workerd | `verification/workerd-observer.json` |
+| `npm run test:workerd:server-streaming` | Lazy server uploads, duplex demand, EOF/error/cancel/deadline and two-Worker service-binding cleanup | `verification/workerd-server-streaming.json` |
+| `npm run test:workerd:transport-extensions` | Shared retry-budget depletion/recovery/isolation and structured error decoding in both modes | `verification/workerd-transport-extensions.json` |
+| `npm run test:benchmark:sdk` | Two pinned profiles × four actual SDK Worker graphs: bundle/startup/first/authenticated/warm RPC, concurrent slow streams, compression and sampled V8 heap | `verification/sdk-benchmark.json` |
 | `npm run test:workerd:fuzz` | Independent hostile Worker peer; generated and fixed malformed responses, compression, fragments, cleanup and channel reuse | `verification/workerd-fuzz.json` |
 | `npm run test:fuzz:ci` | Required two-seed Node/workerd campaign: 1,000 / 150 executions per property | `verification/fuzz-campaign-ci.json` |
 | `npm run test:fuzz:extended` | Four-seed campaign: 5,000 / 750 executions per Node/workerd property | `verification/fuzz-campaign-extended.json` |

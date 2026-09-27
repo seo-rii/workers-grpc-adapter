@@ -91,6 +91,8 @@ This is an explicitly selected gateway alternative, not automatic failover. A fa
 | `transportMaxReceiveBytes` | 32 MiB per message |
 | `resourceLimits` | Unset: no aggregate admission/byte limits; optional shared call, queue, buffer and readable-object limits described in [Resource limits](resources.md) |
 | `observer` | Unset: observation disabled; an optional callback receives immutable call and attempt events described in [Observability](observability.md) |
+| `retryPolicy` | Unset: exact-method unary replay is disabled; see [Retries](retries.md) |
+| `retryThrottling` | Unset: optional shared endpoint token budget; requires `retryPolicy` |
 | `allowInsecureLocalhost` | `false`; permits credential-free HTTP tests only for literal `127.0.0.1` or `[::1]` in `grpc-web` mode |
 
 These message ceilings are adapter policy, not Google or Cloudflare service limits. A smaller grpc-js channel limit takes precedence. A channel limit of `-1` removes that channel restriction but retains the transport ceiling. The default channel receive limit is 4 MiB; a GAX client that explicitly supplies `-1` uses the transport ceiling.
@@ -107,6 +109,7 @@ Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, 
 - `grpcOptions(existing?)`: channel options bound to the instance configuration.
 - `gaxOptions(existing)`: Google SDK options bound to this transport, using the shared grpc module and `fallback: false`.
 - `resourceUsage()`: current and peak admitted-call, waiting-call, and adapter-buffer reservation counts shared by this transport's clients.
+- `retryUsage(target)`: a frozen retry-budget snapshot for a logical endpoint, or `undefined` when throttling is disabled.
 
 `WorkersGrpcResourceLimits` and `WorkersGrpcResourceUsage` are exported types from `/config` and `/adapter`. Resource budgets belong to configuration snapshots: clients of one factory share them, while separate factories remain independent. See [Resource limits](resources.md) for FIFO admission, cancellation, queue defaults, and the boundary between reserved bytes and whole-Worker memory.
 
@@ -149,6 +152,8 @@ Fetch redirects use `manual` mode and are not followed. Local error details use 
 
 The Node-only `/build` subpath exports `createGoogleWorkerBuild({ projectRoot, outdir, profile, typescript })`. The optional profile defaults to `google-static-v1`; the installed TypeScript module is required. The returned object contains an esbuild `plugin`, a `registryFile` path and `manifest()`.
 
+`inspectGoogleWorkerProfile({ projectRoot, profile, typescript })` returns structured package, schema and transformation diagnostics. Profiles declare exact hashes, transform rules, capabilities and required checks. Generated registry identity includes transformer bytes/version and verified inputs; see [Profile diagnostics and cache identity](profiles.md). Actual installed SDK Worker measurements are described in [SDK performance](sdk-performance.md).
+
 Install TypeScript and esbuild as development dependencies. Keep `/build` out of Worker runtime imports. The preset rejects mismatched dependency, source or schema hashes rather than adapting arbitrary SDK versions. It also precompiles Datastore's `google/protobuf/struct.proto` path so bundled SDK modules can initialize during the first request without runtime code generation. The repository's `scripts/workers-sdk-test.cjs` and `scripts/test-workers-lazy-sdk.cjs` are executable startup and lazy-import examples.
 
 Profile revision 3 selects `globalThis.fetch` as the pinned Gaxios transport's default inside the Worker bundle, allowing normal OAuth2Client/JWT token responses to be parsed using Workers' response headers. Gaxios's per-request and per-client `fetchImplementation` overrides retain their original precedence. The build records the transformation in its manifest; it does not mutate installed dependencies, global Fetch, or credential providers. See `scripts/test-workers-auth.cjs` for token-refresh and JWT exchange examples using synthetic credentials.
@@ -165,6 +170,19 @@ unary method list, bounded `maxAttempts`, `initialBackoffMs`, `maxBackoffMs`, an
 The adapter never replays a call after receiving a message. See [retries](retries.md)
 for commitment semantics, credential refresh, pushback and SDK retry interactions.
 
+`retryThrottling: { maxTokens, tokenRatio }` optionally shares an overload budget
+between a transport's clients for the same logical endpoint. Failed eligible
+attempts reduce tokens, successful RPCs restore them, and first attempts remain
+allowed. `retryUsage(target)` and `retry-throttled` observer events expose local
+decisions. Separate transport factories keep independent budgets.
+
+## Optional structured errors
+
+`@grpc/grpc-js/status-details` exports `decodeGrpcStatusDetails(statusOrError, options?)`.
+It decodes bounded `google.rpc.Status` envelopes and optionally invokes exact-URL
+detail decoders. Missing, malformed or mismatched rich status preserves the
+original object and code. See [Structured status details](status-details.md).
+
 ## Application health
 
 The root module exports `HealthClient`, `HealthWatch` and `HealthServingStatus`.
@@ -176,7 +194,9 @@ Close monitors within the Worker lifetime. See [health](health.md).
 
 `@grpc/grpc-js/server` exports `createGrpcWebHandler` and `GrpcWebServerError`.
 Handlers consume ordinary method definitions and expose a `Request` → `Response`
-endpoint for binary gRPC-Web unary or server-streaming methods. The root native
+endpoint for binary gRPC-Web unary, server-streaming, client-streaming and bidi methods.
+Request-streaming handlers receive a lazy `AsyncIterable`; literal method flags
+select narrower request/response handler types. The root native
 `Server` and `ServerCredentials` stubs still reject construction. See [server](server.md).
 
 ## Additional SDK build profile
