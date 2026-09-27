@@ -157,9 +157,13 @@ release gates are met. See the [original specification](docs/spec/v0.3.md)
   native comparisons, static codec guards and cold/warm workerd tests.
 - [x] Verify experimental gateway request streaming, cancellation and bounded
   upload lifecycle through real Envoy/workerd, including seeded operation races.
-- [x] Verify pinned Firestore 8.3.0 document/query Listen through the official
+- [x] Verify pinned Firestore 8.3.0 and 9.2.0 document/query Listen through the official
   emulator: native, Node adapter and repeated workerd invocations, actual
   bidirectional responses, unsubscribe, reuse and cleanup.
+- [x] Propagate parent deadlines/cancellation, including real native server parents
+  and Fetch handler forwarding in workerd.
+- [x] Close streaming uploads after a validated terminal status without skipping
+  response EOF checks; verify bounded Firestore 8.3.0 resume/reset recovery.
 - [ ] Separately validate newly added behavior in deployed Workers, including TLS
   handshakes and edge conversion; historical cloud receipts do not certify it.
 - [ ] Keep custom Fetch TLS roots, native HTTP/2 servers, physical pooling and

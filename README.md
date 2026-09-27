@@ -129,9 +129,10 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 
 ## Limitations
 
-- [Client and bidirectional streaming](docs/request-streaming.md) are available experimentally in explicit gateway mode with `experimentalRequestStreaming: true`. They remain disabled by default and unsupported in automatic conversion mode. [Firestore Listen/Watch](docs/firestore-watch.md) is verified for the pinned Firestore 8.3.0 graph against the official emulator.
+- [Client and bidirectional streaming](docs/request-streaming.md) are available experimentally in explicit gateway mode with `experimentalRequestStreaming: true`. They remain disabled by default and unsupported in automatic conversion mode. [Firestore Listen/Watch](docs/firestore-watch.md) is verified for the pinned Firestore 8.3.0 and 9.2.0 graphs against the official emulator. Bounded 8.3.0 recovery is compared against a controlled native peer.
 - A separate [Fetch server API](docs/server.md) supports unary and server-streaming endpoints. Native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, and native connection pooling remain unsupported. Preconfigured Workers mTLS and HTTP service bindings can be selected using the [custom Fetcher](docs/fetcher.md) option; deployed TLS behavior requires separate verification.
 - Identity, deflate and gzip [message compression](docs/compression.md) are supported with bounded decompression. Compressed trailers and automatic codec fallback are unsupported.
+- [Parent calls](docs/parent-calls.md) propagate deadlines and cancellation, including Fetch handler forwarding.
 - Explicit [Health Check/Watch](docs/health.md) provides remote probes and a reconnecting observer.
 - Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic channel health checking remain unsupported; SDK retries are separate calls.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.

@@ -193,10 +193,25 @@ under native grpc-js, the installed adapter, and two workerd invocations. Eight
 cases assert 52 callbacks and 84 official-emulator RPC arrivals, including 16 real
 Listen calls. It checks unsubscribe, reuse, response delivery before upload ends,
 exact native comparisons and data/process cleanup. It provides no IAM or live-edge
-certification and does not certify Firestore 9.2 Listen.
+certification. `npm run test:modern-firestore-watch` repeats these eight cases
+with Firestore 9.2.0 and the separately pinned modern profile.
 
 The supplemental implementations retain the original catalog's denominator.
 The final implementation campaign also runs every fuzz/property file with
 `WGA_FUZZ_RUNS=2500` and seeds `20260927` and `-179048`; this includes request-body
 operation races and codec limits. These finite campaigns are regression evidence,
 not proof that every malformed input or concurrency schedule is covered.
+
+
+`npm run test:firestore-recovery` checks six Firestore 8.3.0 Watch scenarios
+through real Envoy with a controlled native gRPC peer: UNAVAILABLE recovery,
+HTTP/2 reset, target RESET, existence-filter mismatch, document removal and
+target REMOVE denial. Native, Node adapter and cold/warm workerd execute identical
+business code (24 cases, 36 Listen attempts, 27 Fetch requests and 48 callbacks).
+The gate checks opaque resume-token bytes, reset token clearing, native-equivalent
+snapshots, response-before-upload-end, unsubscribe and stream cleanup. This peer
+is not an emulator or a live Google endpoint. See [Watch recovery](firestore-watch.md#bounded-recovery).
+
+`npm run test:parent-calls` checks native server parents, strict structural type
+compatibility and actual workerd Fetch-handler forwarding in both modes. Its
+report is `verification/parent-calls.json`; see [parent calls](parent-calls.md).
