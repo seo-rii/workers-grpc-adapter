@@ -393,11 +393,14 @@ export class WorkersCall {
         }
         const body = this.requestBody?.body ?? await encodeMessageFrame(this.request!, c.limits.compression, c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress);
         if (this.terminal) return;
-        if (this.deadline <= Date.now()) {
+        // Use one post-encoding snapshot for both expiry and grpc-timeout. A
+        // second clock read could otherwise pass a negative value to the encoder.
+        const remaining = this.deadline === Infinity ? undefined : this.deadline - Date.now();
+        if (remaining !== undefined && remaining <= 0) {
             this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
             return;
         }
-        const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent, c.config.mode, c.limits.compression);
+        const headers = requestHeaders(this.metadata!, remaining, c.limits.userAgent, c.config.mode, c.limits.compression);
         if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
         const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
             method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
