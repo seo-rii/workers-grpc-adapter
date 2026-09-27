@@ -108,6 +108,7 @@ function main() {
     run('firestore-recovery', ['scripts/test-firestore-recovery.cjs']);
     run('modern-firestore-recovery', ['scripts/test-modern-firestore-recovery.cjs']);
     run('firestore-watch-errors', ['scripts/test-firestore-watch-errors.cjs']);
+    run('firestore-read-errors', ['scripts/test-firestore-read-errors.cjs']);
     run('emulator-lifecycle', ['fixtures/emulators/lifecycle.cjs']);
     // Forces live flag off even if the caller's environment opted in.
     run('google-preflight', ['scripts/google-test.cjs'], [0, 2]);
@@ -118,6 +119,7 @@ function main() {
     const firestoreWatch = read('firestore-watch.json');
     const firestoreRecovery = read('firestore-recovery.json');
     const firestoreWatchErrors = read('firestore-watch-errors.json');
+    const firestoreReadErrors = read('firestore-read-errors.json');
     const datastoreLookup = read('datastore-lookup.json');
     const datastorePagination = read('datastore-pagination.json');
     const secretManagerExtended = read('secret-manager-extended.json');
@@ -130,6 +132,8 @@ function main() {
             // build correction; baseline comparison does not mean equivalence.
             || (firestoreWatchErrors.status === 'passed' && firestoreWatchErrors.sharedSha256 === hash(file)
                 && firestoreWatchErrors.sources['google-static-v1/native'] === hash(file))
+            || (firestoreReadErrors.nativeBusinessEquivalent && firestoreReadErrors.sharedSha256 === hash(file)
+                && firestoreReadErrors.sources['google-static-v1/native'] === hash(file))
             || (datastoreLookup.sameSharedSource && datastoreLookup.sourceHashes.native[path.basename(file)] === hash(file))
             || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))
             || (secretManagerExtended.sameSharedSource && secretManagerExtended.sourceHashes.native[path.basename(file)] === hash(file))) }));
@@ -144,7 +148,7 @@ function main() {
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
-        googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
+        googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         apiContracts: read('api-contracts.json'),
         workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),

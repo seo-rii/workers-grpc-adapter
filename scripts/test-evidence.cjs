@@ -12,10 +12,12 @@ const { validateWorkerdTransportExtensionsReport } = require('./transport-extens
 const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
 const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
 const { validateSecretManagerReport } = require('./secret-manager-evidence.cjs');
+const { validateFirestoreReadReport } = require('./firestore-read-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
     'verification/api-contracts.json',
+    'verification/firestore-read-errors.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
@@ -532,7 +534,7 @@ function validateProvenance(root, report) {
         ['workersFederatedAuth', 'verification/workers-federated-auth.json'], ['workersLegacyAuth', 'verification/workers-legacy-auth.json'], ['secretManagerExtended', 'verification/secret-manager-extended.json'],
         ['workersFetcher', 'verification/workers-fetcher.json'],
         ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'], ['requestStreaming', 'verification/request-streaming.json'], ['streamingFeasibility', 'verification/streaming-feasibility.json'], ['firestoreWatch', 'verification/firestore-watch.json'], ['modernFirestoreWatch', 'verification/modern-firestore-watch.json'], ['firestoreRecovery', 'verification/firestore-recovery.json'], ['parentCalls', 'verification/parent-calls.json'],
-        ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'],
+        ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['firestoreReadErrors', 'verification/firestore-read-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     const campaign = report.fuzzCampaign;
@@ -562,9 +564,10 @@ function validateProvenance(root, report) {
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
     validateApiContractsReport(report.apiContracts);
     validateSecretManagerReport(report.secretManagerExtended);
+    validateFirestoreReadReport(report.firestoreReadErrors);
     for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
-        ['secret-manager-extended', report.secretManagerExtended]]) {
+        ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {

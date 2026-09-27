@@ -34,6 +34,7 @@
     "test:datastore-lookup": "node scripts/test-datastore-lookup.cjs",
     "test:secret-manager": "node scripts/test-secret-manager-extended.cjs",
     "test:firestore-recovery": "node scripts/test-firestore-recovery.cjs",
+    "test:firestore-read-errors": "node scripts/test-firestore-read-errors.cjs",
     "test:parent-calls": "node scripts/test-parent-calls.cjs",
     "test:modern-firestore-watch": "node scripts/test-modern-firestore-watch.cjs",
     "build": "node scripts/build.cjs",
