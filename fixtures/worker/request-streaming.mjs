@@ -80,9 +80,14 @@ export default {
       }
       assert.equal(client.getChannel().activeCallCount(), 0);
       assert.deepEqual(transportCall(call).diagnostics(), { terminal: true, fetchCount: 1, requestBytes: 0, responseBytes: 0, timerActive: false });
+      // Local status and request half-close can precede the native peer's
+      // cancellation event. Keep this invocation alive until it is observed.
+      const requiresCancellation = ['cancel', 'deadline', 'channel-close'].includes(scenario);
+      const nativeState = await control(requiresCancellation ? 'cancelled' : 'observed');
+      if (requiresCancellation) assert.equal(nativeState.cancelled, true);
       return Response.json({ scenario, mode: env.MODE, outcome: 'supported', writes, writeCallbacks, writeErrors,
         responseBeforeSecondRequest, grpcStatus: { cancel: 1, deadline: 4, 'channel-close': 14, 'early-error': 4, 'error-after-end': 7, 'receive-limit': 8 }[scenario] ?? 0,
-        activeCalls: 0, transportBytes: 0, nativeCancellation: scenario === 'cancel' });
+        activeCalls: 0, transportBytes: 0, nativeCancellation: nativeState.cancelled });
     } catch (error) {
       return Response.json({ scenario, mode: env.MODE, outcome: 'failed', error: error.message, code: error.code }, { status: 500 });
     } finally { call?.cancel(); client.close(); }

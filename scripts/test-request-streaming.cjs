@@ -221,6 +221,12 @@ async function main() {
           const response = await bounded(worker.dispatchFetch(`https://fixture.test/${scenario}`), `worker-${scenario}`, 12000);
           const result = await response.json(); assert.equal(response.status, 200, JSON.stringify(result)); assert.equal(result.outcome, 'supported'); report.results.push(result);
           const id = `${mode}-${scenario}`;
+          // Readable end only proves half-close. It may remove the call from
+          // active before the native cancellation event reaches the handler.
+          if (['cancel', 'deadline', 'channel-close'].includes(scenario)) {
+            await until(() => states.get(id)?.cancelled === true, `native-cancellation-${id}`);
+            assert.equal(result.nativeCancellation, true);
+          }
           await until(() => [...active].every(call => call.metadata.get('x-wga-case')[0] !== id), `cleanup-${id}`);
           await until(() => forwarding.size === 0, 'http-forwarder-cleanup');
           result.cleanedBeforeIsolateDisposal = true;
@@ -237,13 +243,15 @@ async function main() {
       } finally { await worker.dispose(); worker = undefined; }
     }
     assert.deepEqual(errors, []);
-    report.serverCases = [...states.values()];
     report.classification = Object.fromEntries(scenarios.map(scenario => [scenario,
       scenario === 'early-error' ? 'early-status-delayed-deadline-cleanup-verified'
         : report.results.filter(item => item.scenario === scenario).every(item => item.outcome === 'supported') ? 'local-gateway-supported' : 'local-gateway-blocked']));
     assert.equal(report.results.length, scenarios.length);
     report.status = 'passed';
   } finally {
+    // Preserve what the test actually observed, including on failure. Forced
+    // teardown can itself emit cancellation and must not turn into evidence.
+    report.serverCases = [...states.values()].map(state => ({ ...state, values: [...state.values] }));
     const cleanupErrors = [];
     async function cleanup(action) { try { await action(); } catch (error) { cleanupErrors.push(error); } }
     server.forceShutdown();
