@@ -172,3 +172,14 @@ release gates are met. See the [original specification](docs/spec/v0.3.md)
   handshakes and edge conversion; historical cloud receipts do not certify it.
 - [ ] Keep custom Fetch TLS roots, native HTTP/2 servers, physical pooling and
   connection readiness outside this transport's supported architecture.
+
+## Local integration and fuzz gates
+
+- [x] Exercise installed client/server APIs in separate service-bound Workers,
+  including both modes, cold/warm requests, codecs, isolation and bounded cleanup.
+- [x] Generate adversarial protocol responses in workerd with an independent peer,
+  shrinking, exact replay and a successful reuse call after every sample.
+- [x] Add server compression/framing/limit/cancellation properties and preserve the
+  iterator-after-abort failure as a deterministic regression.
+- [x] Require multiple fixed seeds in normal CI and retain actual completion counts
+  and failed counterexamples; run a larger nightly/manual campaign separately.

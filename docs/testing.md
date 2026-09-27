@@ -37,7 +37,11 @@ Individual commands assume their required fixtures and build outputs are prepare
 | Command | Coverage | Generated output |
 |---|---|---|
 | `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
-| `npm run test:fuzz` | Fixed framing corpus and shrinking property tests for framing and call lifecycle | Console, including seed/path and counterexample on failure |
+| `npm run test:workerd:integration` | Two real Workers using the public client/server APIs through a service binding; 72 cases and 96 RPCs | `verification/workerd-integration.json` |
+| `npm run test:workerd:fuzz` | Independent hostile Worker peer; generated and fixed malformed responses, compression, fragments, cleanup and channel reuse | `verification/workerd-fuzz.json` |
+| `npm run test:fuzz:ci` | Required two-seed Node/workerd campaign: 1,000 / 150 executions per property | `verification/fuzz-campaign-ci.json` |
+| `npm run test:fuzz:extended` | Four-seed campaign: 5,000 / 750 executions per Node/workerd property | `verification/fuzz-campaign-extended.json` |
+| `npm run test:fuzz` | Fixed framing corpus and shrinking property tests for framing and call lifecycle | `verification/fuzz-node.json` and `.log`, including seed/path and counterexample on failure |
 | `npm run test:types` | Adapter consumers in strict Node16/NodeNext/Bundler modes | `verification/types.json` |
 | `npm run test:sdk:types` | Real SDK declarations compared with the native baseline | `compatibility/google-types.json` |
 | `npm run test:sdk:local` | Shared native/adapter SDK behavior against controlled servers | `compatibility/google-local.json` |
@@ -129,7 +133,7 @@ Protocol tests include frame flags, deterministic message/chunk splits, every tr
 
 The framing properties compare bounded arbitrary and mutated byte streams against an independent whole-buffer protocol oracle. They also vary empty chunks, fragmentation, byte offsets, early consumer exit and errors, checking frame preservation and reader cleanup. Lifecycle properties vary controlled asynchronous events in both transport modes and check single terminal delivery, routing isolation and resource cleanup. They use synthetic local responses, not cloud services.
 
-The default is 200 cases per property with seed `1470698469` (`0x57a913e5`), including explicit boundary examples where supplied. Inputs and action lists have explicit size bounds. Each property has a 120-second test timeout; exceeding it fails the run. Increase the run count and vary the seed for a longer local campaign:
+The standalone default is up to 200 cases per property (individual bounded stream/server properties use 80–120) with seed `1470698469` (`0x57a913e5`), including explicit boundary examples where supplied. Inputs and action lists have explicit size bounds. Each property has a 120-second test timeout; exceeding it fails the run. Increase the run count and vary the seed for a longer local campaign:
 
 ```sh
 npm run test:fuzz
@@ -144,6 +148,55 @@ WGA_FUZZ_SEED=-314159 WGA_FUZZ_RUNS=2000 npm run test:fuzz
 WGA_FUZZ_SEED=1470698469 WGA_FUZZ_PATH='0' npm run test:fuzz -- \
   '--test-name-pattern=^FUZZ property arbitrary and mutated wire bytes match an independent framing oracle$'
 ```
+
+`verify` also requires `test:fuzz:ci`, which runs all 14 Node properties at 1,000
+executions each for seeds `1470698469` and `20260927`: 28,000 property executions.
+It runs four workerd properties at 150 executions each for the same seeds: 1,200
+generated samples. Each sample executes both modes and a recovery RPC on the same
+channel. Another 46 fixed protocol boundaries run per seed, making 5,168 workerd
+RPCs in the CI campaign. Counts include fast-check's explicit examples where
+configured; they are not coverage measurements.
+
+The Node server properties exercise the public Fetch handler using independent
+frame/trailer parsing and Node zlib. They cover compression negotiation, input
+fragmentation, malformed requests rejected before handlers run, independent
+receive/send limits and iterator cleanup after cancellation. A discovered abort
+race now has a deterministic regression: reading a terminal trailer cannot call
+`next()` after the application iterator has been disposed.
+
+The workerd fuzzer generates bytes in Node and sends them to an independent peer
+Worker through a real [HTTP service binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/http/).
+It checks unary and stream payloads/statuses, binary metadata, compressed and
+mixed records, truncated/oversized frames, bad flags, missing/duplicate trailers
+and frames after trailers. Generated stream cuts are checked against whole-frame
+boundaries. Since service bindings can coalesce chunks, an instrumented response
+wrapper also injects empty and offset views at the parser boundary. Reader locks,
+body cancellation, single terminal delivery and successful channel reuse are
+asserted after every case. This is local workerd with mode-shaped requests, not
+the private edge conversion service.
+
+A failed campaign retains completed counts, seed, shrink path, reduced
+counterexample and reproduction command. Missing receipts, skipped/TODO properties,
+timeouts and interrupted runs fail the gate. Negative controls verify the Node
+runner catches skipped/TODO execution (including assertions after the property)
+and can shrink and replay an injected failure.
+Ambient seed/path/count overrides are cleared for the required campaign. To
+replay a workerd failure, copy its reported command or specify one exact property:
+
+```sh
+WGA_WORKER_FUZZ_SEED=20260927 WGA_WORKER_FUZZ_RUNS=150 \
+WGA_WORKER_FUZZ_PROPERTY=malformed-response WGA_WORKER_FUZZ_PATH='0' \
+  npm run test:workerd:fuzz
+```
+
+`test:fuzz:extended` uses four fixed seeds (the CI pair plus `-314159` and
+`8675309`), 5,000 executions per Node property and 750 per workerd property.
+It runs nightly at 18:30 UTC and when **extended_fuzz** is selected in the manual
+workflow dispatch. Pushes and pull requests require the smaller campaign as
+part of the full gate. CI uploads per-seed JSON reports and private process logs
+on success and failure. The extended report is separate, so it cannot overwrite
+the required CI campaign's evidence. Prepare the installed fixtures before any
+workerd or campaign command; these commands deliberately test the packaged code.
 
 Save a confirmed failure as a focused regression test before fixing it. A passing campaign establishes only the tested properties and generated inputs; it does not certify all protocol behavior or Cloudflare's beta translator.
 
@@ -218,3 +271,14 @@ is not an emulator or a live Google endpoint. See [Watch recovery](firestore-wat
 `npm run test:parent-calls` checks native server parents, strict structural type
 compatibility and actual workerd Fetch-handler forwarding in both modes. Its
 report is `verification/parent-calls.json`; see [parent calls](parent-calls.md).
+
+The separate two-Worker integration gate uses the installed public client and
+`./server` APIs over an actual service binding, with cold/warm invocations, both
+modes, three codecs, binary metadata, concurrent credentials, remote and partial
+stream errors, cancellation/deadlines/close and unaffected peer/reuse assertions.
+All 72 cases (96 RPCs) require zero client calls and zero backend iterators before
+runtime disposal. A canceled client does not prove immediate cleanup of an idle
+backend: this runtime completed those handlers at their RPC deadlines. The test
+explicitly retains their cleanup lifetime with `ctx.waitUntil`, records immediate
+and deadline-triggered cleanup separately, and does not treat forced teardown as
+successful cleanup. See [Fetch server lifecycle](server.md).

@@ -45,7 +45,8 @@ function main() {
     const tap = run('tests', ['--test', '--test-reporter=tap', ...testFiles]);
     fs.writeFileSync(path.join(output, 'tests.tap'), tap);
     const totals = Object.fromEntries(['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo'].map(key => [key, Number(tap.match(new RegExp(`^# ${key} (\\d+)$`, 'm'))?.[1] ?? NaN)]));
-    if (!Number.isInteger(totals.tests) || totals.tests === 0 || totals.fail !== 0 || totals.skipped !== 0 || totals.cancelled !== 0) {
+    if (!Number.isInteger(totals.tests) || totals.tests === 0 || totals.pass !== totals.tests
+        || totals.fail !== 0 || totals.skipped !== 0 || totals.cancelled !== 0 || totals.todo !== 0) {
         throw new Error('Unexpected local test totals.');
     }
     run('types', ['scripts/test-types.cjs']);
@@ -78,6 +79,8 @@ function main() {
     run('health', ['scripts/test-health.cjs']);
     run('parent-calls', ['scripts/test-parent-calls.cjs']);
     run('workers-server', ['scripts/test-workers-server.cjs']);
+    run('workerd-integration', ['scripts/test-workerd-integration.cjs']);
+    run('fuzz-campaign', ['scripts/fuzz-campaign.cjs', '--profile=ci']);
     run('modern-sdk', ['scripts/test-modern-sdk.cjs']);
     run('request-streaming', ['scripts/test-request-streaming.cjs']);
     run('streaming-feasibility', ['scripts/test-streaming-feasibility.cjs']);
@@ -137,6 +140,7 @@ function main() {
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
+        workerdIntegration: read('workerd-integration.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,

@@ -106,3 +106,10 @@ stream.on('data', entity => {
 ```
 
 `end()` prevents new pages after the current one. Neither `end()` nor `destroy()` exposes cancellation of a unary page already in flight; its deadline still matters, and SDK `info` events may arrive afterward. Controlled native/Node-adapter/workerd comparisons verify complete pagination, stopping on the first entity, stopping while a second page is held, and successful reuse. Official emulator coverage remains limited to a single page for early destruction. These tests do not claim that stopping this SDK stream cancels native HTTP/2 or releases an in-flight RPC immediately.
+
+Two-Worker service-binding integration distinguishes a local canceled call from
+backend cleanup. An idle server generator may remain pending until its RPC
+deadline, and bounded cleanup can require explicit `ctx.waitUntil()` lifetime
+retention in the surrounding Worker. The local tests require actual cleanup
+receipts before runtime disposal; they do not claim immediate remote cancellation.
+See [Fetch server lifecycle](server.md#service-binding-lifecycle-boundary).

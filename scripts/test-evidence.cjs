@@ -9,6 +9,7 @@ const ts = require('typescript');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
+    'verification/workerd-integration.json', 'verification/fuzz-campaign-ci.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
     'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
@@ -337,6 +338,7 @@ function validateProvenance(root, report) {
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
+        ['workerdIntegration', 'verification/workerd-integration.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
@@ -346,6 +348,19 @@ function validateProvenance(root, report) {
         ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
+    const campaign = report.fuzzCampaign;
+    need(report.workerdIntegration?.status === 'passed' && report.workerdIntegration.sourceBuild === false
+        && report.workerdIntegration.serviceBindings === true && report.workerdIntegration.runtimeDisposed === true
+        && report.workerdIntegration.cleanupVerifiedBeforeDispose === true, 'two-Worker integration is incomplete');
+    for (const [file, expected] of Object.entries(report.workerdIntegration.installedInputs || {})) {
+        need(hash(root, file) === expected, `${file}: integration package drift`);
+    }
+    need(campaign?.status === 'passed' && campaign.profile === 'ci' && campaign.liveCloud === false
+        && campaign.runs?.length === 4, 'required Node/workerd fuzz campaign is incomplete');
+    for (const run of campaign.runs) {
+        need(run.exitCode === 0 && run.result?.status === 'passed', 'fuzz subprocess did not pass');
+        need(hash(root, run.report) === run.sha256 && isDeepStrictEqual(read(root, run.report), run.result), `${run.report}: fuzz receipt drift`);
+    }
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);
     const packaging = report.packaging;
     const artifact = `artifacts/${packaging.actualReplacementTarball}`;
@@ -400,7 +415,8 @@ function assemble(root = ROOT) {
     validateSnapshot(report.evidenceInputHashes, inputs, 'verification inputs');
     need(report.sourceHashes && Object.keys(report.sourceHashes).length > 0, 'missing aggregate source hashes');
     for (const [file, expected] of Object.entries(report.sourceHashes)) need(hash(root, file) === expected, `${file}: aggregate source hash drift`);
-    need(report.tests?.fail === 0 && report.tests?.skipped === 0 && report.tests?.cancelled === 0, 'aggregate local tests must pass without skips');
+    need(report.tests?.fail === 0 && report.tests?.skipped === 0 && report.tests?.cancelled === 0
+        && report.tests?.todo === 0 && report.tests.pass === report.tests.tests, 'aggregate local tests must pass without skips or TODO');
     const tap = fs.readFileSync(location(root, 'verification/tests.tap'), 'utf8');
     for (const key of ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo']) need(Number(tap.match(new RegExp(`^# ${key} (\\d+)$`, 'm'))?.[1]) === report.tests[key], `TAP aggregate ${key} drift`);
     const mapping = read(root, 'compatibility/test-evidence.json');
@@ -412,7 +428,8 @@ function assemble(root = ROOT) {
     const provenance = validateProvenance(root, report);
     const emulatorArtifacts = validateEmulatorArtifacts(root, report.googleEmulators);
     const lifecycleArtifacts = validateLifecycleArtifacts(root, report.emulatorLifecycle);
-    const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)), ...report.commands.map(command => `verification/${command.log}`)];
+    const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)), ...report.commands.map(command => `verification/${command.log}`),
+        ...report.fuzzCampaign.runs.flatMap(run => [run.report, run.log, ...(run.kind === 'node' ? [run.result.log] : [])])];
     return { schemaVersion: 1, status: 'passed', scope: 'offline provenance and reviewed case evidence; not full release certification',
         releaseEligible: false, inputs, artifactHashes: { ...Object.fromEntries([...new Set(artifacts)].sort().map(file => [file, hash(root, file)])), ...emulatorArtifacts.artifactHashes }, externalArtifactHashes: { ...emulatorArtifacts.externalArtifactHashes, ...lifecycleArtifacts }, provenance,
         summary: { planned: cases.length, covered: cases.filter(item => item.coverage === 'covered').length, partial: cases.filter(item => item.coverage === 'partial').length,

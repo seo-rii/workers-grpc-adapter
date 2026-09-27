@@ -33,7 +33,7 @@ Every application handler receives its decoded request and a context containing:
 
 - `method`: registered full RPC path.
 - `metadata`: decoded request metadata, including binary values.
-- `signal`: aborted when the caller disconnects, the deadline expires or the response is cancelled.
+- `signal`: aborted on an observed request abort, deadline expiry or response-body cancellation. A remote disconnect is visible only when the runtime propagates it.
 - `deadline`: absolute epoch milliseconds, or `Infinity`.
 - `cancelled`, `getDeadline()`, `on('cancelled', listener)` and `removeListener('cancelled', listener)`: the [ParentCall](parent-calls.md) surface for forwarding deadline and cancellation to child RPCs.
 - `sendMetadata(metadata)`: merges initial metadata before response headers are committed.
@@ -54,3 +54,19 @@ Identity, deflate and gzip request messages are accepted. The optional response 
 Server streams retain at most one application item ahead of consumer demand. The response reader controls further iteration. Cancelling it aborts the context and invokes the iterator's `return()` when available. Pending handlers and iterator operations are raced against cancellation and deadlines; late failures remain handled. Application code must cooperate with `context.signal` to stop its own I/O or side effects. The adapter cannot forcibly interrupt an unresolved application promise or synchronous computation, and `return()` cannot bypass an async generator that ignores cancellation while awaiting work.
 
 The local suite compares responses against a pinned native grpc-js server, runs both client modes against this handler inside workerd, and sends independently framed native-codec requests through Miniflare's incoming Fetch boundary. These checks do not establish deployment routing, inbound Cloudflare automatic conversion, IAM, production load or full native grpc-js server equivalence.
+
+## Service-binding lifecycle boundary
+
+The two-Worker integration test (`npm run test:workerd:integration`) exercises the
+installed public client and this handler over an actual service binding. Local
+client cancellation and channel close complete promptly, while an idle backend
+generator can remain pending until its `grpc-timeout` expires. Do not infer
+remote application cleanup from the client's terminal status alone.
+
+Use finite RPC deadlines and cooperate with `context.signal`. If completion of
+bounded cleanup must remain observable after the consuming request ends, retain
+that application's cleanup promise with the Worker execution context's
+`ctx.waitUntil()`. The adapter returns a Response; it does not own the surrounding
+Worker execution context or keep arbitrary application work alive. The test uses
+this explicit lifetime retention and requires cleanup before disposing workerd.
+This is a local runtime boundary, not a deployed cancellation guarantee.
