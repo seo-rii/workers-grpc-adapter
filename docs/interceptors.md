@@ -62,3 +62,11 @@ old failure even if the generator changes later.
 `src/client-interceptors.ts` remains a patched vendored source. Its checked-in
 patch and `vendor/UPSTREAM.json` hashes must reproduce the implementation through
 `node vendor/verify.cjs`; upstream source files remain unchanged.
+
+## Logical completion
+
+The logical RPC owns its deadline and parent cancellation outside the interceptor chain. Default timeouts are anchored when the call is created, before interceptor construction and asynchronous startup. Final interceptor call options still select the explicit deadline. The call remains active until the final listener receives its status, including time spent in asynchronous response interceptors.
+
+Cancellation, channel closure and deadlines complete the local callback/status once even when a requester withholds `next()`. Late startup, message and response continuations cannot restart Fetch or deliver another result. Outstanding write callbacks are settled on termination. Cancellation requesters are notified, but cannot veto local cleanup by withholding their continuation or throwing. Finite deadlines remain necessary when an interceptor intentionally never completes and the caller does not cancel.
+
+`test/call-lifetime.test.cjs` and `test/call-lifetime-property.test.cjs` verify stalled startup/status delivery and generated completion/cancellation schedules in both transport modes.

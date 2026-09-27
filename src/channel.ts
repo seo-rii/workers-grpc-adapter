@@ -1,5 +1,6 @@
 import { ChannelCredentials } from './credentials';
 import { WorkersCall, CallOptions } from './call';
+import { CallLifetime } from './call-lifetime';
 import { connectivityState, status, WorkersGrpcConfigurationError as ConfigError } from './status';
 import { ChannelOptions, validateOptions } from './options';
 import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, getWorkersGrpcConfig, lockConfiguration, routeFor } from './config-internal';
@@ -9,7 +10,7 @@ export function isWorkersChannel(value: unknown): value is Channel {
 }
 export class Channel {
     private closed = false;
-    private active = new Set<WorkersCall>();
+    private active = new Set<Pick<WorkersCall, 'cancelWithStatus'>>();
     private readonly config: WorkersGrpcConfigSnapshot;
     private readonly route: ReturnType<typeof routeFor>;
     private readonly limits: ReturnType<typeof validateOptions>;
@@ -70,11 +71,19 @@ export class Channel {
         throw new ConfigError('WGA_METHOD_CONTEXT_REQUIRED', 'A generated client method is required');
     }
     /** Internal bridge: the method kind is passed per call, never cached by method name. */
-    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions): WorkersCall {
+    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall {
         const call = new WorkersCall({ path, requestStream, responseStream, options, ...this.route, credentials: this.creds,
-            config: this.config, limits: this.limits, closed: this.closed, onFinish: () => this.active.delete(call) });
-        this.active.add(call);
+            config: this.config, limits: this.limits, closed: this.closed, lifetime, onFinish: () => { if (!lifetime) this.active.delete(call); } });
+        if (lifetime) lifetime.addTransport(call);
+        else this.active.add(call);
         return call;
+    }
+    /** The logical call stays registered through asynchronous interceptors. */
+    createCallLifetime(options: CallOptions): CallLifetime {
+        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); });
+        this.active.add(lifetime);
+        if (this.closed) lifetime.cancelWithStatus(status.UNAVAILABLE, 'WGA_CHANNEL_CLOSED');
+        return lifetime;
     }
     /** Internal resource assertion used by the local suite. */
     activeCallCount(): number {

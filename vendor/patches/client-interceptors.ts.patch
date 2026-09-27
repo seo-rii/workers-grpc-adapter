@@ -9,7 +9,9 @@
 @@ -35 +36 @@
 -import { ClientMethodDefinition } from './make-client';
 +import { ClientMethodDefinition } from './factory';
-@@ -215,14 +216,10 @@
+@@ -37,0 +39 @@
++import type { CallLifetime } from './call-lifetime';
+@@ -215,14 +217,10 @@
 -  /**
 -   * Message context for a pending message that is waiting for
 -   */
@@ -34,9 +36,9 @@
 +  }> = [];
 +  private flushing = false;
 +  private halfCloseRequested = false;
-@@ -229,0 +227 @@
+@@ -229,0 +228 @@
 +  private halfClosed = false;
-@@ -256,14 +254,17 @@
+@@ -256,14 +255,17 @@
 -  private processPendingMessage() {
 -    if (this.pendingMessageContext) {
 -      this.nextCall.sendMessageWithContext(
@@ -68,18 +70,18 @@
 +      }
 +    } finally {
 +      this.flushing = false;
-@@ -288,0 +290 @@
+@@ -288,0 +291 @@
 +    let continued = false;
-@@ -290 +292,2 @@
+@@ -290 +293,2 @@
 -      this.processingMetadata = false;
 +      if (continued) return;
 +      continued = true;
-@@ -309,2 +312,2 @@
+@@ -309,2 +313,2 @@
 -      this.processPendingMessage();
 -      this.processPendingHalfClose();
 +      this.processingMetadata = false;
 +      this.flushPendingOperations();
-@@ -315 +318,9 @@
+@@ -315 +319,9 @@
 -    this.processingMessage = true;
 +    if (this.halfCloseRequested) {
 +      const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
@@ -90,7 +92,7 @@
 +    const pending = { context, message: undefined as any, ready: false };
 +    this.pendingMessages.push(pending);
 +    let continued = false;
-@@ -317,8 +328,5 @@
+@@ -317,8 +329,5 @@
 -      this.processingMessage = false;
 -      if (this.processingMetadata) {
 -        this.pendingMessageContext = context;
@@ -104,11 +106,11 @@
 +      pending.message = finalMessage;
 +      pending.ready = true;
 +      this.flushPendingOperations();
-@@ -334,0 +343,3 @@
+@@ -334,0 +344,3 @@
 +    if (this.halfCloseRequested) return;
 +    this.halfCloseRequested = true;
 +    let continued = false;
-@@ -336,5 +347,4 @@
+@@ -336,5 +348,4 @@
 -      if (this.processingMetadata || this.processingMessage) {
 -        this.pendingHalfClose = true;
 -      } else {
@@ -118,7 +120,7 @@
 +      continued = true;
 +      this.pendingHalfClose = true;
 +      this.flushPendingOperations();
-@@ -348,11 +358,8 @@
+@@ -348,11 +359,8 @@
 -function getCall(channel: Channel, path: string, options: CallOptions): Call {
 -  const deadline = options.deadline ?? Infinity;
 -  const host = options.host;
@@ -130,21 +132,53 @@
 -    call.setCredentials(credentials);
 -  }
 -  return call;
-+function getCall(channel: Channel, methodDefinition: ClientMethodDefinition<any, any>, options: InterceptorOptions): Call {
++function getCall(channel: Channel, methodDefinition: ClientMethodDefinition<any, any>, options: InterceptorOptions, lifetime: CallLifetime): Call {
 +  if (!isWorkersChannel(channel)) {
 +    throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
 +  }
 +  // Interceptors have already run. Retain the final options and the distinction
 +  // between an omitted deadline and explicit Infinity for the Workers policy.
 +  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
-+  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, callOptions);
-@@ -386,0 +394,3 @@
++  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, lifetime.applyOptions(callOptions), lifetime);
+@@ -369 +377,2 @@
+-    protected methodDefinition: ClientMethodDefinition<any, any>
++    protected methodDefinition: ClientMethodDefinition<any, any>,
++    protected lifetime: CallLifetime
+@@ -378,0 +388 @@
++    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
+@@ -386,0 +397,3 @@
 +      // A streaming Writable must settle its in-flight _write callback even
 +      // when serialization fails before the transport receives the message.
 +      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
-@@ -488 +498 @@
+@@ -398,0 +412 @@
++    if (this.lifetime.isTerminal()) return;
+@@ -449,2 +463,2 @@
+-  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>) {
+-    super(call, methodDefinition);
++  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>, lifetime: CallLifetime) {
++    super(call, methodDefinition, lifetime);
+@@ -486 +500,2 @@
+-  methodDefinition: ClientMethodDefinition<any, any>
++  methodDefinition: ClientMethodDefinition<any, any>,
++  lifetime: CallLifetime
+@@ -488 +503 @@
 -  const call = getCall(channel, methodDefinition.path, options);
-+  const call = getCall(channel, methodDefinition, options);
-@@ -582 +592 @@
++  const call = getCall(channel, methodDefinition, options, lifetime);
+@@ -490 +505 @@
+-    return new BaseStreamingInterceptingCall(call, methodDefinition);
++    return new BaseStreamingInterceptingCall(call, methodDefinition, lifetime);
+@@ -492 +507 @@
+-    return new BaseUnaryInterceptingCall(call, methodDefinition);
++    return new BaseUnaryInterceptingCall(call, methodDefinition, lifetime);
+@@ -566,0 +582,2 @@
++  if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
++  const lifetime = channel.createCallLifetime(options);
+@@ -582 +599 @@
 -      getBottomInterceptingCall(channel, finalOptions, methodDefinition)
-+      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition)
++      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
+@@ -584,2 +601,3 @@
+-  return getCall(interceptorOptions);
+-}
++  try { return lifetime.bind(getCall(interceptorOptions)); }
++  catch (error) { lifetime.cancelWithStatus(Status.INTERNAL, 'WGA_INTERCEPTOR_CONSTRUCTION'); throw error; }
++}

@@ -8,6 +8,7 @@ import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, pa
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot } from './retry';
 import { RequestStreamBody } from './request-stream';
+import type { CallLifetime } from './call-lifetime';
 export type Deadline = Date | number;
 /** The cancellation/deadline subset of grpc-js ServerSurfaceCall used by clients. */
 export interface ParentCall {
@@ -43,6 +44,7 @@ export interface CallContext {
     limits: ValidatedOptions;
     onFinish: () => void;
     closed: boolean;
+    lifetime?: CallLifetime;
 }
 /** Invoke observers outside the transport error model, after updating state. */
 function notify(fn: () => void): void {
@@ -109,7 +111,7 @@ export class WorkersCall {
         responseBytes: number;
         timerActive: boolean;
     } {
-        return { terminal: !!this.terminal, fetchCount: this.fetchCount, requestBytes: this.requestBody?.bufferedBytes() ?? this.request?.length ?? 0, responseBytes: this.responseBytes, timerActive: this.timer !== undefined };
+        return { terminal: !!this.terminal, fetchCount: this.fetchCount, requestBytes: this.requestBody?.bufferedBytes() ?? this.request?.length ?? 0, responseBytes: this.responseBytes, timerActive: this.timer !== undefined || (this.context.lifetime?.timerActive() ?? false) };
     }
     setCredentials(creds: CallCredentials): void {
         if (this.fetching || this.authReady || this.started) {
@@ -185,12 +187,12 @@ export class WorkersCall {
             this.finish(status.INTERNAL, 'WGA_INVALID_DEADLINE');
             return;
         }
-        if (!this.attachParent(flags)) return;
+        if (!c.lifetime && !this.attachParent(flags)) return;
         if (this.deadline <= Date.now()) {
             this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
             return;
         }
-        this.armTimer();
+        if (!c.lifetime) this.armTimer();
         if (c.insecure && (!this.credentials.isEmpty() || ['authorization', 'cookie', 'x-api-key', 'x-goog-api-key'].some(k => this.metadata!.get(k).length > 0))) {
             this.finish(status.UNAUTHENTICATED, 'WGA_INSECURE_AUTH');
             return;
@@ -318,7 +320,11 @@ export class WorkersCall {
         this.wakeRead = undefined;
         wake?.();
     }
+    updateManagedDeadline(deadline: number): void {
+        if (this.context.lifetime) this.context.options.deadline = deadline;
+    }
     cancelWithStatus(code: status, details: string): void {
+        if (this.context.lifetime && !this.context.lifetime.isTerminal()) { this.context.lifetime.cancelWithStatus(code, details); return; }
         this.finish(code, details);
     }
     private armTimer(): void {

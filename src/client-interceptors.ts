@@ -36,6 +36,7 @@ import { CallOptions } from './client';
 import { ClientMethodDefinition } from './factory';
 import { getErrorMessage } from './error';
 import { AuthContext } from './auth-context';
+import type { CallLifetime } from './call-lifetime';
 
 /**
  * Error class associated with passing both interceptors and interceptor
@@ -355,14 +356,14 @@ export class InterceptingCall implements InterceptingCallInterface {
   }
 }
 
-function getCall(channel: Channel, methodDefinition: ClientMethodDefinition<any, any>, options: InterceptorOptions): Call {
+function getCall(channel: Channel, methodDefinition: ClientMethodDefinition<any, any>, options: InterceptorOptions, lifetime: CallLifetime): Call {
   if (!isWorkersChannel(channel)) {
     throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
   }
   // Interceptors have already run. Retain the final options and the distinction
   // between an omitted deadline and explicit Infinity for the Workers policy.
   const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
-  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, callOptions);
+  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, lifetime.applyOptions(callOptions), lifetime);
 }
 
 /**
@@ -373,7 +374,8 @@ class BaseInterceptingCall implements InterceptingCallInterface {
   constructor(
     protected call: Call,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    protected methodDefinition: ClientMethodDefinition<any, any>
+    protected methodDefinition: ClientMethodDefinition<any, any>,
+    protected lifetime: CallLifetime
   ) {}
   cancelWithStatus(status: Status, details: string): void {
     this.call.cancelWithStatus(status, details);
@@ -383,6 +385,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
+    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
     let serialized: Buffer;
     try {
       serialized = this.methodDefinition.requestSerialize(message);
@@ -406,6 +409,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
     metadata: Metadata,
     interceptingListener?: Partial<InterceptingListener>
   ): void {
+    if (this.lifetime.isTerminal()) return;
     let readError: StatusObject | null = null;
     this.call.start(metadata, {
       onReceiveMetadata: metadata => {
@@ -456,8 +460,8 @@ class BaseUnaryInterceptingCall
   implements InterceptingCallInterface
 {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>) {
-    super(call, methodDefinition);
+  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>, lifetime: CallLifetime) {
+    super(call, methodDefinition, lifetime);
   }
   start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
     let receivedMessage = false;
@@ -493,13 +497,14 @@ function getBottomInterceptingCall(
   channel: Channel,
   options: InterceptorOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  methodDefinition: ClientMethodDefinition<any, any>
+  methodDefinition: ClientMethodDefinition<any, any>,
+  lifetime: CallLifetime
 ) {
-  const call = getCall(channel, methodDefinition, options);
+  const call = getCall(channel, methodDefinition, options, lifetime);
   if (methodDefinition.responseStream) {
-    return new BaseStreamingInterceptingCall(call, methodDefinition);
+    return new BaseStreamingInterceptingCall(call, methodDefinition, lifetime);
   } else {
-    return new BaseUnaryInterceptingCall(call, methodDefinition);
+    return new BaseUnaryInterceptingCall(call, methodDefinition, lifetime);
   }
 }
 
@@ -574,6 +579,8 @@ export function getInterceptingCall(
       .filter(interceptor => interceptor);
     // Filter out falsy values when providers return nothing
   }
+  if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
+  const lifetime = channel.createCallLifetime(options);
   const interceptorOptions = Object.assign({}, options, {
     method_definition: methodDefinition,
   });
@@ -589,7 +596,8 @@ export function getInterceptingCall(
       return currentOptions => nextInterceptor(currentOptions, nextCall);
     },
     (finalOptions: InterceptorOptions) =>
-      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition)
+      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
   );
-  return getCall(interceptorOptions);
+  try { return lifetime.bind(getCall(interceptorOptions)); }
+  catch (error) { lifetime.cancelWithStatus(Status.INTERNAL, 'WGA_INTERCEPTOR_CONSTRUCTION'); throw error; }
 }
