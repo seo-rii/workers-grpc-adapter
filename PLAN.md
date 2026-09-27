@@ -109,7 +109,12 @@ See [Testing](docs/testing.md) for the commands and report inventory.
   adapter and workerd. Use synthetic payloads with no secret contents in reports.
 - [x] Check consumer CRC32C handling, including empty bytes and a corrupted
   checksum returned successfully by the SDK. The SDK does not validate it.
-- [ ] Complete the remaining metadata and method-specific error combinations.
+- [x] Compare `GetSecret`, `ListSecrets` and `AccessSecretVersion` method errors,
+  callback/Promise failure shapes, repeated text/binary trailers, routing metadata
+  and same-client recovery. Compare second-page errors through manual, automatic
+  and async pagination with exact RPC and adapter-attempt accounting.
+- [ ] Verify additional Secret Manager methods and live IAM/quota behavior
+  separately; controlled responses cover the three methods above.
 - [ ] Add further SDKs only after inspecting their required exports, options,
   schemas and runtime behavior. Do not infer universal Google Cloud support.
 

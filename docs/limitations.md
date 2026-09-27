@@ -51,7 +51,16 @@ Official Firestore 1.22.0 Native and Datastore modes run through real Envoy loca
 
 Controlled [Datastore Lookup tests](datastore-lookup.md) cover mixed found/missing/deferred rounds, get overloads, partial stream errors, bounded explicit SDK retries and per-RPC deadlines. Successful deferred rounds can continue beyond one RPC timeout; ending an SDK read stream stops later rounds but does not cancel an already pending unary Lookup. These checks use the pinned Datastore 10.1.0 graph and a controlled peer, not production Datastore storage.
 
-Controlled Secret Manager tests cover pagination, async-iterator early exit, binary and empty secret-version payloads, callback/Promise results and remote errors. The pinned SDK returns `dataCrc32c` without validating it; consumers must verify payload integrity themselves. The fixture checks a deliberately incorrect checksum at the consumer boundary. It does not read production secret versions or establish live Secret Manager behavior.
+Controlled Secret Manager tests compare `GetSecret`, `ListSecrets` and
+`AccessSecretVersion` across native grpc-js and both Node/workerd adapter modes.
+They cover callback/Promise errors, repeated text/binary trailers, intermediate
+pagination failure and reuse after failure, alongside pagination, iterator early
+exit and binary/empty payloads. Retry is disabled for the error matrix; it does
+not test live quota enforcement or IAM decisions. The pinned SDK returns
+`dataCrc32c` without validating it; consumers must verify payload integrity
+themselves. The fixture checks a deliberately incorrect checksum at the consumer
+boundary. Other Secret Manager methods and production secret access require
+separate verification.
 
 ## Capability boundaries after implementation
 

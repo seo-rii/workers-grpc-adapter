@@ -68,7 +68,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-workers-legacy-auth.cjs` | Legacy Google callback credentials, native compatibility and workerd termination behavior | `verification/workers-legacy-auth.json` |
 | `node scripts/test-workers-fetcher.cjs` | Actual workerd service bindings, per-client Fetcher isolation and default Fetch | `verification/workers-fetcher.json` |
 | `node scripts/test-workers-compression.cjs` | Identity/deflate/gzip messages, mixed frames, decoded limits and cancellation against a Node zlib peer | `verification/workers-compression.json` |
-| `node scripts/test-secret-manager-extended.cjs` | Native/adapter/workerd Secret Manager pagination, binary payloads, checksum handling and errors | `verification/secret-manager-extended.json` |
+| `npm run test:secret-manager` | Native/adapter/workerd Secret Manager pagination, method errors, metadata, recovery and payload checksum handling | `verification/secret-manager-extended.json` |
 | `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
@@ -103,7 +103,50 @@ The federated-auth gate executes both pinned auth versions in both modes. It ret
 
 Legacy callback tests compare header handling and first-settlement behavior against pinned native grpc-js. Separate workerd runs cover both modes and cold/warm invocations, modern-method precedence, invalid headers, synchronous/asynchronous callbacks, duplicate completion, cancellation and deadlines. After late callbacks, tests require no additional RPC and no active adapter calls. Strict declaration checks include valid modern/legacy providers and invalid legacy shapes in all three resolution modes.
 
-The extended Secret Manager gate runs the same business source under native grpc-js, the Node adapter and both workerd modes against a controlled native service. It verifies manual Promise/callback pagination, automatic pagination, async iteration and early iterator exit using exact page-token and RPC counts. AccessSecretVersion cases preserve binary bytes, including a 64 KiB callback payload and an empty value. CRC32C checks include known vectors and a deliberately corrupted checksum: the SDK resolves that response, while the consumer rejects its integrity. Payloads are synthesized in memory and never included in reports or error diagnostics. This is local RPC compatibility evidence, not a Secret Manager emulator or live secret access.
+The extended Secret Manager gate runs the same business source under native grpc-js
+and both transport modes in Node and workerd against a controlled native service.
+It verifies manual Promise/callback pagination, automatic pagination, async
+iteration and early iterator exit using exact page-token and RPC counts.
+`GetSecret`, `ListSecrets` and `AccessSecretVersion` failures preserve their
+method-specific status, Unicode details and repeated text/binary trailers.
+Second-page errors test what each pagination API delivers before failing and
+require no third-page request. A successful request on the same client follows
+each error. Retries are explicitly disabled so each SDK RPC must correspond to
+one adapter attempt and one backend arrival.
+
+The matrix has 40 scenarios in five runtime/mode combinations: 200 case rows,
+445 native service arrivals and 356 adapter Fetch attempts. All four adapter
+combinations send synthetic OAuth metadata through ordinary GAX credentials;
+the native oracle uses explicit insecure loopback credentials and contributes
+no OAuth-composition claim. Each request checks resource routing, quota-project
+and SDK client metadata at the native service.
+
+| Method | Injected errors, each through Promise and callback |
+| --- | --- |
+| `GetSecret` | `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED` |
+| `ListSecrets` | `INVALID_ARGUMENT`, `PERMISSION_DENIED`, `RESOURCE_EXHAUSTED`, `UNAVAILABLE` |
+| `AccessSecretVersion` | `INVALID_ARGUMENT`, `NOT_FOUND`, `PERMISSION_DENIED`, `FAILED_PRECONDITION`, `UNAVAILABLE` |
+
+Second-page `UNAVAILABLE` is also tested with manual Promise/callback, automatic
+Promise/callback and async iteration. Manual paging and async iteration retain
+the two already delivered items. Automatic pagination fails without returning a
+partial aggregate. Callback counts include the successful first page where
+applicable, and are checked after the recovery request to catch late completion.
+
+AccessSecretVersion cases preserve binary bytes, including a 64 KiB callback
+payload and an empty value. CRC32C checks include known vectors and a deliberately
+corrupted checksum: the SDK resolves that response, while the consumer rejects
+its integrity. Payloads are synthesized in memory and never included in reports
+or error diagnostics. This is local RPC compatibility evidence, not a Secret
+Manager emulator or live secret access.
+
+The CI evidence checker requires the complete runtime/scenario matrix, matching
+native results, request/attempt counts and clean adapter resource budgets before
+SDK client close and runtime disposal. It
+checks hashes of the shared business source and installed dependencies. Negative
+tests reject missing or duplicate cases, changed error semantics and incomplete
+cleanup. These checks cover the three methods above; they do not establish live
+IAM/quota behavior or compatibility for other Secret Manager methods.
 
 ## Official database emulators
 
