@@ -15,10 +15,13 @@ export type WorkersGrpcConfig = {
     mode?: 'cloudflare';
     endpoints?: never;
     allowInsecureLocalhost?: never;
+    experimentalRequestStreaming?: never;
 } | {
     mode: 'grpc-web';
     endpoints: Readonly<Record<string, string>>;
     allowInsecureLocalhost?: boolean;
+    /** Experimental client/bidirectional streaming through an explicit gateway. */
+    experimentalRequestStreaming?: boolean;
 });
 export interface WorkersGrpcConfigSnapshot {
     readonly fetcher?: WorkersGrpcFetcher;
@@ -29,6 +32,7 @@ export interface WorkersGrpcConfigSnapshot {
     readonly transportMaxSendBytes: number;
     readonly transportMaxReceiveBytes: number;
     readonly allowInsecureLocalhost: boolean;
+    readonly experimentalRequestStreaming: boolean;
 }
 function fail(code: string, message: string): never {
     throw new ConfigError(code, message);
@@ -102,7 +106,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         return fail('WGA_INVALID_CONFIG', 'Configuration must be an object');
     }
     for (const key of Object.keys(input)) {
-        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy'].includes(key)) {
+        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy', 'experimentalRequestStreaming'].includes(key)) {
             return fail('WGA_INVALID_CONFIG', 'Unknown configuration key');
         }
     }
@@ -115,6 +119,12 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
     }
     if (mode === 'cloudflare' && (input.endpoints !== undefined || input.allowInsecureLocalhost !== undefined)) {
         return fail('WGA_INVALID_CONFIG', 'Gateway options require grpc-web mode');
+    }
+    if (input.experimentalRequestStreaming !== undefined && typeof input.experimentalRequestStreaming !== 'boolean') {
+        return fail('WGA_INVALID_CONFIG', 'Experimental request streaming must be boolean');
+    }
+    if (mode === 'cloudflare' && input.experimentalRequestStreaming !== undefined) {
+        return fail('WGA_INVALID_CONFIG', 'Experimental request streaming requires an explicit grpc-web gateway');
     }
     const entries: Record<string, string> = Object.create(null);
     if (mode === 'grpc-web') {
@@ -144,6 +154,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         }
     }
     return Object.freeze({ mode, endpoints: Object.freeze(Object.assign(Object.create(null), Object.fromEntries(Object.keys(entries).sort().map(k => [k, entries[k]])))),
+        experimentalRequestStreaming: input.experimentalRequestStreaming === true,
         fetcher: snapshotFetcher(input.fetcher),
         retryPolicy: validateRetryPolicy(input.retryPolicy),
         defaultTimeoutMs: budget(input.defaultTimeoutMs, 'defaultTimeoutMs'),

@@ -7,6 +7,7 @@ import { ValidatedOptions } from './options';
 import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders } from './wire';
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot } from './retry';
+import { RequestStreamBody } from './request-stream';
 export type Deadline = Date | number;
 export interface CallOptions {
     deadline?: Deadline;
@@ -52,6 +53,8 @@ export class WorkersCall {
     private metadata?: Metadata;
     private baseMetadata?: Metadata;
     private request?: Buffer;
+    private requestBody?: RequestStreamBody;
+    private uploadCancelled = false;
     private noCompress = false;
     private halfClosed = false;
     private started = false;
@@ -70,6 +73,15 @@ export class WorkersCall {
     private responseBytes = 0;
     constructor(private readonly context: CallContext) {
         this.credentials = context.credentials._getCallCredentials();
+        if (context.requestStream && context.config.mode === 'grpc-web' && context.config.experimentalRequestStreaming) {
+            this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
+                maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
+                // Fetch can cancel an upload after an early server response.
+                // Stop producers, but let that response (or the logical call
+                // deadline/abort) determine the RPC's terminal status.
+                onCancel: () => { this.uploadCancelled = true; },
+            });
+        }
     }
     getPeer(): string {
         return `https://${this.context.authority}`;
@@ -88,7 +100,7 @@ export class WorkersCall {
         responseBytes: number;
         timerActive: boolean;
     } {
-        return { terminal: !!this.terminal, fetchCount: this.fetchCount, requestBytes: this.request?.length ?? 0, responseBytes: this.responseBytes, timerActive: this.timer !== undefined };
+        return { terminal: !!this.terminal, fetchCount: this.fetchCount, requestBytes: this.requestBody?.bufferedBytes() ?? this.request?.length ?? 0, responseBytes: this.responseBytes, timerActive: this.timer !== undefined };
     }
     setCredentials(creds: CallCredentials): void {
         if (this.fetching || this.authReady || this.started) {
@@ -112,7 +124,7 @@ export class WorkersCall {
             this.finish(status.UNAVAILABLE, 'WGA_CHANNEL_CLOSED');
             return;
         }
-        if (c.requestStream) {
+        if (c.requestStream && !this.requestBody) {
             this.finish(status.UNIMPLEMENTED, 'WGA_REQUEST_STREAMING_UNSUPPORTED');
             return;
         }
@@ -209,6 +221,17 @@ export class WorkersCall {
             }
             return;
         }
+        if (this.requestBody) {
+            void this.requestBody.write(message, ((context.flags ?? 0) & 2) !== 0).then(() => {
+                if (context.callback) queueMicrotask(() => notify(() => context.callback!()));
+            }).catch(error => {
+                if (!this.terminal && !this.uploadCancelled) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
+                    error instanceof TransportError ? error.diagnostic : 'WGA_REQUEST_STREAM_FAILED');
+                if (context.callback) queueMicrotask(() => notify(() => context.callback!(error)));
+            });
+            this.maybeFetch();
+            return;
+        }
         if (this.request !== undefined) {
             if (context.callback) {
                 queueMicrotask(() => notify(() => context.callback!(new Error('WGA_MULTIPLE_REQUESTS'))));
@@ -231,6 +254,7 @@ export class WorkersCall {
             return;
         }
         this.halfClosed = true;
+        this.requestBody?.end();
         this.maybeFetch();
     }
     startRead(): void {
@@ -267,7 +291,7 @@ export class WorkersCall {
         }
     }
     private maybeFetch(): void {
-        if (this.terminal || this.fetching || !this.listener || !this.authReady || this.request === undefined || !this.halfClosed) {
+        if (this.terminal || this.fetching || !this.listener || !this.authReady || (!this.requestBody && (this.request === undefined || !this.halfClosed))) {
             return;
         }
         this.fetching = true;
@@ -315,7 +339,7 @@ export class WorkersCall {
             this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
             return;
         }
-        const body = await encodeMessageFrame(this.request!, c.limits.compression, c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress);
+        const body = this.requestBody?.body ?? await encodeMessageFrame(this.request!, c.limits.compression, c.config.transportMaxSendBytes, this.aborter.signal, this.noCompress);
         if (this.terminal) return;
         if (this.deadline <= Date.now()) {
             this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
@@ -323,8 +347,9 @@ export class WorkersCall {
         }
         const headers = requestHeaders(this.metadata!, this.deadline === Infinity ? undefined : this.deadline - Date.now(), c.limits.userAgent, c.config.mode, c.limits.compression);
         if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
-        const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' } } = {
+        const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
             method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
+            ...(this.requestBody ? { duplex: 'half' as const } : {}),
             cf: { grpcWeb: c.config.mode === 'cloudflare' ? 'convert' : 'passthrough' },
         };
         this.fetchCount++;
@@ -403,6 +428,7 @@ export class WorkersCall {
             this.timer = undefined;
         }
         this.request = undefined;
+        this.requestBody?.abort(new Error('WGA_CALL_TERMINATED'));
         this.metadata = undefined;
         this.baseMetadata = undefined;
         this.responseBytes = 0;

@@ -41,7 +41,17 @@
  }
  
  /**
-@@ -485,7 +483,7 @@
+@@ -384,6 +382,9 @@
+         Status.INTERNAL,
+         `Request message serialization failure: ${getErrorMessage(e)}`
+       );
++      // A streaming Writable must settle its in-flight _write callback even
++      // when serialization fails before the transport receives the message.
++      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
+       return;
+     }
+     this.call.sendMessageWithContext(context, serialized);
+@@ -485,7 +486,7 @@
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    methodDefinition: ClientMethodDefinition<any, any>
  ) {
@@ -50,7 +60,7 @@
    if (methodDefinition.responseStream) {
      return new BaseStreamingInterceptingCall(call, methodDefinition);
    } else {
-@@ -579,7 +577,7 @@
+@@ -579,7 +580,7 @@
        return currentOptions => nextInterceptor(currentOptions, nextCall);
      },
      (finalOptions: InterceptorOptions) =>

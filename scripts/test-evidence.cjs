@@ -15,7 +15,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/datastore-pagination.json', 'verification/workers-resilience.json',
     'verification/workers-federated-auth.json', 'verification/workers-legacy-auth.json', 'verification/secret-manager-extended.json',
     'verification/workers-fetcher.json',
-    'verification/workers-compression.json', 'verification/workers-retries.json', 'verification/health.json', 'verification/workers-server.json', 'verification/modern-sdk.json',
+    'verification/workers-compression.json', 'verification/workers-retries.json', 'verification/health.json', 'verification/workers-server.json', 'verification/modern-sdk.json', 'verification/request-streaming.json', 'verification/streaming-feasibility.json',
     'verification/workers-sdk-build.json', 'verification/workers-shared.json', 'verification/google-emulators.json', 'verification/emulator-lifecycle.json', 'verification/envoy.json', 'verification/google-preflight.json',
     ...[...GENERATED_COMPATIBILITY].map(file => `compatibility/${file}`)];
 function fail(message) { throw new Error(`WGA_EVIDENCE_INVALID: ${message}`); }
@@ -341,7 +341,7 @@ function validateProvenance(root, report) {
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
         ['workersFederatedAuth', 'verification/workers-federated-auth.json'], ['workersLegacyAuth', 'verification/workers-legacy-auth.json'], ['secretManagerExtended', 'verification/secret-manager-extended.json'],
         ['workersFetcher', 'verification/workers-fetcher.json'],
-        ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'],
+        ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'], ['requestStreaming', 'verification/request-streaming.json'], ['streamingFeasibility', 'verification/streaming-feasibility.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     for (const [key, file] of [['graph', 'google-graph'], ['declarations', 'google-types'], ['local', 'google-local']]) need(isDeepStrictEqual(report.googleSdk?.[key], read(root, `compatibility/${file}.json`)), `${file}: aggregate report drift`);

@@ -175,3 +175,12 @@ selects the separate exact Datastore 11.1.0 / Firestore 9.2.0 / Secret Manager 7
 graph. The default remains `google-static-v1`. Source/schema hashes are enforced
 for either profile. See [modern SDKs](modern-sdk.md) for its pinned auth versions and
 the two Firestore native defaults accepted as inert Fetch hints.
+
+## Experimental gateway request streaming
+
+`experimentalRequestStreaming: true` is accepted only with `mode: 'grpc-web'`.
+It activates ordinary generated client-streaming and bidirectional Writable/Duplex
+methods. The default remains disabled. Each message retains its own size/codec
+limits; half-close ends the Fetch body, and no streaming call is retried. Honor
+Writable backpressure and supply a deadline. See [request streaming](request-streaming.md)
+for early server rejection behavior and the tested gateway boundary.

@@ -35,6 +35,7 @@
     "test:pack": "node scripts/test-pack.cjs",
     "test:types": "node scripts/test-types.cjs",
     "test:google": "node scripts/google-test.cjs",
+    "test:request-streaming": "node scripts/test-request-streaming.cjs",
     "test:workers": "node scripts/workers-test.cjs",
     "test:workers:sdk": "node scripts/workers-sdk-test.cjs",
     "test:workers:shared": "node scripts/workers-shared-test.cjs",

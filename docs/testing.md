@@ -180,3 +180,10 @@ graph with six strict compiler configurations, shared native/adapter business
 code, and cold/warm workerd requests in both modes (18 scenarios, 66 RPCs). It
 compares Datastore legacy-key bytes with native encoders and rejects altered
 schemas, versions and profile names. The original graph retains its existing gates.
+
+`npm run test:request-streaming` verifies 11 public adapter streaming scenarios in
+workerd through real Envoy, with three native baselines. The early-rejection case
+verifies deadline cleanup while documenting delayed status delivery. The separate
+raw `streaming-feasibility` gate records this boundary for both mode-shaped Fetch
+requests without claiming deployed conversion. Three seeded request-body properties
+exercise 320 bounded operation/codec cases in addition to focused stream tests.

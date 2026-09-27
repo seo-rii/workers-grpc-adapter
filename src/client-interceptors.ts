@@ -382,6 +382,9 @@ class BaseInterceptingCall implements InterceptingCallInterface {
         Status.INTERNAL,
         `Request message serialization failure: ${getErrorMessage(e)}`
       );
+      // A streaming Writable must settle its in-flight _write callback even
+      // when serialization fails before the transport receives the message.
+      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
       return;
     }
     this.call.sendMessageWithContext(context, serialized);

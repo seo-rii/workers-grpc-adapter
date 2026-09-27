@@ -46,7 +46,7 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 
 ## Unsupported features
 
-Client streaming, bidirectional RPCs, native grpc-js Server sockets, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+Cloudflare automatic-mode request streaming, native grpc-js Server sockets, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
 
 Identity, deflate and gzip message codecs are implemented and compared with native grpc-js and workerd peers. Compressed trailers and cross-call peer-encoding caches remain unsupported. Configured request compression never triggers an automatic identity retry. Deployed Cloudflare conversion with compressed messages remains a separate live check; see [compression](compression.md).
 
@@ -57,6 +57,8 @@ Explicit method-scoped unary retry policies are available, with bounded attempts
 Explicit `HealthClient.check()` and `monitor()` implement the standard remote health protocol, including Watch reconnects and `UNIMPLEMENTED` disablement. Applications can await SERVING before calls; this does not change channel READY or intercept requests automatically. See [health](health.md).
 
 The separate `./server` entry point implements binary gRPC-Web Fetch handlers for unary and server-streaming methods, including bounded codecs, deadlines and cooperative cancellation. It does not open HTTP/2 sockets or implement the native `Server` API. Incoming edge conversion and deployment authentication remain application responsibilities. See [server](server.md).
+
+Client-streaming and bidirectional RPCs are implemented experimentally for explicit gateway mode through `experimentalRequestStreaming: true`. Real local Envoy/workerd tests verify duplex delivery, per-message bounds, compression and cancellation. Early completed server rejection can be delayed while an upload remains open; deadlines/cancellation are required for bounded use. This does not certify arbitrary gateways or automatic edge conversion. See [request streaming](request-streaming.md) and [feasibility](streaming-feasibility.md).
 
 ## Intentional differences
 
