@@ -113,9 +113,9 @@
       "source": "vendor/client/index.ts",
       "sha256": "00bab7607ea5ac648a7d78e53767071947c1121ecfa989a185ca6573d5a705f7",
       "target": "src/index.ts",
-      "patchedSha256": "82579482a65e3cbf2e87a2b01048c7cbfda2c55b678d0f604b74be9120c6f73f",
+      "patchedSha256": "d77a1094565916b093134d2680b1db1142eb1a80b77ee8a8b048c299016aa2a0",
       "patch": "vendor/patches/index.ts.patch",
-      "patchSha256": "e19043818962f6218f0bf8882502c6d444d4fdfc6195aba321de1a54efef1df9"
+      "patchSha256": "dc39edec51710a701d2be4284ae65fa18d239b334b1e89a87d69fa564d18b84c"
     }
   ],
   "patchPolicy": {

@@ -97,12 +97,52 @@ type HeaderRecord = Record<string, string | string[] | undefined>;
 export interface GoogleCredential {
     getRequestHeaders(url?: string): Promise<Headers | HeaderRecord> | Headers | HeaderRecord;
 }
-function createFromGoogleCredential(auth: GoogleCredential): CallCredentials {
-    if (!auth || typeof auth.getRequestHeaders !== 'function') {
-        throw new TypeError('getRequestHeaders is required');
+export interface LegacyGoogleCredential {
+    getRequestMetadata(url: string, callback: (error: Error | null, headers?: Record<string, string>) => void): void;
+}
+function createFromGoogleCredential(auth: GoogleCredential | LegacyGoogleCredential): CallCredentials {
+    if (!auth || (typeof (auth as GoogleCredential).getRequestHeaders !== 'function' && typeof (auth as LegacyGoogleCredential).getRequestMetadata !== 'function')) {
+        throw new TypeError('getRequestHeaders or getRequestMetadata is required');
     }
     return CallCredentials.createFromMetadataGenerator((options, callback) => {
-        Promise.resolve().then(() => auth.getRequestHeaders(options.service_url)).then(headers => {
+        return Promise.resolve().then(() => {
+            // Keep modern credentials first, including clients exposing both APIs.
+            if (typeof (auth as GoogleCredential).getRequestHeaders === 'function') {
+                return (auth as GoogleCredential).getRequestHeaders(options.service_url);
+            }
+            return new Promise<HeaderRecord>((resolve, reject) => {
+                const returned: unknown = (auth as LegacyGoogleCredential).getRequestMetadata(options.service_url, (error, headers) => {
+                    if (error) {
+                        reject(error);
+                    }
+                    else if (!headers) {
+                        reject(new Error('Headers not set by metadata plugin'));
+                    }
+                    else {
+                        resolve(headers);
+                    }
+                });
+                // The legacy contract requires the callback. Ignore returned values,
+                // but contain a rejected promise from an accidentally async provider.
+                if (returned && typeof (returned as PromiseLike<unknown>).then === 'function') {
+                    Promise.resolve(returned).catch(reject);
+                }
+            }).then(headers => {
+                if (typeof headers !== 'object' || Array.isArray(headers) || headers instanceof Headers) {
+                    throw new Error('Invalid authentication metadata');
+                }
+                // Native legacy clients enumerate own record properties. Snapshot
+                // those values once; inherited helpers must not act like Headers.
+                const normalized: HeaderRecord = Object.create(null);
+                for (const [key, value] of Object.entries(headers)) {
+                    if (typeof value !== 'string') {
+                        throw new Error('Invalid authentication metadata');
+                    }
+                    normalized[key] = value;
+                }
+                return normalized;
+            });
+        }).then(headers => {
             const metadata = new Metadata();
             if (headers && typeof (headers as Headers).forEach === 'function') {
                 (headers as Headers).forEach((value, key) => metadata.add(key, value));
