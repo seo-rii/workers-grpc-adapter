@@ -17,6 +17,7 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [Call and stream lifetime](call-lifecycle.md) | Cancellation, destruction, iterator exit and pending writes |
 | [Interceptors](interceptors.md) | Asynchronous ordering, transformations and logical completion |
 | [Testing](testing.md) | Local setup, test layers, generated evidence and CI artifacts |
+| [Public client contracts](local-contracts.md) | Original API, configuration and type cases with native and workerd evidence |
 | [Google SDK tests](google-tests.md) | Pinned fixtures, emulators, adding scenarios and live opt-in |
 | [Design decisions](decisions.md) | Reasons for the implementation boundaries |
 | [Sources and provenance](sources.md) | Official references, pinned artifacts and source verification |

@@ -37,6 +37,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | Command | Coverage | Generated output |
 |---|---|---|
 | `npm test` | Protocol, API, authentication, lifecycle, interceptors, deterministic fuzz and negative controls | Console; `verify` records `verification/tests.tap` |
+| `npm run test:api:contracts` | Original public API cases in installed Node/workerd clients, with native error and ordering comparisons | `verification/api-contracts.json` |
 | `npm run test:workerd:integration` | Two real Workers using the public client/server APIs through a service binding; 72 cases and 96 RPCs | `verification/workerd-integration.json` |
 | `npm run test:workerd:lifecycle` | Installed client/server APIs in two real Workers; 39 interceptor, termination, metadata, resource, configuration and deadline cases with 70 logical RPCs | `verification/workerd-lifecycle.json` |
 | `npm run test:workerd:observer` | Logical call/attempt timing, privacy, traffic and callback isolation in workerd | `verification/workerd-observer.json` |
@@ -259,6 +260,11 @@ The controlled shared workerd bridge buffers finite responses. The Worker SDK ha
 `verification/report.json` aggregates subprocess results. The deliberately disabled live preflight remains blocked. Required local cases cannot be promoted from blocked or not-run to passed. Reports retain `releaseEligible: false`, and the original 189-case catalog stays separate from test-runner totals and supplemental scenarios.
 
 The checked-in `compatibility/test-evidence.json` maps IDs to exact TAP names or report cases. Generated `verification/evidence.json` distinguishes covered, partial and unimplemented cases. A passed partial test remains partial.
+
+The [public client contract guide](local-contracts.md) explains the dedicated
+API, configuration and strict-type checks. Runtime rows retain callback and
+status outcomes independently; native comparison and workerd execution are
+required where the original case calls for them.
 
 `verify` snapshots inputs before execution and checks current sources, installed runtime bytes, tarball integrity, locked dependencies, SDK candidates, build profiles, report contents and external process receipts afterward. `npm run test:evidence` rejects stale evidence. After input changes, prepare affected fixtures and rerun the complete gate. Downloaded CI reports describe that CI run; checking external process receipts requires the original runner's local log files.
 

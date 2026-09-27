@@ -9,6 +9,13 @@ This is an experimental prototype. The package remains `private: true`. Passing 
 - Production transaction conflicts and uncertain Commit outcomes under real network failures.
 - All 189 original planned cases, full public grpc-js API and exception-timing equivalence, and production performance budgets.
 
+The [public client contract suite](local-contracts.md) closes the configuration
+and type cases and 15 public API cases against their stated local requirements.
+Unary duplicate-response parity (`API-011`) remains partial: the pinned native
+client reaches its deadline after the first message, while the adapter promptly
+rejects the extra message. The suite retains both traces and an independent
+HTTP/2 control instead of claiming equivalent cardinality behavior.
+
 The checked-in `compatibility/test-evidence.json` maps each original case to reviewed evidence. A verification run produces `verification/evidence.json`, distinguishing full, partial and missing coverage. Local test counts and supplemental scenarios do not increase the original catalog's denominator. See [testing](testing.md) for reports and CI artifacts.
 
 ## Transport modes and verification

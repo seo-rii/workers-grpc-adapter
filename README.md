@@ -127,6 +127,10 @@ The corrected [2026-09-26 GCP deployment test](docs/gcp-cloud-probe.md#corrected
 
 Passing cases are evidence for their stated behavior, not a claim that every planned compatibility requirement is covered. The [test catalog](compatibility/test-catalog.json) and [testing guide](docs/testing.md) describe that distinction. CI results apply to the checked commit and pinned toolchain.
 
+The [public client contract checks](docs/local-contracts.md) connect individual
+API, configuration and type requirements to native comparisons, installed
+Node/workerd execution and strict compiler results.
+
 ## Limitations
 
 - [Client and bidirectional streaming](docs/request-streaming.md) are available experimentally in explicit gateway mode with `experimentalRequestStreaming: true`. They remain disabled by default and unsupported in automatic conversion mode. [Firestore Listen/Watch](docs/firestore-watch.md) is verified for the pinned Firestore 8.3.0 and 9.2.0 graphs against the official emulator. Bounded recovery for both versions is compared against a controlled native peer; the build presets also preserve terminal permission errors that the raw SDK can lose.

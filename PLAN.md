@@ -4,7 +4,9 @@ Status: `0.0.0-prototype.1`, September 27, 2026. This is an experimental client
 transport, not a certified replacement for all of `@grpc/grpc-js`.
 
 The project implements the client-side unary and server-streaming surface over
-binary gRPC-Web and Fetch. Its current scope is the pinned SDK and runtime
+binary gRPC-Web and Fetch, with opt-in client/bidirectional streaming through an
+explicit gateway and a separate Fetch server for all four RPC shapes.
+Its current scope is the pinned SDK and runtime
 combinations exercised by the test suite. Runtime support and remaining
 differences are documented in [Limitations](docs/limitations.md).
 
@@ -114,6 +116,13 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 ### Resource and API contracts
 
 - [ ] Finish the remaining original catalog cases and finer grpc-js contracts.
+- [x] Close all 11 configuration cases, all seven type cases and 15 public API
+  cases with exact execution evidence. Retain `API-011` as partial for the
+  independently reproduced native unary duplicate-response difference. See
+  [Public client contracts](docs/local-contracts.md).
+- [x] Measure both exact Google SDK profiles in actual workerd isolates: bundle
+  size, startup, first/authenticated/warm RPCs, refresh coalescing, concurrent slow
+  compressed streams and sampled heap/backing storage under local CI ceilings.
 - [ ] Measure exact adapter-owned bytes, parser CPU, cold initialization,
   bundle size and p50/p95 latency under large, fragmented, slow and concurrent
   workloads. Define numerical budgets from reproducible measurements.
@@ -154,7 +163,13 @@ release gates are met. See the [original specification](docs/spec/v0.3.md)
 - [x] Implement bounded identity/gzip/deflate message compression and independent
   decoded/wire limits, with native and workerd verification.
 - [x] Add explicit bounded unary retry policies and standard remote health APIs.
-- [x] Add a separate Fetch server API for unary/server-streaming methods.
+- [x] Add a separate Fetch server API for all four RPC shapes, with lazy request
+  streams, handler-kind types and two-Worker service-binding lifecycle checks.
+- [x] Add shared endpoint retry throttling with recovery and observable decisions.
+- [x] Decode bounded structured status details through an optional entry point,
+  preserving the original RPC status and isolating custom decoder failures.
+- [x] Declare SDK package/source/schema pins, transformation rules, capabilities
+  and required checks; diagnose drift and bind cache identity to transformer bytes.
 - [x] Support a second exact modern Google SDK dependency graph with strict types,
   native comparisons, static codec guards and cold/warm workerd tests.
 - [x] Verify experimental gateway request streaming, cancellation and bounded
