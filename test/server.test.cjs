@@ -31,8 +31,8 @@ async function observe(response) {
 }
 const echo = (value) => value;
 
-test('SERVER registers immutable exact routes and rejects unsupported or unsafe definitions', async () => {
-    for (const value of [null, {}, { echo: { ...unary, path: '/wrong' } }, { echo: { ...unary, requestStream: true } },
+test('SERVER registers immutable exact routes and rejects unsafe definitions', async () => {
+    for (const value of [null, {}, { echo: { ...unary, path: '/wrong' } },
         { echo: unary, duplicate: unary }, JSON.parse('{"__proto__": {}}')]) {
         assert.throws(() => createGrpcWebHandler(value, { echo }), /WGA|gRPC-Web/);
     }

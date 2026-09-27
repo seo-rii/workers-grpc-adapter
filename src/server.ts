@@ -22,11 +22,22 @@ export interface GrpcWebServerOptions {
     compression?: compressionAlgorithms;
     defaultTimeoutMs?: number;
 }
-export type GrpcWebHandler<Request, Response> = (request: Request, context: GrpcWebServerContext) =>
-    Response | Promise<Response> | AsyncIterable<Response> | Promise<AsyncIterable<Response>>;
+export type GrpcWebUnaryHandler<Request, Response> = (request: Request, context: GrpcWebServerContext) => Response | Promise<Response>;
+export type GrpcWebServerStreamingHandler<Request, Response> = (request: Request, context: GrpcWebServerContext) => AsyncIterable<Response> | Promise<AsyncIterable<Response>>;
+export type GrpcWebClientStreamingHandler<Request, Response> = GrpcWebUnaryHandler<AsyncIterable<Request>, Response>;
+export type GrpcWebBidiStreamingHandler<Request, Response> = GrpcWebServerStreamingHandler<AsyncIterable<Request>, Response>;
+/** Backward-compatible handler type for definitions whose stream flags have widened to boolean. */
+export type GrpcWebHandler<Request, Response> = GrpcWebUnaryHandler<Request, Response> | GrpcWebServerStreamingHandler<Request, Response>;
 type Definition = Record<string, ServerMethodDefinition<any, any>>;
+type HandlerFor<Method, Request, Response> = Method extends { requestStream: true }
+    ? Method extends { responseStream: true } ? GrpcWebBidiStreamingHandler<Request, Response>
+        : Method extends { responseStream: false } ? GrpcWebClientStreamingHandler<Request, Response>
+        : GrpcWebHandler<AsyncIterable<Request>, Response>
+    : Method extends { responseStream: true } ? GrpcWebServerStreamingHandler<Request, Response>
+        : Method extends { responseStream: false } ? GrpcWebUnaryHandler<Request, Response>
+        : GrpcWebHandler<Request, Response>;
 export type GrpcWebHandlers<D extends Definition> = {
-    [K in keyof D]: D[K] extends ServerMethodDefinition<infer Request, infer Response> ? GrpcWebHandler<Request, Response> : never;
+    [K in keyof D]: D[K] extends ServerMethodDefinition<infer Request, infer Response> ? HandlerFor<D[K], Request, Response> : never;
 };
 
 /** Only this explicit error type exposes application-supplied details to peers. */
@@ -97,7 +108,7 @@ function deadlineFor(header: string | null, fallback?: number): number {
 }
 
 /** Binary gRPC-Web Fetch endpoint; does not implement grpc-js Server sockets. */
-export function createGrpcWebHandler<D extends Definition>(definition: D, handlers: GrpcWebHandlers<D>, options: GrpcWebServerOptions = {}): (request: Request) => Promise<Response> {
+export function createGrpcWebHandler<const D extends Definition>(definition: D, handlers: GrpcWebHandlers<D>, options: GrpcWebServerOptions = {}): (request: Request) => Promise<Response> {
     const invalid = (): never => { throw new WorkersGrpcConfigurationError('WGA_SERVER_CONFIG', 'Invalid gRPC-Web server configuration'); };
     if (!definition || typeof definition !== 'object' || !handlers || typeof handlers !== 'object' || !options || typeof options !== 'object') invalid();
     for (const key of Object.keys(options)) if (!['maxReceiveMessageBytes', 'maxSendMessageBytes', 'maxWireMessageBytes', 'compression', 'defaultTimeoutMs'].includes(key)) invalid();
@@ -122,7 +133,6 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
             || typeof item.requestStream !== 'boolean' || typeof item.responseStream !== 'boolean'
             || typeof item.requestDeserialize !== 'function' || typeof item.responseSerialize !== 'function'
             || !Object.hasOwn(handlers, key) || typeof handlers[key] !== 'function' || routes.has(item.path)) invalid();
-        if (item.requestStream) throw new WorkersGrpcConfigurationError('WGA_REQUEST_STREAMING_UNSUPPORTED', 'gRPC-Web Fetch handlers accept one request message');
         routes.set(item.path, { definition: { ...item }, handler: handlers[key] });
     }
     if (!routes.size || Object.keys(handlers).some(key => !Object.hasOwn(definition, key))) invalid();
@@ -148,18 +158,30 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
         const url = new URL(request.url);
         const route = !url.search && routes.get(url.pathname);
         if (!route) return early(new Response(trailer(status.UNIMPLEMENTED, 'WGA_SERVER_METHOD'), { headers: baseHeaders }));
-        const aborter = new AbortController();
+        const aborter = new AbortController(), inputAborter = new AbortController();
         let rejectAbort: (error: TransportError) => void = () => {};
         const interruption = new Promise<never>((_, reject) => { rejectAbort = reject; });
         void interruption.catch(() => {});
         let timer: ReturnType<typeof setTimeout> | undefined, cleaned = false, headersSent = false, closed = false;
         let iterator: AsyncIterator<unknown> | undefined, returnStarted = false;
+        let inputIterator: AsyncIterator<unknown> | undefined, inputClosed = false, inputReading = false;
+        let inputFailure: unknown;
         let initial = new Metadata(), trailing = new Metadata();
         const disposeIterator = () => {
             if (returnStarted || !iterator) return;
             returnStarted = true;
             try { void Promise.resolve(iterator.return?.()).catch(() => {}); }
             catch { /* Cleanup exceptions never expose application data. */ }
+        };
+        const disposeInput = () => {
+            if (inputClosed) return;
+            inputClosed = true;
+            inputAborter.abort();
+            // Do not await arbitrary stream cancellation or generator cleanup.
+            // Aborting decodeFrames releases a pending read before return().
+            try { void Promise.resolve(inputIterator?.return?.()).catch(() => {}); }
+            catch { /* Keep cleanup failures private. */ }
+            if (request.body && !request.body.locked) void request.body.cancel().catch(() => {});
         };
         const cleanup = () => {
             if (cleaned) return;
@@ -176,7 +198,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
             }
             cleanup();
             disposeIterator();
-            if (request.body && !request.body.locked) void request.body.cancel().catch(() => {});
+            disposeInput();
         };
         const callerAbort = () => stop(status.CANCELLED, 'WGA_SERVER_CANCELLED');
         const race = <T>(operation: PromiseLike<T> | T): Promise<T> => Promise.race([Promise.resolve(operation), interruption]);
@@ -198,18 +220,56 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
             armTimer();
             const metadata = metadataFromHeaders(request.headers);
             if (!request.body) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
-            let message: Buffer | undefined;
-            await race((async () => {
-                for await (const value of decodeFrames(request.body!, receiveLimit, aborter.signal,
-                    { encoding: responseCompression(request.headers), maxWireBytes: wireLimit })) {
-                    if (value.trailer || message !== undefined) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
-                    message = value.payload;
+            const requestEncoding = responseCompression(request.headers);
+            const decoded = (async function* () {
+                for await (const value of decodeFrames(request.body!, receiveLimit, inputAborter.signal,
+                    { encoding: requestEncoding, maxWireBytes: wireLimit })) {
+                    if (value.trailer) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
+                    yield value.payload;
                 }
-            })());
-            if (message === undefined) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
-            let input: unknown;
-            try { input = route.definition.requestDeserialize(message); }
-            catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
+            })();
+            inputIterator = decoded;
+            const requests: AsyncIterableIterator<unknown> = {
+                [Symbol.asyncIterator]() { return this; },
+                async next() {
+                    if (inputFailure !== undefined) throw inputFailure;
+                    if (aborter.signal.aborted) return interruption;
+                    if (inputClosed) return { done: true, value: undefined };
+                    if (inputReading) {
+                        inputFailure = new TransportError(status.INTERNAL, 'WGA_SERVER_REQUEST_CONCURRENT_READ');
+                        stop(status.INTERNAL, 'WGA_SERVER_REQUEST_CONCURRENT_READ');
+                        throw inputFailure;
+                    }
+                    inputReading = true;
+                    try {
+                        const value = await race(decoded.next());
+                        if (value.done) { inputClosed = true; return value; }
+                        if (!route.definition.requestStream) return value;
+                        try { return { done: false, value: route.definition.requestDeserialize(value.value) }; }
+                        catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
+                    } catch (error) {
+                        const wasClosed = inputClosed;
+                        inputFailure ??= error;
+                        disposeInput();
+                        if (!wasClosed) {
+                            const result = failure(inputFailure);
+                            stop(result.code, result.details);
+                        }
+                        throw inputFailure;
+                    } finally { inputReading = false; }
+                },
+                async return() {
+                    disposeInput();
+                    return { done: true, value: undefined };
+                },
+            };
+            let input: unknown = requests;
+            if (!route.definition.requestStream) {
+                const first = await requests.next();
+                if (first.done || !(await requests.next()).done) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
+                try { input = route.definition.requestDeserialize(first.value as Buffer); }
+                catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
+            }
             const context: GrpcWebServerContext = { method: route.definition.path, metadata, signal: aborter.signal, deadline,
                 get cancelled() { return aborter.signal.aborted; },
                 getDeadline() { return deadline; },
@@ -251,6 +311,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
             }).catch(() => {});
             const output = await race(producing);
             if (aborter.signal.aborted) await interruption;
+            if (inputFailure !== undefined) throw inputFailure;
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
@@ -261,6 +322,7 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                 first = { done: false, value: output };
                 iterator = { next: async () => ({ done: true, value: undefined }) };
             }
+            if (inputFailure !== undefined) throw inputFailure;
             const headers = responseHeaders(initial);
             headersSent = true;
             let buffered: IteratorResult<unknown> | undefined = first;
@@ -276,6 +338,8 @@ export function createGrpcWebHandler<D extends Definition>(definition: D, handle
                         if (aborter.signal.aborted) await interruption;
                         if (!item || typeof item !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                         if (item.done) {
+                            if (inputFailure !== undefined) throw inputFailure;
+                            disposeInput();
                             controller.enqueue(trailer(status.OK, '', trailing));
                             closed = true;
                             cleanup();

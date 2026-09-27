@@ -92,16 +92,21 @@ async function bounded(promise) {
 
 test('FUZZ property Fetch server preserves compressed fragmented calls and negotiates each response', { timeout: 120000 }, async () => {
     await check(fc.asyncProperty(payload, codec, fc.boolean(), codec, fc.boolean(), fc.boolean(),
-        fc.array(payload, { minLength: 1, maxLength: 4 }), fragmentation,
-        async (inputBytes, requestCodec, requestCompressed, responseCodec, acceptSelected, streaming, outputs, plan) => {
+        fc.array(payload, { minLength: 1, maxLength: 4 }), fragmentation, fc.boolean(),
+        async (inputBytes, requestCodec, requestCompressed, responseCodec, acceptSelected, streaming, outputs, plan, requestStreaming) => {
             const compressRequest = requestCompressed && requestCodec !== 'identity';
-            const input = source(frame(compressRequest ? compress(inputBytes, requestCodec) : inputBytes, compressRequest ? 1 : 0), plan);
+            const requestValues = requestStreaming ? [inputBytes, ...outputs] : [inputBytes];
+            const input = source(Buffer.concat(requestValues.map(value =>
+                frame(compressRequest ? compress(value, requestCodec) : value, compressRequest ? 1 : 0))), plan);
             let calls = 0, deserialized = 0;
-            const method = { ...definition.echo, responseStream: streaming, requestDeserialize(bytes) {
-                deserialized++; assert.deepEqual(bytes, Buffer.from(inputBytes)); return bytes;
+            const method = { ...definition.echo, requestStream: requestStreaming, responseStream: streaming, requestDeserialize(bytes) {
+                assert.deepEqual(bytes, Buffer.from(requestValues[deserialized++])); return bytes;
             } };
-            const handler = createGrpcWebHandler({ echo: method }, { echo(value, context) {
-                calls++; assert.deepEqual(value, Buffer.from(inputBytes));
+            const handler = createGrpcWebHandler({ echo: method }, { async echo(value, context) {
+                calls++;
+                if (requestStreaming) { const received = []; for await (const part of value) received.push(part);
+                    assert.deepEqual(received, requestValues.map(bytes => Buffer.from(bytes))); }
+                else assert.deepEqual(value, Buffer.from(inputBytes));
                 assert.deepEqual(context.metadata.get('trace-bin'), [Buffer.from(inputBytes)]);
                 const metadata = new Metadata(); metadata.set('x-fixture', 'property'); context.sendMetadata(metadata);
                 const trailing = new Metadata(); trailing.set('trace-bin', Buffer.from(inputBytes)); context.setTrailer(trailing);
@@ -116,10 +121,10 @@ test('FUZZ property Fetch server preserves compressed fragmented calls and negot
             assert.deepEqual(result.messages, (streaming ? outputs : outputs.slice(0, 1)).map(bytes => Buffer.from(bytes)));
             assert.equal(result.terminal.code, 0);
             assert.deepEqual(result.terminal.fields.get('trace-bin'), [Buffer.from(inputBytes).toString('base64')]);
-            assert.equal(calls, 1); assert.equal(deserialized, 1); released(input);
+            assert.equal(calls, 1); assert.equal(deserialized, requestValues.length); released(input);
         }), { numRuns: 100, examples: [
-            [new Uint8Array(0), 'gzip', true, 'gzip', true, true, [new Uint8Array(0)], oneByte],
-            [Uint8Array.of(0, 128, 255), 'deflate', true, 'gzip', false, false, [Uint8Array.of(255)], oneByte],
+            [new Uint8Array(0), 'gzip', true, 'gzip', true, true, [new Uint8Array(0)], oneByte, true],
+            [Uint8Array.of(0, 128, 255), 'deflate', true, 'gzip', false, false, [Uint8Array.of(255)], oneByte, false],
         ] });
 });
 
