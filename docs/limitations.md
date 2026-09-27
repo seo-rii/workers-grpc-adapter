@@ -49,7 +49,7 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 | Earlier limitation | Current support | Remaining boundary |
 |---|---|---|
 | Client/bidirectional streaming | Experimental explicit gateway option, bounded producer, real Envoy/workerd tests | Disabled by default; automatic edge conversion unverified; early completed errors can be delayed |
-| Firestore Listen/Watch | Firestore 8.3.0 and 9.2.0 document/query listeners through the experimental gateway, official emulator/native comparison | Automatic conversion, reconnect/resume tokens and long-lived deployed listeners unverified |
+| Firestore Listen/Watch | Firestore 8.3.0 and 9.2.0 document/query listeners through the experimental gateway, official emulator/native comparison | Automatic conversion and long-lived deployed listeners unverified; bounded recovery is checked with a controlled peer |
 | Server APIs | Separate Fetch unary/server-streaming handlers | Native grpc-js HTTP/2 sockets and server lifecycle APIs are outside this architecture |
 | mTLS | Preconfigured Workers binding through isolated Fetcher | Actual certificate exchange and deployed binding behavior require live verification |
 | Custom CA / inline certificates | No Fetch trust-store or per-call PEM API | Requires a different transport or platform capability |
@@ -78,9 +78,9 @@ Explicit `HealthClient.check()` and `monitor()` implement the standard remote he
 
 The separate `./server` entry point implements binary gRPC-Web Fetch handlers for unary and server-streaming methods, including bounded codecs, deadlines and cooperative cancellation. It does not open HTTP/2 sockets or implement the native `Server` API. Incoming edge conversion and deployment authentication remain application responsibilities. See [server](server.md).
 
-Client-streaming and bidirectional RPCs are implemented experimentally for explicit gateway mode through `experimentalRequestStreaming: true`. Real local Envoy/workerd tests verify duplex delivery, per-message bounds, compression and cancellation. Early completed server rejection can be delayed while an upload remains open; deadlines/cancellation are required for bounded use. This does not certify arbitrary gateways or automatic edge conversion. See [request streaming](request-streaming.md) and [feasibility](streaming-feasibility.md).
+Client-streaming and bidirectional RPCs are implemented experimentally for explicit gateway mode through `experimentalRequestStreaming: true`. Real local Envoy/workerd tests verify duplex delivery, per-message bounds, compression and cancellation. After a validated terminal status, the upload closes and response EOF is still checked. Rejection can still be delayed when Fetch has not exposed the response; deadlines/cancellation are required for bounded use. This does not certify arbitrary gateways or automatic edge conversion. See [request streaming](request-streaming.md) and [feasibility](streaming-feasibility.md).
 
-Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are verified experimentally through the gateway with actual Listen RPCs against the official emulator. The same business code passes native, Node-adapter and workerd cases. This is not Cloudflare automatic-mode, production authorization, reconnect/resume-token or long-lived deployment certification. See [Firestore Watch](firestore-watch.md).
+Pinned Firestore 8.3.0 and 9.2.0 document/query `onSnapshot()` listeners are verified experimentally through the gateway with actual Listen RPCs against the official emulator. The same business code passes native, Node-adapter and workerd cases. A separate Firestore 8.3.0 controlled-peer gate checks resume-token reuse, HTTP/2 resets, target resets, filter mismatches and target denial; it is not Cloudflare automatic-mode, production authorization or long-lived deployment certification. See [Firestore Watch](firestore-watch.md).
 
 ## Intentional differences
 

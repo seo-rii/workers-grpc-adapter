@@ -98,6 +98,61 @@ test('REQUEST STREAMING terminal server error releases a write pending Fetch pul
   } finally { c.close(); }
 });
 
+for (const source of ['headers', 'trailers']) {
+  for (const suffix of ['none', 'message', 'trailers']) {
+    test(`REQUEST STREAMING ${source} closes upload before response EOF and rejects suffix ${suffix}`, async () => {
+      const c = client(); let pendingRejected = 0, uploadEOF = false; const order = [];
+      try {
+        await withFetch(async (_url, init) => {
+          const upload = init.body.getReader(); let ended = false;
+          return new Response(new ReadableStream({
+            start(controller) { if (source === 'trailers') controller.enqueue(trailers(7)); },
+            async pull(controller) {
+              if (ended) return; ended = true;
+              const result = await upload.read();
+              assert.equal(result.done, true, 'pending message is discarded after terminal status');
+              uploadEOF = true; upload.releaseLock();
+              if (suffix === 'message') controller.enqueue(encodeFrame(serialize({ text: 'forbidden' })));
+              if (suffix === 'trailers') controller.enqueue(trailers(0));
+              controller.close();
+            },
+          }, { highWaterMark: 0 }), { headers: { 'content-type': 'application/grpc-web+proto',
+            ...(source === 'headers' ? { 'grpc-status': '7' } : {}) } });
+        }, async () => {
+          let call;
+          const result = new Promise(resolve => { call = c.clientStream({ deadline: Date.now() + 1000 }, error => resolve(error)); });
+          call.on('error', () => {}); const terminal = finished(call);
+          call.on('status', () => order.push('status'));
+          call.write({ text: 'unsent' }, error => { if (error) pendingRejected++; order.push('write'); });
+          const expected = suffix === 'none' ? grpc.status.PERMISSION_DENIED : grpc.status.INTERNAL;
+          assert.equal((await result).code, expected); assert.equal((await terminal).code, expected);
+          await turn(); assert.equal(pendingRejected, 1); assert.equal(uploadEOF, true);
+          assert.deepEqual(order, ['status', 'write']); clean(call, c);
+        });
+      } finally { c.close(); }
+    });
+  }
+}
+
+test('REQUEST STREAMING terminal trailer still requires EOF and a deadline releases deferred writes', async () => {
+  const c = client({ 'grpc.default_compression_algorithm': 2 }); let writeErrors = 0;
+  try {
+    await withFetch(async (_url, init) => new Response(new ReadableStream({ start(controller) {
+      controller.enqueue(trailers(7));
+      init.signal.addEventListener('abort', () => controller.error(new Error('cancelled')), { once: true });
+    } }), { headers: { 'content-type': 'application/grpc-web+proto' } }), async () => {
+      let call; const result = new Promise(resolve => {
+        call = c.clientStream({ deadline: Date.now() + 100 }, error => resolve(error));
+      });
+      call.on('error', () => {}); const terminal = finished(call);
+      call.write({ text: 'x'.repeat(4096) }, error => { if (error) writeErrors++; });
+      assert.equal((await result).code, grpc.status.DEADLINE_EXCEEDED);
+      assert.equal((await terminal).code, grpc.status.DEADLINE_EXCEEDED);
+      await turn(); assert.equal(writeErrors, 1); clean(call, c);
+    });
+  } finally { c.close(); }
+});
+
 for (const pendingResponse of [false, true]) {
   test(`REQUEST STREAMING remote upload cancellation preserves ${pendingResponse ? 'the logical deadline' : 'the server status'}`, async () => {
     const c = client(); let writeErrors = 0;

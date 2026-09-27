@@ -69,11 +69,47 @@ does not validate production IAM, security rules,
 permission-denied behavior, credential refresh, or live Google services.
 
 The bounded local cases do not establish deployed Worker lifetime guarantees,
-multi-hour listeners, network reconnection and resume tokens, gateway load
-balancing, or all Firestore Watch messages.
+multi-hour listeners, live network recovery, gateway load balancing, or all
+Firestore Watch messages. Bounded controlled-peer recovery is covered below.
 
 The separate `npm run test:modern-firestore-watch` gate now repeats all eight
 Listen cases against the official emulator using Firestore 9.2.0 and the exact
 `google-modern-v1` graph. Its native, Node-adapter and workerd results match; see
 [modern SDKs](modern-sdk.md). Keep the experimental scope explicit when
 evaluating a production workload.
+
+
+## Bounded recovery
+
+`npm run test:firestore-recovery` adds a controlled native gRPC peer behind real
+Envoy for Firestore 8.3.0. It injects faults and protocol messages that the ordinary
+emulator CRUD cases do not expose deterministically. Six scenarios run against
+native grpc-js, the Node adapter and two workerd invocations: 24 cases, 36 Listen
+attempts, 27 Fetch requests and 48 snapshot/error callbacks.
+
+- UNAVAILABLE and HTTP/2 stream reset reopen Listen with the exact opaque binary
+  resume token from the last consistent snapshot.
+- Target RESET replaces the existing result set; an existence-filter mismatch
+  reopens the query without the old resume token.
+- Document removal updates query results. A target REMOVE with permission-denied
+  cause reaches the public error callback and does not reconnect.
+- Pending changes without a consistent snapshot boundary never appear in user
+  snapshots. The test does not assert that every injected pending byte arrived
+  before a network reset.
+
+The adapter closes its upload after parsing a valid terminal gRPC status, then
+continues checking the response through EOF. This releases workerd's EOF wait
+and allows the SDK to start its next Listen. Extra frames, duplicate trailers,
+missing EOF, deadlines and pending write callbacks have separate regression tests.
+No REST/polling replacement, SDK retry bypass or synthetic resume-token handling
+is added to the adapter. The SDK owns its listener state and reconnect decisions.
+
+One upstream boundary remains: in a separate native Firestore 8.3.0 diagnostic,
+a gRPC PERMISSION_DENIED received after an initial snapshot was followed by an
+`end` event before Firestore forwarded its error with `setImmediate`. Watch
+reopened with the previous token after treating that end as UNKNOWN. This was
+reproduced without the adapter or Envoy. Do not assume a transport status 7 always
+stops this pinned SDK's listener immediately; target REMOVE denial is the bounded
+permanent-error case above. Applications must still bound listener lifetime and
+unsubscribe explicitly. This gate does not certify all error sequences, prolonged
+outages, modern-profile recovery, real IAM failures or deployed Worker lifetimes.

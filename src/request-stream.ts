@@ -88,6 +88,12 @@ export class RequestStreamBody {
         this.ending = true;
         if (!this.pending) { this.closed = true; this.controller.close(); }
     }
+    /** A terminal response forbids more writes; clean EOF releases Fetch's upload pump. */
+    closeFromResponse(): void {
+        if (this.closed) return;
+        this.terminate(new TransportError(status.CANCELLED, 'WGA_REQUEST_STREAM_RESPONSE_COMPLETE'), false);
+        this.controller.close();
+    }
     /** Terminal call completion/error: discard pending data and reject its writer. */
     abort(error: Error = new TransportError(status.CANCELLED, 'WGA_REQUEST_STREAM_ABORTED')): void {
         if (this.closed) return;

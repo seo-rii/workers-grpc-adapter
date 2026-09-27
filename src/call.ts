@@ -72,6 +72,7 @@ export class WorkersCall {
     private terminal?: StatusObject;
     private terminalDelivered = false;
     private writeCallback?: (error?: Error | null) => void;
+    private readonly stoppedUploadCallbacks: Array<() => void> = [];
     private timer?: ReturnType<typeof setTimeout>;
     private removeParentListener?: () => void;
     private deadline: number = Infinity;
@@ -270,6 +271,12 @@ export class WorkersCall {
             void this.requestBody.write(message, ((context.flags ?? 0) & 2) !== 0).then(() => {
                 if (context.callback) queueMicrotask(() => notify(() => context.callback!()));
             }).catch(error => {
+                if (!this.terminal && this.uploadCancelled) {
+                    // Preserve the remote RPC status ahead of a Writable's
+                    // generic write error while response EOF is still pending.
+                    if (context.callback) this.stoppedUploadCallbacks.push(() => context.callback!(error));
+                    return;
+                }
                 if (!this.terminal && !this.uploadCancelled) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
                     error instanceof TransportError ? error.diagnostic : 'WGA_REQUEST_STREAM_FAILED');
                 if (context.callback) queueMicrotask(() => notify(() => context.callback!(error)));
@@ -435,12 +442,17 @@ export class WorkersCall {
             return;
         }
         let final: StatusObject | null = headerStatus, committed = false;
+        if (headerStatus) this.closeUploadFromResponse();
         if (response.body) {
             for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
                 { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes })) {
                 if (this.terminal) return;
                 if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
-                if (frame.trailer) { final = parseTrailers(frame.payload); continue; }
+                if (frame.trailer) {
+                    final = parseTrailers(frame.payload);
+                    if (final) this.closeUploadFromResponse();
+                    continue;
+                }
                 committed = true;
                 this.request = undefined;
                 if (pendingInitial) {
@@ -459,6 +471,15 @@ export class WorkersCall {
         if (this.terminal) return;
         return { result: final ?? { code: httpStatusToGrpc(response.status), details: 'WGA_MISSING_GRPC_STATUS', metadata: new Metadata() },
             retryable: !!final && !committed, initial: pendingInitial };
+    }
+    private closeUploadFromResponse(): void {
+        if (!this.requestBody) return;
+        // A validated terminal status ends the RPC's request side. Close its
+        // producer without failing Fetch, then still validate response EOF and
+        // reject any extra/duplicate frames. Some Fetch runtimes otherwise hold
+        // response EOF until the request producer closes.
+        this.uploadCancelled = true;
+        this.requestBody.closeFromResponse();
     }
     private finish(code: status, details: string): void {
         this.finishObject({ code, details, metadata: new Metadata() });
@@ -487,6 +508,7 @@ export class WorkersCall {
         wake?.();
         this.context.onFinish();
         this.deliverTerminal();
+        for (const callback of this.stoppedUploadCallbacks.splice(0)) queueMicrotask(() => notify(callback));
     }
     private deliverTerminal(): void {
         if (!this.listener || !this.terminal || this.terminalDelivered) {
