@@ -69,6 +69,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-workers-fetcher.cjs` | Actual workerd service bindings, per-client Fetcher isolation and default Fetch | `verification/workers-fetcher.json` |
 | `node scripts/test-workers-compression.cjs` | Identity/deflate/gzip messages, mixed frames, decoded limits and cancellation against a Node zlib peer | `verification/workers-compression.json` |
 | `npm run test:secret-manager` | Native/adapter/workerd Secret Manager pagination, method errors, metadata, recovery and payload checksum handling | `verification/secret-manager-extended.json` |
+| `npm run test:firestore-read-errors` | Both pinned Firestore profiles: intermediate read failures, SDK retry requests, events and cleanup in native/Node/workerd | `verification/firestore-read-errors.json` |
 | `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
@@ -147,6 +148,43 @@ checks hashes of the shared business source and installed dependencies. Negative
 tests reject missing or duplicate cases, changed error semantics and incomplete
 cleanup. These checks cover the three methods above; they do not establish live
 IAM/quota behavior or compatibility for other Secret Manager methods.
+
+## Firestore intermediate read failures
+
+`npm run test:firestore-read-errors` runs the same read operations with Firestore
+8.3.0 and 9.2.0, using native grpc-js and both adapter modes in Node and workerd.
+A controlled native service injects permanent errors after partial results and
+transient errors before or after results from `BatchGetDocuments` and `RunQuery`.
+Actual Envoy translates local adapter traffic; the automatic mode's local route
+does not emulate Cloudflare's edge conversion.
+
+The comparisons cover `getAll()`, query `get()` and query `stream()`. Backend
+receipts verify that document retries request only outstanding names and query
+retries preserve the read time while advancing the cursor and reducing the
+remaining limit. SDK retries create distinct adapter calls, each with one
+attempt and one Fetch. Application results and stream event order are compared
+with native, followed by a successful read on the same client and resource
+checks before `terminate()`.
+
+Partial-response faults wait for a fixture progress acknowledgement from the
+pinned SDK's snapshot construction path. The test wrapper calls the original
+implementation and preserves its result; it provides a pacing signal without
+changing retry decisions. This makes the exercised schedule explicit and avoids
+assuming the consumer has processed data after a fixed sleep. The scenario is
+a controlled failure test, not a production consistency or contention test.
+
+A separate query-stream `destroy()` case keeps the backend response open after
+the first document. After local stream closure and a successful marker read,
+the peer must still observe the original RPC. Explicit peer release then allows
+resource cleanup before SDK termination. Both native and adapter consumers
+exhibit this pinned SDK boundary; the test does not treat local `close` as remote
+cancellation.
+
+The gate requires 100 case executions, 260 native service RPCs, 208 adapter Fetch
+attempts and 70 separate fixture control acknowledgements. Envoy receipts identify
+each case, RPC method and terminal status. The independent evidence validator
+rejects missing combinations, changed retry requests, incorrect event sequences,
+unreleased resources and stale source/dependency identities.
 
 ## Official database emulators
 

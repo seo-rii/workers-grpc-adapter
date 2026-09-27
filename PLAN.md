@@ -93,8 +93,10 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 
 ### Firestore
 
-- [ ] Extend BatchGetDocuments and RunQuery coverage to remaining intermediate
-  stream failures and event variants.
+- [x] Compare BatchGetDocuments and RunQuery failures before and after partial
+  results in both pinned SDK profiles. Check permanent errors, transient retries,
+  outstanding-document and cursor/read-time requests, stream event order,
+  same-client recovery and resources before client termination.
 - [ ] Broaden transaction contention and retry cases beyond controlled local
   faults and the emulator's simplified locking behavior.
 - [ ] Complete method/version-specific compatibility evidence for experimental

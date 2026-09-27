@@ -51,6 +51,21 @@ Official Firestore 1.22.0 Native and Datastore modes run through real Envoy loca
 
 Controlled [Datastore Lookup tests](datastore-lookup.md) cover mixed found/missing/deferred rounds, get overloads, partial stream errors, bounded explicit SDK retries and per-RPC deadlines. Successful deferred rounds can continue beyond one RPC timeout; ending an SDK read stream stops later rounds but does not cancel an already pending unary Lookup. These checks use the pinned Datastore 10.1.0 graph and a controlled peer, not production Datastore storage.
 
+Controlled Firestore read tests compare both pinned SDK profiles across native
+grpc-js and both adapter modes in Node/workerd. They exercise permanent failures
+after partial results and transient failures before or after results from
+`BatchGetDocuments` and `RunQuery`. SDK retries are separate adapter calls; the
+tests check outstanding-document lists and query cursors/read times, delivered
+results, error events, recovery and resources before client termination. They
+do not establish production read consistency or transaction contention.
+
+In both pinned Firestore SDKs, destroying the public query stream stops local
+delivery without canceling its underlying `RunQuery` RPC. A controlled test
+holds that RPC open, completes a separate read on the same client, verifies the
+original backend call is still active, then explicitly releases it and checks
+cleanup. Applications must bound the RPC lifetime; local stream closure does
+not establish immediate backend cancellation.
+
 Controlled Secret Manager tests compare `GetSecret`, `ListSecrets` and
 `AccessSecretVersion` across native grpc-js and both Node/workerd adapter modes.
 They cover callback/Promise errors, repeated text/binary trailers, intermediate
