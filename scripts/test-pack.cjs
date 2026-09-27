@@ -83,6 +83,7 @@ async function main() {
                 "const a=require('node:assert/strict');a.equal(require('@grpc/grpc-js/package.json').name,'workers-grpc-adapter');a.equal(require('wga-fixture-sdk').grpc.nativeMock,true);";
             await run(process.execPath, ['-e', assertion], fixture);
             if (override) {
+                await run(process.execPath, ['-e', "const a=require('node:assert/strict');const c=require('@grpc/grpc-js/status-details');import('@grpc/grpc-js/status-details').then(m=>{a.strictEqual(m.decodeGrpcStatusDetails,c.decodeGrpcStatusDetails);const s={code:7,details:'denied',metadata:{get:()=>[]}};a.strictEqual(m.decodeGrpcStatusDetails(s).status,s);});"], fixture);
                 const invoke = `const a=require('node:assert/strict'),g=require('@grpc/grpc-js');let n=0,completed=false;process.on('exit',()=>a.equal(completed,true));globalThis.fetch=async()=>{n++;return new Response(Buffer.concat([Buffer.from([0,0,0,0,2,8,1]),Buffer.from([128,0,0,0,16]),Buffer.from('grpc-status: 0\\r\\n')]),{headers:{'content-type':'application/grpc-web+proto'}});};const c=new g.Client('fixture.example',g.credentials.createSsl());c.makeUnaryRequest('/example.Service/Unary',x=>x,x=>x,Buffer.from([8,1]),(e,v)=>{a.equal(e,null);a.deepEqual(v,Buffer.from([8,1]));a.equal(n,1);c.close();completed=true;});`;
                 await run(process.execPath, ['-e', invoke], fixture);
             }

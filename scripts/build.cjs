@@ -8,7 +8,7 @@ const buildPreset = path.join(root, 'src/build');
 if (fs.existsSync(buildPreset)) {
     fs.cpSync(buildPreset, path.join(root, 'dist/build'), { recursive: true });
 }
-for (const entry of ['index', 'config', 'adapter', 'client', 'server']) {
+for (const entry of ['index', 'config', 'adapter', 'client', 'server', 'status-details']) {
     const mod = require(path.join(root, 'dist', entry + '.js'));
     const names = Object.keys(mod).filter(k => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k));
     fs.writeFileSync(path.join(root, 'dist', entry + '.mjs'), `import cjs from './${entry}.js';\nexport default cjs;\n` + names.map(k => `export const ${k} = cjs.${k};\n`).join(''));
