@@ -377,6 +377,7 @@ export class WorkersCall {
                     const metadata = pendingInitial; pendingInitial = undefined;
                     notify(() => this.listener!.onReceiveMetadata(metadata));
                 }
+                if (this.terminal) return;
                 this.responseBytes = frame.payload.length;
                 while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
                 if (this.terminal) return;
