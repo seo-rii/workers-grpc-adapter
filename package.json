@@ -26,7 +26,7 @@
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/profiles.md", "docs/sdk-performance.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:firestore-watch-errors": "node scripts/test-firestore-watch-errors.cjs",
@@ -44,6 +44,8 @@
     "test:workerd:integration": "node scripts/test-workerd-integration.cjs",
     "test:workerd:lifecycle": "node scripts/test-workerd-lifecycle.cjs",
     "test:workerd:observer": "node scripts/test-workerd-observer.cjs",
+    "test:workerd:server-streaming": "node scripts/test-workerd-server-streaming.cjs",
+    "test:workerd:transport-extensions": "node scripts/test-workerd-transport-extensions.cjs",
     "test:workerd:fuzz": "node scripts/test-workerd-fuzz.cjs",
     "test:pack": "node scripts/test-pack.cjs",
     "test:types": "node scripts/test-types.cjs",
@@ -63,6 +65,7 @@
     "test:envoy": "node scripts/envoy-test.cjs",
     "test:contract": "node scripts/test-contract.cjs",
     "test:benchmark": "node scripts/benchmark.cjs",
+    "test:benchmark:sdk": "node scripts/benchmark-sdk.cjs",
     "fixtures:install": "node scripts/install-fixtures.cjs",
     "verify": "node scripts/verify.cjs",
     "doctor": "node scripts/doctor.cjs",

@@ -86,6 +86,10 @@ test('EVIDENCE accepts the actual preset canonical profile hash and rejects sema
     assert.throws(() => validateProfileManifest({ ...profile, revision: profile.revision + 1 }, manifest), /profile hash\/revision drift/);
     assert.throws(() => validateProfileManifest({ ...profile, schemas: [] }, manifest), /profile hash\/revision drift/);
     assert.throws(() => validateProfileManifest(profile, { ...manifest, loaderOptionsSha256: 'wrong' }), /loader options drift/);
+    assert.throws(() => validateProfileManifest(profile, { ...manifest, cacheKey: 'wrong' }), /cache identity drift/);
+    assert.throws(() => validateProfileManifest(profile, { ...manifest, inputSha256: 'wrong' }), /cache identity drift/);
+    assert.throws(() => validateProfileManifest(profile, { ...manifest, capabilities: [] }), /declarative profile metadata drift/);
+    assert.throws(() => validateProfileManifest(profile, { ...manifest, transformed: [{ path: profile.files[0].path, rules: [] }] }), /executed transform rules/);
 });
 
 test('EVIDENCE nonexistent named test, wrong source and unexecuted test are rejected', () => {

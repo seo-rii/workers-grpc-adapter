@@ -42,11 +42,14 @@ try {
         const legacySource = fs.readFileSync(path.join(root, 'test/types-legacy-google-auth.cts'), 'utf8');
         const transportSource = fs.readFileSync(path.join(root, 'test/types-transport-features.cts'), 'utf8');
         const observerSource = fs.readFileSync(path.join(root, 'test/types-observer.cts'), 'utf8');
-        const files = ['consumer.mts', 'consumer.cts', 'legacy.mts', 'legacy.cts', 'transport.mts', 'transport.cts', 'observer.mts', 'observer.cts'].map(n => {
-            const file = path.join(dir, n);
-            fs.writeFileSync(file, n.startsWith('legacy.') ? legacySource : n.startsWith('transport.') ? transportSource : n.startsWith('observer.') ? observerSource : source);
-            return file;
-        });
+        const sources = { consumer: source, legacy: legacySource, transport: transportSource, observer: observerSource,
+            statusDetails: fs.readFileSync(path.join(root, 'test/types-status-details.cts'), 'utf8'),
+            retryThrottling: fs.readFileSync(path.join(root, 'test/types-retry-throttling.cts'), 'utf8'),
+            serverStreaming: fs.readFileSync(path.join(root, 'test/types-server-streaming.cts'), 'utf8') };
+        const files = Object.entries(sources).flatMap(([name, content]) => ['mts', 'cts'].map(extension => {
+            const file = path.join(dir, `${name}.${extension}`);
+            fs.writeFileSync(file, content); return file;
+        }));
         compile({ module, moduleResolution, noEmit: true, declaration: false, rootDir: dir }, files);
         results.push({ mode: name, status: 'passed', skipLibCheck: false, strict: true });
     }

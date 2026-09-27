@@ -6,10 +6,14 @@ const crypto = require('node:crypto');
 const os = require('node:os');
 const { isDeepStrictEqual } = require('node:util');
 const ts = require('typescript');
+const { validateWorkerdServerStreamingReport } = require('./server-streaming-evidence.cjs');
+const { validateSdkBenchmarkReport } = require('./sdk-benchmark-evidence.cjs');
+const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
+    'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
     'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
@@ -153,6 +157,19 @@ function validateProfileManifest(profile, build) {
     // file has a separate input snapshot and installed-file comparison.
     need(build.profile === profile.id && build.revision === profile.revision && build.profileSha256 === digest(JSON.stringify(profile)), 'Workers profile hash/revision drift');
     need(isDeepStrictEqual(build.loaderOptions, profile.loaderOptions) && build.loaderOptionsSha256 === digest(JSON.stringify(profile.loaderOptions)), 'loader options drift');
+    need(isDeepStrictEqual(build.packages, profile.packages) && isDeepStrictEqual(build.capabilities, profile.capabilities)
+        && isDeepStrictEqual(build.requiredChecks, profile.requiredChecks), 'declarative profile metadata drift');
+    need(build.transformer?.version === profile.transformerVersion && /^[a-f0-9]{64}$/.test(build.transformer?.sha256)
+        && /^\d+\.\d+\.\d+/.test(build.transformer?.typescriptVersion), 'transformer identity missing');
+    const inputs = digest(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+        sources: [...profile.files, ...profile.schemas, ...profile.codegenInputs].map(file => [file.path, file.sha256]) }));
+    need(build.inputSha256 === inputs && build.cacheKey === digest(JSON.stringify({ profileSha256: build.profileSha256,
+        transformer: build.transformer, inputSha256: inputs })), 'transformer/input cache identity drift');
+    for (const file of build.transformed) {
+        const declared = profile.files.find(entry => entry.path === file.path);
+        need(declared && isDeepStrictEqual(file.rules, declared.transforms.map(rule => ({ rule: rule.rule, matches: rule.expectedMatches }))),
+            'executed transform rules differ from declared profile');
+    }
 }
 function validateSupplementalCases(mapping, context) {
     const items = mapping.supplementalCases || [];
@@ -504,6 +521,7 @@ function validateProvenance(root, report) {
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
+        ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
@@ -534,6 +552,19 @@ function validateProvenance(root, report) {
         'workerd observer command did not pass');
     for (const [file, expected] of Object.entries({ ...report.workerdObserver.installedInputs, ...report.workerdObserver.evidence })) {
         need(hash(root, file) === expected, `${file}: observer execution input drift`);
+    }
+    validateWorkerdServerStreamingReport(report.workerdServerStreaming);
+    validateSdkBenchmarkReport(report.sdkBenchmark);
+    validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
+    for (const [id, result] of [['workerd-server-streaming', report.workerdServerStreaming],
+        ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark]]) {
+        need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
+        for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs })) {
+            need(hash(root, file) === expected, `${file}: ${id} execution input drift`);
+        }
+    }
+    for (const graph of report.sdkBenchmark.graphs) {
+        for (const [file, expected] of Object.entries(graph.installedInputs)) need(hash(root, file) === expected, `${file}: benchmark installed SDK input drift`);
     }
     need(campaign?.status === 'passed' && campaign.profile === 'ci' && campaign.liveCloud === false
         && campaign.runs?.length === 4, 'required Node/workerd fuzz campaign is incomplete');
@@ -580,9 +611,11 @@ function validateProvenance(root, report) {
     const profileFile = 'src/build/profiles/google-static-v1.json';
     const profile = read(root, profileFile), build = read(root, 'verification/workers-sdk-build.json');
     validateProfileManifest(profile, build);
+    need(build.transformer.sha256 === hash(root, 'src/build/index.cjs'), 'executed transformer source drift');
     need(hash(root, 'fixtures/google/node_modules/@grpc/grpc-js/dist/build/profiles/google-static-v1.json') === hash(root, profileFile), 'installed build profile drift');
     for (const entry of [...profile.files, ...profile.schemas, ...profile.codegenInputs]) need(hash(root, `fixtures/google/${entry.path}`) === entry.sha256, `${entry.path}: pinned source/schema drift`);
-    for (const entry of profile.packages) need(read(root, `fixtures/google/${entry.path}/package.json`).version === entry.version, `${entry.path}: profile package drift`);
+    for (const entry of profile.packages) need(read(root, `fixtures/google/${entry.path}/package.json`).version === entry.version
+        && hash(root, `fixtures/google/${entry.path}/package.json`) === entry.packageJsonSha256, `${entry.path}: profile package drift`);
     for (const entry of build.schemas) need(hash(root, `fixtures/google/${entry.path}`) === entry.sourceSha256, `${entry.path}: executed schema drift`);
     for (const [file, expected] of Object.entries(report.workersSdk.evidence || {})) need(hash(root, file) === expected, `${file}: Workers execution input drift`);
     for (const [file, expected] of Object.entries(report.workersShared.evidence || {})) need(hash(root, file) === expected, `${file}: shared Worker execution input drift`);
