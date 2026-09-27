@@ -16,7 +16,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: local-${{ github.workflow }}-${{ github.ref }}
+  # Manual/nightly verification must not cancel the push or PR check.
+  group: local-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:

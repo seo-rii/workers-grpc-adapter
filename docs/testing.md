@@ -195,7 +195,10 @@ It runs nightly at 18:30 UTC and when **extended_fuzz** is selected in the manua
 workflow dispatch. Pushes and pull requests require the smaller campaign as
 part of the full gate. CI uploads per-seed JSON reports and private process logs
 on success and failure. The extended report is separate, so it cannot overwrite
-the required CI campaign's evidence. Prepare the installed fixtures before any
+the required CI campaign's evidence. Concurrency groups include the trigger event:
+manual and scheduled runs cannot cancel push or pull-request checks. A newer run
+for the same workflow, ref and event still cancels its older run.
+Prepare the installed fixtures before any
 workerd or campaign command; these commands deliberately test the packaged code.
 
 Save a confirmed failure as a focused regression test before fixing it. A passing campaign establishes only the tested properties and generated inputs; it does not certify all protocol behavior or Cloudflare's beta translator.
