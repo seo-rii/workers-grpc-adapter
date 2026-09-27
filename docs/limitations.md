@@ -1,6 +1,6 @@
 # Limitations and compatibility status
 
-This is an experimental, client-only prototype. The package remains `private: true`. Passing local tests does not establish a complete grpc-js replacement or production readiness.
+This is an experimental prototype. The package remains `private: true`. Passing local tests does not establish a complete grpc-js replacement or production readiness.
 
 ## Remaining release gates
 
@@ -46,7 +46,7 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 
 ## Unsupported features
 
-Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+Client streaming, bidirectional RPCs, native grpc-js Server sockets, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
 
 Identity, deflate and gzip message codecs are implemented and compared with native grpc-js and workerd peers. Compressed trailers and cross-call peer-encoding caches remain unsupported. Configured request compression never triggers an automatic identity retry. Deployed Cloudflare conversion with compressed messages remains a separate live check; see [compression](compression.md).
 
@@ -55,6 +55,8 @@ Preconfigured Workers mTLS and HTTP service bindings can be selected using the t
 Explicit method-scoped unary retry policies are available, with bounded attempts, fresh credentials, pushback and one logical deadline. Defaults remain one Fetch per call. SDK retries can multiply attempts; lost responses can hide committed writes. This does not implement native transparent retry or service-config retries. See [retries](retries.md).
 
 Explicit `HealthClient.check()` and `monitor()` implement the standard remote health protocol, including Watch reconnects and `UNIMPLEMENTED` disablement. Applications can await SERVING before calls; this does not change channel READY or intercept requests automatically. See [health](health.md).
+
+The separate `./server` entry point implements binary gRPC-Web Fetch handlers for unary and server-streaming methods, including bounded codecs, deadlines and cooperative cancellation. It does not open HTTP/2 sockets or implement the native `Server` API. Incoming edge conversion and deployment authentication remain application responsibilities. See [server](server.md).
 
 ## Intentional differences
 

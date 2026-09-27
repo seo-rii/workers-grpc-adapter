@@ -11,6 +11,7 @@ const source = `import { Client, Metadata, credentials, status } from '@grpc/grp
 import { Client as DeepClient } from '@grpc/grpc-js/build/src/client';
 import { configureWorkersGrpc, WorkersGrpcConfig } from '@grpc/grpc-js/config';
 import { createWorkersGrpcTransport } from '@grpc/grpc-js/adapter';
+import { createGrpcWebHandler, GrpcWebServerError } from '@grpc/grpc-js/server';
 import { Buffer } from 'node:buffer';
 const config: WorkersGrpcConfig = {mode:'grpc-web',endpoints:{'example.test':'https://gateway.test'}};
 configureWorkersGrpc(config);
@@ -20,6 +21,14 @@ const ser=(value:{text:string})=>Buffer.from(value.text);
 const de=(bytes:Buffer)=>({text:bytes.toString()});
 client.makeUnaryRequest('/example.Echo/Unary',ser,de,{text:'x'},new Metadata(),{deadline:Infinity},(err,value)=>{if(err){const n:number=err.code;}else{const s:string|undefined=value?.text;}});
 client.makeServerStreamRequest('/example.Echo/Stream',ser,de,{text:'x'});
+const definition = { echo: { path: '/example.Echo/Unary', requestStream: false, responseStream: false,
+  requestDeserialize: de, responseSerialize: ser } };
+const endpoint: (request: Request) => Promise<Response> = createGrpcWebHandler(definition, {
+  echo(value, context) { const signal: AbortSignal = context.signal; return { text: value.text }; },
+});
+const rejected = new GrpcWebServerError(status.PERMISSION_DENIED, 'Denied', new Metadata());
+// @ts-expect-error response must match the method serializer
+createGrpcWebHandler(definition, { echo: () => 42 });
 // @ts-expect-error endpoints cannot be used with cloudflare mode
 configureWorkersGrpc({mode:'cloudflare',endpoints:{'example.test':'https://gateway.test'}});
 // @ts-expect-error a unary callback is required

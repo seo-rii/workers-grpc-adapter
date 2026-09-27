@@ -168,3 +168,9 @@ credentials per attempt. Local CF mode checks do not emulate edge conversion.
 native grpc-js, then exercises 18 workerd scenarios across both transport modes.
 It checks reconnect, disabled Watch, deadlines, caller abort and native cancellation
 before isolate disposal. Decoder unit tests add 2,500 seeded malformed inputs.
+
+`node scripts/test-workers-server.cjs` runs 120 local client-to-Fetch-handler RPCs
+across both modes, three compression codecs and cold/warm calls. Eight additional
+inbound wire cases use a native protobuf byte oracle. Unit tests compare actual
+grpc-js server responses and cover invalid framing, metadata, lazy iteration,
+timeout cleanup and late handler completion after cancellation.

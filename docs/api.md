@@ -160,3 +160,10 @@ The root module exports `HealthClient`, `HealthWatch` and `HealthServingStatus`.
 Wrap an existing `Client` to reuse its transport and credentials. `check()` is a
 bounded unary probe; `monitor()` reconnects Watch and exposes `waitForServing()`.
 Close monitors within the Worker lifetime. See [health](health.md).
+
+## Fetch server endpoint
+
+`@grpc/grpc-js/server` exports `createGrpcWebHandler` and `GrpcWebServerError`.
+Handlers consume ordinary method definitions and expose a `Request` → `Response`
+endpoint for binary gRPC-Web unary or server-streaming methods. The root native
+`Server` and `ServerCredentials` stubs still reject construction. See [server](server.md).
