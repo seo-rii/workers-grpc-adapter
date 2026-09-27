@@ -33,8 +33,8 @@ export class CallLifetime implements InterceptingCallInterface {
     }
     bind(nextCall: InterceptingCallInterface): this { this.nextCall = nextCall; return this; }
     addTransport(call: WorkersCall): void {
-        this.transports.add(call);
         if (this.terminal) call.cancelWithStatus(this.terminal.code, this.terminal.details);
+        else this.transports.add(call);
     }
     isTerminal(): boolean { return this.terminal !== undefined; }
     timerActive(): boolean { return this.timer !== undefined; }
@@ -140,6 +140,7 @@ export class CallLifetime implements InterceptingCallInterface {
         // listener already runs asynchronously: preserve its status-before-write
         // order instead of inserting another microtask in that path.
         if (!fromListener) this.deliver();
+        try { this.nextCall?.disposePending?.(); } catch { /* Custom cleanup cannot veto completion. */ }
         for (const call of this.transports) call.cancelWithStatus(result.code, result.details);
         this.transports.clear();
         if (fromListener) this.deliver(true);

@@ -121,61 +121,92 @@ export function isInterceptingListener(
 }
 
 export class InterceptingListenerImpl implements InterceptingListener {
+  private disposed = false;
   private processingMetadata = false;
   private hasPendingMessage = false;
   private pendingMessage: any;
   private processingMessage = false;
   private pendingStatus: StatusObject | null = null;
-  constructor(
-    private listener: FullListener,
-    private nextListener: InterceptingListener
-  ) {}
+  private listener?: FullListener;
+  private nextListener?: InterceptingListener;
+  constructor(listener: FullListener, nextListener: InterceptingListener) {
+    this.listener = listener;
+    this.nextListener = nextListener;
+  }
+
+  /** Release only this listener's buffers and references, never borrowed listeners. */
+  disposePending(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.processingMetadata = false;
+    this.processingMessage = false;
+    this.hasPendingMessage = false;
+    this.pendingMessage = undefined;
+    this.pendingStatus = null;
+    this.listener = undefined;
+    this.nextListener = undefined;
+  }
 
   private processPendingMessage() {
-    if (this.hasPendingMessage) {
-      this.nextListener.onReceiveMessage(this.pendingMessage);
-      this.pendingMessage = null;
+    if (!this.disposed && !this.processingMetadata && this.hasPendingMessage) {
+      const message = this.pendingMessage;
+      this.pendingMessage = undefined;
       this.hasPendingMessage = false;
+      this.nextListener!.onReceiveMessage(message);
     }
   }
 
   private processPendingStatus() {
-    if (this.pendingStatus) {
-      this.nextListener.onReceiveStatus(this.pendingStatus);
+    if (!this.disposed && !this.processingMetadata && !this.processingMessage && !this.hasPendingMessage && this.pendingStatus) {
+      const status = this.pendingStatus;
+      this.pendingStatus = null;
+      this.nextListener!.onReceiveStatus(status);
     }
   }
 
   onReceiveMetadata(metadata: Metadata): void {
+    if (this.disposed) return;
     this.processingMetadata = true;
-    this.listener.onReceiveMetadata(metadata, metadata => {
+    let continued = false;
+    this.listener!.onReceiveMetadata(metadata, metadata => {
+      if (continued || this.disposed) return;
+      continued = true;
       this.processingMetadata = false;
-      this.nextListener.onReceiveMetadata(metadata);
+      this.nextListener!.onReceiveMetadata(metadata);
       this.processPendingMessage();
       this.processPendingStatus();
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onReceiveMessage(message: any): void {
+    if (this.disposed) return;
     /* If this listener processes messages asynchronously, the last message may
      * be reordered with respect to the status */
     this.processingMessage = true;
-    this.listener.onReceiveMessage(message, msg => {
+    let continued = false;
+    this.listener!.onReceiveMessage(message, msg => {
+      if (continued || this.disposed) return;
+      continued = true;
       this.processingMessage = false;
       if (this.processingMetadata) {
         this.pendingMessage = msg;
         this.hasPendingMessage = true;
       } else {
-        this.nextListener.onReceiveMessage(msg);
+        this.nextListener!.onReceiveMessage(msg);
         this.processPendingStatus();
       }
     });
   }
   onReceiveStatus(status: StatusObject): void {
-    this.listener.onReceiveStatus(status, processedStatus => {
-      if (this.processingMetadata || this.processingMessage) {
+    if (this.disposed) return;
+    let continued = false;
+    this.listener!.onReceiveStatus(status, processedStatus => {
+      if (continued || this.disposed) return;
+      continued = true;
+      if (this.processingMetadata || this.processingMessage || this.hasPendingMessage) {
         this.pendingStatus = processedStatus;
       } else {
-        this.nextListener.onReceiveStatus(processedStatus);
+        this.nextListener!.onReceiveStatus(processedStatus);
       }
     });
   }

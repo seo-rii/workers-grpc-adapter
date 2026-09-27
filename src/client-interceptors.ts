@@ -192,6 +192,8 @@ export interface InterceptorOptions extends CallOptions {
 }
 
 export interface InterceptingCallInterface {
+  /** Internal cleanup must not depend on a cancellation requester forwarding. */
+  disposePending?(): void;
   cancelWithStatus(status: Status, details: string): void;
   getPeer(): string;
   start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;
@@ -226,6 +228,8 @@ export class InterceptingCall implements InterceptingCallInterface {
   private halfCloseRequested = false;
   private pendingHalfClose = false;
   private halfClosed = false;
+  private disposed = false;
+  private responseListener?: InterceptingListenerImpl;
   constructor(
     private nextCall: InterceptingCallInterface,
     requester?: Requester
@@ -243,9 +247,26 @@ export class InterceptingCall implements InterceptingCallInterface {
   }
 
   cancelWithStatus(status: Status, details: string) {
+    this.disposePending();
     this.requester.cancel(() => {
       this.nextCall.cancelWithStatus(status, details);
     });
+  }
+
+  disposePending(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    const responseListener = this.responseListener;
+    this.responseListener = undefined;
+    responseListener?.disposePending();
+    for (const pending of this.pendingMessages.splice(0)) {
+      const callback = pending.context.callback;
+      pending.context = {};
+      pending.message = undefined;
+      if (callback) queueMicrotask(() => callback(new Error('WGA_CALL_TERMINATED')));
+    }
+    this.pendingHalfClose = false;
+    this.nextCall.disposePending?.();
   }
 
   getPeer() {
@@ -253,16 +274,16 @@ export class InterceptingCall implements InterceptingCallInterface {
   }
 
   private flushPendingOperations() {
-    if (this.processingMetadata || this.flushing) return;
+    if (this.disposed || this.processingMetadata || this.flushing) return;
     this.flushing = true;
     try {
-      while (this.pendingMessages[0]?.ready) {
+      while (!this.disposed && this.pendingMessages[0]?.ready) {
         // Release ownership before forwarding: a write callback can enqueue
         // another message or request half-close synchronously.
         const pending = this.pendingMessages.shift()!;
         this.nextCall.sendMessageWithContext(pending.context, pending.message);
       }
-      if (this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
+      if (!this.disposed && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
         this.pendingHalfClose = false;
         this.halfClosed = true;
         this.nextCall.halfClose();
@@ -276,6 +297,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     metadata: Metadata,
     interceptingListener?: Partial<InterceptingListener>
   ): void {
+    if (this.disposed) return;
     const fullInterceptingListener: InterceptingListener = {
       onReceiveMetadata:
         interceptingListener?.onReceiveMetadata?.bind(interceptingListener) ??
@@ -290,11 +312,13 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.processingMetadata = true;
     let continued = false;
     this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
-      if (continued) return;
+      if (continued || this.disposed) return;
       continued = true;
-      let finalInterceptingListener: InterceptingListener;
+      let finalInterceptingListener: InterceptingListenerImpl;
       if (isInterceptingListener(listener)) {
-        finalInterceptingListener = listener;
+        // Own the forwarding gate, not the supplied listener's lifetime. A
+        // requester may return a listener borrowed from another interceptor.
+        finalInterceptingListener = new InterceptingListenerImpl(defaultListener, listener);
       } else {
         const fullListener: FullListener = {
           onReceiveMetadata:
@@ -309,6 +333,7 @@ export class InterceptingCall implements InterceptingCallInterface {
           fullInterceptingListener
         );
       }
+      this.responseListener = finalInterceptingListener;
       this.nextCall.start(md, finalInterceptingListener);
       this.processingMetadata = false;
       this.flushPendingOperations();
@@ -316,6 +341,7 @@ export class InterceptingCall implements InterceptingCallInterface {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
+    if (this.disposed) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
     if (this.halfCloseRequested) {
       const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
       if (context.callback) context.callback(error);
@@ -326,7 +352,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.pendingMessages.push(pending);
     let continued = false;
     this.requester.sendMessage(message, finalMessage => {
-      if (continued) return;
+      if (continued || this.disposed) return;
       continued = true;
       pending.message = finalMessage;
       pending.ready = true;
@@ -338,14 +364,14 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.sendMessageWithContext({}, message);
   }
   startRead(): void {
-    this.nextCall.startRead();
+    if (!this.disposed) this.nextCall.startRead();
   }
   halfClose(): void {
-    if (this.halfCloseRequested) return;
+    if (this.disposed || this.halfCloseRequested) return;
     this.halfCloseRequested = true;
     let continued = false;
     this.requester.halfClose(() => {
-      if (continued) return;
+      if (continued || this.disposed) return;
       continued = true;
       this.pendingHalfClose = true;
       this.flushPendingOperations();

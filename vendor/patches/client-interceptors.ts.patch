@@ -11,7 +11,10 @@
 +import { ClientMethodDefinition } from './factory';
 @@ -37,0 +39 @@
 +import type { CallLifetime } from './call-lifetime';
-@@ -215,14 +217,10 @@
+@@ -192,0 +195,2 @@
++  /** Internal cleanup must not depend on a cancellation requester forwarding. */
++  disposePending?(): void;
+@@ -215,14 +219,10 @@
 -  /**
 -   * Message context for a pending message that is waiting for
 -   */
@@ -36,9 +39,30 @@
 +  }> = [];
 +  private flushing = false;
 +  private halfCloseRequested = false;
-@@ -229,0 +228 @@
+@@ -229,0 +230,3 @@
 +  private halfClosed = false;
-@@ -256,14 +255,17 @@
++  private disposed = false;
++  private responseListener?: InterceptingListenerImpl;
+@@ -246,0 +250 @@
++    this.disposePending();
+@@ -251,0 +256,16 @@
++  disposePending(): void {
++    if (this.disposed) return;
++    this.disposed = true;
++    const responseListener = this.responseListener;
++    this.responseListener = undefined;
++    responseListener?.disposePending();
++    for (const pending of this.pendingMessages.splice(0)) {
++      const callback = pending.context.callback;
++      pending.context = {};
++      pending.message = undefined;
++      if (callback) queueMicrotask(() => callback(new Error('WGA_CALL_TERMINATED')));
++    }
++    this.pendingHalfClose = false;
++    this.nextCall.disposePending?.();
++  }
++
+@@ -256,14 +276,17 @@
 -  private processPendingMessage() {
 -    if (this.pendingMessageContext) {
 -      this.nextCall.sendMessageWithContext(
@@ -54,35 +78,47 @@
 -    if (this.pendingHalfClose) {
 -      this.nextCall.halfClose();
 +  private flushPendingOperations() {
-+    if (this.processingMetadata || this.flushing) return;
++    if (this.disposed || this.processingMetadata || this.flushing) return;
 +    this.flushing = true;
 +    try {
-+      while (this.pendingMessages[0]?.ready) {
++      while (!this.disposed && this.pendingMessages[0]?.ready) {
 +        // Release ownership before forwarding: a write callback can enqueue
 +        // another message or request half-close synchronously.
 +        const pending = this.pendingMessages.shift()!;
 +        this.nextCall.sendMessageWithContext(pending.context, pending.message);
 +      }
-+      if (this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
++      if (!this.disposed && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
 +        this.pendingHalfClose = false;
 +        this.halfClosed = true;
 +        this.nextCall.halfClose();
 +      }
 +    } finally {
 +      this.flushing = false;
-@@ -288,0 +291 @@
+@@ -276,0 +300 @@
++    if (this.disposed) return;
+@@ -288,0 +313 @@
 +    let continued = false;
-@@ -290 +293,2 @@
+@@ -290,2 +315,3 @@
 -      this.processingMetadata = false;
-+      if (continued) return;
+-      let finalInterceptingListener: InterceptingListener;
++      if (continued || this.disposed) return;
 +      continued = true;
-@@ -309,2 +313,2 @@
++      let finalInterceptingListener: InterceptingListenerImpl;
+@@ -293 +319,3 @@
+-        finalInterceptingListener = listener;
++        // Own the forwarding gate, not the supplied listener's lifetime. A
++        // requester may return a listener borrowed from another interceptor.
++        finalInterceptingListener = new InterceptingListenerImpl(defaultListener, listener);
+@@ -307,0 +336 @@
++      this.responseListener = finalInterceptingListener;
+@@ -309,2 +338,2 @@
 -      this.processPendingMessage();
 -      this.processPendingHalfClose();
 +      this.processingMetadata = false;
 +      this.flushPendingOperations();
-@@ -315 +319,9 @@
+@@ -315 +344,10 @@
 -    this.processingMessage = true;
++    if (this.disposed) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
 +    if (this.halfCloseRequested) {
 +      const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
 +      if (context.callback) context.callback(error);
@@ -92,7 +128,7 @@
 +    const pending = { context, message: undefined as any, ready: false };
 +    this.pendingMessages.push(pending);
 +    let continued = false;
-@@ -317,8 +329,5 @@
+@@ -317,8 +355,5 @@
 -      this.processingMessage = false;
 -      if (this.processingMetadata) {
 -        this.pendingMessageContext = context;
@@ -101,26 +137,29 @@
 -        this.nextCall.sendMessageWithContext(context, finalMessage);
 -        this.processPendingHalfClose();
 -      }
-+      if (continued) return;
++      if (continued || this.disposed) return;
 +      continued = true;
 +      pending.message = finalMessage;
 +      pending.ready = true;
 +      this.flushPendingOperations();
-@@ -334,0 +344,3 @@
-+    if (this.halfCloseRequested) return;
+@@ -332 +367 @@
+-    this.nextCall.startRead();
++    if (!this.disposed) this.nextCall.startRead();
+@@ -334,0 +370,3 @@
++    if (this.disposed || this.halfCloseRequested) return;
 +    this.halfCloseRequested = true;
 +    let continued = false;
-@@ -336,5 +348,4 @@
+@@ -336,5 +374,4 @@
 -      if (this.processingMetadata || this.processingMessage) {
 -        this.pendingHalfClose = true;
 -      } else {
 -        this.nextCall.halfClose();
 -      }
-+      if (continued) return;
++      if (continued || this.disposed) return;
 +      continued = true;
 +      this.pendingHalfClose = true;
 +      this.flushPendingOperations();
-@@ -348,11 +359,8 @@
+@@ -348,11 +385,8 @@
 -function getCall(channel: Channel, path: string, options: CallOptions): Call {
 -  const deadline = options.deadline ?? Infinity;
 -  const host = options.host;
@@ -140,43 +179,43 @@
 +  // between an omitted deadline and explicit Infinity for the Workers policy.
 +  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
 +  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, lifetime.applyOptions(callOptions), lifetime);
-@@ -369 +377,2 @@
+@@ -369 +403,2 @@
 -    protected methodDefinition: ClientMethodDefinition<any, any>
 +    protected methodDefinition: ClientMethodDefinition<any, any>,
 +    protected lifetime: CallLifetime
-@@ -378,0 +388 @@
+@@ -378,0 +414 @@
 +    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
-@@ -386,0 +397,3 @@
+@@ -386,0 +423,3 @@
 +      // A streaming Writable must settle its in-flight _write callback even
 +      // when serialization fails before the transport receives the message.
 +      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
-@@ -398,0 +412 @@
+@@ -398,0 +438 @@
 +    if (this.lifetime.isTerminal()) return;
-@@ -449,2 +463,2 @@
+@@ -449,2 +489,2 @@
 -  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>) {
 -    super(call, methodDefinition);
 +  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>, lifetime: CallLifetime) {
 +    super(call, methodDefinition, lifetime);
-@@ -486 +500,2 @@
+@@ -486 +526,2 @@
 -  methodDefinition: ClientMethodDefinition<any, any>
 +  methodDefinition: ClientMethodDefinition<any, any>,
 +  lifetime: CallLifetime
-@@ -488 +503 @@
+@@ -488 +529 @@
 -  const call = getCall(channel, methodDefinition.path, options);
 +  const call = getCall(channel, methodDefinition, options, lifetime);
-@@ -490 +505 @@
+@@ -490 +531 @@
 -    return new BaseStreamingInterceptingCall(call, methodDefinition);
 +    return new BaseStreamingInterceptingCall(call, methodDefinition, lifetime);
-@@ -492 +507 @@
+@@ -492 +533 @@
 -    return new BaseUnaryInterceptingCall(call, methodDefinition);
 +    return new BaseUnaryInterceptingCall(call, methodDefinition, lifetime);
-@@ -566,0 +582,2 @@
+@@ -566,0 +608,2 @@
 +  if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
 +  const lifetime = channel.createCallLifetime(options);
-@@ -582 +599 @@
+@@ -582 +625 @@
 -      getBottomInterceptingCall(channel, finalOptions, methodDefinition)
 +      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
-@@ -584,2 +601,3 @@
+@@ -584,2 +627,3 @@
 -  return getCall(interceptorOptions);
 -}
 +  try { return lifetime.bind(getCall(interceptorOptions)); }

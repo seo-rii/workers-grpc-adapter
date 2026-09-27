@@ -69,4 +69,6 @@ The logical RPC owns its deadline and parent cancellation outside the intercepto
 
 Cancellation, channel closure and deadlines complete the local callback/status once even when a requester withholds `next()`. Late startup, message and response continuations cannot restart Fetch or deliver another result. Outstanding write callbacks are settled on termination. Cancellation requesters are notified, but cannot veto local cleanup by withholding their continuation or throwing. Finite deadlines remain necessary when an interceptor intentionally never completes and the caller does not cancel.
 
+Incoming status waits for both metadata and message transformations to finish. Duplicate continuations cannot repeat delivery, and termination clears adapter-owned incoming and outgoing queues. References held by application interceptor code remain the application's responsibility. Custom `InterceptingCall.sendMessage()` overrides still run, including overrides that supply message flags.
+
 `test/call-lifetime.test.cjs` and `test/call-lifetime-property.test.cjs` verify stalled startup/status delivery and generated completion/cancellation schedules in both transport modes.
