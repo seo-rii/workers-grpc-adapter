@@ -2,7 +2,7 @@ import { ChannelCredentials } from './credentials';
 import { WorkersCall, CallOptions } from './call';
 import { connectivityState, status, WorkersGrpcConfigurationError as ConfigError } from './status';
 import { ChannelOptions, validateOptions } from './options';
-import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, lockConfiguration, routeFor } from './config-internal';
+import { INSTANCE_CONFIG, GAX_CONFIG_OPTION, configFromGaxToken, WorkersGrpcConfigSnapshot, getWorkersGrpcConfig, lockConfiguration, routeFor } from './config-internal';
 const workersChannels = new WeakSet<object>();
 export function isWorkersChannel(value: unknown): value is Channel {
     return typeof value === 'object' && value !== null && workersChannels.has(value);
@@ -20,6 +20,7 @@ export class Channel {
         const instanceConfig = (options as ChannelOptions & {
             [INSTANCE_CONFIG]?: WorkersGrpcConfigSnapshot;
         })[INSTANCE_CONFIG];
+        const usesGlobalConfig = instanceConfig === undefined && !Object.hasOwn(options, GAX_CONFIG_OPTION);
         if (Object.hasOwn(options, GAX_CONFIG_OPTION)) {
             if (instanceConfig !== undefined) {
                 throw new ConfigError('WGA_OPTION_CONFLICT', 'Multiple adapter instance options');
@@ -29,13 +30,15 @@ export class Channel {
             delete options[GAX_CONFIG_OPTION];
         }
         else {
-            this.config = instanceConfig ?? lockConfiguration();
+            this.config = instanceConfig ?? getWorkersGrpcConfig();
         }
         this.route = routeFor(target, this.config);
         this.limits = validateOptions(options, this.route.authority, this.config);
         if (this.route.insecure === creds._isSecure()) {
             throw new ConfigError('WGA_UNSUPPORTED_TLS', 'Credential security must match the route; HTTP is test-only');
         }
+        // A rejected constructor must not prevent correcting the global config.
+        if (usesGlobalConfig) lockConfiguration();
         workersChannels.add(this);
     }
     getTarget(): string {
