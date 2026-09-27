@@ -1,24 +1,124 @@
 --- a/src/client-interceptors.ts
 +++ b/src/client-interceptors.ts
-@@ -29,10 +29,11 @@
-   MessageContext,
-   Call,
- } from './call-interface';
+@@ -32,2 +32,3 @@
 -import { Status } from './constants';
 -import { Channel } from './channel';
 +import { status as Status } from './status';
 +import { Channel, isWorkersChannel } from './channel';
 +import { WorkersGrpcConfigurationError } from './status';
- import { CallOptions } from './client';
+@@ -35 +36 @@
 -import { ClientMethodDefinition } from './make-client';
 +import { ClientMethodDefinition } from './factory';
- import { getErrorMessage } from './error';
- import { AuthContext } from './auth-context';
- 
-@@ -345,17 +346,14 @@
-   }
- }
- 
+@@ -215,14 +216,10 @@
+-  /**
+-   * Message context for a pending message that is waiting for
+-   */
+-  private pendingMessageContext: MessageContext | null = null;
+-  private pendingMessage: any;
+-  /**
+-   * Indicates that a message has been passed to the requester's sendMessage
+-   * method but it has not been passed to the corresponding next callback
+-   */
+-  private processingMessage = false;
+-  /**
+-   * Indicates that a status was received but could not be propagated because
+-   * a message was still being processed.
+-   */
++  // Preserve submission order even when message continuations finish out of
++  // order. Writable callbacks normally serialize writes, but interceptors can
++  // also submit messages directly or reenter from a downstream callback.
++  private pendingMessages: Array<{
++    context: MessageContext;
++    message: any;
++    ready: boolean;
++  }> = [];
++  private flushing = false;
++  private halfCloseRequested = false;
+@@ -229,0 +227 @@
++  private halfClosed = false;
+@@ -256,14 +254,17 @@
+-  private processPendingMessage() {
+-    if (this.pendingMessageContext) {
+-      this.nextCall.sendMessageWithContext(
+-        this.pendingMessageContext,
+-        this.pendingMessage
+-      );
+-      this.pendingMessageContext = null;
+-      this.pendingMessage = null;
+-    }
+-  }
+-
+-  private processPendingHalfClose() {
+-    if (this.pendingHalfClose) {
+-      this.nextCall.halfClose();
++  private flushPendingOperations() {
++    if (this.processingMetadata || this.flushing) return;
++    this.flushing = true;
++    try {
++      while (this.pendingMessages[0]?.ready) {
++        // Release ownership before forwarding: a write callback can enqueue
++        // another message or request half-close synchronously.
++        const pending = this.pendingMessages.shift()!;
++        this.nextCall.sendMessageWithContext(pending.context, pending.message);
++      }
++      if (this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
++        this.pendingHalfClose = false;
++        this.halfClosed = true;
++        this.nextCall.halfClose();
++      }
++    } finally {
++      this.flushing = false;
+@@ -288,0 +290 @@
++    let continued = false;
+@@ -290 +292,2 @@
+-      this.processingMetadata = false;
++      if (continued) return;
++      continued = true;
+@@ -309,2 +312,2 @@
+-      this.processPendingMessage();
+-      this.processPendingHalfClose();
++      this.processingMetadata = false;
++      this.flushPendingOperations();
+@@ -315 +318,9 @@
+-    this.processingMessage = true;
++    if (this.halfCloseRequested) {
++      const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
++      if (context.callback) context.callback(error);
++      else throw error;
++      return;
++    }
++    const pending = { context, message: undefined as any, ready: false };
++    this.pendingMessages.push(pending);
++    let continued = false;
+@@ -317,8 +328,5 @@
+-      this.processingMessage = false;
+-      if (this.processingMetadata) {
+-        this.pendingMessageContext = context;
+-        this.pendingMessage = message;
+-      } else {
+-        this.nextCall.sendMessageWithContext(context, finalMessage);
+-        this.processPendingHalfClose();
+-      }
++      if (continued) return;
++      continued = true;
++      pending.message = finalMessage;
++      pending.ready = true;
++      this.flushPendingOperations();
+@@ -334,0 +343,3 @@
++    if (this.halfCloseRequested) return;
++    this.halfCloseRequested = true;
++    let continued = false;
+@@ -336,5 +347,4 @@
+-      if (this.processingMetadata || this.processingMessage) {
+-        this.pendingHalfClose = true;
+-      } else {
+-        this.nextCall.halfClose();
+-      }
++      if (continued) return;
++      continued = true;
++      this.pendingHalfClose = true;
++      this.flushPendingOperations();
+@@ -348,11 +358,8 @@
 -function getCall(channel: Channel, path: string, options: CallOptions): Call {
 -  const deadline = options.deadline ?? Infinity;
 -  const host = options.host;
@@ -38,34 +138,13 @@
 +  // between an omitted deadline and explicit Infinity for the Workers policy.
 +  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
 +  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, callOptions);
- }
- 
- /**
-@@ -384,6 +382,9 @@
-         Status.INTERNAL,
-         `Request message serialization failure: ${getErrorMessage(e)}`
-       );
+@@ -386,0 +394,3 @@
 +      // A streaming Writable must settle its in-flight _write callback even
 +      // when serialization fails before the transport receives the message.
 +      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
-       return;
-     }
-     this.call.sendMessageWithContext(context, serialized);
-@@ -485,7 +486,7 @@
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   methodDefinition: ClientMethodDefinition<any, any>
- ) {
+@@ -488 +498 @@
 -  const call = getCall(channel, methodDefinition.path, options);
 +  const call = getCall(channel, methodDefinition, options);
-   if (methodDefinition.responseStream) {
-     return new BaseStreamingInterceptingCall(call, methodDefinition);
-   } else {
-@@ -579,7 +580,7 @@
-       return currentOptions => nextInterceptor(currentOptions, nextCall);
-     },
-     (finalOptions: InterceptorOptions) =>
+@@ -582 +592 @@
 -      getBottomInterceptingCall(channel, finalOptions, methodDefinition)
 +      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition)
-   );
-   return getCall(interceptorOptions);
- }

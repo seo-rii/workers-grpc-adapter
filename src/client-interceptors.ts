@@ -213,21 +213,18 @@ export class InterceptingCall implements InterceptingCallInterface {
    * method but it has not been passed to the corresponding next callback
    */
   private processingMetadata = false;
-  /**
-   * Message context for a pending message that is waiting for
-   */
-  private pendingMessageContext: MessageContext | null = null;
-  private pendingMessage: any;
-  /**
-   * Indicates that a message has been passed to the requester's sendMessage
-   * method but it has not been passed to the corresponding next callback
-   */
-  private processingMessage = false;
-  /**
-   * Indicates that a status was received but could not be propagated because
-   * a message was still being processed.
-   */
+  // Preserve submission order even when message continuations finish out of
+  // order. Writable callbacks normally serialize writes, but interceptors can
+  // also submit messages directly or reenter from a downstream callback.
+  private pendingMessages: Array<{
+    context: MessageContext;
+    message: any;
+    ready: boolean;
+  }> = [];
+  private flushing = false;
+  private halfCloseRequested = false;
   private pendingHalfClose = false;
+  private halfClosed = false;
   constructor(
     private nextCall: InterceptingCallInterface,
     requester?: Requester
@@ -254,20 +251,23 @@ export class InterceptingCall implements InterceptingCallInterface {
     return this.nextCall.getPeer();
   }
 
-  private processPendingMessage() {
-    if (this.pendingMessageContext) {
-      this.nextCall.sendMessageWithContext(
-        this.pendingMessageContext,
-        this.pendingMessage
-      );
-      this.pendingMessageContext = null;
-      this.pendingMessage = null;
-    }
-  }
-
-  private processPendingHalfClose() {
-    if (this.pendingHalfClose) {
-      this.nextCall.halfClose();
+  private flushPendingOperations() {
+    if (this.processingMetadata || this.flushing) return;
+    this.flushing = true;
+    try {
+      while (this.pendingMessages[0]?.ready) {
+        // Release ownership before forwarding: a write callback can enqueue
+        // another message or request half-close synchronously.
+        const pending = this.pendingMessages.shift()!;
+        this.nextCall.sendMessageWithContext(pending.context, pending.message);
+      }
+      if (this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
+        this.pendingHalfClose = false;
+        this.halfClosed = true;
+        this.nextCall.halfClose();
+      }
+    } finally {
+      this.flushing = false;
     }
   }
 
@@ -287,8 +287,10 @@ export class InterceptingCall implements InterceptingCallInterface {
         (status => {}),
     };
     this.processingMetadata = true;
+    let continued = false;
     this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
-      this.processingMetadata = false;
+      if (continued) return;
+      continued = true;
       let finalInterceptingListener: InterceptingListener;
       if (isInterceptingListener(listener)) {
         finalInterceptingListener = listener;
@@ -307,22 +309,27 @@ export class InterceptingCall implements InterceptingCallInterface {
         );
       }
       this.nextCall.start(md, finalInterceptingListener);
-      this.processPendingMessage();
-      this.processPendingHalfClose();
+      this.processingMetadata = false;
+      this.flushPendingOperations();
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
-    this.processingMessage = true;
+    if (this.halfCloseRequested) {
+      const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
+      if (context.callback) context.callback(error);
+      else throw error;
+      return;
+    }
+    const pending = { context, message: undefined as any, ready: false };
+    this.pendingMessages.push(pending);
+    let continued = false;
     this.requester.sendMessage(message, finalMessage => {
-      this.processingMessage = false;
-      if (this.processingMetadata) {
-        this.pendingMessageContext = context;
-        this.pendingMessage = message;
-      } else {
-        this.nextCall.sendMessageWithContext(context, finalMessage);
-        this.processPendingHalfClose();
-      }
+      if (continued) return;
+      continued = true;
+      pending.message = finalMessage;
+      pending.ready = true;
+      this.flushPendingOperations();
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -333,12 +340,14 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.nextCall.startRead();
   }
   halfClose(): void {
+    if (this.halfCloseRequested) return;
+    this.halfCloseRequested = true;
+    let continued = false;
     this.requester.halfClose(() => {
-      if (this.processingMetadata || this.processingMessage) {
-        this.pendingHalfClose = true;
-      } else {
-        this.nextCall.halfClose();
-      }
+      if (continued) return;
+      continued = true;
+      this.pendingHalfClose = true;
+      this.flushPendingOperations();
     });
   }
   getAuthContext(): AuthContext | null {
