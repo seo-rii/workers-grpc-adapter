@@ -93,6 +93,7 @@ function main() {
     run('envoy', ['scripts/envoy-test.cjs'], [0, 2]);
     run('google-emulators', ['scripts/google-emulator-test.cjs']);
     run('firestore-watch', ['scripts/test-firestore-watch.cjs']);
+    run('modern-firestore-watch', ['scripts/test-modern-firestore-watch.cjs']);
     run('emulator-lifecycle', ['fixtures/emulators/lifecycle.cjs']);
     // Forces live flag off even if the caller's environment opted in.
     run('google-preflight', ['scripts/google-test.cjs'], [0, 2]);
@@ -120,7 +121,7 @@ function main() {
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
-        googleEmulators, firestoreWatch, emulatorLifecycle: read('emulator-lifecycle.json'),
+        googleEmulators, firestoreWatch, modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),

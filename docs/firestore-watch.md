@@ -70,7 +70,10 @@ permission-denied behavior, credential refresh, or live Google services.
 
 The bounded local cases do not establish deployed Worker lifetime guarantees,
 multi-hour listeners, network reconnection and resume tokens, gateway load
-balancing, or all Firestore Watch messages. They also do not certify the newer
-Firestore 9.2 SDK graph for Listen; that graph's separate gate covers its listed
-unary and server-streaming operations. Keep the experimental scope explicit when
+balancing, or all Firestore Watch messages.
+
+The separate `npm run test:modern-firestore-watch` gate now repeats all eight
+Listen cases against the official emulator using Firestore 9.2.0 and the exact
+`google-modern-v1` graph. Its native, Node-adapter and workerd results match; see
+[modern SDKs](modern-sdk.md). Keep the experimental scope explicit when
 evaluating a production workload.
