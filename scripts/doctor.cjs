@@ -13,7 +13,7 @@ function packageFor(req, name) {
     }
     throw Object.assign(new Error('dependency-not-installed'), { code: 'MODULE_NOT_FOUND' });
 }
-function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter') {
+function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', buildOptions) {
     base = path.resolve(base);
     const successStatus = expected === '@grpc/grpc-js' ? 'resolved-to-native' : 'resolved-to-replacement';
     const rel = value => path.relative(base, value).split(path.sep).join('/');
@@ -86,12 +86,18 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter') {
             results.push({ sdk, status: 'blocked', reason: error.code === 'MODULE_NOT_FOUND' ? 'dependency-not-installed' : 'resolution-failed' });
         }
     }
-    return { scope: 'installed dependency graph and runtime/declaration grpc-js import resolution', expectedImplementation: expected, environment: { node: process.version, platform: process.platform, arch: process.arch }, lockfileVersion: lock?.lockfileVersion ?? null, lockfileSha256: lock ? hash(fs.readFileSync(lockPath)) : null, graphSha256: hash(JSON.stringify(results)), results, passed: results.every(item => item.status === successStatus) };
+    const buildProfile = buildOptions ? require('../src/build/index.cjs').inspectGoogleWorkerProfile({ projectRoot: base, ...buildOptions }) : undefined;
+    return { ...(buildProfile ? { buildProfile } : {}), scope: 'installed dependency graph and runtime/declaration grpc-js import resolution', expectedImplementation: expected, environment: { node: process.version, platform: process.platform, arch: process.arch }, lockfileVersion: lock?.lockfileVersion ?? null, lockfileSha256: lock ? hash(fs.readFileSync(lockPath)) : null, graphSha256: hash(JSON.stringify(results)), results, passed: results.every(item => item.status === successStatus) && (!buildProfile || buildProfile.passed) };
 }
 if (require.main === module) {
-    const report = inspect(process.argv[2] || path.resolve(__dirname, '../fixtures/google'));
-    if (process.argv[3]) fs.writeFileSync(path.resolve(process.argv[3]), JSON.stringify(report, null, 2) + '\n');
-    console.log(JSON.stringify(process.argv[3] ? { ...report, results: report.results.map(({ graph, ...item }) => ({ ...item, packageCount: graph?.length ?? 0 })) } : report, null, 2));
+    const args = process.argv.slice(2), profileFlag = args.find(arg => arg.startsWith('--profile='));
+    if (args.some(arg => arg.startsWith('--') && arg !== profileFlag)) throw new Error('Usage: doctor.cjs [projectRoot] [report.json] [--profile=google-static-v1|google-modern-v1]');
+    const positional = args.filter(arg => !arg.startsWith('--'));
+    const profile = profileFlag?.slice('--profile='.length) ?? (positional.length ? undefined : 'google-static-v1');
+    const report = inspect(positional[0] || path.resolve(__dirname, '../fixtures/google'), undefined, undefined,
+      profile ? { profile, typescript: require('typescript') } : undefined);
+    if (positional[1]) fs.writeFileSync(path.resolve(positional[1]), JSON.stringify(report, null, 2) + '\n');
+    console.log(JSON.stringify(positional[1] ? { ...report, results: report.results.map(({ graph, ...item }) => ({ ...item, packageCount: graph?.length ?? 0 })) } : report, null, 2));
     process.exitCode = report.passed ? 0 : 2;
 }
 module.exports = { inspect };

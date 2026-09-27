@@ -1,144 +1,280 @@
 {
+  "schemaVersion": 1,
+  "transformerVersion": 1,
   "id": "google-modern-v1",
   "revision": 2,
   "packages": [
     {
       "path": "node_modules/gaxios",
       "name": "gaxios",
-      "version": "7.3.1"
+      "version": "7.3.1",
+      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad"
     },
     {
       "path": "node_modules/google-auth-library",
       "name": "google-auth-library",
-      "version": "11.1.0"
+      "version": "11.1.0",
+      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a"
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-auth-library",
       "name": "google-auth-library",
-      "version": "10.9.1"
+      "version": "10.9.1",
+      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9"
     },
     {
       "path": "node_modules/@google-cloud/datastore",
       "name": "@google-cloud/datastore",
-      "version": "11.1.0"
+      "version": "11.1.0",
+      "packageJsonSha256": "3c23c210cc47499c702db741ea3ee9adec613c3c548076ee3669b8fd31c835a7"
     },
     {
       "path": "node_modules/@google-cloud/datastore-api",
       "name": "@google-cloud/datastore-api",
-      "version": "0.3.0"
+      "version": "0.3.0",
+      "packageJsonSha256": "c03cebbafcac9fbb954515c5f078c599f7f029c9e7a5f382c3d47052f435d2e4"
     },
     {
       "path": "node_modules/@google-cloud/firestore",
       "name": "@google-cloud/firestore",
-      "version": "9.2.0"
+      "version": "9.2.0",
+      "packageJsonSha256": "8923d1ba064429ed26e517d78e11e8e4e038a465302fca266f88cdfa8b247a8b"
     },
     {
       "path": "node_modules/@google-cloud/firestore-api",
       "name": "@google-cloud/firestore-api",
-      "version": "0.2.0"
+      "version": "0.2.0",
+      "packageJsonSha256": "f49e2a61f07eb6067447157e1375fb3d3b9b7daef4672a866fbc89ca0d7dee16"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager",
       "name": "@google-cloud/secret-manager",
-      "version": "7.1.0"
+      "version": "7.1.0",
+      "packageJsonSha256": "fbe27a2390544888184053db157f30f50b593595d74a0c3326657f2eb2a5f268"
     },
     {
       "path": "node_modules/@grpc/proto-loader",
       "name": "@grpc/proto-loader",
-      "version": "0.8.1"
+      "version": "0.8.1",
+      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9"
     },
     {
       "path": "node_modules/google-gax",
       "name": "google-gax",
-      "version": "6.7.0"
+      "version": "6.7.0",
+      "packageJsonSha256": "466ef50f04f368b45c18cfab8932158433d9158e84489bc7b33427b560529676"
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-gax",
       "name": "google-gax",
-      "version": "5.0.8"
+      "version": "5.0.8",
+      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc"
     },
     {
       "path": "node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.6.6"
+      "version": "7.6.6",
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
     }
   ],
   "files": [
     {
       "path": "node_modules/@google-cloud/firestore/build/src/index.js",
-      "sha256": "cf93c25415eb5360867a8d108838ebabdaef34ef932d89107223d8344c11e97a"
+      "sha256": "cf93c25415eb5360867a8d108838ebabdaef34ef932d89107223d8344c11e97a",
+      "transforms": [
+        {
+          "rule": "firestore-watch-end",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/gaxios/build/cjs/src/gaxios.js",
-      "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c"
+      "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c",
+      "transforms": [
+        {
+          "rule": "native-fetch-default",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/gaxios/build/esm/src/gaxios.js",
-      "sha256": "68fd9281b268af396e1175a709dce9b33630cdcffa27af3e13029d58e007f9d5"
+      "sha256": "68fd9281b268af396e1175a709dce9b33630cdcffa27af3e13029d58e007f9d5",
+      "transforms": [
+        {
+          "rule": "native-fetch-default",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/request.js",
-      "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112"
+      "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112",
+      "transforms": [
+        {
+          "rule": "datastore-struct",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/entity.js",
-      "sha256": "80bce3ef12ce5c67004c258f30fa8b658af5e7880d21fd8ffff49c2a8a7f0b42"
+      "sha256": "80bce3ef12ce5c67004c258f30fa8b658af5e7880d21fd8ffff49c2a8a7f0b42",
+      "transforms": [
+        {
+          "rule": "preserve-static-setup",
+          "expectedMatches": 1
+        },
+        {
+          "rule": "legacy-buffer-base64",
+          "expectedMatches": 1
+        },
+        {
+          "rule": "datastore-legacy-key",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore-api/build/src/v1/datastore_client.js",
-      "sha256": "522a36a4a187774e86d13654e4be88d9503876267e991c7d64f3711283bbdb82"
+      "sha256": "522a36a4a187774e86d13654e4be88d9503876267e991c7d64f3711283bbdb82",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 8
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore-api/build/src/v1/datastore_admin_client.js",
-      "sha256": "943dac1c940e1f6a7c219980d9e6c05b338c1910df86a4820696e4239d3f71d4"
+      "sha256": "943dac1c940e1f6a7c219980d9e6c05b338c1910df86a4820696e4239d3f71d4",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/build/src/v1/firestore_client.js",
-      "sha256": "a65374bd1f5702bfaf75a49796c79ec391371c6808bd52e6dbdc57a259509fe9"
+      "sha256": "a65374bd1f5702bfaf75a49796c79ec391371c6808bd52e6dbdc57a259509fe9",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 8
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/build/src/v1/firestore_admin_client.js",
-      "sha256": "6d174f98c0cfc75cfd09452d56ff35c8a634a86fb926481d79c5c176fc845e73"
+      "sha256": "6d174f98c0cfc75cfd09452d56ff35c8a634a86fb926481d79c5c176fc845e73",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 20
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/build/src/v1beta1/firestore_client.js",
-      "sha256": "8b7ccc953e9885c16a87be5ebf4c858cb9d9e6d04c4d4e0d59f013ed30aa2b64"
+      "sha256": "8b7ccc953e9885c16a87be5ebf4c858cb9d9e6d04c4d4e0d59f013ed30aa2b64",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 8
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/build/src/v1/secret_manager_service_client.js",
-      "sha256": "85c37bef4e3a04e892281f7a9c685a5a75126ef54aa4841d162e23430dddd66b"
+      "sha256": "85c37bef4e3a04e892281f7a9c685a5a75126ef54aa4841d162e23430dddd66b",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 15
+        }
+      ]
     },
     {
       "path": "node_modules/@grpc/proto-loader/build/src/index.js",
-      "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e"
+      "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/grpc.js",
-      "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c"
+      "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c",
+      "transforms": [
+        {
+          "rule": "bundle-dirname",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/fallback.js",
-      "sha256": "06bc1f8f9c0fa4b87c46f754353191851f0dbfccabddd308d0f24e53cfbba307"
+      "sha256": "06bc1f8f9c0fa4b87c46f754353191851f0dbfccabddd308d0f24e53cfbba307",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 2
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/googleError.js",
-      "sha256": "806b38a98ade22de5de1face6eef9b81ae073db78a2bf0b7409a1412693686ad"
+      "sha256": "806b38a98ade22de5de1face6eef9b81ae073db78a2bf0b7409a1412693686ad",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
-      "sha256": "e1a5910fc6f4710eae35fa466b0ff6735fb08162eb66b3214978a7c2d0f42e38"
+      "sha256": "e1a5910fc6f4710eae35fa466b0ff6735fb08162eb66b3214978a7c2d0f42e38",
+      "transforms": [
+        {
+          "rule": "bundle-dirname",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/fallback.js",
-      "sha256": "36b9a74bada12da2decf8352efc2698f4df739a6772852177369be763662a582"
+      "sha256": "36b9a74bada12da2decf8352efc2698f4df739a6772852177369be763662a582",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 2
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/googleError.js",
-      "sha256": "08f8daa0b5bdefbd400f933ca149bdd0d86faf38628a7644d6630ff207977014"
+      "sha256": "08f8daa0b5bdefbd400f933ca149bdd0d86faf38628a7644d6630ff207977014",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     }
   ],
   "schemas": [
@@ -237,5 +373,20 @@
     "defaults": true,
     "oneofs": true,
     "includeDirs": "resolved GAX protos directory (JSON path does not read filesystem)"
-  }
+  },
+  "capabilities": [
+    "startup-sdk-imports",
+    "bundled-lazy-sdk-imports",
+    "static-protobuf-codecs",
+    "datastore-legacy-keys",
+    "datastore-struct",
+    "native-fetch-auth",
+    "firestore-listen-error-order"
+  ],
+  "requiredChecks": [
+    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs",
+    "node scripts/test-modern-sdk.cjs",
+    "node scripts/test-modern-firestore-watch.cjs",
+    "node scripts/test-modern-firestore-recovery.cjs"
+  ]
 }

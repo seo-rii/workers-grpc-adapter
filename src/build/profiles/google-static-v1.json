@@ -1,158 +1,294 @@
 {
+  "schemaVersion": 1,
+  "transformerVersion": 1,
   "id": "google-static-v1",
   "revision": 4,
   "packages": [
     {
       "path": "node_modules/gaxios",
       "name": "gaxios",
-      "version": "7.3.1"
+      "version": "7.3.1",
+      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad"
     },
     {
       "path": "node_modules/google-auth-library",
       "name": "google-auth-library",
-      "version": "10.9.1"
+      "version": "10.9.1",
+      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-auth-library",
       "name": "google-auth-library",
-      "version": "11.1.0"
+      "version": "11.1.0",
+      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a"
     },
     {
       "path": "node_modules/@google-cloud/datastore",
       "name": "@google-cloud/datastore",
-      "version": "10.1.0"
+      "version": "10.1.0",
+      "packageJsonSha256": "e2810efaee094c79e8a2ee799d22c7453cfe4169710a00c9e7ea64ea0e3d62eb"
     },
     {
       "path": "node_modules/@google-cloud/firestore",
       "name": "@google-cloud/firestore",
-      "version": "8.3.0"
+      "version": "8.3.0",
+      "packageJsonSha256": "1db32e99d2bb06b2a791faa9910f7f9de6fc857f82b5720524b91218396a4845"
     },
     {
       "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.6.6"
+      "version": "7.6.6",
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager",
       "name": "@google-cloud/secret-manager",
-      "version": "7.1.0"
+      "version": "7.1.0",
+      "packageJsonSha256": "fbe27a2390544888184053db157f30f50b593595d74a0c3326657f2eb2a5f268"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax",
       "name": "google-gax",
-      "version": "6.5.0"
+      "version": "6.5.0",
+      "packageJsonSha256": "336f7359dd0fbc57472b14794817772c09d56642a7e2cde03f213f3c579bb348"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.6.6"
+      "version": "7.6.6",
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
     },
     {
       "path": "node_modules/@grpc/proto-loader",
       "name": "@grpc/proto-loader",
-      "version": "0.8.1"
+      "version": "0.8.1",
+      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9"
     },
     {
       "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.6.6"
+      "version": "7.6.6",
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
     },
     {
       "path": "node_modules/google-gax",
       "name": "google-gax",
-      "version": "5.0.8"
+      "version": "5.0.8",
+      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc"
     },
     {
       "path": "node_modules/google-gax/node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.6.6"
+      "version": "7.6.6",
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
     },
     {
       "path": "node_modules/protobufjs",
       "name": "protobufjs",
-      "version": "7.4.0"
+      "version": "7.4.0",
+      "packageJsonSha256": "c8618268a771aa0b3d2552d62db9b25fea5958fddcd23dd2542a4bb6237257eb"
     }
   ],
   "files": [
     {
       "path": "node_modules/@google-cloud/firestore/build/src/index.js",
-      "sha256": "2d6c7657f0ff04db35851cf24b09b0526f664ef8ff79ff5c4ec2b08e3136071e"
+      "sha256": "2d6c7657f0ff04db35851cf24b09b0526f664ef8ff79ff5c4ec2b08e3136071e",
+      "transforms": [
+        {
+          "rule": "firestore-watch-end",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/gaxios/build/cjs/src/gaxios.js",
-      "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c"
+      "sha256": "dd3f86c42823271c5424faec676cfd1e29b0bf4d8f56c8dfc002abd6ac7ca89c",
+      "transforms": [
+        {
+          "rule": "native-fetch-default",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/gaxios/build/esm/src/gaxios.js",
-      "sha256": "68fd9281b268af396e1175a709dce9b33630cdcffa27af3e13029d58e007f9d5"
+      "sha256": "68fd9281b268af396e1175a709dce9b33630cdcffa27af3e13029d58e007f9d5",
+      "transforms": [
+        {
+          "rule": "native-fetch-default",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/request.js",
-      "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112"
+      "sha256": "935e0b6996549b0d109f60a0816f76866b6a25e4b8a56aac9133b18f53202112",
+      "transforms": [
+        {
+          "rule": "datastore-struct",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
-      "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c"
+      "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c",
+      "transforms": [
+        {
+          "rule": "bundle-dirname",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/fallback.js",
-      "sha256": "e986037a32525796bea4fc320a1f6ad2599472afda2763d7edfccc8ee7a7866c"
+      "sha256": "e986037a32525796bea4fc320a1f6ad2599472afda2763d7edfccc8ee7a7866c",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 2
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/googleError.js",
-      "sha256": "806b38a98ade22de5de1face6eef9b81ae073db78a2bf0b7409a1412693686ad"
+      "sha256": "806b38a98ade22de5de1face6eef9b81ae073db78a2bf0b7409a1412693686ad",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@grpc/proto-loader/build/src/index.js",
-      "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e"
+      "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/grpc.js",
-      "sha256": "e1a5910fc6f4710eae35fa466b0ff6735fb08162eb66b3214978a7c2d0f42e38"
+      "sha256": "e1a5910fc6f4710eae35fa466b0ff6735fb08162eb66b3214978a7c2d0f42e38",
+      "transforms": [
+        {
+          "rule": "bundle-dirname",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/fallback.js",
-      "sha256": "36b9a74bada12da2decf8352efc2698f4df739a6772852177369be763662a582"
+      "sha256": "36b9a74bada12da2decf8352efc2698f4df739a6772852177369be763662a582",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 2
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/build/src/googleError.js",
-      "sha256": "08f8daa0b5bdefbd400f933ca149bdd0d86faf38628a7644d6630ff207977014"
+      "sha256": "08f8daa0b5bdefbd400f933ca149bdd0d86faf38628a7644d6630ff207977014",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/google-gax/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7"
+      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "3ffe19232a0da1de2cb269a13ddf8d57e6708a3b7584521353923b2770aa684f"
+      "sha256": "3ffe19232a0da1de2cb269a13ddf8d57e6708a3b7584521353923b2770aa684f",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/entity.js",
-      "sha256": "2014072fecef2fe876ce94112bd717bff2b926a833fb9690a4e56e44ea7dc60c"
+      "sha256": "2014072fecef2fe876ce94112bd717bff2b926a833fb9690a4e56e44ea7dc60c",
+      "transforms": [
+        {
+          "rule": "datastore-legacy-key",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/v1/datastore_client.js",
-      "sha256": "7f6e93aaafe74edf89e84244705e53860917845b843233494e3c1ebf58b3ba7c"
+      "sha256": "7f6e93aaafe74edf89e84244705e53860917845b843233494e3c1ebf58b3ba7c",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/src/v1/datastore_admin_client.js",
-      "sha256": "8c9e2fc26b448b7e56790dff94c5dec7409952ce243f9d64da1aaa7074d88f73"
+      "sha256": "8c9e2fc26b448b7e56790dff94c5dec7409952ce243f9d64da1aaa7074d88f73",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/build/src/v1/secret_manager_service_client.js",
-      "sha256": "85c37bef4e3a04e892281f7a9c685a5a75126ef54aa4841d162e23430dddd66b"
+      "sha256": "85c37bef4e3a04e892281f7a9c685a5a75126ef54aa4841d162e23430dddd66b",
+      "transforms": [
+        {
+          "rule": "static-root-from-json",
+          "expectedMatches": 15
+        }
+      ]
     }
   ],
   "schemas": [
@@ -359,5 +495,21 @@
     "defaults": true,
     "oneofs": true,
     "includeDirs": "resolved GAX protos directory (JSON path does not read filesystem)"
-  }
+  },
+  "capabilities": [
+    "startup-sdk-imports",
+    "bundled-lazy-sdk-imports",
+    "static-protobuf-codecs",
+    "datastore-legacy-keys",
+    "datastore-struct",
+    "native-fetch-auth",
+    "firestore-listen-error-order"
+  ],
+  "requiredChecks": [
+    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs",
+    "node scripts/test-google-worker-build.cjs",
+    "node scripts/test-workers-lazy-sdk.cjs",
+    "node scripts/test-workers-auth.cjs",
+    "node scripts/test-firestore-watch-errors.cjs"
+  ]
 }

@@ -74,7 +74,7 @@ test('BUILD Gaxios transport transform rejects source drift and unexpected AST a
     // An isolated profile trusts this fixture's bytes to independently exercise
     // structural guards; installed packages and the real profile stay intact.
     fs.writeFileSync(path.join(folder, 'build/profiles/google-static-v1.json'), JSON.stringify({
-      id: 'google-static-v1', revision: 3, packages: [], files: [{ path: sourcePath, sha256: fixture.hash || sha256(fixture.source) }], schemas: [], codegenInputs: [], loaderOptions: {},
+      id: 'google-static-v1', schemaVersion: 1, transformerVersion: 1, capabilities: [], requiredChecks: [], revision: 3, packages: [], files: [{ path: sourcePath, sha256: fixture.hash || sha256(fixture.source), transforms: [{ rule: 'native-fetch-default', expectedMatches: 1 }] }], schemas: [], codegenInputs: [], loaderOptions: {},
     }));
     const build = require(path.join(folder, 'build/index.cjs'));
     assert.throws(() => {

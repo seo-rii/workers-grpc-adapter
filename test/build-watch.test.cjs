@@ -123,7 +123,7 @@ test('BUILD Watch deferral rejects source drift and changed or duplicate AST anc
     fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, fixture.text);
     fs.mkdirSync(path.join(project, 'build/profiles'), { recursive: true }); fs.writeFileSync(path.join(project, 'build/index.cjs'), build);
     fs.writeFileSync(path.join(project, 'build/profiles/google-static-v1.json'), JSON.stringify({
-      id: 'google-static-v1', revision: 4, packages: [], files: [{ path: sourcePath, sha256: fixture.hash ?? digest(fixture.text) }],
+      id: 'google-static-v1', schemaVersion: 1, transformerVersion: 1, capabilities: [], requiredChecks: [], revision: 4, packages: [], files: [{ path: sourcePath, sha256: fixture.hash ?? digest(fixture.text), transforms: [{ rule: 'firestore-watch-end', expectedMatches: 1 }] }],
       schemas: [], codegenInputs: [], loaderOptions: {},
     }));
     assert.throws(() => {
