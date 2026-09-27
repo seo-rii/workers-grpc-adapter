@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { status, TransportError } from './status';
 import { transformMessage, type CompressionEncoding } from './compression';
+import type { ResourceBudget, ResourceScope } from './resources';
 export const METADATA_LIMIT = 65536;
 export interface StatusObject {
     code: status;
@@ -29,15 +30,21 @@ export function encodeFrame(payload: Uint8Array, trailer = false): Buffer {
 }
 /** Apply gRPC message compression; HTTP content encoding is a separate layer. */
 export async function encodeMessageFrame(payload: Uint8Array, encoding: CompressionEncoding,
-    maxWireBytes: number, signal?: AbortSignal, noCompress = false): Promise<Buffer> {
+    maxWireBytes: number, signal?: AbortSignal, noCompress = false, scope?: ResourceScope): Promise<Buffer> {
     if (signal?.aborted) return wireError(status.CANCELLED, 'WGA_ABORTED');
     const compressed = encoding !== 'identity' && !noCompress;
-    const bytes = compressed ? await transformMessage(payload, encoding, false, maxWireBytes, signal) : payload;
-    if (signal?.aborted) return wireError(status.CANCELLED, 'WGA_ABORTED');
-    if (bytes.byteLength > maxWireBytes) return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
-    const frame = encodeFrame(bytes);
-    if (compressed) frame[0] = 1;
-    return frame;
+    const scratch = compressed ? scope?.scope() : undefined;
+    try {
+        const bytes = compressed ? await transformMessage(payload, encoding, false, maxWireBytes, signal, scratch) : payload;
+        if (signal?.aborted) return wireError(status.CANCELLED, 'WGA_ABORTED');
+        if (bytes.byteLength > maxWireBytes) return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
+        const lease = scope?.reserve(5 + bytes.byteLength);
+        try {
+            const frame = encodeFrame(bytes);
+            if (compressed) frame[0] = 1;
+            return frame;
+        } catch (error) { lease?.release(); throw error; }
+    } finally { scratch?.close(); }
 }
 export function responseCompression(headers: Headers): string {
     // Like grpc-js, an unknown codec matters only if a message uses flag 1.
@@ -45,8 +52,11 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; maxWireBytes?: number } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
+    const chunkScope = compression.budget?.scope();
+    const chunkLease = chunkScope?.reserve(0);
+    let frameScope: ResourceScope | undefined;
     let chunk: Uint8Array = new Uint8Array(0), offset = 0, ended = false;
     const abort = () => {
         void reader.cancel().catch(() => {
@@ -54,6 +64,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
     };
     signal?.addEventListener('abort', abort, { once: true });
     async function readExact(count: number, allowEOF = false): Promise<Buffer | null> {
+        frameScope?.reserve(count);
         const out = Buffer.allocUnsafe(count);
         let filled = 0;
         while (filled < count) {
@@ -61,6 +72,8 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 return wireError(status.CANCELLED, 'WGA_ABORTED');
             }
             if (offset === chunk.byteLength) {
+                chunk = new Uint8Array(0);
+                chunkLease?.resize(0);
                 const item = await reader.read();
                 if (signal?.aborted) {
                     return wireError(status.CANCELLED, 'WGA_ABORTED');
@@ -75,6 +88,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 if (!(item.value instanceof Uint8Array)) {
                     return wireError(status.INTERNAL, 'WGA_INVALID_CHUNK');
                 }
+                chunkLease?.resize(item.value.byteLength);
                 chunk = item.value;
                 offset = 0;
                 if (chunk.byteLength === 0) {
@@ -91,46 +105,52 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
     let hadTrailer = false;
     try {
         for (;;) {
-            const header = await readExact(5, true);
-            if (header === null) {
-                return;
-            }
-            if (hadTrailer) {
-                return wireError(status.INTERNAL, 'WGA_FRAME_AFTER_TRAILER');
-            }
-            const flag = header[0];
-            if (flag !== 0 && flag !== 1 && flag !== 0x80) {
-                if (flag === 0x81) {
-                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSED_TRAILER');
+            frameScope = compression.budget?.scope();
+            try {
+                const header = await readExact(5, true);
+                if (header === null) {
+                    return;
                 }
-                return wireError(status.INTERNAL, 'WGA_FRAME_FLAGS');
-            }
-            const trailer = flag === 0x80, length = header.readUInt32BE(1);
-            const encoding = compression.encoding ?? 'identity';
-            if (flag === 1 && encoding === 'identity') {
-                return wireError(status.INTERNAL, 'WGA_COMPRESSED_WITH_IDENTITY');
-            }
-            if (flag === 1 && encoding !== 'gzip' && encoding !== 'deflate') {
-                return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION_ENCODING');
-            }
-            const wireLimit = compression.maxWireBytes ?? maxMessageBytes;
-            if (length > (trailer ? METADATA_LIMIT : flag === 1 ? wireLimit : Math.min(wireLimit, maxMessageBytes))) {
-                return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
-            }
-            const payload = await readExact(length);
-            hadTrailer = trailer;
-            yield { trailer, payload: flag === 1 && (encoding === 'gzip' || encoding === 'deflate')
-                ? await transformMessage(payload!, encoding, true, maxMessageBytes, signal) : payload! };
+                if (hadTrailer) {
+                    return wireError(status.INTERNAL, 'WGA_FRAME_AFTER_TRAILER');
+                }
+                const flag = header[0];
+                if (flag !== 0 && flag !== 1 && flag !== 0x80) {
+                    if (flag === 0x81) {
+                        return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSED_TRAILER');
+                    }
+                    return wireError(status.INTERNAL, 'WGA_FRAME_FLAGS');
+                }
+                const trailer = flag === 0x80, length = header.readUInt32BE(1);
+                const encoding = compression.encoding ?? 'identity';
+                if (flag === 1 && encoding === 'identity') {
+                    return wireError(status.INTERNAL, 'WGA_COMPRESSED_WITH_IDENTITY');
+                }
+                if (flag === 1 && encoding !== 'gzip' && encoding !== 'deflate') {
+                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION_ENCODING');
+                }
+                const wireLimit = compression.maxWireBytes ?? maxMessageBytes;
+                if (length > (trailer ? METADATA_LIMIT : flag === 1 ? wireLimit : Math.min(wireLimit, maxMessageBytes))) {
+                    return wireError(status.RESOURCE_EXHAUSTED, 'WGA_FRAME_SIZE');
+                }
+                const payload = await readExact(length);
+                hadTrailer = trailer;
+                yield { trailer, payload: flag === 1 && (encoding === 'gzip' || encoding === 'deflate')
+                    ? await transformMessage(payload!, encoding, true, maxMessageBytes, signal, frameScope) : payload! };
+            } finally { frameScope?.close(); frameScope = undefined; }
         }
     }
     finally {
         signal?.removeEventListener('abort', abort);
+        chunk = new Uint8Array(0);
+        chunkScope?.close();
         if (!ended) {
-            await reader.cancel().catch(() => {
+            // Source cleanup can be asynchronous or never settle. Local frame
+            // errors and iterator completion must still release this reader.
+            void reader.cancel().catch(() => {
             });
         }
         reader.releaseLock();
-        chunk = new Uint8Array(0);
     }
 }
 function decodeBase64(value: string): Buffer {

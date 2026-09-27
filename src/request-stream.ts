@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 import { CompressionEncoding } from './compression';
 import { encodeMessageFrame } from './wire';
 import { status, TransportError } from './status';
+import type { ByteLease, ResourceBudget, ResourceScope } from './resources';
 
 export interface RequestStreamBodyOptions {
     maxMessageBytes: number;
@@ -9,12 +10,14 @@ export interface RequestStreamBodyOptions {
     compression: CompressionEncoding;
     /** Fetch cancelled the request body; emitted at most once. */
     onCancel?: (error: Error) => void;
+    budget?: ResourceBudget;
 }
 interface PendingWrite {
     bytes: number;
     frame?: Buffer;
     resolve: () => void;
     reject: (error: Error) => void;
+    scope?: ResourceScope;
 }
 /** Internal bounded producer for experimental gateway request streaming. */
 export class RequestStreamBody {
@@ -30,6 +33,7 @@ export class RequestStreamBody {
     private readonly maxWireBytes: number;
     private readonly compression: CompressionEncoding;
     private readonly onCancel?: (error: Error) => void;
+    private readonly budget?: ResourceBudget;
     constructor(options: RequestStreamBodyOptions) {
         for (const [size, minimum] of [[options.maxMessageBytes, 0], [options.maxWireBytes, 1]]) {
             if (!Number.isSafeInteger(size) || size < minimum || size > 2147483647) {
@@ -43,6 +47,7 @@ export class RequestStreamBody {
         this.maxWireBytes = options.maxWireBytes;
         this.compression = options.compression;
         this.onCancel = options.onCancel;
+        this.budget = options.budget;
         this.body = new ReadableStream<Uint8Array>({
             start: controller => { this.controller = controller; },
             pull: () => { this.demand = true; this.flush(); },
@@ -66,17 +71,28 @@ export class RequestStreamBody {
             const error = new TransportError(status.RESOURCE_EXHAUSTED, 'WGA_REQUEST_SIZE');
             this.abort(error); return Promise.reject(error);
         }
-        // Snapshot before asynchronous compression or a delayed Fetch pull.
-        const copy = Buffer.from(message);
+        const scope = this.budget?.scope();
+        let copy: Buffer, inputLease: ByteLease | undefined;
+        try {
+            // Reserve before snapshotting input for compression or a delayed pull.
+            inputLease = scope?.reserve(message.byteLength);
+            copy = Buffer.from(message);
+        } catch (cause) {
+            scope?.close();
+            const error = cause instanceof Error ? cause : new TransportError(status.INTERNAL, 'WGA_REQUEST_STREAM_ENCODING');
+            this.abort(error); return Promise.reject(error);
+        }
         return new Promise<void>((resolve, reject) => {
-            const pending: PendingWrite = { bytes: copy.length, resolve, reject };
+            const pending: PendingWrite = { bytes: copy.length, resolve, reject, scope };
             this.pending = pending;
-            void encodeMessageFrame(copy, this.compression, this.maxWireBytes, this.aborter.signal, noCompress).then(frame => {
-                if (this.pending !== pending || this.closed) return;
+            void encodeMessageFrame(copy, this.compression, this.maxWireBytes, this.aborter.signal, noCompress, scope).then(frame => {
+                inputLease?.release();
+                if (this.pending !== pending || this.closed) { scope?.close(); return; }
                 pending.frame = frame;
                 pending.bytes = frame.length;
                 this.flush();
             }).catch(error => {
+                scope?.close();
                 if (this.pending === pending && !this.closed) this.abort(error instanceof Error ? error
                     : new TransportError(status.INTERNAL, 'WGA_REQUEST_STREAM_ENCODING'));
             });
@@ -106,6 +122,13 @@ export class RequestStreamBody {
         this.aborter.abort();
         const pending = this.pending;
         this.pending = undefined;
+        // Until the encoding continuation runs, its Promise still owns either
+        // the input or a completed frame. Cancellation cannot release those
+        // reservations early and let another same-turn write reuse the budget.
+        if (pending?.frame) {
+            pending.frame = undefined;
+            pending.scope?.close();
+        }
         if (errorBody) this.controller.error(error);
         pending?.reject(error);
     }
@@ -116,9 +139,11 @@ export class RequestStreamBody {
         this.demand = false;
         try {
             this.controller.enqueue(pending.frame);
+            pending.scope?.close();
             pending.resolve();
             if (this.ending) { this.closed = true; this.controller.close(); }
         } catch (error) {
+            pending.scope?.close();
             const failure = error instanceof Error ? error : new TransportError(status.INTERNAL, 'WGA_REQUEST_STREAM_PULL');
             pending.reject(failure);
             this.abort(failure);
