@@ -86,6 +86,67 @@ export function callErrorFromStatus(
   return Object.assign(new Error(message), status, { stack });
 }
 
+const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
+
+/** Mark the RPC terminal before invoking user callbacks or stream events. */
+export function markCallSurfaceTerminal(surface: SurfaceCall): void {
+  streamLifecycles.get(surface)?.finish();
+}
+
+/** Node stream destruction and RPC completion are different lifecycle edges. */
+class ClientStreamLifecycle {
+  private terminal = false;
+  private cancellationRequested = false;
+  private pendingWrite?: WriteCallback;
+
+  constructor(
+    private readonly stream: SurfaceCall & (Readable | Writable | Duplex),
+    private readonly writableOnly = false
+  ) {
+    streamLifecycles.set(stream, this);
+  }
+
+  finish(): void {
+    this.terminal = true;
+    // A Writable has no readable EOF: finish alone only half-closes its RPC.
+    // Close its Node resource after the response has completed instead.
+    if (this.writableOnly) queueMicrotask(() => this.stream.destroy());
+  }
+
+  cancel(): void {
+    if (this.terminal || this.cancellationRequested) return;
+    this.cancellationRequested = true;
+    this.stream.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+  }
+
+  writeCallback(callback: WriteCallback): WriteCallback {
+    const once: WriteCallback = error => {
+      if (this.pendingWrite !== once) return;
+      this.pendingWrite = undefined;
+      callback(error);
+    };
+    this.pendingWrite = once;
+    return once;
+  }
+
+  destroy(error: Error | null, callback: (error: Error | null) => void): void {
+    try {
+      this.cancel();
+    } catch {
+      // A cancellation interceptor cannot prevent local Node stream cleanup.
+    }
+    try {
+      // Interceptors may retain the write callback without forwarding it. Node
+      // cannot release queued writes until its active _write callback settles.
+      this.pendingWrite?.(error ?? callErrorFromStatus({
+        code: Status.CANCELLED, details: 'Cancelled on client', metadata: new Metadata(),
+      }, ''));
+    } finally {
+      callback(error);
+    }
+  }
+}
+
 export class ClientUnaryCallImpl
   extends EventEmitter
   implements ClientUnaryCall
@@ -113,12 +174,17 @@ export class ClientReadableStreamImpl<ResponseType>
   implements ClientReadableStream<ResponseType>
 {
   public call?: InterceptingCallInterface;
+  private readonly lifecycle = new ClientStreamLifecycle(this);
   constructor(readonly deserialize: (chunk: Buffer) => ResponseType) {
     super({ objectMode: true });
   }
 
   cancel(): void {
-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    this.lifecycle.cancel();
+  }
+
+  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
+    this.lifecycle.destroy(error, callback);
   }
 
   getPeer(): string {
@@ -139,12 +205,17 @@ export class ClientWritableStreamImpl<RequestType>
   implements ClientWritableStream<RequestType>
 {
   public call?: InterceptingCallInterface;
+  private readonly lifecycle = new ClientStreamLifecycle(this, true);
   constructor(readonly serialize: (value: RequestType) => Buffer) {
-    super({ objectMode: true });
+    super({ objectMode: true, autoDestroy: false });
   }
 
   cancel(): void {
-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    this.lifecycle.cancel();
+  }
+
+  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
+    this.lifecycle.destroy(error, callback);
   }
 
   getPeer(): string {
@@ -157,7 +228,7 @@ export class ClientWritableStreamImpl<RequestType>
 
   _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
     const context: MessageContext = {
-      callback: cb,
+      callback: this.lifecycle.writeCallback(cb),
     };
     const flags = Number(encoding);
     if (!Number.isNaN(flags)) {
@@ -177,6 +248,7 @@ export class ClientDuplexStreamImpl<RequestType, ResponseType>
   implements ClientDuplexStream<RequestType, ResponseType>
 {
   public call?: InterceptingCallInterface;
+  private readonly lifecycle = new ClientStreamLifecycle(this);
   constructor(
     readonly serialize: (value: RequestType) => Buffer,
     readonly deserialize: (chunk: Buffer) => ResponseType
@@ -185,7 +257,11 @@ export class ClientDuplexStreamImpl<RequestType, ResponseType>
   }
 
   cancel(): void {
-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    this.lifecycle.cancel();
+  }
+
+  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
+    this.lifecycle.destroy(error, callback);
   }
 
   getPeer(): string {
@@ -202,7 +278,7 @@ export class ClientDuplexStreamImpl<RequestType, ResponseType>
 
   _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
     const context: MessageContext = {
-      callback: cb,
+      callback: this.lifecycle.writeCallback(cb),
     };
     const flags = Number(encoding);
     if (!Number.isNaN(flags)) {

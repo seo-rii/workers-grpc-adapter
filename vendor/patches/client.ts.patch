@@ -1,14 +1,13 @@
 --- a/src/client.ts
 +++ b/src/client.ts
-@@ -27,16 +27,16 @@
-   ServiceError,
-   callErrorFromStatus,
-   SurfaceCall,
+@@ -28,0 +29 @@
++  markCallSurfaceTerminal,
+@@ -30,2 +31,2 @@
 -} from './call';
 -import { CallCredentials } from './call-credentials';
 +} from './call-surface';
 +import { CallCredentials } from './credentials';
- import { StatusObject } from './call-interface';
+@@ -33,5 +34,5 @@
 -import { Channel, ChannelImplementation } from './channel';
 -import { ConnectivityState } from './connectivity-state';
 -import { ChannelCredentials } from './channel-credentials';
@@ -19,16 +18,10 @@
 +import { ChannelCredentials } from './credentials';
 +import { ChannelOptions } from './options';
 +import { status as Status } from './status';
- import { Metadata } from './metadata';
+@@ -39 +40 @@
 -import { ClientMethodDefinition } from './make-client';
 +import { ClientMethodDefinition } from './factory';
- import {
-   getInterceptingCall,
-   Interceptor,
-@@ -44,13 +44,7 @@
-   InterceptorArguments,
-   InterceptingCallInterface,
- } from './client-interceptors';
+@@ -47,7 +48 @@
 -import {
 -  ServerUnaryCall,
 -  ServerReadableStream,
@@ -37,13 +30,7 @@
 -} from './server-call';
 -import { Deadline } from './deadline';
 +import type { Deadline, ParentCall } from './call';
- 
- const CHANNEL_SYMBOL = Symbol();
- const INTERCEPTOR_SYMBOL = Symbol();
-@@ -71,11 +65,8 @@
- export interface CallOptions {
-   deadline?: Deadline;
-   host?: string;
+@@ -74,5 +69,2 @@
 -  parent?:
 -    | ServerUnaryCall<any, any>
 -    | ServerReadableStream<any, any>
@@ -51,13 +38,7 @@
 -    | ServerDuplexStream<any, any>;
 +  /** Propagate deadline/cancellation from a server call or Fetch handler context. */
 +  parent?: ParentCall | null;
-   propagate_flags?: number;
-   credentials?: CallCredentials;
-   interceptors?: Interceptor[];
-@@ -144,23 +135,10 @@
-     this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
-       options.callInvocationTransformer;
-     delete options.callInvocationTransformer;
+@@ -147,17 +139,4 @@
 -    if (options.channelOverride) {
 -      this[CHANNEL_SYMBOL] = options.channelOverride;
 -    } else if (options.channelFactoryOverride) {
@@ -79,13 +60,7 @@
 +      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
 +    }
 +    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
-   }
- 
-   close(): void {
-@@ -172,33 +150,8 @@
-   }
- 
-   waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
+@@ -175,27 +154,2 @@
 -    const checkState = (err?: Error) => {
 -      if (err) {
 -        callback(new Error('Failed to connect before the deadline'));
@@ -115,31 +90,25 @@
 -    setImmediate(checkState);
 +    // Workers fetch has no persistent connection readiness state.
 +    queueMicrotask(() => callback(Object.assign(new Error('WGA_CONNECTIVITY_UNSUPPORTED'), { code: Status.UNIMPLEMENTED })));
-   }
- 
-   private checkOptionalUnaryResponseArguments<ResponseType>(
-@@ -365,7 +318,7 @@
-         emitter.emit('status', status);
-       },
-     });
+@@ -368 +322 @@
 -    call.sendMessage(argument);
 +    call.sendMessage(callProperties.argument);
-     call.halfClose();
-     return emitter;
-   }
-@@ -617,7 +570,7 @@
-         stream.emit('status', status);
-       },
-     });
+@@ -475,0 +430 @@
++        markCallSurfaceTerminal(emitter);
+@@ -608,0 +564 @@
++        markCallSurfaceTerminal(stream);
+@@ -610 +566 @@
+-        if (status.code !== Status.OK) {
++        if (status.code !== Status.OK && !stream.destroyed) {
+@@ -620 +576 @@
 -    call.sendMessage(argument);
 +    call.sendMessage(callProperties.argument);
-     call.halfClose();
-     return stream;
-   }
-@@ -714,3 +667,12 @@
-     return stream;
-   }
- }
+@@ -702,0 +659 @@
++        markCallSurfaceTerminal(stream);
+@@ -704 +661 @@
+-        if (status.code !== Status.OK) {
++        if (status.code !== Status.OK && !stream.destroyed) {
+@@ -716,0 +674,9 @@
 +
 +export type { Deadline } from './call';
 +export type { StatusObject } from './call-interface';

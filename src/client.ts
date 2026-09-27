@@ -26,6 +26,7 @@ import {
   ClientWritableStreamImpl,
   ServiceError,
   callErrorFromStatus,
+  markCallSurfaceTerminal,
   SurfaceCall,
 } from './call-surface';
 import { CallCredentials } from './credentials';
@@ -426,6 +427,7 @@ export class Client {
           return;
         }
         receivedStatus = true;
+        markCallSurfaceTerminal(emitter);
         if (status.code === Status.OK) {
           if (responseMessage === null) {
             const callerStack = getErrorStackString(callerStackError!);
@@ -559,8 +561,9 @@ export class Client {
           return;
         }
         receivedStatus = true;
+        markCallSurfaceTerminal(stream);
         stream.push(null);
-        if (status.code !== Status.OK) {
+        if (status.code !== Status.OK && !stream.destroyed) {
           const callerStack = getErrorStackString(callerStackError!);
           stream.emit('error', callErrorFromStatus(status, callerStack));
         }
@@ -653,8 +656,9 @@ export class Client {
           return;
         }
         receivedStatus = true;
+        markCallSurfaceTerminal(stream);
         stream.push(null);
-        if (status.code !== Status.OK) {
+        if (status.code !== Status.OK && !stream.destroyed) {
           const callerStack = getErrorStackString(callerStackError!);
           stream.emit('error', callErrorFromStatus(status, callerStack));
         }
