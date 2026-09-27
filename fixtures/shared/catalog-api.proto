@@ -1,0 +1,5 @@
+syntax = "proto3";
+package catalog.api.nested;
+enum State { UNKNOWN = 0; READY = 1; }
+message Envelope { string text = 1; }
+service Echo { rpc Unary(Envelope) returns (Envelope); }

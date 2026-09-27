@@ -1,0 +1,1837 @@
+{
+  "base": {
+    "status": "passed",
+    "sourceBuild": false,
+    "liveCloud": false,
+    "incomingCloudflareTranslation": false,
+    "controlledPeer": true,
+    "compatibilityDate": "2026-09-21",
+    "externalRequests": 0,
+    "protoLoader": {
+      "version": "0.8.1",
+      "protobufjs": "7.4.0",
+      "transformation": "loadSync real proto; preserve full descriptor graph; precompile actual protobufjs encode/decode/fromObject/toObject static functions",
+      "descriptorSha256": "91aa81d5d7c1a78e9f1cc78b678955f8841c97a6283d70598bef5d7680eff770",
+      "staticModuleSha256": "3859a385d4348bd48739fc2cc90a30080fef3a2cec5e9b6b83ad2cfea68ffc00",
+      "descriptorPath": "verification/api-contracts/package-definition.json",
+      "staticModulePath": "verification/api-contracts/static-codecs.mjs"
+    },
+    "generatedArtifacts": {
+      "verification/api-contracts/package-definition.json": "91aa81d5d7c1a78e9f1cc78b678955f8841c97a6283d70598bef5d7680eff770",
+      "verification/api-contracts/static-codecs.mjs": "3859a385d4348bd48739fc2cc90a30080fef3a2cec5e9b6b83ad2cfea68ffc00"
+    },
+    "bundleSha256": "4b374c6180910252f5b6c5de2182ae1fdf2a8d3f7ea41f8efb996cd0ecb6dedd",
+    "workerd": "1.20260921.1",
+    "miniflare": "5.20260921.0-alpha",
+    "node": "v24.1.0",
+    "native": {
+      "version": "1.14.0",
+      "transport": "independent-loopback-http2",
+      "results": [
+        {
+          "id": "control-one-message",
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "order": [],
+          "serverArrivals": 1,
+          "wires": [
+            "00000000090a0772657175657374"
+          ],
+          "emissions": [
+            {
+              "kind": "data",
+              "frame": "00000000070a057265706c79"
+            },
+            {
+              "kind": "end-stream"
+            },
+            {
+              "kind": "trailers",
+              "status": 0
+            }
+          ],
+          "receivedMessages": []
+        },
+        {
+          "id": "API-007",
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply|two|one"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply|two|one"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "order": [
+            "transformer",
+            "one:construct",
+            "two:construct",
+            "one:start",
+            "two:start",
+            "one:message-out",
+            "two:message-out",
+            "one:half-close",
+            "two:half-close",
+            "two:metadata",
+            "one:metadata",
+            "two:message-in",
+            "one:message-in",
+            "two:status",
+            "one:status"
+          ],
+          "serverArrivals": 1,
+          "wires": [
+            "000000001d0a1b726571756573747c7472616e73666f726d65727c6f6e657c74776f"
+          ],
+          "emissions": [
+            {
+              "kind": "data",
+              "frame": "00000000070a057265706c79"
+            },
+            {
+              "kind": "end-stream"
+            },
+            {
+              "kind": "trailers",
+              "status": 0
+            }
+          ],
+          "receivedMessages": []
+        },
+        {
+          "id": "API-008",
+          "trace": [
+            [
+              "callback",
+              13,
+              "Request message serialization failure: catalog serializer failure",
+              null
+            ],
+            [
+              "status",
+              13,
+              "Request message serialization failure: catalog serializer failure"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 13,
+              "details": "Request message serialization failure: catalog serializer failure",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 13,
+              "details": "Request message serialization failure: catalog serializer failure",
+              "asynchronous": true
+            }
+          ],
+          "order": [],
+          "serverArrivals": 0,
+          "wires": [],
+          "emissions": [],
+          "receivedMessages": []
+        },
+        {
+          "id": "API-009",
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              13,
+              "Response message parsing error: catalog invalid protobuf",
+              null
+            ],
+            [
+              "status",
+              13,
+              "Response message parsing error: catalog invalid protobuf"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 13,
+              "details": "Response message parsing error: catalog invalid protobuf",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 13,
+              "details": "Response message parsing error: catalog invalid protobuf",
+              "asynchronous": true
+            }
+          ],
+          "order": [],
+          "serverArrivals": 1,
+          "wires": [
+            "00000000090a0772657175657374"
+          ],
+          "emissions": [
+            {
+              "kind": "data",
+              "frame": "00000000020a7f"
+            },
+            {
+              "kind": "end-stream"
+            },
+            {
+              "kind": "trailers",
+              "status": 0
+            }
+          ],
+          "receivedMessages": []
+        },
+        {
+          "id": "API-010",
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              12,
+              "No message received",
+              null
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 12,
+              "details": "No message received",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "order": [],
+          "serverArrivals": 1,
+          "wires": [
+            "00000000090a0772657175657374"
+          ],
+          "emissions": [
+            {
+              "kind": "end-stream"
+            },
+            {
+              "kind": "trailers",
+              "status": 0
+            }
+          ],
+          "receivedMessages": []
+        },
+        {
+          "id": "API-011",
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              4,
+              "Deadline exceeded after 1.000s,name resolution: 0.001s,LB pick: 0.001s,remote_addr=127.0.0.1:41445",
+              null
+            ],
+            [
+              "status",
+              4,
+              "Deadline exceeded after 1.000s,name resolution: 0.001s,LB pick: 0.001s,remote_addr=127.0.0.1:41445"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 4,
+              "details": "Deadline exceeded after 1.000s,name resolution: 0.001s,LB pick: 0.001s,remote_addr=127.0.0.1:41445",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 4,
+              "details": "Deadline exceeded after 1.000s,name resolution: 0.001s,LB pick: 0.001s,remote_addr=127.0.0.1:41445",
+              "asynchronous": true
+            }
+          ],
+          "order": [],
+          "serverArrivals": 1,
+          "wires": [
+            "00000000090a0772657175657374"
+          ],
+          "emissions": [
+            {
+              "kind": "data",
+              "frame": "00000000070a056669727374"
+            },
+            {
+              "kind": "data",
+              "frame": "00000000080a067365636f6e64"
+            },
+            {
+              "kind": "end-stream"
+            },
+            {
+              "kind": "trailers",
+              "status": 0
+            }
+          ],
+          "receivedMessages": [
+            "first"
+          ]
+        }
+      ],
+      "rawControl": {
+        "responseHex": "00000000070a05666972737400000000080a067365636f6e64",
+        "grpcStatus": 0,
+        "endStream": true,
+        "messages": 2
+      },
+      "sessionsClosed": true
+    },
+    "caseCount": 124,
+    "rpcCount": 148,
+    "fetchCount": 124,
+    "runtimeDisposed": true,
+    "cleanupVerifiedBeforeDispose": true,
+    "evidence": {
+      "scripts/test-api-contracts.cjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scripts/api-contract-node.cjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scripts/api-contract-throw.cjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scripts/api-contract-native.cjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scripts/api-contract-evidence.cjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/shared/catalog-api.mjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/shared/catalog-api.proto": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/catalog-api.mjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/package-lock.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/native/package-lock.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "installedInputs": {
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/index.js": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/index.mjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/adapter.js": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/adapter.mjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/config.js": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/worker/node_modules/@grpc/grpc-js/dist/config.mjs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "nativeInputs": {
+      "fixtures/native/node_modules/@grpc/grpc-js/package.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/native/node_modules/@grpc/proto-loader/package.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixtures/native/node_modules/protobufjs/package.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "regular": [
+    {
+      "id": "API-001",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 2,
+      "fetchCount": 2,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "4996m"
+        },
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "4999m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        },
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        },
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "aliasWithoutOptions": true,
+      "factoryCompared": true
+    },
+    {
+      "id": "API-002",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": null
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "subclassWithoutHook": true
+    },
+    {
+      "id": "API-003",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": null
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "serviceIdentity": true,
+      "serviceName": "catalog.api.nested.Echo",
+      "methodAliasIdentity": true
+    },
+    {
+      "id": "API-004",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 3,
+      "fetchCount": 3,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000020a00",
+          "request": {
+            "text": ""
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": null
+        },
+        {
+          "wire": "000000000c0a0aec9588eb859520e29883",
+          "request": {
+            "text": "안녕 ☃"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": null
+        },
+        {
+          "wire": "00000000620a60787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+          "request": {
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": null
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": ""
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": ""
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        },
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "안녕 ☃"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "안녕 ☃"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        },
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        },
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        },
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "payloads": [
+        "",
+        "안녕 ☃",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "nestedPackage": "catalog.api.nested",
+      "enumIdentity": true,
+      "messageIdentity": true,
+      "serviceIdentity": true,
+      "enumName": "READY",
+      "fieldName": "text",
+      "fullDescriptorGraphPreserved": true
+    },
+    {
+      "id": "API-005",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000130a11726571756573747c72657772697474656e",
+          "request": {
+            "text": "request|rewritten"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": "changed"
+          },
+          "timeout": "4998m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "rewriteVerified": true
+    },
+    {
+      "id": "API-006",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 3,
+      "fetchCount": 3,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "44999m"
+        },
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "499m"
+        },
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "5000m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        },
+        {
+          "trace": [
+            [
+              "callback",
+              4,
+              "WGA_DEADLINE",
+              null
+            ],
+            [
+              "status",
+              4,
+              "WGA_DEADLINE"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 4,
+              "details": "WGA_DEADLINE",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 4,
+              "details": "WGA_DEADLINE",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        },
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        },
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "finiteDeadlineReplaced": true,
+      "originalWindowMs": 105000,
+      "headerWindowMs": 44999,
+      "finalWindowMs": 45000,
+      "deadlineOutcomes": [
+        0,
+        4,
+        0
+      ],
+      "shorteningMs": 504,
+      "extensionOutlivedOriginalMs": 150
+    },
+    {
+      "id": "API-007",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "000000001d0a1b726571756573747c7472616e73666f726d65727c6f6e657c74776f",
+          "request": {
+            "text": "request|transformer|one|two"
+          },
+          "metadata": {
+            "order": "one, two",
+            "transformer": "yes",
+            "rewrite": null
+          },
+          "timeout": "4999m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              0,
+              "",
+              {
+                "text": "reply|two|one"
+              }
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 0,
+              "details": "",
+              "value": {
+                "text": "reply|two|one"
+              },
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "order": [
+        "transformer",
+        "one:construct",
+        "two:construct",
+        "one:start",
+        "two:start",
+        "one:message-out",
+        "two:message-out",
+        "one:half-close",
+        "two:half-close",
+        "two:metadata",
+        "one:metadata",
+        "two:message-in",
+        "one:message-in",
+        "two:status",
+        "one:status"
+      ],
+      "nativeCompared": true
+    },
+    {
+      "id": "API-008",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 0,
+      "authCalls": 0,
+      "receipts": [],
+      "calls": [
+        {
+          "trace": [
+            [
+              "callback",
+              13,
+              "Request message serialization failure: catalog serializer failure",
+              null
+            ],
+            [
+              "status",
+              13,
+              "Request message serialization failure: catalog serializer failure"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 13,
+              "details": "Request message serialization failure: catalog serializer failure",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 13,
+              "details": "Request message serialization failure: catalog serializer failure",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 0,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "nativeCompared": true
+    },
+    {
+      "id": "API-009",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "4999m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              13,
+              "Response message parsing error: catalog invalid protobuf",
+              null
+            ],
+            [
+              "status",
+              13,
+              "Response message parsing error: catalog invalid protobuf"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 13,
+              "details": "Response message parsing error: catalog invalid protobuf",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 13,
+              "details": "Response message parsing error: catalog invalid protobuf",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": false,
+          "cancelled": 1
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "nativeCompared": true
+    },
+    {
+      "id": "API-010",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "4999m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              12,
+              "No message received",
+              null
+            ],
+            [
+              "status",
+              0,
+              ""
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 12,
+              "details": "No message received",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 0,
+              "details": "",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": true,
+          "cancelled": 0
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "nativeCompared": true
+    },
+    {
+      "id": "API-011",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 1,
+      "authCalls": 0,
+      "receipts": [
+        {
+          "wire": "00000000090a0772657175657374",
+          "request": {
+            "text": "request"
+          },
+          "metadata": {
+            "order": null,
+            "transformer": null,
+            "rewrite": null
+          },
+          "timeout": "5000m"
+        }
+      ],
+      "calls": [
+        {
+          "trace": [
+            [
+              "metadata"
+            ],
+            [
+              "callback",
+              12,
+              "Too many responses received",
+              null
+            ],
+            [
+              "status",
+              12,
+              "Too many responses received"
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 12,
+              "details": "Too many responses received",
+              "value": null,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 12,
+              "details": "Too many responses received",
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 1,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [
+        {
+          "locked": false,
+          "ended": false,
+          "cancelled": 1
+        }
+      ],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "nativeDivergence": {
+        "adapterCode": 12,
+        "nativeCode": 4,
+        "reason": "pinned native unary waits after first message until deadline; adapter enforces cardinality promptly"
+      }
+    },
+    {
+      "id": "API-012",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 0,
+      "authCalls": 0,
+      "receipts": [],
+      "calls": [
+        {
+          "trace": [
+            [
+              "callback",
+              12
+            ],
+            [
+              "status",
+              12
+            ]
+          ],
+          "callbacks": [
+            {
+              "code": 12,
+              "asynchronous": true
+            }
+          ],
+          "statuses": [
+            {
+              "code": 12,
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 0,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "defaultRequestStreamingDisabled": true,
+      "callbacksAsynchronous": true,
+      "statusesAsynchronous": true
+    },
+    {
+      "id": "API-013",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 1,
+      "fetchCount": 0,
+      "authCalls": 0,
+      "receipts": [],
+      "calls": [
+        {
+          "trace": [
+            [
+              "error",
+              12
+            ],
+            [
+              "status",
+              12
+            ]
+          ],
+          "callbacks": [],
+          "statuses": [
+            {
+              "code": 12,
+              "asynchronous": true
+            }
+          ],
+          "diagnostics": {
+            "terminal": true,
+            "fetchCount": 0,
+            "requestBytes": 0,
+            "responseBytes": 0,
+            "timerActive": false
+          }
+        }
+      ],
+      "cleanup": [],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "defaultRequestStreamingDisabled": true,
+      "callbacksAsynchronous": true,
+      "statusesAsynchronous": true
+    },
+    {
+      "id": "API-014",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 0,
+      "fetchCount": 0,
+      "authCalls": 0,
+      "receipts": [],
+      "calls": [],
+      "cleanup": [],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "code": 12,
+      "asynchronous": true,
+      "state": "IDLE",
+      "healthFetches": 0
+    },
+    {
+      "id": "API-015",
+      "status": "passed",
+      "mode": "cloudflare",
+      "rpcCount": 0,
+      "fetchCount": 0,
+      "authCalls": 0,
+      "receipts": [],
+      "calls": [],
+      "cleanup": [],
+      "activeCalls": 0,
+      "resourcesIdle": true,
+      "importSucceeded": true,
+      "useError": "WGA_SERVER_UNSUPPORTED"
+    }
+  ],
+  "thrown": {
+    "id": "API-016",
+    "status": "passed",
+    "mode": "cloudflare",
+    "rpcCount": 1,
+    "fetchCount": 1,
+    "authCalls": 0,
+    "receipts": [
+      {
+        "wire": "00000000090a0772657175657374",
+        "request": {
+          "text": "request"
+        },
+        "metadata": {
+          "order": null,
+          "transformer": null,
+          "rewrite": null
+        },
+        "timeout": "5000m"
+      }
+    ],
+    "calls": [
+      {
+        "trace": [
+          [
+            "metadata"
+          ],
+          [
+            "callback",
+            0,
+            "",
+            {
+              "text": "reply"
+            }
+          ]
+        ],
+        "callbacks": [
+          {
+            "code": 0,
+            "details": "",
+            "value": {
+              "text": "reply"
+            },
+            "asynchronous": true
+          }
+        ],
+        "statuses": [],
+        "diagnostics": {
+          "terminal": true,
+          "fetchCount": 1,
+          "requestBytes": 0,
+          "responseBytes": 0,
+          "timerActive": false
+        }
+      }
+    ],
+    "cleanup": [
+      {
+        "locked": false,
+        "ended": true,
+        "cancelled": 0
+      }
+    ],
+    "activeCalls": 0,
+    "resourcesIdle": true,
+    "applicationThrow": true,
+    "observerTerminalCode": 0,
+    "observerTerminalCount": 1,
+    "callbackStatus": 0,
+    "statusEvents": 0
+  },
+  "nodeException": {
+    "runtime": "node",
+    "mode": "cloudflare",
+    "fatalExitCode": 1,
+    "error": "CATALOG_API016_APPLICATION_THROW_cloudflare",
+    "origin": "uncaughtException",
+    "id": "API-016",
+    "trace": [
+      [
+        "metadata"
+      ],
+      [
+        "callback",
+        0,
+        "",
+        {
+          "text": "reply"
+        }
+      ]
+    ],
+    "callbacks": [
+      {
+        "code": 0,
+        "details": "",
+        "value": {
+          "text": "reply"
+        },
+        "asynchronous": true
+      }
+    ],
+    "statuses": [],
+    "diagnostics": {
+      "terminal": true,
+      "fetchCount": 1,
+      "requestBytes": 0,
+      "responseBytes": 0,
+      "timerActive": false
+    },
+    "activeCalls": 0,
+    "usage": {
+      "activeCalls": 0,
+      "queuedCalls": 0,
+      "bufferedBytes": 0,
+      "peakActiveCalls": 1,
+      "peakQueuedCalls": 0,
+      "peakBufferedBytes": 56
+    },
+    "observer": [
+      {
+        "type": "call-end",
+        "statusCode": 0,
+        "attemptCount": 1,
+        "fetchCount": 1,
+        "queueMs": 0,
+        "sentBytes": 14,
+        "receivedBytes": 33,
+        "responseMessages": 1,
+        "responseMessageBytes": 7,
+        "logicalCallId": "wga-1",
+        "elapsedMs": 57.210398
+      }
+    ],
+    "cleanup": [
+      {
+        "locked": false,
+        "ended": true,
+        "cancelled": 0
+      }
+    ],
+    "receipts": [
+      {
+        "wire": "00000000090a0772657175657374",
+        "request": {
+          "text": "request"
+        },
+        "metadata": {
+          "order": null,
+          "transformer": null,
+          "rewrite": null
+        },
+        "timeout": "4994m"
+      }
+    ],
+    "fetchCount": 1
+  }
+}

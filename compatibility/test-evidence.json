@@ -1932,188 +1932,1726 @@
     },
     {
       "id": "API-001",
-      "coverage": "partial",
-      "reason": "Unary calls check framing, one fetch and event/status behavior.",
-      "gaps": [
-        "Direct default alias and explicit factory calls are not compared together byte for byte."
-      ],
+      "coverage": "covered",
+      "reason": "Default alias and explicit factory unary calls have identical wire/callback/status traces, one Fetch per call and terminal resource cleanup in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT unary makes one framed request and reports metadata/callback/status"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-001",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "aliasWithoutOptions: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 2
+            }
+          ]
         },
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT extends Client path uses the same transport"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-001",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "aliasWithoutOptions: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 2
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-001",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "aliasWithoutOptions: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 2
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-001",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "aliasWithoutOptions: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "fe08453b7dff1c6b632b42803806ba93df6b3f7cbeeec21f48c64d64b5fd56b4"
     },
     {
       "id": "API-002",
-      "coverage": "partial",
-      "reason": "A subclass invokes makeUnaryRequest without a hook and receives the expected reply.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "A subclass invokes the inherited unary API without a hook in Node/workerd and both modes, delivering one callback/status and releasing all owned resources.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT extends Client path uses the same transport"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-002",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "subclassWithoutHook = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-002",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "subclassWithoutHook = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-002",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "subclassWithoutHook = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-002",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "subclassWithoutHook = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "392c6cc1fc909b7ded608f6abf01fd29f4943bdc105200307c063037f1a284cb"
     },
     {
       "id": "API-003",
-      "coverage": "partial",
-      "reason": "Generated service metadata, aliases and the invoked transport are asserted.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "Generic constructors preserve service identity, serviceName and original method aliases while executing calls in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT generated aliases/service metadata and package definitions"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-003",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "methodAliasIdentity: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-003",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "methodAliasIdentity: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-003",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "methodAliasIdentity: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-003",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "methodAliasIdentity: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "f9cb20f7437010c1b68f920505ddd6d4d2cfe0f3a93036fdf3fb7061eeb73b86"
     },
     {
       "id": "API-004",
-      "coverage": "partial",
-      "reason": "Package factories preserve supplied descriptors and construct callable service clients.",
-      "gaps": [
-        "Exercise actual proto-loader enum/message descriptors and a nested package tree together."
-      ],
+      "coverage": "covered",
+      "reason": "Actual proto-loader nested service/message/enum descriptors survive a build-time static codec transformation and three varied payload round trips in Node/workerd; generated artifacts and full descriptor hashes are retained.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT generated aliases/service metadata and package definitions"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-004",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "nestedPackage: 'catalog.api.nested'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            }
+          ]
         },
         {
-          "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
-          "command": "tests",
-          "name": "UPSTREAM metadata clone/map/options and protobuf package factories preserve native semantics"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-004",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "nestedPackage: 'catalog.api.nested'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-004",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "nestedPackage: 'catalog.api.nested'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-004",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "nestedPackage: 'catalog.api.nested'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "bf26100c3165fcca42b2ea0e052402586fc836448a218f84b8139309ede68325"
     },
     {
       "id": "API-005",
-      "coverage": "partial",
-      "reason": "Two interceptors alter request bytes and metadata, both checked at the fetch boundary.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "An interceptor rewrites payload and metadata; independent peer receipts prove the changed bytes and metadata arrive in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
-          "command": "tests",
-          "name": "UPSTREAM interceptor builders preserve outgoing and incoming order"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-005",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "extra.rewriteVerified = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-005",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "extra.rewriteVerified = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-005",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "extra.rewriteVerified = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-005",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "extra.rewriteVerified = true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "a7a99982015867caa59df5f8f5334a41aaec0f39f9302854edc18921dd79b413"
     },
     {
       "id": "API-006",
-      "coverage": "partial",
-      "reason": "Final options reach the bottom bridge and the timeout header is observed.",
-      "gaps": [
-        "The test does not have the interceptor replace deadline with a different finite value."
-      ],
+      "coverage": "covered",
+      "reason": "Replacing finite interceptor deadlines changes the timeout header, expires a held shortened call and lets an extended call outlive its original deadline in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
-          "command": "tests",
-          "name": "UPSTREAM bottom bridge uses final method, serializers, credentials and explicit deadline provenance"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-006",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "finiteDeadlineReplaced: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/deadlineOutcomes",
+              "equals": [
+                0,
+                4,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-006",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "finiteDeadlineReplaced: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/deadlineOutcomes",
+              "equals": [
+                0,
+                4,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-006",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "finiteDeadlineReplaced: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/deadlineOutcomes",
+              "equals": [
+                0,
+                4,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-006",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "finiteDeadlineReplaced: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/deadlineOutcomes",
+              "equals": [
+                0,
+                4,
+                0
+              ]
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "b9831bd8fac8e2d3362fa629e483567716632206e5a90e0e985c0d2ee04f7990"
     },
     {
       "id": "API-007",
-      "coverage": "partial",
-      "reason": "Transformer and interceptor ordering have explicit assertions.",
-      "gaps": [
-        "Compare transformer plus two interceptors in the same pinned-native differential trace."
-      ],
+      "coverage": "covered",
+      "reason": "In-place invocation transformation plus two interceptors produces the same ordering, final wire, callback and status as pinned native grpc-js in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
-          "command": "tests",
-          "name": "UPSTREAM interceptor builders preserve outgoing and incoming order"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-007",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "request|transformer|one|two",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
         },
         {
-          "kind": "tap",
-          "source": "test/upstream-client.test.cjs",
-          "command": "tests",
-          "name": "UPSTREAM call interceptors override client interceptors and providers see transformed definition"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-007",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "request|transformer|one|two",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-007",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "request|transformer|one|two",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-007",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "request|transformer|one|two",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "scripts/api-contract-native.cjs",
+          "command": "api-contracts",
+          "array": "/native/results",
+          "where": {
+            "id": "API-007"
+          },
+          "anchor": "API-007",
+          "assertions": [
+            {
+              "pointer": "/callbacks/0/code",
+              "equals": 0
+            },
+            {
+              "pointer": "/statuses/0/code",
+              "equals": 0
+            },
+            {
+              "pointer": "/serverArrivals",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1e7fb7734dc12f5129105465d8c370a44e2210d4a6e54199a13197e0a9cc437f"
     },
     {
       "id": "API-008",
-      "coverage": "partial",
-      "reason": "Serialization and deserialization failures use the callback error surface.",
-      "gaps": [
-        "Record native error comparison, fetch/terminal counts and cleanup for this failure independently."
-      ],
+      "coverage": "covered",
+      "reason": "A serializer exception produces the same independent callback/status trace as pinned native grpc-js, with zero adapter Fetch, zero native server arrivals and completed cleanup.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT serialize and deserialize failures use call error surface"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-008",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "catalog serializer failure",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-008",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "catalog serializer failure",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-008",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "catalog serializer failure",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-008",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "catalog serializer failure",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "scripts/api-contract-native.cjs",
+          "command": "api-contracts",
+          "array": "/native/results",
+          "where": {
+            "id": "API-008"
+          },
+          "anchor": "API-008",
+          "assertions": [
+            {
+              "pointer": "/callbacks/0/code",
+              "equals": 13
+            },
+            {
+              "pointer": "/statuses/0/code",
+              "equals": 13
+            },
+            {
+              "pointer": "/serverArrivals",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "49d78bff78fb2e4ccb9a9e39dec2e1878bdd5b6fb2645549b426a0809d0311dc"
     },
     {
       "id": "API-009",
-      "coverage": "partial",
-      "reason": "Serialization and deserialization failures use the callback error surface.",
-      "gaps": [
-        "Record native error comparison, fetch/terminal counts and cleanup for this failure independently."
-      ],
+      "coverage": "covered",
+      "reason": "Malformed protobuf in a valid response frame produces matching native callback/status parse errors and terminal cleanup in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT serialize and deserialize failures use call error surface"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-009",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-009",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-009",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-009",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "scripts/api-contract-native.cjs",
+          "command": "api-contracts",
+          "array": "/native/results",
+          "where": {
+            "id": "API-009"
+          },
+          "anchor": "API-009",
+          "assertions": [
+            {
+              "pointer": "/callbacks/0/code",
+              "equals": 13
+            },
+            {
+              "pointer": "/statuses/0/code",
+              "equals": 13
+            },
+            {
+              "pointer": "/serverArrivals",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "d08bdca4a7fddc36a0a539b1b34fe6c2411bcb983aa5307f88999bb7ee58ec94"
     },
     {
       "id": "API-010",
-      "coverage": "partial",
-      "reason": "Zero-message OK records separate callback error and status codes.",
-      "gaps": [
-        "The exact native zero-message callback/status trace is not included in the differential report."
-      ],
+      "coverage": "covered",
+      "reason": "Zero-message OK responses match native callback UNIMPLEMENTED and separate status OK traces, with one Fetch and completed cleanup in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT callback error and status differ for zero-message OK"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-010",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-010",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-010",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-010",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeCompared",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "scripts/api-contract-native.cjs",
+          "command": "api-contracts",
+          "array": "/native/results",
+          "where": {
+            "id": "API-010"
+          },
+          "anchor": "API-010",
+          "assertions": [
+            {
+              "pointer": "/callbacks/0/code",
+              "equals": 12
+            },
+            {
+              "pointer": "/statuses/0/code",
+              "equals": 0
+            },
+            {
+              "pointer": "/serverArrivals",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "5b2ab8b67ce7d06a8a979a9daa14798f4a1ce485e0c6a69a22237d4eb4537659"
@@ -2121,98 +3659,1026 @@
     {
       "id": "API-011",
       "coverage": "partial",
-      "reason": "Duplicate response messages yield cardinality failure and release the active call.",
+      "reason": "Independent HTTP/2 controls confirm two messages and OK trailers. The pinned native unary client receives the first then deadlines with code 4, whereas Node/workerd adapters promptly reject with code 12 and clean up; native cardinality parity is not satisfied.",
       "gaps": [
-        "Record the corresponding native cardinality event trace."
+        "Pinned native grpc-js 1.14.0 reaches DEADLINE_EXCEEDED after the first of two messages, while the adapter rejects extra unary messages with UNIMPLEMENTED. The original native-parity requirement is not met."
       ],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT duplicate unary responses reject"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-011",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeDivergence",
+              "equals": {
+                "adapterCode": 12,
+                "nativeCode": 4,
+                "reason": "pinned native unary waits after first message until deadline; adapter enforces cardinality promptly"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-011",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeDivergence",
+              "equals": {
+                "adapterCode": 12,
+                "nativeCode": 4,
+                "reason": "pinned native unary waits after first message until deadline; adapter enforces cardinality promptly"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-011",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeDivergence",
+              "equals": {
+                "adapterCode": 12,
+                "nativeCode": 4,
+                "reason": "pinned native unary waits after first message until deadline; adapter enforces cardinality promptly"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-011",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number >= 9 && number <= 11",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/nativeDivergence",
+              "equals": {
+                "adapterCode": 12,
+                "nativeCode": 4,
+                "reason": "pinned native unary waits after first message until deadline; adapter enforces cardinality promptly"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "scripts/api-contract-native.cjs",
+          "command": "api-contracts",
+          "array": "/native/results",
+          "where": {
+            "id": "API-011"
+          },
+          "anchor": "API-011",
+          "assertions": [
+            {
+              "pointer": "/callbacks/0/code",
+              "equals": 4
+            },
+            {
+              "pointer": "/statuses/0/code",
+              "equals": 4
+            },
+            {
+              "pointer": "/serverArrivals",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "2b587bdeb04c3d54262ab7001d4d28caec797c243989fde028a5b73e0a4cffb6"
     },
     {
       "id": "API-012",
-      "coverage": "partial",
-      "reason": "Unsupported streaming reports UNIMPLEMENTED asynchronously with zero auth and data fetches.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence.",
-        "Explicitly distinguish asynchronous callback delivery from a synchronous callback; Promise rejection alone cannot establish that ordering."
-      ],
+      "coverage": "covered",
+      "reason": "Default-disabled client streaming reports asynchronous UNIMPLEMENTED callback/status in Node/workerd and both modes, with zero authentication or Fetch and no retained call resources.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/lifecycle-stream.test.cjs",
-          "command": "tests",
-          "name": "UNSUPPORTED client streaming/bidi send zero auth and zero requests"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-012",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-012",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-012",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-012",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c9bb55782b3ca5e41901952670154a12164edae3eb4994f6c604eab421574a2f"
     },
     {
       "id": "API-013",
-      "coverage": "partial",
-      "reason": "Unsupported streaming reports UNIMPLEMENTED asynchronously with zero auth and data fetches.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "Default-disabled bidi streaming reports asynchronous UNIMPLEMENTED error/status in Node/workerd and both modes, with zero authentication or Fetch and no retained call resources.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/lifecycle-stream.test.cjs",
-          "command": "tests",
-          "name": "UNSUPPORTED client streaming/bidi send zero auth and zero requests"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-013",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-013",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-013",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-013",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "number === 12 || number === 13",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c2b6a62ec2b80387aea4bcf90d1f9f985b2640c4166b3c40187e34d0136e8604"
     },
     {
       "id": "API-014",
-      "coverage": "partial",
-      "reason": "waitForReady returns UNIMPLEMENTED, retains truthful channel state and cannot fetch.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "waitForReady fails asynchronously with UNIMPLEMENTED while the channel stays IDLE, without a health request or data Fetch in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT READY unsupported; no health request"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-014",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "healthFetches: 0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-014",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "healthFetches: 0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-014",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "healthFetches: 0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-014",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "healthFetches: 0",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "b424ee2ebfdb13088894fdd03730d366fd68586d54db697f3d4df7e3d90d5b0d"
     },
     {
       "id": "API-015",
-      "coverage": "partial",
-      "reason": "Root module import succeeds and constructing Server fails explicitly.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence."
-      ],
+      "coverage": "covered",
+      "reason": "Public module import succeeds but actual native Server stub construction throws WGA_SERVER_UNSUPPORTED in Node/workerd and both modes, with zero RPC or Fetch.",
+      "gaps": [],
       "references": [
         {
-          "kind": "tap",
-          "source": "test/client.test.cjs",
-          "command": "tests",
-          "name": "CLIENT unsupported channel features fail explicitly"
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-015",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "useError: 'WGA_SERVER_UNSUPPORTED'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-015",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "cold"
+          },
+          "anchor": "useError: 'WGA_SERVER_UNSUPPORTED'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-015",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "useError: 'WGA_SERVER_UNSUPPORTED'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-015",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "cold"
+          },
+          "anchor": "useError: 'WGA_SERVER_UNSUPPORTED'",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c830d4949cf51733d14ff8fca073889c45e7992411fa4233351e99bfa706b295"
     },
     {
       "id": "API-016",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: callback throw.",
-      "gaps": [
-        "unary callback에서 application 오류를 throw한다",
-        "transport 오류로 재해석하지 않고 정리는 완료"
+      "coverage": "covered",
+      "reason": "Real callback exceptions are observed as fatal uncaught Node child errors and workerd Runtime.exceptionThrown. The transport observer has already completed OK once and released buffers/timers/calls; the throw interrupts the subsequent public status event.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-016",
+            "runtime": "workerd",
+            "mode": "cloudflare",
+            "invocation": "throw"
+          },
+          "anchor": "applicationThrow: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/observerTerminalCode",
+              "equals": 0
+            },
+            {
+              "pointer": "/observerTerminalCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/statusEvents",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-016",
+            "runtime": "workerd",
+            "mode": "grpc-web",
+            "invocation": "throw"
+          },
+          "anchor": "applicationThrow: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/observerTerminalCode",
+              "equals": 0
+            },
+            {
+              "pointer": "/observerTerminalCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/statusEvents",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-016",
+            "runtime": "node",
+            "mode": "cloudflare",
+            "invocation": "throw"
+          },
+          "anchor": "applicationThrow: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/observerTerminalCode",
+              "equals": 0
+            },
+            {
+              "pointer": "/observerTerminalCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/statusEvents",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/api-contracts.json",
+          "source": "fixtures/shared/catalog-api.mjs",
+          "command": "api-contracts",
+          "array": "/results",
+          "where": {
+            "id": "API-016",
+            "runtime": "node",
+            "mode": "grpc-web",
+            "invocation": "throw"
+          },
+          "anchor": "applicationThrow: true",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/resourcesIdle",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/observerTerminalCode",
+              "equals": 0
+            },
+            {
+              "pointer": "/observerTerminalCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/statusEvents",
+              "equals": 0
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "09326866c741baaa48129dd7e05597d570a9601ccdb9eaf1464f5be3ef15b4c3"
     },
     {
