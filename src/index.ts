@@ -1,3 +1,5 @@
+export { HealthClient, HealthWatch, HealthServingStatus } from './health';
+export type { HealthCheckResponse, HealthCallOptions, HealthWatchOptions, HealthWaitOptions, HealthWatchState } from './health';
 export { status, connectivityState, compressionAlgorithms, propagate, WorkersGrpcConfigurationError } from './status';
 export { Metadata } from './metadata';
 export type { MetadataValue, MetadataOptions } from './metadata';

@@ -163,3 +163,8 @@ workerd scenarios across both modes and cold/warm requests: recovery, exhaustion
 nonretryable status, partial-response commitment, refreshed auth rejection,
 cancellation and deadline interruption. It observes exactly 44 RPCs and fresh
 credentials per attempt. Local CF mode checks do not emulate edge conversion.
+
+`node scripts/test-health.cjs` compares standard health protobuf responses against
+native grpc-js, then exercises 18 workerd scenarios across both transport modes.
+It checks reconnect, disabled Watch, deadlines, caller abort and native cancellation
+before isolate disposal. Decoder unit tests add 2,500 seeded malformed inputs.

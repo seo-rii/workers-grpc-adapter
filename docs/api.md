@@ -153,3 +153,10 @@ unary method list, bounded `maxAttempts`, `initialBackoffMs`, `maxBackoffMs`, an
 `retryableStatusCodes`. Fetch exceptions additionally require `retryOnFetchError`.
 The adapter never replays a call after receiving a message. See [retries](retries.md)
 for commitment semantics, credential refresh, pushback and SDK retry interactions.
+
+## Application health
+
+The root module exports `HealthClient`, `HealthWatch` and `HealthServingStatus`.
+Wrap an existing `Client` to reuse its transport and credentials. `check()` is a
+bounded unary probe; `monitor()` reconnects Watch and exposes `waitForServing()`.
+Close monitors within the Worker lifetime. See [health](health.md).

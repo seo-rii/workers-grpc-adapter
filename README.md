@@ -132,7 +132,7 @@ Passing cases are evidence for their stated behavior, not a claim that every pla
 - Client streaming, bidirectional streaming, and Firestore Listen/Watch are unsupported.
 - Server APIs, custom certificate authorities, inline TLS client certificates, and native connection pooling are unsupported. Preconfigured Workers mTLS and HTTP service bindings can be selected using the [custom Fetcher](docs/fetcher.md) option; deployed TLS behavior requires separate verification.
 - Identity, deflate and gzip [message compression](docs/compression.md) are supported with bounded decompression. Compressed trailers and automatic codec fallback are unsupported.
-- Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic health checking remain unsupported; SDK retries are separate calls.
+- Explicit opt-in [unary retry policies](docs/retries.md) are supported. Native grpc-js transparent retry and automatic channel health checking remain unsupported; SDK retries are separate calls.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
 - The Workers build profile and SDK versions are pinned. Other dependency graphs require separate work and verification.
 
@@ -145,3 +145,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, changes, and pull requests. Re
 ## License
 
 Original adapter code is licensed under [MIT](LICENSE). Vendored grpc-js code is licensed under [Apache-2.0](vendor/LICENSE); its notices, original sources, hashes, and reproducible patches are retained in [vendor/](vendor/README.md). See [NOTICE](NOTICE) for attribution. This project is not affiliated with or endorsed by Google, Cloudflare, or the gRPC project.
+
+[Health Check/Watch](docs/health.md) provides explicit remote probes and a reconnecting observer.

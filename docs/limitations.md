@@ -46,13 +46,15 @@ Controlled Secret Manager tests cover pagination, async-iterator early exit, bin
 
 ## Unsupported features
 
-Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, remote health checks, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
+Client streaming, bidirectional RPCs, server APIs, Firestore Listen/Watch, custom certificate authorities, inline TLS client certificates, connection pools, keepalive, load balancing, native transparent retries, automatic channel health gating, channelz and arbitrary resolver schemes are unsupported. `waitForReady()` cannot report a ready connection. Parent-call propagation and `WriteThrough` are also unsupported.
 
 Identity, deflate and gzip message codecs are implemented and compared with native grpc-js and workerd peers. Compressed trailers and cross-call peer-encoding caches remain unsupported. Configured request compression never triggers an automatic identity retry. Deployed Cloudflare conversion with compressed messages remains a separate live check; see [compression](compression.md).
 
 Preconfigured Workers mTLS and HTTP service bindings can be selected using the transport's `fetcher` option. Local workerd tests verify actual service-binding dispatch, receiver preservation and client isolation. They do not verify an mTLS handshake or deployed binding/conversion behavior; see [Fetchers](fetcher.md).
 
 Explicit method-scoped unary retry policies are available, with bounded attempts, fresh credentials, pushback and one logical deadline. Defaults remain one Fetch per call. SDK retries can multiply attempts; lost responses can hide committed writes. This does not implement native transparent retry or service-config retries. See [retries](retries.md).
+
+Explicit `HealthClient.check()` and `monitor()` implement the standard remote health protocol, including Watch reconnects and `UNIMPLEMENTED` disablement. Applications can await SERVING before calls; this does not change channel READY or intercept requests automatically. See [health](health.md).
 
 ## Intentional differences
 
