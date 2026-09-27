@@ -145,3 +145,11 @@ Profile revision 3 selects `globalThis.fetch` as the pinned Gaxios transport's d
 Native HTTP/2, arbitrary upstream deep imports, channelz, load balancing and remote connection health are unavailable. Connectivity reports only `IDLE` or `SHUTDOWN`; `waitForReady()` never reports a ready connection. Writes accept flags `0`, `BufferHint` (`1`), `NoCompress` (`2`) or their combination. `WriteThrough` and actual parent-call propagation are unsupported.
 
 Message compression supports identity, deflate and gzip through `grpc.default_compression_algorithm`; identity remains the default. `NoCompress` bypasses the codec for an individual message. Decoded message limits and encoded transport ceilings are enforced independently. See [compression](compression.md) for negotiation, cancellation and native/workerd verification.
+
+## Explicit unary retry policy
+
+`retryPolicy` is an optional global or per-transport setting. It requires an exact
+unary method list, bounded `maxAttempts`, `initialBackoffMs`, `maxBackoffMs`, and
+`retryableStatusCodes`. Fetch exceptions additionally require `retryOnFetchError`.
+The adapter never replays a call after receiving a message. See [retries](retries.md)
+for commitment semantics, credential refresh, pushback and SDK retry interactions.

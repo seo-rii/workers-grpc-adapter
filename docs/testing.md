@@ -157,3 +157,9 @@ The controlled shared workerd bridge buffers finite responses. The Worker SDK ha
 The checked-in `compatibility/test-evidence.json` maps IDs to exact TAP names or report cases. Generated `verification/evidence.json` distinguishes covered, partial and unimplemented cases. A passed partial test remains partial.
 
 `verify` snapshots inputs before execution and checks current sources, installed runtime bytes, tarball integrity, locked dependencies, SDK candidates, build profiles, report contents and external process receipts afterward. `npm run test:evidence` rejects stale evidence. After input changes, prepare affected fixtures and rerun the complete gate. Downloaded CI reports describe that CI run; checking external process receipts requires the original runner's local log files.
+
+The explicit retry gate (`node scripts/test-workers-retries.cjs`) checks 28 local
+workerd scenarios across both modes and cold/warm requests: recovery, exhaustion,
+nonretryable status, partial-response commitment, refreshed auth rejection,
+cancellation and deadline interruption. It observes exactly 44 RPCs and fresh
+credentials per attempt. Local CF mode checks do not emulate edge conversion.

@@ -1,4 +1,5 @@
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
+import { validateRetryPolicy, type WorkersGrpcRetryPolicy, type RetryPolicySnapshot } from './retry';
 export { WorkersGrpcConfigurationError } from './status';
 /** A Workers mTLS/service binding, or another trusted Fetch implementation. */
 export interface WorkersGrpcFetcher {
@@ -6,6 +7,7 @@ export interface WorkersGrpcFetcher {
 }
 export type WorkersGrpcConfig = {
     fetcher?: WorkersGrpcFetcher;
+    retryPolicy?: WorkersGrpcRetryPolicy;
     defaultTimeoutMs?: number;
     transportMaxSendBytes?: number;
     transportMaxReceiveBytes?: number;
@@ -20,6 +22,7 @@ export type WorkersGrpcConfig = {
 });
 export interface WorkersGrpcConfigSnapshot {
     readonly fetcher?: WorkersGrpcFetcher;
+    readonly retryPolicy?: RetryPolicySnapshot;
     readonly mode: 'cloudflare' | 'grpc-web';
     readonly endpoints: Readonly<Record<string, string>>;
     readonly defaultTimeoutMs?: number;
@@ -99,7 +102,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
         return fail('WGA_INVALID_CONFIG', 'Configuration must be an object');
     }
     for (const key of Object.keys(input)) {
-        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher'].includes(key)) {
+        if (!['mode', 'endpoints', 'allowInsecureLocalhost', 'defaultTimeoutMs', 'transportMaxSendBytes', 'transportMaxReceiveBytes', 'fetcher', 'retryPolicy'].includes(key)) {
             return fail('WGA_INVALID_CONFIG', 'Unknown configuration key');
         }
     }
@@ -142,6 +145,7 @@ export function validateConfig(input: WorkersGrpcConfig = {}): WorkersGrpcConfig
     }
     return Object.freeze({ mode, endpoints: Object.freeze(Object.assign(Object.create(null), Object.fromEntries(Object.keys(entries).sort().map(k => [k, entries[k]])))),
         fetcher: snapshotFetcher(input.fetcher),
+        retryPolicy: validateRetryPolicy(input.retryPolicy),
         defaultTimeoutMs: budget(input.defaultTimeoutMs, 'defaultTimeoutMs'),
         transportMaxSendBytes: budget(input.transportMaxSendBytes, 'transportMaxSendBytes', 32 * 1024 * 1024)!,
         transportMaxReceiveBytes: budget(input.transportMaxReceiveBytes, 'transportMaxReceiveBytes', 32 * 1024 * 1024)!,
