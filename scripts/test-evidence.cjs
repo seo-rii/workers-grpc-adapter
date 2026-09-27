@@ -57,7 +57,7 @@ function runtimeFiles(root, directory) {
     return collect(directory).sort();
 }
 function validateRuntimeCopies(root) {
-    const directories = ['dist', ...['google', 'worker'].map(fixture => `fixtures/${fixture}/node_modules/@grpc/grpc-js/dist`)];
+    const directories = ['dist', ...['google', 'worker', 'modern'].map(fixture => `fixtures/${fixture}/node_modules/@grpc/grpc-js/dist`)];
     const artifacts = {};
     let expected;
     for (const directory of directories) {

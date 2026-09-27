@@ -47,7 +47,7 @@ test('EVIDENCE stale source, lock, candidate, profile and artifact hashes fail c
 test('EVIDENCE installed runtime bytes and file sets match the tested root build', t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-evidence-runtime-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-    const directories = ['dist', 'fixtures/google/node_modules/@grpc/grpc-js/dist', 'fixtures/worker/node_modules/@grpc/grpc-js/dist'];
+    const directories = ['dist', 'fixtures/google/node_modules/@grpc/grpc-js/dist', 'fixtures/worker/node_modules/@grpc/grpc-js/dist', 'fixtures/modern/node_modules/@grpc/grpc-js/dist'];
     for (const directory of directories) {
         fs.mkdirSync(path.join(root, directory, 'build/profiles'), { recursive: true });
         fs.writeFileSync(path.join(root, directory, 'index.js'), 'original runtime');
