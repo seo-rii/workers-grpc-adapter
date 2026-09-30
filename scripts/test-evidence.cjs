@@ -89,9 +89,47 @@ function validateRuntimeCopies(root) {
 function namedTests(source, file) {
     const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const names = [];
+    const isTest = node => ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+        && ['test', 'it'].includes(node.expression.text);
+    const literal = node => ts.isStringLiteralLike(node) ? node.text
+        : ts.isNumericLiteral(node) ? Number(node.text) : undefined;
+    // Only expand direct tests in finite, literal const tables. Never evaluate
+    // source, function calls, computed tables or arbitrary template expressions.
+    function tableNames(node) {
+        if (node.awaitModifier || !ts.isVariableDeclarationList(node.initializer)
+            || !(node.initializer.flags & ts.NodeFlags.Const) || node.initializer.declarations.length !== 1
+            || !ts.isArrayLiteralExpression(node.expression) || node.expression.elements.length > 256) return;
+        const binding = node.initializer.declarations[0].name;
+        let keys;
+        if (ts.isIdentifier(binding)) keys = [binding.text];
+        else if (ts.isArrayBindingPattern(binding) && binding.elements.every(item => ts.isBindingElement(item)
+            && !item.dotDotDotToken && !item.initializer && ts.isIdentifier(item.name))) keys = binding.elements.map(item => item.name.text);
+        else return;
+        const rows = node.expression.elements.map(item => ts.isArrayBindingPattern(binding)
+            ? ts.isArrayLiteralExpression(item) ? item.elements.map(literal) : [] : [literal(item)]);
+        if (rows.some(row => row.length !== keys.length || row.some(value => value === undefined))) return;
+        const statements = ts.isBlock(node.statement) ? node.statement.statements : [node.statement];
+        // A loop body can legally shadow its own iteration binding. Limit this
+        // form to registration statements so no intervening declaration changes it.
+        if (!statements.every(statement => ts.isExpressionStatement(statement) && isTest(statement.expression))) return;
+        for (const statement of statements) {
+            const title = statement.expression.arguments[0];
+            if (!title || !ts.isTemplateExpression(title)) continue;
+            for (const row of rows) {
+                let name = title.head.text;
+                for (const span of title.templateSpans) {
+                    const value = ts.isIdentifier(span.expression) ? row[keys.indexOf(span.expression.text)] : literal(span.expression);
+                    if (value === undefined) { name = undefined; break; }
+                    name += String(value) + span.literal.text;
+                }
+                if (name !== undefined) names.push(name);
+            }
+        }
+    }
     function visit(node) {
-        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && ['test', 'it'].includes(node.expression.text)
+        if (isTest(node)
             && node.arguments[0] && ts.isStringLiteralLike(node.arguments[0])) names.push(node.arguments[0].text);
+        if (ts.isForOfStatement(node)) tableNames(node);
         ts.forEachChild(node, visit);
     }
     visit(ast);

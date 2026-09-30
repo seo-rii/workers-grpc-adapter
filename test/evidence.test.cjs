@@ -153,6 +153,38 @@ test('EVIDENCE parses declared tests rather than matching comments or arbitrary 
     assert.throws(() => pointer({ a: null }, '/a/b'), /missing JSON pointer/);
 });
 
+test('EVIDENCE resolves literal table test names and still requires each successful TAP result', () => {
+    const source = 'for (const [http, code] of [[400, 13], [503, 14]]) { test(`HTTP ${http}`, async () => check(code)); }';
+    assert.deepEqual(namedTests(source, 'sample.cjs'), ['HTTP 400', 'HTTP 503']);
+    assert.deepEqual(namedTests('for (const size of [1, 0xff, "small"]) it(`size=${size}`, fn);', 'sample.cjs'), ['size=1', 'size=255', 'size=small']);
+    const f = fixture();
+    f.context.text = () => source;
+    f.context.tap = tapResults('ok 1 - HTTP 400\nok 2 - HTTP 503\n');
+    f.mapping.cases[0].references[0].name = 'HTTP 503';
+    assert.equal(validateMapping(f.catalog, f.mapping, f.context)[0].execution, 'passed');
+    f.context.tap.set('HTTP 503', 'not_run');
+    assert.throws(() => validateMapping(f.catalog, f.mapping, f.context), /named test did not pass/);
+    f.context.tap.set('HTTP 504', 'passed');
+    f.mapping.cases[0].references[0].name = 'HTTP 504';
+    assert.throws(() => validateMapping(f.catalog, f.mapping, f.context), /named test does not exist/);
+});
+
+test('EVIDENCE refuses computed, mutable, shadowed and excessive test-name tables', () => {
+    for (const source of [
+        'for (let code of [400]) test(`HTTP ${code}`, fn);',
+        'for (const code of codes) test(`HTTP ${code}`, fn);',
+        'for (const code of [400, getCode()]) test(`HTTP ${code}`, fn);',
+        'for (const code of [400]) test(`HTTP ${String(code)}`, fn);',
+        'for (const code of [400]) test(`HTTP ${other}`, fn);',
+        'for (const code of [400]) { const code=503; test(`HTTP ${code}`, fn); }',
+        'for (const code of [400]) { { const code=503; test(`HTTP ${code}`, fn); } }',
+        'for (const [code=400] of [[]]) test(`HTTP ${code}`, fn);',
+        'for (const [...codes] of [[400]]) test(`HTTP ${codes}`, fn);',
+        'for (const code of [400]) register(() => test(`HTTP ${code}`, fn));',
+        `for (const code of [${Array(257).fill('400').join(',')}]) test(\`HTTP \${code}\`, fn);`,
+    ]) assert.deepEqual(namedTests(source, 'sample.cjs'), [], source);
+});
+
 function emulatorFixture() {
     const toolchain = { schemaVersion: 1, firestore: { version: 'fixture-emulator', sha256: 'a'.repeat(64) }, java: { version: 'fixture-java', sha256: 'b'.repeat(64) } };
     const envoyPin = { version: 'fixture-envoy', sha256: 'c'.repeat(64) };
