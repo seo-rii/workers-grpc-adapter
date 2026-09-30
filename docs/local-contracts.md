@@ -6,10 +6,14 @@ contracts. The checked-in [case mapping](../compatibility/test-evidence.json)
 records the coverage decision for each ID; the generated
 `verification/evidence.json` verifies its concrete execution references.
 
-This batch completes all 11 configuration cases, seven type cases and 15 of the
+Local verification covers all 11 configuration cases, seven type cases and 15 of the
 16 API cases. `API-011` retains a concrete native divergence below. Across the
-unchanged 189-case catalog the reviewed mapping now has 41 covered, 112 partial
-and 36 unimplemented cases; those counts describe requirements, not test totals.
+unchanged 189-case catalog the reviewed mapping has 58 covered, 118 partial
+and 13 without accepted current execution references. The mapping retains the
+legacy `unimplemented` label for that last category; it does not mean 13 runtime
+features are absent. These counts describe requirements, not test totals. See
+the [evidence reconciliation](https://github.com/seo-rii/workers-grpc-adapter/blob/main/docs/evidence-review.md)
+for the remaining conditions and the distinction from dated deployment evidence.
 
 ## Runtime API
 

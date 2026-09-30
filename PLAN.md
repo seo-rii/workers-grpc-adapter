@@ -66,6 +66,10 @@ differences are documented in [Limitations](docs/limitations.md).
 - [x] Map the original 189 planned cases to named execution evidence, keeping
   complete, partial and unimplemented cases distinct. Detect drift in sources,
   locks, installed code, artifacts, profiles and generated reports.
+- [x] Reconcile every original case against the existing tests on 2026-09-30:
+  58 covered, 118 partial and 13 without accepted current execution references.
+  Separate missing mappings, incomplete assertions, known contract differences
+  and historical cloud checks. See [Evidence review](docs/evidence-review.md).
 
 The full local gate covers core tests and 80 official-emulator scenario
 executions (20 scenarios in four execution groups). Execution counts and results
@@ -131,6 +135,10 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 ### Resource and API contracts
 
 - [ ] Finish the remaining original catalog cases and finer grpc-js contracts.
+  The [reviewed remaining conditions](docs/evidence-review.md#remaining-work)
+  identify the next work units; the 131 unsatisfied cases are not 131 missing
+  runtime features. Keep the original catalog immutable when an expectation
+  needs an explicit compatibility decision.
 - [x] Close all 11 configuration cases, all seven type cases and 15 public API
   cases with exact execution evidence. Retain `API-011` as partial for the
   independently reproduced native unary duplicate-response difference. See
