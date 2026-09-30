@@ -32,6 +32,7 @@
     "test:firestore-watch-errors": "node scripts/test-firestore-watch-errors.cjs",
     "test:modern-firestore-recovery": "node scripts/test-modern-firestore-recovery.cjs",
     "test:datastore-lookup": "node scripts/test-datastore-lookup.cjs",
+    "test:datastore-transactions": "node scripts/test-datastore-transactions.cjs",
     "test:secret-manager": "node scripts/test-secret-manager-extended.cjs",
     "test:firestore-recovery": "node scripts/test-firestore-recovery.cjs",
     "test:firestore-read-errors": "node scripts/test-firestore-read-errors.cjs",

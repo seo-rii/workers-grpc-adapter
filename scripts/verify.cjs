@@ -93,6 +93,7 @@ function main() {
     run('secret-manager-extended', ['scripts/test-secret-manager-extended.cjs']);
     run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
     run('datastore-lookup', ['scripts/test-datastore-lookup.cjs']);
+    run('datastore-transactions', ['scripts/test-datastore-transactions.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
@@ -121,6 +122,7 @@ function main() {
     const firestoreWatchErrors = read('firestore-watch-errors.json');
     const firestoreReadErrors = read('firestore-read-errors.json');
     const datastoreLookup = read('datastore-lookup.json');
+    const datastoreTransactions = read('datastore-transactions.json');
     const datastorePagination = read('datastore-pagination.json');
     const secretManagerExtended = read('secret-manager-extended.json');
     const shared = filesIn(path.join(root, 'fixtures/google/shared')).filter(p => p.endsWith('.mjs')).map(file => ({ file: path.relative(root, file), sha256: hash(file),
@@ -135,6 +137,8 @@ function main() {
             || (firestoreReadErrors.nativeBusinessEquivalent && firestoreReadErrors.sharedSha256 === hash(file)
                 && firestoreReadErrors.sources['google-static-v1/native'] === hash(file))
             || (datastoreLookup.sameSharedSource && datastoreLookup.sourceHashes.native[path.basename(file)] === hash(file))
+            || (datastoreTransactions.nativeBusinessEquivalent && datastoreTransactions.sharedSha256 === hash(file)
+                && datastoreTransactions.sources['google-static-v1/native'] === hash(file))
             || (datastorePagination.sameSharedSource && datastorePagination.sourceHashes.native[path.basename(file)] === hash(file))
             || (secretManagerExtended.sameSharedSource && secretManagerExtended.sourceHashes.native[path.basename(file)] === hash(file))) }));
     const catalog = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/test-catalog.json')));
@@ -156,7 +160,7 @@ function main() {
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
-        datastorePagination, datastoreLookup, workersResilience: read('workers-resilience.json'),
+        datastorePagination, datastoreLookup, datastoreTransactions, workersResilience: read('workers-resilience.json'),
         workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },
