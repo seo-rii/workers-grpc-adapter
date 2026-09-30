@@ -8717,45 +8717,621 @@
     },
     {
       "id": "TX-001",
-      "coverage": "partial",
-      "reason": "Both runtimes run begin/get/save/commit with a subsequent persisted-value assertion.",
-      "gaps": [
-        "Assert transaction ID bytes, exactly one mutation and the original commit tuple."
-      ],
+      "coverage": "covered",
+      "reason": "Both pinned Datastore SDK profiles preserve the binary transaction ID, begin/commit tuple shapes, one upsert and the persisted result across native grpc-js and both Node/workerd adapter modes. Exact receipts and observer results exclude same-call Commit replay.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-transaction",
-            "runtime": "native"
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "commit-success"
           },
-          "anchor": "datastore-transaction",
+          "anchor": "commit-success",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-transaction",
-            "runtime": "replacement"
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "commit-success"
           },
-          "anchor": "datastore-transaction",
+          "anchor": "commit-success",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "commit-success"
+          },
+          "anchor": "commit-success",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -8764,92 +9340,1244 @@
     },
     {
       "id": "TX-002",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: query transaction.",
-      "gaps": [
-        "transaction 안에서 query 후 commit한다",
-        "transaction option과 응답 의미 보존"
+      "coverage": "covered",
+      "reason": "Both pinned profiles preserve transaction readOptions, query kind/filter/limit/namespace, query results and the successful commit tuple across native and both Node/workerd adapter modes. The same binary transaction ID reaches the query and its one Commit.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "query-commit"
+          },
+          "anchor": "query-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "2514520648c1b8af5a84ee09ea40ec087f5a32fc145059ccf19bacedb4ca6234"
     },
     {
       "id": "TX-003",
-      "coverage": "partial",
-      "reason": "An official transaction reads, queues an update and insert, rolls back, and proves the old entity unchanged and the new entity absent in every runtime.",
-      "gaps": [
-        "Transaction ID bytes and the absence of a Commit for that specific transaction are not recorded independently."
-      ],
+      "coverage": "covered",
+      "reason": "A queued write is rolled back with the original binary transaction ID, zero Commit requests and an unchanged follow-up value in both pinned profiles across native and both Node/workerd adapter modes.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
-          "report": "verification/google-emulators.json",
-          "source": "fixtures/google/shared/emulator-datastore.mjs",
-          "command": "google-emulators",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
+            "profile": "google-static-v1",
             "runtime": "native",
-            "suite": "datastore-emulator-rollback"
+            "scenario": "rollback-queued"
           },
-          "anchor": "datastore-emulator-rollback",
+          "anchor": "rollback-queued",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/google-emulators.json",
-          "source": "fixtures/google/shared/emulator-datastore.mjs",
-          "command": "google-emulators",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "runtime": "replacement",
-            "suite": "datastore-emulator-rollback"
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "rollback-queued"
           },
-          "anchor": "datastore-emulator-rollback",
+          "anchor": "rollback-queued",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/google-emulators.json",
-          "source": "fixtures/google/shared/emulator-datastore.mjs",
-          "command": "google-emulators",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "runtime": "workerd-first",
-            "suite": "datastore-emulator-rollback"
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "rollback-queued"
           },
-          "anchor": "datastore-emulator-rollback",
+          "anchor": "rollback-queued",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/google-emulators.json",
-          "source": "fixtures/google/shared/emulator-datastore.mjs",
-          "command": "google-emulators",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "runtime": "workerd-second",
-            "suite": "datastore-emulator-rollback"
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "rollback-queued"
           },
-          "anchor": "datastore-emulator-rollback",
+          "anchor": "rollback-queued",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "rollback-queued"
+          },
+          "anchor": "rollback-queued",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -8858,90 +10586,1858 @@
     },
     {
       "id": "TX-004",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: read-only.",
-      "gaps": [
-        "read-only transaction에 읽기와 금지 쓰기를 시험한다",
-        "원본 SDK 허용/거부 의미"
+      "coverage": "covered",
+      "reason": "Both pinned profiles preserve the native read-only contract: a read and zero-mutation Commit succeed; the SDK queues a write, the controlled server rejects it with INVALID_ARGUMENT, and the SDK sends Rollback. Request IDs, mutation counts and persisted state are checked across native and both Node/workerd modes.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "readonly-read"
+          },
+          "anchor": "readonly-read",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "readonly-write-rejected"
+          },
+          "anchor": "readonly-write-rejected",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "2e7afc9c7d42ad4deb03f0cce6bb08b835a25e11e75c98c0af18c8d542de3197"
     },
     {
       "id": "TX-005",
-      "coverage": "partial",
-      "reason": "Native and replacement preserve ABORTED, retain the original persisted value and assert one faulting Commit with no application or adapter replay; workerd runs the same case.",
-      "gaps": [
-        "The controlled server uses a fixed transaction ID; distinct transaction IDs and credential isolation are not established by this case."
-      ],
+      "coverage": "covered",
+      "reason": "Both pinned profiles preserve ABORTED from one faulting Commit, apply zero mutations and do not re-execute the transaction. Native and both Node/workerd modes retain the binary transaction ID, record the SDK-generated Rollback separately and recover on the same client.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-aborted",
-            "runtime": "native"
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "commit-aborted"
           },
-          "anchor": "datastore-aborted",
+          "anchor": "commit-aborted",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-aborted",
-            "runtime": "replacement"
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "commit-aborted"
           },
-          "anchor": "datastore-aborted",
+          "anchor": "commit-aborted",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/workers-shared.json",
-          "source": "fixtures/google/shared/controlled-suites.mjs",
-          "command": "workers-shared",
-          "array": "/workerd/0/results",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
           "where": {
-            "suite": "datastore-aborted"
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "commit-aborted"
           },
-          "anchor": "datastore-aborted",
+          "anchor": "commit-aborted",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/workers-shared.json",
-          "source": "fixtures/google/shared/controlled-suites.mjs",
-          "command": "workers-shared",
-          "array": "/workerd/1/results",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
           "where": {
-            "suite": "datastore-aborted"
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "commit-aborted"
           },
-          "anchor": "datastore-aborted",
+          "anchor": "commit-aborted",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "commit-aborted"
+          },
+          "anchor": "commit-aborted",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 10
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -8950,90 +12446,1244 @@
     },
     {
       "id": "TX-006",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: commit 전 장애.",
-      "gaps": [
-        "서버 반영 전 연결 실패를 일으킨다",
-        "실패와 fetch/server count를 기록, 같은 Call 재송신 없음"
+      "coverage": "covered",
+      "reason": "An actual HTTP/2 stream reset before mutation application sends no gRPC status or response payload. Both pinned profiles preserve UNAVAILABLE, one Commit and one adapter Fetch per SDK RPC; the SDK-generated Rollback and unchanged follow-up value are recorded across native and both Node/workerd modes.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "disconnect-before-apply"
+          },
+          "anchor": "disconnect-before-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                1
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "0664e5ac232af98cb54751a416c676d5cc2345d8332ad9c1489fdd1697e57ccb"
     },
     {
       "id": "TX-007",
-      "coverage": "partial",
-      "reason": "A server-applied Commit with withheld response returns deadline failure while the persisted mutation survives the SDK rollback; native and workerd match.",
-      "gaps": [
-        "The current fault withholds the response until deadline; add a connection-disconnect variant and explicit uncertainty-facing contract."
-      ],
+      "coverage": "covered",
+      "reason": "An actual HTTP/2 stream reset after exactly one mutation preserves UNAVAILABLE without a successful commit result or adapter replay. Both pinned profiles match native behavior in both Node/workerd modes: the SDK sends Rollback, but a later read still observes the applied write, so the error does not imply that the write was undone.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-commit-response-lost",
-            "runtime": "native"
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "disconnect-after-apply"
           },
-          "anchor": "datastore-commit-response-lost",
+          "anchor": "disconnect-after-apply",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "compatibility/google-local.json",
-          "source": "scripts/google-local-test.cjs",
-          "command": "sdk-local",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
           "array": "/results",
           "where": {
-            "suite": "datastore-commit-response-lost",
-            "runtime": "replacement"
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "disconnect-after-apply"
           },
-          "anchor": "datastore-commit-response-lost",
+          "anchor": "disconnect-after-apply",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/workers-shared.json",
-          "source": "fixtures/google/shared/controlled-suites.mjs",
-          "command": "workers-shared",
-          "array": "/workerd/0/results",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
           "where": {
-            "suite": "datastore-commit-response-lost"
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "disconnect-after-apply"
           },
-          "anchor": "datastore-commit-response-lost",
+          "anchor": "disconnect-after-apply",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
         {
           "kind": "json-case",
-          "report": "verification/workers-shared.json",
-          "source": "fixtures/google/shared/controlled-suites.mjs",
-          "command": "workers-shared",
-          "array": "/workerd/1/results",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
           "where": {
-            "suite": "datastore-commit-response-lost"
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "disconnect-after-apply"
           },
-          "anchor": "datastore-commit-response-lost",
+          "anchor": "disconnect-after-apply",
           "assertions": [
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "disconnect-after-apply"
+          },
+          "anchor": "disconnect-after-apply",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 5
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 14
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -9042,24 +13692,1352 @@
     },
     {
       "id": "TX-008",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: commit 중 cancel.",
+      "coverage": "partial",
+      "reason": "The generated public v1 Commit reaches DEADLINE_EXCEEDED after the peer accepts and applies its mutation. Both pinned profiles and all runtimes retain the applied write, send no Rollback and expose no public promise cancellation handle. This is deadline evidence, not explicit caller cancellation.",
       "gaps": [
-        "서버 수신 뒤 호출자를 취소한다",
-        "CANCELLED, 이미 실행된 mutation 취소 보장 없음"
+        "Exercise explicit caller cancellation after Commit receipt and observe CANCELLED. Neither the pinned high-level nor generated-v1 Commit promise exposes a cancellation handle; the current deadline scenario does not satisfy that procedure."
       ],
-      "references": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "v1-deadline-commit"
+          },
+          "anchor": "v1-deadline-commit",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": 4
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/result/surface",
+              "equals": "generated-v1"
+            },
+            {
+              "pointer": "/result/cancelHandleAvailable",
+              "equals": false
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        }
+      ],
       "catalogCaseSha256": "6c79f83b10d6b9b2a06f7bfe2a8a094f0bd27f3d7a6752b347a415f0a4554909"
     },
     {
       "id": "TX-009",
-      "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: 동시 transaction.",
+      "coverage": "partial",
+      "reason": "Two crossed high-level transactions preserve distinct binary IDs, synthetic identity metadata, request ownership and independent persisted values in both pinned profiles across native and both Node/workerd modes.",
       "gaps": [
-        "다른 ID/credential의 transaction 두 개를 교차 실행한다",
-        "ID와 metadata 격리"
+        "Exercise crossed transactions with distinct authentication providers or Google credentials. Synthetic identity headers prove request-label isolation only."
       ],
-      "references": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "native",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-static-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "native",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-grpc-web",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "adapter-cloudflare",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-grpc-web",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/datastore-transactions.json",
+          "source": "fixtures/google/shared/datastore-transactions.mjs",
+          "command": "datastore-transactions",
+          "array": "/results",
+          "where": {
+            "profile": "google-modern-v1",
+            "runtime": "workerd-cloudflare",
+            "scenario": "crossed-transactions"
+          },
+          "anchor": "crossed-transactions",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/result/errorCode",
+              "equals": null
+            },
+            {
+              "pointer": "/result/transactionIds",
+              "equals": [
+                "00ff0180",
+                "00ff0280"
+              ]
+            },
+            {
+              "pointer": "/result/persistedCounts",
+              "equals": [
+                2,
+                3
+              ]
+            },
+            {
+              "pointer": "/result/sameClientRecovery",
+              "equals": true
+            },
+            {
+              "pointer": "/result/noLateEvents",
+              "equals": true
+            },
+            {
+              "pointer": "/backendIdleBeforeNextCase",
+              "equals": true
+            },
+            {
+              "pointer": "/observer/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        }
+      ],
       "catalogCaseSha256": "e99c278be2be1f16a0d08bc6ab720c3cc068bafc29b131e664452a982f1ddd8f"
     },
     {

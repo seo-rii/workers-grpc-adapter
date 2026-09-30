@@ -43,7 +43,29 @@ URL-sourced external-account credentials, chained service-account impersonation 
 
 Google SDK clients can use different per-instance transport configurations in one Worker. `gaxOptions()` passes the configuration through each client's channel options, so GAX's shared service-constructor cache cannot select another client's mode or gateway. Local workerd tests cover all three pinned SDKs, multiple gateway destinations, ordinary default clients, different cache initialization orders and repeated invocations. These controlled local tests do not add a new deployed-cloud certification.
 
-Controlled Commit-response-loss tests apply a mutation, withhold the response and reach a deadline. A later SDK Rollback does not prove that a committed write was undone. Controlled workerd shared tests buffer finite responses; the resilience gate checks cancellation of interrupted loopback responses.
+Controlled Datastore transaction tests compare both pinned SDK profiles across
+native grpc-js and both adapter modes in Node/workerd. They cover transaction ID
+and request isolation, commit/query/rollback results, read-only rejection,
+`ABORTED`, and HTTP/2 stream resets before and after mutation application.
+The pinned SDK sends Rollback after high-level Commit errors; it cannot undo an
+already committed write. A failed response therefore does not establish whether
+the write was applied. Follow-up reads in the controlled fixture distinguish
+those outcomes without treating this as production recovery evidence.
+
+The public `v1.DatastoreClient.commit()` and high-level `Transaction.commit()`
+promises expose no cancellation handle in the pinned SDKs. The generated-v1
+case verifies deadline expiry after mutation application; it does not establish
+explicit caller cancellation. Its peer enforces `grpc-timeout`; local deadline
+completion through a workerd service binding does not prove immediate backend
+cancellation. The crossed-transaction case uses synthetic
+identity headers with distinct transaction IDs; it does not establish isolation
+between different authentication providers or real Google credentials. See
+[transaction tests](testing.md#datastore-transactions-and-interrupted-commit-responses)
+for these coverage boundaries.
+
+Earlier shared Commit-response-loss tests withhold a response until its deadline.
+Those controlled workerd shared tests buffer finite responses; the resilience
+gate checks cancellation of interrupted loopback responses.
 
 Repeated local workerd fault waves verify concurrent calls, slow streams, deadlines, cancellation, message limits, client reuse and adapter-visible resource cleanup in both modes. The loopback server observes interrupted response closure before runtime disposal. These are finite regression tests, not sustained traffic, total memory measurements or production recovery certification.
 

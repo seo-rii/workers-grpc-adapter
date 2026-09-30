@@ -70,6 +70,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-workers-compression.cjs` | Identity/deflate/gzip messages, mixed frames, decoded limits and cancellation against a Node zlib peer | `verification/workers-compression.json` |
 | `npm run test:secret-manager` | Native/adapter/workerd Secret Manager pagination, method errors, metadata, recovery and payload checksum handling | `verification/secret-manager-extended.json` |
 | `npm run test:firestore-read-errors` | Both pinned Firestore profiles: intermediate read failures, SDK retry requests, events and cleanup in native/Node/workerd | `verification/firestore-read-errors.json` |
+| `npm run test:datastore-transactions` | Both pinned Datastore profiles: transaction requests, rollback, failures, interrupted Commit outcomes and cleanup in native/Node/workerd | `verification/datastore-transactions.json` |
 | `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
@@ -185,6 +186,54 @@ attempts and 70 separate fixture control acknowledgements. Envoy receipts identi
 each case, RPC method and terminal status. The independent evidence validator
 rejects missing combinations, changed retry requests, incorrect event sequences,
 unreleased resources and stale source/dependency identities.
+
+## Datastore transactions and interrupted Commit responses
+
+`npm run test:datastore-transactions` runs identical transaction operations with
+Datastore 10.1.0 and 11.1.0, using native grpc-js and both adapter modes in Node
+and workerd: 100 cases, 470 service RPCs, 376 adapter Fetch calls and 10 separate
+control acknowledgements. A controlled native service owns the test's in-memory transaction
+state. Actual Envoy translates local adapter traffic; this does not exercise
+Cloudflare's deployed automatic conversion or production Datastore storage.
+
+The scenarios cover a successful read/update/commit, a query inside a transaction,
+rollback of a queued write, read-only reads and rejected writes, `ABORTED`, and
+HTTP/2 stream resets before and after mutation application. A reset sends no
+gRPC status or response payload. The peer records binary
+transaction IDs, exact request order, mutation contents and application counts.
+Successful responses retain the SDK's tuple shape and mutation results. A later
+read on the same client distinguishes an unapplied write from an applied write
+whose response failed.
+
+The pinned high-level SDK sends `Rollback` after a failed `commit()`. The test
+records this SDK behavior separately from the adapter's one-attempt-per-call
+contract: a later Rollback is not evidence that a committed mutation was undone.
+Read-only writes are queued by the SDK and rejected by the controlled service;
+the gate does not claim a local read-only write prohibition.
+
+The generated public `v1.DatastoreClient.commit()` scenario expires its deadline
+after the peer has accepted and applied the mutation. It checks local
+`DEADLINE_EXCEEDED`, no adapter-generated Rollback, and the persisted write.
+The generated-v1 and high-level `Transaction.commit()` promises expose no
+cancellation handle in either pinned SDK. The test records that API boundary;
+explicit caller cancellation remains a gap in the original `TX-008` case.
+The peer also enforces the request's `grpc-timeout` so an abandoned backend
+operation has a bounded lifetime. A workerd service-binding call reaching its
+local deadline does not establish immediate backend cancellation; client stream
+reset and peer deadline cleanup are recorded separately.
+
+Two transactions also run in crossed order with distinct IDs and synthetic
+identity metadata. The test checks that their requests and results stay separate.
+These headers are fixture labels, not distinct authentication providers or Google
+credentials; concurrent credential isolation remains outside this transaction
+case. The original TX catalog retains that distinction.
+
+The gate checks one adapter attempt and Fetch per SDK RPC and zero active calls,
+queued calls and retained adapter bytes before closing the SDK clients. The
+independent evidence validator checks the complete runtime/profile matrix, source
+and installed dependency hashes, backend receipts and clean process shutdown.
+Finite local failure injection does not establish production conflict handling,
+IAM, quota behavior or long-running transaction reliability.
 
 ## Official database emulators
 

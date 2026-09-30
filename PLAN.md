@@ -87,9 +87,17 @@ See [Testing](docs/testing.md) for the commands and report inventory.
   These SDK readables do not expose cancellation of an in-flight unary page.
 - [ ] Broaden callback/Promise overload and GAX-option coverage beyond the
   pinned dependency graph. Allocation and reservation of IDs are already tested.
-- [ ] Complete the retry and transaction error matrix. Controlled tests already
-  exercise ABORTED and a committed write whose response is lost; emulator tests
-  exercise duplicate inserts, missing updates and failed-commit atomicity.
+- [x] Compare successful commit/query/rollback, read-only rejection, ABORTED,
+  HTTP/2 resets before and after mutation application, generated-v1 Commit
+  deadlines and crossed transaction IDs in both pinned SDK profiles across
+  native grpc-js and both Node/workerd modes. Check same-client recovery and
+  adapter resources before client close.
+- [ ] Complete remaining transaction and retry contracts beyond that controlled
+  matrix, including distinct credential providers for crossed transactions.
+  The public generated-v1 and high-level Transaction.commit() promises have no
+  cancellation handle. Explicit Commit cancellation remains unverified by this
+  matrix. Emulator tests additionally exercise duplicate inserts, missing
+  updates and failed-commit atomicity; production conflicts remain a separate gate.
 
 ### Firestore
 
