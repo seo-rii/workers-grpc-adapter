@@ -460,7 +460,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 112
+              "equals": 113
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -497,7 +497,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 112
+              "equals": 113
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -1553,12 +1553,149 @@
     },
     {
       "id": "PKG-013",
-      "coverage": "partial",
-      "reason": "Concrete runtime/declaration deep import resolutions are checked.",
-      "gaps": [
-        "Export-name inventory alone does not explain all S/I/T signature differences."
-      ],
+      "coverage": "covered",
+      "reason": "Every name in the pinned native/adapter root declaration union has reviewed S/I/T/U scope and signature notes; deterministic declaration snapshots include all public type subpaths and four installed consumer graphs. Real registry-installed tarballs verify packed runtime/declaration hashes and provenance. The strict gate detects drift and retains unresolved namespace access explicitly without claiming full native parity or exhaustive consumer-member analysis.",
+      "gaps": [],
       "references": [
+        {
+          "kind": "json-case",
+          "report": "compatibility/exports-contract.json",
+          "source": "scripts/test-contract.cjs",
+          "command": "exports-contract",
+          "array": "/catalogCases",
+          "where": {
+            "id": "PKG-013"
+          },
+          "anchor": "PKG-013",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/policyChecked",
+              "equals": true
+            },
+            {
+              "pointer": "/snapshotChecked",
+              "equals": true
+            },
+            {
+              "pointer": "/rootNames",
+              "equals": 123
+            },
+            {
+              "pointer": "/upstreamNames",
+              "equals": 96
+            },
+            {
+              "pointer": "/adapterNames",
+              "equals": 83
+            },
+            {
+              "pointer": "/grades",
+              "equals": {
+                "S": 24,
+                "I": 3,
+                "T": 56,
+                "U": 40
+              }
+            },
+            {
+              "pointer": "/publicTypeSubpaths",
+              "equals": 7
+            },
+            {
+              "pointer": "/consumerFixtures",
+              "equals": 4
+            },
+            {
+              "pointer": "/consumerFiles",
+              "equals": 32
+            },
+            {
+              "pointer": "/unresolvedNamespaceAccess",
+              "equals": 32
+            },
+            {
+              "pointer": "/fullNativeExportParity",
+              "equals": false
+            },
+            {
+              "pointer": "/exhaustiveConsumerMemberAnalysis",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/checks",
+          "where": {
+            "id": "packed-exports-types-assets-license"
+          },
+          "anchor": "packed-exports-types-assets-license",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/files",
+              "equals": 113
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-contract.test.cjs",
+          "command": "tests",
+          "name": "EXPORT contract requires complete reviewed grades and actual runtime/declaration agreement"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-contract.test.cjs",
+          "command": "tests",
+          "name": "EXPORT contract preserves readable dependencies and rejects every unreviewed snapshot change"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-contract.test.cjs",
+          "command": "tests",
+          "name": "EXPORT contract reports S I T U grades and every native-to-adapter declaration difference"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-contract.test.cjs",
+          "command": "tests",
+          "name": "EXPORT contract checks every subpath policy, runtime value and erased declaration"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-inventory.test.cjs",
+          "command": "tests",
+          "name": "export inventory resolves aliases while distinguishing erased types and type-only class reexports"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-inventory.test.cjs",
+          "command": "tests",
+          "name": "export inventory detects overload, static and instance member, heritage, enum and object API drift"
+        },
+        {
+          "kind": "tap",
+          "source": "test/export-inventory.test.cjs",
+          "command": "tests",
+          "name": "export inventory follows nested named aliases and recursive declaration dependencies"
+        },
+        {
+          "kind": "tap",
+          "source": "test/consumer-imports.test.cjs",
+          "command": "tests",
+          "name": "consumer inventory exposes namespace escapes and dynamic access instead of a complete-name claim"
+        },
         {
           "kind": "tap",
           "source": "test/sdk-graph.test.cjs",
@@ -7749,9 +7886,9 @@
     {
       "id": "WIRE-010",
       "coverage": "partial",
-      "reason": "Every 1–4 byte truncated header rejects in parser tests; the explicit 4-byte workerd case checks the exact valid prefix, INTERNAL, one terminal and clean response readers.",
+      "reason": "Every 1\u20134 byte truncated header rejects in parser tests; the explicit 4-byte workerd case checks the exact valid prefix, INTERNAL, one terminal and clean response readers.",
       "gaps": [
-        "The 1–3 byte vectors still lack individually recorded Client callback/status assertions; workerd corpus selector 3 fixes the header length at 4."
+        "The 1\u20133 byte vectors still lack individually recorded Client callback/status assertions; workerd corpus selector 3 fixes the header length at 4."
       ],
       "references": [
         {
@@ -10339,10 +10476,10 @@
     {
       "id": "DS-005",
       "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: 불완전 key.",
+      "reason": "No concrete executed evidence yet covers this planned case: \ubd88\uc644\uc804 key.",
       "gaps": [
-        "incomplete key로 저장한다",
-        "실행 내 할당 key 참조 및 후속 조회 일관성"
+        "incomplete key\ub85c \uc800\uc7a5\ud55c\ub2e4",
+        "\uc2e4\ud589 \ub0b4 \ud560\ub2f9 key \ucc38\uc870 \ubc0f \ud6c4\uc18d \uc870\ud68c \uc77c\uad00\uc131"
       ],
       "references": [],
       "catalogCaseSha256": "c8558e73fdd168f54bbac2564b1f2536d3fcc6f397c6501cfdd6f9145c6c2bc9"
@@ -16014,10 +16151,10 @@
     {
       "id": "DS-019",
       "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: index/invalid query 오류.",
+      "reason": "No concrete executed evidence yet covers this planned case: index/invalid query \uc624\ub958.",
       "gaps": [
-        "통제된 오류 및 실제 index 요구를 분리 시험한다",
-        "code/details/metadata 보존"
+        "\ud1b5\uc81c\ub41c \uc624\ub958 \ubc0f \uc2e4\uc81c index \uc694\uad6c\ub97c \ubd84\ub9ac \uc2dc\ud5d8\ud55c\ub2e4",
+        "code/details/metadata \ubcf4\uc874"
       ],
       "references": [],
       "catalogCaseSha256": "d984fe5ab18ec196f0b33dc4b5c6dfbad63ee966e5e690ea41409992287d5e70"

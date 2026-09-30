@@ -2,8 +2,9 @@
 
 Reviewed on 2026-09-30 against the implementation, test sources and completed
 local reports. The initial reconciliation connected existing evidence. The
-subsequent packaging work adds executable installation, identity, offline-doctor
-and complete SDK bundle checks, plus addressable literal-table TAP cases.
+subsequent packaging work adds executable installation, identity, offline-doctor,
+complete SDK bundle checks, reviewed export/declaration contracts, and addressable
+literal-table TAP cases.
 
 The unchanged [original catalog](../compatibility/test-catalog.json) contains
 189 requirements. The [reviewed mapping](../compatibility/test-evidence.json)
@@ -12,12 +13,12 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging work | Meaning |
 | --- | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 69 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 109 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
-Packaging work satisfies eleven additional cases and connects seven existing
-HTTP fallback tests to individual execution references. The remaining 120
+Packaging work satisfies twelve additional cases and connects seven existing
+HTTP fallback tests to individual execution references. The remaining 119
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -47,8 +48,21 @@ at the SDK-preset and final Wrangler stages before executing the same JavaScript
 in workerd. Native gRPC/HTTP2 dependencies fail the gate; erased type-only imports
 and legitimate authentication networking are distinguished. This is a static
 import/provenance check of the pinned pipeline, not arbitrary dynamic-loader
-analysis. The packaging catalog now has thirteen covered cases; `PKG-013` retains
-its full export/signature classification gap.
+analysis.
+
+The [export and declaration contract](exports.md) completes `PKG-013`. Its policy
+reviews all 123 names in the native/adapter root declaration union: 24 supported
+within scope, three import-only failures, 56 type-only names, and 40 unsupported
+native names. Public signatures and their declaration dependencies are
+snapshotted alongside all seven declaration-bearing subpaths. The default gate
+rejects changes until the snapshot is deliberately reviewed and refreshed.
+
+Consumer inventories scan 32 source files across four installed SDK fixtures.
+They retain 32 unresolved namespace-access records, including dynamic use or
+namespace escape, rather than claiming exhaustive member analysis. Native API
+parity remains false; matching signatures and classified differences do not
+establish identical transport behavior. All fourteen packaging catalog cases
+now have accepted execution evidence.
 
 ## Evidence that was already present
 
@@ -73,7 +87,7 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 
 | Area | Covered | Partial | No current reference |
 | --- | ---: | ---: | ---: |
-| Packaging | 13 | 1 | 0 |
+| Packaging | 14 | 0 | 0 |
 | Types | 7 | 0 | 0 |
 | Public API | 15 | 1 | 0 |
 | Configuration | 11 | 0 | 0 |
@@ -99,22 +113,18 @@ the tests that already pass.
 
 The next local work units, in order, are:
 
-1. **Export/signature classification.** Complete the comparison between pinned
-   upstream/consumer imports and all supported, intentionally unsupported and
-   type-only signatures (`PKG-013`). Runtime-name inventory alone does not explain
-   every signature difference. Other packaging cases now have executable evidence.
-2. **Exact transport schedules and resource assertions.** Add the missing
+1. **Exact transport schedules and resource assertions.** Add the missing
    status-less HTTP 502/504 cases (`WIRE-018`), precise allocation/copy counters,
    deterministic auth-before-message and EOF/cancel orderings, late read
    rejection, and matching workerd/native checks. Record write completion,
    pending message and parser assembly ownership in the specific scenarios
    listed under `LIFE-*` and `FLOW-*`.
-3. **SDK call accounting and combinations.** Add logical call IDs and separate
+2. **SDK call accounting and combinations.** Add logical call IDs and separate
    data/auth Fetch counters to the older Datastore Lookup/pagination reports;
    cover remaining batches, overloads, query stream failures and routing fields.
    Crossed transaction IDs still need distinct credential providers (`TX-009`).
    Keep the explicit Commit cancellation limitation below visible (`TX-008`).
-4. **Performance and executable documentation checks.** Refresh the separate
+3. **Performance and executable documentation checks.** Refresh the separate
    transport-only benchmark within the evidence pipeline; measure import,
    construction, initialization and first-message timing independently. Sample
    heap trends in the same failure/cancel workload. Connect documentation
