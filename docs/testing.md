@@ -58,7 +58,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:modern-firestore-recovery` | Firestore 9.2.0 resume tokens, disconnects, resets, filters, removals and target denial | `verification/modern-firestore-recovery.json` |
 | `npm run test:datastore-lookup` | Native/adapter/workerd deferred Lookup, get overloads, partial errors, retries and per-RPC deadlines | `verification/datastore-lookup.json` |
 | `npm run test:contract` | Root/deep CJS/ESM identity and transport import boundaries | `compatibility/exports-contract.json` |
-| `npm run test:pack` | Actual tarball, alias negative control, root override and npm ci | `verification/packaging.json` |
+| `npm run test:pack` | Actual tarball, real SDK alias/override graphs, fresh npm ci, packed assets and standalone types | `verification/packaging.json` |
 | `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |
 | `npm run test:workers:sdk` | SDK bootstrap, protobuf preset and workerd RPCs | `verification/workers-sdk.json` |
 | `node scripts/test-gax-mode-isolation.cjs` | Three real SDKs sharing GAX caches across default, direct and two gateway configurations in workerd | `verification/workers-gax-modes.json` |
@@ -88,6 +88,46 @@ The [temporary Cloudflare probe](cloud-probe.md) is a separate explicit deployme
 The [temporary GCP integration test](gcp-cloud-probe.md) adds private Cloud Run upstreams and isolated live Google databases. Its local bundle/guard checks (`node scripts/test-gcp-probe.cjs`), authenticated readiness retry checks (`node scripts/test-gcp-readiness.cjs`) and cleanup failure simulations (`node scripts/test-gcp-cleanup.cjs`) run in `verify`; provisioning and live calls remain separate opt-in work.
 
 The [automatic-conversion diagnosis](cloudflare-conversion.md) adds opt-in flag and content-type comparisons. `verify` runs only their local contracts (`scripts/test-gcp-conversion-probe.cjs` and `scripts/test-google-conversion-wire.cjs`), with outbound requests intercepted. It does not deploy their Workers or call Google.
+
+## Standalone package consumers
+
+`test:pack` installs the current adapter tarball through an ephemeral loopback npm
+registry. It preserves a small synthetic alias-only negative control, then installs
+both real pinned Google SDK graphs with the root `npm:workers-grpc-adapter@…`
+alias and `$@grpc/grpc-js` override. A real SDK installation without the override
+must retain native grpc-js resolutions and fail doctor, preserving per-consumer
+provenance. Its separate npm cache and original native integrity/source hashes
+prevent reuse of the synthetic control. Original upstream archives are checked
+against the fixture locks' integrity values before being served. An existing npm cache is
+used when available; a cache miss downloads only the locked npmjs archive. Package
+install scripts and audits are disabled.
+
+Each graph is installed into a temporary directory outside the workspace. The
+resulting manifest and lockfile are copied into a different empty directory for
+`npm ci`. The gate compares exact package versions, archive integrity, unchanged
+lock bytes, package resolution and class identity from every installed SDK and GAX
+location. It also checks the packed profile's package/source/schema inputs. The
+real GAX constructors must share the application's ESM/CJS `Client`, `Metadata`
+and credential objects, and credential composition must succeed.
+
+The installed package must contain every packed file with the expected content
+hash, every export and declaration target, the listed assets, and root/upstream
+licenses and notices. Supported deep client imports must preserve identity;
+unsupported deep imports must fail in both CJS and ESM. All exported declaration
+entry points are also imported by the compiler. Separate actual-tarball fixtures install the adapter under its own name and the grpc alias with equal and
+different versions, prove the resulting constructor split, and require doctor to
+reject both installations.
+
+The fresh real-SDK installations also run their own installed TypeScript compiler
+and the repository's pinned Node declarations in strict Node16, NodeNext and
+Bundler modes. The build export also receives the pinned esbuild peer. ESM and CJS
+adapter/SDK examples use no custom `typeRoots`, `NODE_PATH`, workspace symlinks or
+workspace compiler. Every compiler input must resolve within that standalone
+consumer directory. Doctor also inspects each real installation in a subprocess
+without cloud credential environment variables, with network, credential-file
+reads and SDK/auth/runtime imports denied; every denial counter must remain zero.
+Reports include each profile's package/GAX provenance, lock hashes and type-resolution results. These are installation and declaration checks;
+separate RPC, workerd and emulator gates establish runtime behavior.
 
 ## Native SDK comparisons
 
