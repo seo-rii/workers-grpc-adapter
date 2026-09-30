@@ -15,6 +15,23 @@ The fixtures exercise real Google Node SDK packages with the adapter installed a
 
 A consumer's root override must replace every grpc-js path used by its SDKs. `npm run doctor` checks SDK dependency closures, GAX locations and root/deep import resolution and prints its report. Fixture installation saves the graph in `compatibility/google-graph.json`. The fixtures override only `google-auth-library@10.5.0` with the official `10.9.1` artifact to resolve a Node16 declaration conflict. The graph's auth `11.1.0` remains unchanged. Native and adapter consumers must have matching auth versions and integrity and pass strict ESM/CJS declaration checks.
 
+Doctor also rejects multiple physical adapter installations, including a separate
+`workers-grpc-adapter` root dependency beside the `@grpc/grpc-js` alias, even if
+both versions match. Those copies can split `Metadata`, credential constructors
+and configuration state. Its `identity.installations` records each physical
+path/version and the consumers/specifiers that resolve it; a split produces
+`WGA_DUPLICATE_ADAPTER_INSTALLATIONS` and a failing report. Keep application imports
+on the same alias as the SDK, and deduplicate nested copies. Symlinks resolving to
+one physical installation count once under normal Node resolution.
+
+`node scripts/doctor.cjs /path/to/project` needs no credentials or internet. It
+reads installed files and resolves imports without loading SDK, auth or adapter
+runtime modules. The offline regression denies network and credential access and
+asserts zero Fetch, auth and inspected-module executions. This verifies installed
+resolution, not IAM or service availability; optional `--profile` additionally
+runs the pinned local code-generator and AST checks described in
+[build profiles](profiles.md).
+
 ## Shared scenarios
 
 Business functions live in `fixtures/google/shared/`. The live registry is [fixtures/google/suites.mjs](../fixtures/google/suites.mjs):

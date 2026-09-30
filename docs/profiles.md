@@ -25,6 +25,24 @@ names and changed AST shapes/counts are reported separately. Hash mismatches
 stop AST checking: the tool does not execute or transform untrusted drifted
 inputs to infer compatibility.
 
+The dependency-graph report separately includes `identity` and `diagnostics`.
+`identity.installations` lists canonical physical adapter paths, versions and
+`resolvedBy` consumers/specifiers, including the application's own-name and
+`@grpc/grpc-js` alias resolutions. Two copies fail with
+`WGA_DUPLICATE_ADAPTER_INSTALLATIONS`, even when every SDK resolves the correct
+package name and version: independently loaded copies can have different
+`Metadata`, client and credential constructors and separate configuration state.
+The graph fingerprint includes these identity records. A symlink to the same
+physical directory counts once under normal Node resolution. Custom loader or
+`--preserve-symlinks` behavior requires separate runtime verification.
+
+The graph check is offline and does not execute inspected SDK, auth or adapter
+modules. Its diagnosis identifies a physical-installation risk; it does not
+instantiate or compare constructors. The optional profile transformation check
+loads hash-checked local protobuf code-generation dependencies and the supplied
+TypeScript compiler. Neither check validates credentials, contacts Google or
+establishes live compatibility.
+
 Installed consumers can use the same checks without this repository's CLI:
 
 ```js
