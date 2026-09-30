@@ -6,9 +6,9 @@ This document describes the current prototype, not the complete v0.3 design. Gen
 
 The root exports `Client`, `Channel`, `Metadata`, `ChannelCredentials`, `CallCredentials`, `credentials`, `status`, `connectivityState`, `compressionAlgorithms`, `propagate`, `makeGenericClientConstructor`, `makeClientConstructor`, `loadPackageDefinition`, `closeClient`, `getClientChannel` and `waitForClientReady`.
 
-`Client.makeUnaryRequest()` supports callback-only, metadata, options, and metadata-plus-options overloads. `makeServerStreamRequest()` returns a Node Readable. `makeClientStreamRequest()` and `makeBidiStreamRequest()` return their call surfaces and then terminate with `UNIMPLEMENTED` without starting authentication or network work.
+`Client.makeUnaryRequest()` supports callback-only, metadata, options, and metadata-plus-options overloads. `makeServerStreamRequest()` returns a Node Readable. `makeClientStreamRequest()` and `makeBidiStreamRequest()` return Writable/Duplex call surfaces. By default they terminate asynchronously with `UNIMPLEMENTED` before authentication or network work; explicit experimental gateway request streaming enables uploads as described below.
 
-Client interceptors, interceptor providers, `InterceptingCall`, `ListenerBuilder`, `RequesterBuilder` and `StatusBuilder` are available. Supplying both interceptors and providers for the same call is a configuration error. `Server` and `ServerCredentials` exist only to reject server use explicitly. The generated `compatibility/exports-contract.json` report records root export differences from upstream.
+Client interceptors, interceptor providers, `InterceptingCall`, `ListenerBuilder`, `RequesterBuilder` and `StatusBuilder` are available. Supplying both interceptors and providers for the same call is a configuration error. `Server` and `ServerCredentials` exist only to reject native server use explicitly; `waitForClientReady` and `Client.waitForReady` report unsupported readiness asynchronously. The [export and declaration contract](exports.md) classifies every pinned native and adapter root name as supported within scope, import-only, type-only, or unsupported, and documents signature differences and explicit subpaths. Matching names do not imply full native API parity.
 
 ## Metadata
 

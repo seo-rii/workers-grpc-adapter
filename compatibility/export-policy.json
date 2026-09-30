@@ -1,0 +1,791 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "package": "@grpc/grpc-js",
+    "version": "1.14.0"
+  },
+  "entries": [
+    {
+      "name": "AuthContext",
+      "grade": "T",
+      "scope": "Type-only peer-authentication shape for client call and interceptor signatures; Fetch calls return null.",
+      "signatureNotes": "Adapter root extension exposing transportSecurityType and sslPeerCertificate with a type-only PeerCertificate reference. This does not expose a TLS socket, peer certificate, or certificate verification API."
+    },
+    {
+      "name": "Call",
+      "grade": "T",
+      "scope": "Type-only union of unary, readable, writable, and duplex client call surfaces.",
+      "signatureNotes": "Retains the native root union and any generic stream parameters. This is not a constructor or an internal HTTP/2 Call implementation."
+    },
+    {
+      "name": "CallCredentials",
+      "grade": "S",
+      "scope": "Metadata-generator factories, composition, and asynchronous metadata generation with adapter Metadata identity.",
+      "signatureNotes": "A concrete class with a private constructor replaces the native abstract extensible class. createEmpty, createFromMetadataGenerator, compose, and generateMetadata are supported; isEmpty is an adapter helper. Native _equals and static CallCredentials.createFromGoogleCredential are absent; use credentials.createFromGoogleCredential instead."
+    },
+    {
+      "name": "CallInvocationTransformer",
+      "grade": "T",
+      "scope": "Type-only hook that receives and returns client invocation properties before transport creation.",
+      "signatureNotes": "Retains the native one-argument CallProperties<any, any> to CallProperties<any, any> signature. The nested channel and parent types refer to adapter contracts; it does not permit installing a native transport."
+    },
+    {
+      "name": "CallMetadataOptions",
+      "grade": "T",
+      "scope": "Type-only inputs supplied to a credential generator: method_name and service_url.",
+      "signatureNotes": "Adapter root extension of the native internal interface with two required string fields. service_url identifies the logical service rather than a gateway or token endpoint."
+    },
+    {
+      "name": "CallOptions",
+      "grade": "T",
+      "scope": "Type-only per-call deadline, host, credentials, parent propagation, and client interceptor options.",
+      "signatureNotes": "The native options are retained except parent becomes ParentCall or null instead of a union of native server call types. host cannot redirect a call to another authority; unknown keys and invalid propagation flag values are rejected at runtime."
+    },
+    {
+      "name": "CallProperties",
+      "grade": "T",
+      "scope": "Type-only invocation-transformer record for arguments, metadata, call, channel, method definition, options, and callback.",
+      "signatureNotes": "Preserves required and optional native record members. channel is the adapter Channel rather than the native structural Channel interface, and callOptions uses the structural ParentCall contract."
+    },
+    {
+      "name": "CancelRequester",
+      "grade": "T",
+      "scope": "Type-only client interceptor cancellation continuation.",
+      "signatureNotes": "Adapter root extension of the native internal callback shape (next: () => void) => void. A blocked interceptor continuation does not suspend the adapter's outer deadline or cancellation lifetime."
+    },
+    {
+      "name": "Channel",
+      "grade": "S",
+      "scope": "Logical target, routing, credentials, active call lifetime, and close management; no persistent connection management.",
+      "signatureNotes": "Constructor options become optional. getConnectivityState accepts an optional boolean and returns only IDLE or SHUTDOWN; watchConnectivityState reports UNIMPLEMENTED. getChannelzRef returns an unregistered sentinel, and createCall(): never replaces native five-argument call creation and throws WGA_METHOD_CONTEXT_REQUIRED. createCallForMethod, createCallLifetime, getReadQueueLimit, and activeCallCount are adapter bridges, not native channel contracts."
+    },
+    {
+      "name": "ChannelCredentials",
+      "grade": "S",
+      "scope": "Fetch HTTPS credentials, explicitly permitted credential-free localhost tests, and call-credential composition.",
+      "signatureNotes": "A concrete private-constructor class replaces the native abstract class. createSsl keeps its positional arguments but types verifyOptions as unknown and rejects every non-null certificate or verification argument with WGA_UNSUPPORTED_TLS. createFromSecureContext, _equals, and _createSecureConnector are absent; _getCallCredentials is adapter-specific. Preconfigured Fetcher bindings supply mTLS outside this API."
+    },
+    {
+      "name": "ChannelInterface",
+      "grade": "T",
+      "scope": "Type-only reference to this adapter's Channel; it is not a runtime root export.",
+      "signatureNotes": "Unlike the native structural Channel interface, this aliases a concrete class with private members and adapter lifetime methods. Arbitrary native or structural channel implementations are not assignable overrides; createCall has the adapter's no-argument never signature."
+    },
+    {
+      "name": "ChannelOptions",
+      "grade": "T",
+      "scope": "Type-only options accepted by adapter channel validation, with runtime rejection of unsupported keys and values.",
+      "signatureNotes": "The native option inventory is intentionally narrowed. The unknown-valued index signature is not permission to use arbitrary options. Retries and channelz accept only 0; reconnect backoff accepts only the inert 1000 default; flow-control-window 262144 and local-subchannel-pool 1 are exact inert SDK hints. Message limits, compression, user agent, and matching-authority options follow adapter policy."
+    },
+    {
+      "name": "Client",
+      "grade": "S",
+      "scope": "Vendored callback and stream client surface over Fetch: unary/server streaming, plus opt-in gateway client/bidi streaming.",
+      "signatureNotes": "Retains constructor and unary/client-stream four overloads and server/bidi two overloads with Buffer codecs, optional metadata/options, and typed call surfaces. Channel and credential types are adapter-owned. waitForReady always fails asynchronously; getPeer is logical and getAuthContext is null. Request streaming defaults to asynchronous UNIMPLEMENTED; duplicate unary responses are bounded with status 12 rather than native deadline behavior."
+    },
+    {
+      "name": "ClientDuplexStream",
+      "grade": "T",
+      "scope": "Type-only Writable/Readable intersection returned by bidi client methods.",
+      "signatureNotes": "Retains native request and response generic parameters, codecs, and call event/cancellation members. Actual upload requires experimentalRequestStreaming in grpc-web mode; otherwise the returned surface terminates asynchronously with UNIMPLEMENTED."
+    },
+    {
+      "name": "ClientMethodDefinition",
+      "grade": "T",
+      "scope": "Type-only client method path, stream-kind flags, request serializer, response deserializer, and optional original name.",
+      "signatureNotes": "Adapter root extension of the native internal interface. Codecs retain Buffer and the two generic parameters; declaring stream flags does not enable an unsupported transport mode."
+    },
+    {
+      "name": "ClientOptions",
+      "grade": "T",
+      "scope": "Type-only channel configuration, client interceptors, invocation transformer, and explicit channel override hooks.",
+      "signatureNotes": "The native option intersection is retained with adapter ChannelOptions and nominal adapter Channel in channelOverride and channelFactoryOverride. Runtime brand checks reject foreign channels; an override is not a way to inject native HTTP/2."
+    },
+    {
+      "name": "ClientReadableStream",
+      "grade": "T",
+      "scope": "Type-only object-mode response stream with deserialize, cancel, getPeer, metadata/status events, and typed reads.",
+      "signatureNotes": "Retains the native generic intersection with ObjectReadable. Adapter runtime additionally connects destroy and early async-iterator return to cancellation; no raw socket or peer certificate is exposed."
+    },
+    {
+      "name": "ClientUnaryCall",
+      "grade": "T",
+      "scope": "Type-only unary result handle with cancellation, logical peer, authentication context, and metadata/status events.",
+      "signatureNotes": "Retains the native SurfaceCall alias including its optional intercepting call member. No ClientUnaryCall constructor is exported; values are produced by Client methods and report a null Fetch authentication context."
+    },
+    {
+      "name": "ClientWritableStream",
+      "grade": "T",
+      "scope": "Type-only object-mode upload stream with serializer and client call event/cancellation members.",
+      "signatureNotes": "Retains the native generic intersection with ObjectWritable. Upload requires experimentalRequestStreaming in grpc-web mode; the default surface instead reports asynchronous UNIMPLEMENTED before authentication or Fetch."
+    },
+    {
+      "name": "CloseRequester",
+      "grade": "T",
+      "scope": "Type-only client interceptor half-close continuation.",
+      "signatureNotes": "Adapter root extension of the native internal (next: () => void) => void shape. Runtime half-close waits for earlier transformed messages and forwards at most once."
+    },
+    {
+      "name": "ConnectionInjector",
+      "grade": "U",
+      "scope": "Native server connection injection is not exported.",
+      "signatureNotes": "The native type passes Duplex connections into Server and drains injected connections. The Fetch server entry accepts Request objects and has no socket-injection substitute."
+    },
+    {
+      "name": "Deadline",
+      "grade": "T",
+      "scope": "Type-only absolute deadline accepted by calls, readiness signatures, and health waiters.",
+      "signatureNotes": "Retains the native Date or number union. Deadlines govern the complete adapter call lifetime, including interceptor and admission waits; this alias does not create a timer by itself."
+    },
+    {
+      "name": "FullRequester",
+      "grade": "T",
+      "scope": "Type-only complete client requester with start, sendMessage, halfClose, and cancel callbacks.",
+      "signatureNotes": "Adapter root extension of the native internal interface. All four fields are required here; use Requester for the Partial form returned by RequesterBuilder."
+    },
+    {
+      "name": "FullResponder",
+      "grade": "U",
+      "scope": "Native complete server response interceptor type is not exported.",
+      "signatureNotes": "The native start/sendMetadata/sendMessage/sendStatus continuation interface requires native server intercepting calls. Fetch server handler return values use the separate /server types."
+    },
+    {
+      "name": "FullServerListener",
+      "grade": "U",
+      "scope": "Native complete server event interceptor type is not exported.",
+      "signatureNotes": "The native metadata/message/half-close/cancel listener members are not a client Listener alias. Fetch request AsyncIterables do not implement this interface."
+    },
+    {
+      "name": "GoogleCredential",
+      "grade": "T",
+      "scope": "Type-only modern Google authentication source accepted by credentials.createFromGoogleCredential.",
+      "signatureNotes": "Adapter root extension accepts synchronous or Promise Headers or records whose values are string, string array, or undefined. This is broader than native OAuth2Client's modern Promise-of-string-record arm; it does not implement ADC or token acquisition."
+    },
+    {
+      "name": "GrpcObject",
+      "grade": "T",
+      "scope": "Type-only namespace tree produced by loadPackageDefinition.",
+      "signatureNotes": "Retains the native recursive string index over namespaces, ServiceClientConstructor, and ProtobufTypeDefinition. Constructed clients use adapter credentials and channels."
+    },
+    {
+      "name": "HealthCallOptions",
+      "grade": "T",
+      "scope": "Type-only adapter health-call options adding optional Metadata and AbortSignal to CallOptions.",
+      "signatureNotes": "Adapter root extension; native grpc-js has no equivalent root export. Signals cancel the application-level health RPC, not a native connection readiness probe."
+    },
+    {
+      "name": "HealthCheckResponse",
+      "grade": "T",
+      "scope": "Type-only decoded grpc.health.v1 response used by HealthClient.",
+      "signatureNotes": "Adapter root extension with status: number so unknown future enum values survive decoding. Only the known SERVING number is interpreted as serving."
+    },
+    {
+      "name": "HealthClient",
+      "grade": "S",
+      "scope": "Application-level grpc.health.v1 Check, raw Watch, and managed monitor through an existing adapter Client.",
+      "signatureNotes": "Adapter root extension: constructor(Client), check returning Promise<HealthCheckResponse>, watch returning ClientReadableStream, and monitor returning HealthWatch. It reuses routing and credentials; it does not implement native channel health-check or readiness behavior."
+    },
+    {
+      "name": "HealthServingStatus",
+      "grade": "S",
+      "scope": "Application-health numeric enum UNKNOWN, SERVING, NOT_SERVING, and SERVICE_UNKNOWN.",
+      "signatureNotes": "Adapter root extension with values 0, 1, 2, and 3 from grpc.health.v1. This enum is separate from connectivityState and makes no transport availability claim."
+    },
+    {
+      "name": "HealthWaitOptions",
+      "grade": "T",
+      "scope": "Type-only deadline and optional AbortSignal for a managed health wait.",
+      "signatureNotes": "Adapter root extension requiring an absolute Deadline. A successful wait means an observed SERVING health response, not native channel connectivity."
+    },
+    {
+      "name": "HealthWatch",
+      "grade": "S",
+      "scope": "Managed application-health Watch reconnects, state snapshots, bounded waiters, and explicit close.",
+      "signatureNotes": "Adapter root extension: constructor(HealthClient, service?, options?), getState, waitForServing, and close. Closing cancels the monitor without closing its wrapped Client; the caller owns its Worker lifetime."
+    },
+    {
+      "name": "HealthWatchOptions",
+      "grade": "T",
+      "scope": "Type-only reconnect and attempt-timeout settings for a managed health monitor.",
+      "signatureNotes": "Adapter root extension omits overall deadline and signal from HealthCallOptions and adds bounded backoff controls and optional attemptTimeoutMs. These are not native reconnect or service-config retry settings."
+    },
+    {
+      "name": "HealthWatchState",
+      "grade": "T",
+      "scope": "Type-only immutable snapshot of managed health phase, status, attempt number, and last error code.",
+      "signatureNotes": "Adapter root extension defines connecting/serving/not-serving/reconnecting/disabled/closed phases. servingStatus and lastErrorCode may be null; this is not native connectivity state."
+    },
+    {
+      "name": "InterceptingCall",
+      "grade": "S",
+      "scope": "Client request/response interception with asynchronous continuations, transformed-message ordering, and terminal cleanup.",
+      "signatureNotes": "Retains constructor and public native call operations; adds disposePending(): void for bounded local cleanup. Pending state machinery is patched to avoid lost transformations and duplicate half-close. Fetch getAuthContext returns null and getPeer is logical, not a socket address."
+    },
+    {
+      "name": "InterceptingCallInterface",
+      "grade": "T",
+      "scope": "Type-only low-level client interceptor forwarding operations.",
+      "signatureNotes": "Preserves native operation signatures and adds optional disposePending(): void. The optional cleanup hook lets the outer call release owned pending work even if a cancellation interceptor never forwards."
+    },
+    {
+      "name": "InterceptingListener",
+      "grade": "T",
+      "scope": "Type-only terminal listener receiving metadata, messages, and status without next callbacks.",
+      "signatureNotes": "Retains the three native required methods and argument types; message remains any. This is the downstream listener shape, not the continuation-based Listener shape."
+    },
+    {
+      "name": "Interceptor",
+      "grade": "T",
+      "scope": "Type-only client interceptor factory taking InterceptorOptions and NextCall.",
+      "signatureNotes": "Retains the native InterceptingCall return type. Implementations participate in adapter-managed lifetime and cannot extend a completed RPC by withholding next."
+    },
+    {
+      "name": "InterceptorConfigurationError",
+      "grade": "S",
+      "scope": "Explicit configuration error for mixing interceptor arrays and interceptor providers.",
+      "signatureNotes": "Retains the native Error subclass constructor(message: string). It is separate from WorkersGrpcConfigurationError and does not carry a WGA code contract."
+    },
+    {
+      "name": "InterceptorOptions",
+      "grade": "T",
+      "scope": "Type-only per-call options plus a required client method definition for interceptors.",
+      "signatureNotes": "Retains native extension shape with method_definition: ClientMethodDefinition<any, any>. Inherited parent and credentials use adapter declarations and restrictions."
+    },
+    {
+      "name": "InterceptorProvider",
+      "grade": "T",
+      "scope": "Type-only method-specific client interceptor provider.",
+      "signatureNotes": "Retains the native ClientMethodDefinition<any, any> to Interceptor signature. The method definition is client-side and does not install a server interceptor."
+    },
+    {
+      "name": "KeyCertPair",
+      "grade": "U",
+      "scope": "Native server key/certificate tuple type is not exported.",
+      "signatureNotes": "The native private_key/cert_chain Buffer pair configures native ServerCredentials. Fetch server TLS is owned by its deployment, and client binding mTLS does not consume this root type."
+    },
+    {
+      "name": "LegacyGoogleCredential",
+      "grade": "T",
+      "scope": "Type-only legacy callback authentication source accepted by credentials.createFromGoogleCredential.",
+      "signatureNotes": "Adapter root extension preserves getRequestMetadata(url, callback) with Error-or-null and optional string-valued header record. The provider must call back; returning a value or fulfilled Promise does not supply credentials."
+    },
+    {
+      "name": "Listener",
+      "grade": "T",
+      "scope": "Type-only partial client response interceptor hooks.",
+      "signatureNotes": "Retains the native Partial<FullListener> shape for metadata, message, and status callbacks that receive next continuations. No runtime Listener constructor is exported."
+    },
+    {
+      "name": "ListenerBuilder",
+      "grade": "S",
+      "scope": "Fluent construction of partial client response interceptor listeners.",
+      "signatureNotes": "Retains withOnReceiveMetadata, withOnReceiveMessage, and withOnReceiveStatus returning this, plus build(): Listener. The built object uses continuation callbacks and the adapter's terminal lifetime rules."
+    },
+    {
+      "name": "LoadBalancingConfig",
+      "grade": "U",
+      "scope": "Native load-balancing service configuration type is not exported.",
+      "signatureNotes": "The native policy-name-to-object map is not accepted as a Fetch channel option. Gateway selection is explicit transport routing, not a native load-balancing policy implementation."
+    },
+    {
+      "name": "MessageListener",
+      "grade": "T",
+      "scope": "Type-only client response message transformation continuation.",
+      "signatureNotes": "Adapter root extension of the native internal (message: any, next: (message: any) => void) => void shape. It does not promise memory accounting for arbitrary deserialized JavaScript objects."
+    },
+    {
+      "name": "MessageRequester",
+      "grade": "T",
+      "scope": "Type-only client request message transformation continuation.",
+      "signatureNotes": "Adapter root extension of the native internal (message: any, next: (message: any) => void) => void shape. Runtime queues retain transformed messages through asynchronous startup."
+    },
+    {
+      "name": "Metadata",
+      "grade": "S",
+      "scope": "Vendored metadata mutation, repeated entries, cloning, merging, opaque values, and header conversion helpers.",
+      "signatureNotes": "Preserves native public methods and Buffer/string value types; adds entries() for repeated-value transport iteration. HTTP/2 helper types are erased imports, not HTTP/2 runtime support. waitForReady/corked true are rejected when sending; transport additionally enforces final budgets and reserved-header rules."
+    },
+    {
+      "name": "MetadataGenerator",
+      "grade": "T",
+      "scope": "Type-only callback metadata factory accepted by CallCredentials.createFromMetadataGenerator.",
+      "signatureNotes": "Adapter root extension equivalent to the native internal CallMetadataGenerator callback shape. It returns void; the runtime contains accidental rejected Promises but requires a callback-produced adapter Metadata value."
+    },
+    {
+      "name": "MetadataListener",
+      "grade": "T",
+      "scope": "Type-only client response metadata transformation continuation.",
+      "signatureNotes": "Adapter root extension of the native internal (metadata, next) callback with adapter Metadata in both positions. Completion and metadata lifetime still belong to the client call."
+    },
+    {
+      "name": "MetadataOptions",
+      "grade": "T",
+      "scope": "Type-only idempotentRequest, waitForReady, cacheableRequest, and corked booleans stored on Metadata.",
+      "signatureNotes": "Preserves the native option names and optionality. Storage is not support for every behavior: true waitForReady/corked fail on send; idempotency/cacheability hints do not enable native retries or caching."
+    },
+    {
+      "name": "MetadataRequester",
+      "grade": "T",
+      "scope": "Type-only client startup interceptor receiving metadata, listener, and a forwarding callback.",
+      "signatureNotes": "Adapter root extension of the native internal signature; next accepts Metadata and either InterceptingListener or Listener. Outer deadlines and cancellation remain active while this continuation is withheld."
+    },
+    {
+      "name": "MetadataValue",
+      "grade": "T",
+      "scope": "Type-only metadata entry value.",
+      "signatureNotes": "Retains the native string or Buffer union. The runtime requires Buffers for -bin keys and printable ASCII strings for other values, with additional transport-owned header restrictions."
+    },
+    {
+      "name": "MethodConfig",
+      "grade": "U",
+      "scope": "Native per-method service configuration type is not exported.",
+      "signatureNotes": "Native waitForReady, timeout, message-size, retryPolicy, and hedgingPolicy service-config records are not interpreted. Adapter /config settings and call options have separately documented shapes."
+    },
+    {
+      "name": "MethodDefinition",
+      "grade": "T",
+      "scope": "Type-only combined client/server codec and streaming-kind method definition.",
+      "signatureNotes": "Retains the native interface extending ClientMethodDefinition and ServerMethodDefinition with two generic parameters. Its server codecs describe wire conversion and do not provide a native Server implementation."
+    },
+    {
+      "name": "NextCall",
+      "grade": "T",
+      "scope": "Type-only continuation used to create the next client interceptor call.",
+      "signatureNotes": "Retains native (options: InterceptorOptions) => InterceptingCallInterface. The resulting call remains subject to the adapter's terminal cleanup and transport restrictions."
+    },
+    {
+      "name": "OAuth2Client",
+      "grade": "U",
+      "scope": "The native root Google authentication union alias is not exported.",
+      "signatureNotes": "Use GoogleCredential or LegacyGoogleCredential with credentials.createFromGoogleCredential. Those adapter types explicitly describe modern Headers support and the required legacy callback instead of claiming the pinned native alias is present."
+    },
+    {
+      "name": "PackageDefinition",
+      "grade": "T",
+      "scope": "Type-only map accepted by loadPackageDefinition.",
+      "signatureNotes": "Adapter root extension of the native internal string-indexed union of ServiceDefinition and ProtobufTypeDefinition. It does not read .proto files or load arbitrary filesystem modules."
+    },
+    {
+      "name": "ParentCall",
+      "grade": "T",
+      "scope": "Type-only structural source of inherited deadline and cancellation for a child client call.",
+      "signatureNotes": "Adapter root extension requiring cancelled, getDeadline, on('cancelled'), and removeListener('cancelled'). It deliberately replaces the native server-call union and also accepts the Fetch server context without importing native server types."
+    },
+    {
+      "name": "ProtobufTypeDefinition",
+      "grade": "T",
+      "scope": "Type-only protobuf message/enum descriptor record retained in package-definition trees.",
+      "signatureNotes": "Preserves required format: string, type: object, and fileDescriptorProtos: Buffer[]. Descriptor preservation is not dynamic proto-file loading or native server support."
+    },
+    {
+      "name": "Requester",
+      "grade": "T",
+      "scope": "Type-only partial set of client start, message, half-close, and cancellation hooks.",
+      "signatureNotes": "Retains native Partial<FullRequester> and continuation signatures. Absent callbacks pass through; asynchronous callbacks are ordered by the adapter's patched interceptor implementation."
+    },
+    {
+      "name": "RequesterBuilder",
+      "grade": "S",
+      "scope": "Fluent construction of partial client request interceptors.",
+      "signatureNotes": "Retains withStart, withSendMessage, withHalfClose, withCancel, and build(): Requester. The declared callback shapes are unchanged; the downstream implementation enforces transformed-message and half-close ordering."
+    },
+    {
+      "name": "Responder",
+      "grade": "U",
+      "scope": "Native partial server response interceptor type is not exported.",
+      "signatureNotes": "The native Partial<FullResponder> callbacks have server-specific metadata/message/status semantics. Requester is a client interceptor type and is not a replacement."
+    },
+    {
+      "name": "ResponderBuilder",
+      "grade": "U",
+      "scope": "Native fluent server response interceptor builder is not exported.",
+      "signatureNotes": "The native withStart/withSendMetadata/withSendMessage/withSendStatus/build runtime API requires the unsupported server interceptor chain. Use /server Fetch handlers for server work."
+    },
+    {
+      "name": "RetryPolicy",
+      "grade": "U",
+      "scope": "Native service-config RetryPolicy type is not exported.",
+      "signatureNotes": "The native duration strings and retryable status-name union are not the adapter policy shape. Opt-in exact-method unary replay is configured through WorkersGrpcRetryPolicy on /config, with distinct commitment and throttling semantics."
+    },
+    {
+      "name": "Server",
+      "grade": "I",
+      "scope": "Importable native-server placeholder that rejects construction synchronously.",
+      "signatureNotes": "constructor(...unknown[]) replaces the native optional ServerOptions constructor and throws WGA_SERVER_UNSUPPORTED. No addService, bindAsync, start, shutdown, or other native server methods are provided. The separate /server Fetch handler is not this class."
+    },
+    {
+      "name": "ServerCredentials",
+      "grade": "I",
+      "scope": "Importable placeholder whose createInsecure and createSsl factories explicitly reject native server use.",
+      "signatureNotes": "createInsecure(): never and createSsl(...unknown[]): never throw WGA_SERVER_UNSUPPORTED instead of returning native credentials. Unlike the native abstract class, the empty placeholder has an implicit zero-argument constructor that creates an inert object. Native constructor arguments, context/watch/equality methods, and TLS functionality are absent."
+    },
+    {
+      "name": "ServerDuplexStream",
+      "grade": "U",
+      "scope": "Native server bidirectional Node-stream call type is not exported.",
+      "signatureNotes": "The native type combines request reads, response writes, server metadata, and trailer-aware end. Fetch bidi handlers instead receive AsyncIterable requests and return responses under /server types."
+    },
+    {
+      "name": "ServerErrorResponse",
+      "grade": "U",
+      "scope": "Native server Error plus partial-status type is not exported.",
+      "signatureNotes": "The native ServerStatusResponse intersection is separate from client ServiceError. Fetch handlers report errors through GrpcWebServerError on /server."
+    },
+    {
+      "name": "ServerInterceptingCall",
+      "grade": "U",
+      "scope": "Native server intercepting-call runtime class is not exported.",
+      "signatureNotes": "Its responder/listener chain, connection details, server metadata, and metric recorder are unavailable through Fetch client transport. InterceptingCall is client-side only."
+    },
+    {
+      "name": "ServerInterceptingCallInterface",
+      "grade": "U",
+      "scope": "Native server interceptor forwarding interface is not exported.",
+      "signatureNotes": "Native sendMetadata/sendMessage/sendStatus, getHost, getConnectionInfo, and getMetricsRecorder do not describe the Fetch handler context. No structural compatibility is claimed."
+    },
+    {
+      "name": "ServerInterceptor",
+      "grade": "U",
+      "scope": "Native server interceptor function type is not exported.",
+      "signatureNotes": "The native method-definition and ServerInterceptingCallInterface factory belongs to native ServerOptions. Client Interceptor and /server handlers use different contracts."
+    },
+    {
+      "name": "ServerListener",
+      "grade": "U",
+      "scope": "Native partial server request interceptor listener type is not exported.",
+      "signatureNotes": "Its metadata/message/half-close/cancel continuation hooks require a native server call. The client Listener cannot substitute for it."
+    },
+    {
+      "name": "ServerListenerBuilder",
+      "grade": "U",
+      "scope": "Native fluent server request interceptor builder is not exported.",
+      "signatureNotes": "The native receive-metadata/message/half-close/cancel builder methods and ServerListener return type are absent. ListenerBuilder remains client-only."
+    },
+    {
+      "name": "ServerMethodDefinition",
+      "grade": "T",
+      "scope": "Type-only server-side codec half of the shared MethodDefinition format.",
+      "signatureNotes": "Preserves native path, stream booleans, responseSerialize, requestDeserialize, and optional originalName. It is usable by /server Fetch handlers but does not implement native Server calls or handler types."
+    },
+    {
+      "name": "ServerMetricRecorder",
+      "grade": "U",
+      "scope": "Native ORCA server metric recorder is not exported.",
+      "signatureNotes": "Native load-reporting and backend metric recording are outside the Fetch adapter. The observer API reports client call/attempt measurements and is not a ServerMetricRecorder substitute."
+    },
+    {
+      "name": "ServerOptions",
+      "grade": "U",
+      "scope": "Native Server constructor options type is not exported.",
+      "signatureNotes": "Native HTTP/2/channel/server-interceptor options are not accepted by the root Server stub. Configure /server Fetch handler options separately."
+    },
+    {
+      "name": "ServerReadableStream",
+      "grade": "U",
+      "scope": "Native server request-streaming Node Readable call type is not exported.",
+      "signatureNotes": "The native server surface and ObjectReadable intersection are replaced, for Fetch handlers, by lazy AsyncIterable requests plus a separate context; no source-level alias is supplied."
+    },
+    {
+      "name": "ServerUnaryCall",
+      "grade": "U",
+      "scope": "Native unary server call type is not exported.",
+      "signatureNotes": "The native request field, metadata, peer, and server event surface is not the Fetch handler signature. Parent propagation only uses the separately exported structural ParentCall subset."
+    },
+    {
+      "name": "ServerWritableStream",
+      "grade": "U",
+      "scope": "Native server response-streaming Node Writable call type is not exported.",
+      "signatureNotes": "Native request-bearing calls with sendMetadata and trailer-aware end are not created. /server handlers return AsyncIterable responses instead."
+    },
+    {
+      "name": "ServiceClient",
+      "grade": "T",
+      "scope": "Type-only generated client instance with dynamically named service methods.",
+      "signatureNotes": "Adapter root extension of the native internal Client subtype and string index returning Function. Service-specific generated declarations are still required for strongly typed individual RPC methods."
+    },
+    {
+      "name": "ServiceClientConstructor",
+      "grade": "T",
+      "scope": "Type-only constructor returned by service factories, with static service and serviceName members.",
+      "signatureNotes": "Retains native new(address, credentials, options?: Partial<ChannelOptions>) and ServiceClient return shape, using adapter ChannelCredentials and restricted ChannelOptions rather than native channel implementations."
+    },
+    {
+      "name": "ServiceConfig",
+      "grade": "U",
+      "scope": "Native DNS/service-config object type is not exported.",
+      "signatureNotes": "The adapter does not interpret native loadBalancingConfig, methodConfig, retryThrottling, or DNS TXT selection. Its explicit transport configuration is exposed on /config and /adapter."
+    },
+    {
+      "name": "ServiceDefinition",
+      "grade": "T",
+      "scope": "Type-only readonly method-definition map parameterized by implementation keys.",
+      "signatureNotes": "Retains the native mapped-type shape; its default uses a local untyped string-key map rather than exporting native UntypedServiceImplementation. Method codecs do not imply a native server runtime."
+    },
+    {
+      "name": "ServiceError",
+      "grade": "T",
+      "scope": "Type-only client Error with gRPC status code, details, and Metadata.",
+      "signatureNotes": "Retains native StatusObject & Error. A callback error and a status event can carry distinct outcomes in unary cardinality cases; the alias does not normalize those events."
+    },
+    {
+      "name": "StatusBuilder",
+      "grade": "S",
+      "scope": "Fluent construction of partial client gRPC status records.",
+      "signatureNotes": "Retains withCode, withDetails, and withMetadata returning this and build(): Partial<StatusObject>. It does not invent defaults for fields that were never set."
+    },
+    {
+      "name": "StatusListener",
+      "grade": "T",
+      "scope": "Type-only client status transformation continuation.",
+      "signatureNotes": "Adapter root extension of the native internal (status: StatusObject, next: (status: StatusObject) => void) => void shape. Outer completion remains bounded even if a response interceptor stalls."
+    },
+    {
+      "name": "StatusObject",
+      "grade": "T",
+      "scope": "Type-only complete client status record.",
+      "signatureNotes": "Preserves required code enum, details string, and Metadata fields. Its status enum values match the pinned native values; optional rich status decoding is a separate /status-details entry."
+    },
+    {
+      "name": "UnaryCallback",
+      "grade": "T",
+      "scope": "Type-only unary response callback exported under an additional adapter root name.",
+      "signatureNotes": "Same signature as native root requestCallback: (err: ServiceError or null, value?: ResponseType) => void. Optional value and nullable error are preserved; no Promise conversion is introduced."
+    },
+    {
+      "name": "UntypedHandleCall",
+      "grade": "U",
+      "scope": "Native union of server RPC handler function types is not exported.",
+      "signatureNotes": "The native unary/client-stream/server-stream/bidi callback and Node-stream handlers are unavailable. /server uses its own typed handler union with Fetch context and AsyncIterables."
+    },
+    {
+      "name": "UntypedServiceImplementation",
+      "grade": "U",
+      "scope": "Native untyped server method implementation map is not exported.",
+      "signatureNotes": "The local default used internally by ServiceDefinition is only a shape for method keys. It is not a public native server handler-map alias and cannot make root Server usable."
+    },
+    {
+      "name": "VerifyOptions",
+      "grade": "U",
+      "scope": "Native TLS peer-verification options type is not exported.",
+      "signatureNotes": "checkServerIdentity and rejectUnauthorized configure sockets that Fetch does not expose. ChannelCredentials.createSsl rejects every non-null verification argument; trusted mTLS Fetcher binding configuration is external."
+    },
+    {
+      "name": "WorkersGrpcConfigurationError",
+      "grade": "S",
+      "scope": "Adapter-specific synchronous configuration error with a stable diagnostic code string.",
+      "signatureNotes": "Adapter root extension of Error with constructor(code: string, message: string) and readonly code. It is not a gRPC ServiceError and does not use numeric status as its code field."
+    },
+    {
+      "name": "addAdminServicesToServer",
+      "grade": "U",
+      "scope": "Native server administration registration function is not exported.",
+      "signatureNotes": "The native helper attaches administration services to a native Server. Fetch health helpers and /server handlers do not register channelz or native admin endpoints."
+    },
+    {
+      "name": "closeClient",
+      "grade": "S",
+      "scope": "Close the supplied adapter Client and its logical channel.",
+      "signatureNotes": "Retains the native (client: Client) => void signature. Active adapter calls terminate and close is idempotent; it does not drain or manage native HTTP/2 pools."
+    },
+    {
+      "name": "compressionAlgorithms",
+      "grade": "S",
+      "scope": "Pinned numeric compression identifiers identity=0, deflate=1, gzip=2.",
+      "signatureNotes": "Preserves native enum names, numeric values, and reverse lookup shape. Runtime codec support is bounded per-message Fetch compression, not negotiation on a native HTTP/2 connection."
+    },
+    {
+      "name": "connectivityState",
+      "grade": "S",
+      "scope": "Pinned numeric connectivity constants IDLE through SHUTDOWN.",
+      "signatureNotes": "Preserves all five native enum names, values 0 through 4, and reverse lookup shape. The adapter Channel only reports IDLE or SHUTDOWN; exporting READY does not assert readiness detection."
+    },
+    {
+      "name": "credentials",
+      "grade": "S",
+      "scope": "Channel/call credential factories and composition for Fetch authentication.",
+      "signatureNotes": "createFromSecureContext is absent. createSsl accepts only null/omitted certificate and verification arguments; combineCallCredentials additionally accepts zero inputs, unlike native's required first argument. createFromGoogleCredential accepts modern Headers/synchronous results and legacy callbacks through adapter types. Foreign credential objects and insecure authenticated channels are rejected."
+    },
+    {
+      "name": "deserialize",
+      "grade": "T",
+      "scope": "Type-only response/request codec from Buffer to a generic message.",
+      "signatureNotes": "Retains native Deserialize<T>'s single Buffer input and T result. It is a lowercase root type alias, not a runtime deserializer or Uint8Array-only substitute."
+    },
+    {
+      "name": "experimental",
+      "grade": "U",
+      "scope": "Native experimental namespace is not exported.",
+      "signatureNotes": "Resolvers, load-balancer registration, subchannels, transports, and other namespace members are outside the adapter root. Adapter experimental request streaming is an explicit /config option and does not expose this native namespace."
+    },
+    {
+      "name": "getChannelzHandlers",
+      "grade": "U",
+      "scope": "Native channelz service handlers are not exported.",
+      "signatureNotes": "There is no native channel/socket registry to query. Channel.getChannelzRef returns only an unregistered sentinel and cannot be used to construct channelz handlers."
+    },
+    {
+      "name": "getChannelzServiceDefinition",
+      "grade": "U",
+      "scope": "Native channelz service-definition factory is not exported.",
+      "signatureNotes": "The native generated administration service is outside supported imports. This is independent of ordinary loadPackageDefinition support for user-supplied service definitions."
+    },
+    {
+      "name": "getClientChannel",
+      "grade": "S",
+      "scope": "Return exactly the logical Channel owned by the supplied adapter Client.",
+      "signatureNotes": "Preserves the native one-argument helper but returns the adapter concrete Channel instead of native structural Channel. Repeated calls and Client.getChannel return the same object."
+    },
+    {
+      "name": "handleBidiStreamingCall",
+      "grade": "U",
+      "scope": "Native bidirectional server handler function type is not exported.",
+      "signatureNotes": "The native single ServerDuplexStream argument is not the Fetch /server AsyncIterable-request handler signature. Use the explicit Fetch handler types for bidirectional endpoints."
+    },
+    {
+      "name": "handleClientStreamingCall",
+      "grade": "U",
+      "scope": "Native request-streaming server handler function type is not exported.",
+      "signatureNotes": "The native ServerReadableStream plus sendUnaryData callback pair is absent. Fetch handlers consume AsyncIterable requests and return a unary response directly or asynchronously."
+    },
+    {
+      "name": "handleServerStreamingCall",
+      "grade": "U",
+      "scope": "Native response-streaming server handler function type is not exported.",
+      "signatureNotes": "The native ServerWritableStream callback writes directly to a Node stream. Fetch handlers instead return response AsyncIterables under the /server contract."
+    },
+    {
+      "name": "handleUnaryCall",
+      "grade": "U",
+      "scope": "Native unary server handler function type is not exported.",
+      "signatureNotes": "The native ServerUnaryCall plus sendUnaryData callback pair is absent. Fetch unary handlers receive a decoded request and context and return a response value or Promise."
+    },
+    {
+      "name": "load",
+      "grade": "U",
+      "scope": "Deprecated native root proto-file loading stub is not exported.",
+      "signatureNotes": "Pinned grpc-js itself declares this function as returning never. Consumers must supply preloaded PackageDefinition objects or the supported pinned build profile; no filesystem/proto loader is added."
+    },
+    {
+      "name": "loadObject",
+      "grade": "U",
+      "scope": "Deprecated native root object-loading stub is not exported.",
+      "signatureNotes": "Pinned grpc-js itself declares (value, options) => never. Use loadPackageDefinition for supported preloaded descriptors rather than relying on this absent compatibility stub."
+    },
+    {
+      "name": "loadPackageDefinition",
+      "grade": "S",
+      "scope": "Build namespace trees, generated clients, and preserved protobuf descriptors from preloaded definitions.",
+      "signatureNotes": "Retains native PackageDefinition to GrpcObject signature and factory semantics. Generated clients use Fetch contracts, and this function does not load files, resolve arbitrary SDK schemas, or construct a native server."
+    },
+    {
+      "name": "logVerbosity",
+      "grade": "U",
+      "scope": "Native diagnostic logging verbosity enum is not exported.",
+      "signatureNotes": "The native DEBUG/INFO/ERROR constants configure its logging subsystem, which is not bundled. Adapter observers are explicitly configured callbacks rather than global native logger settings."
+    },
+    {
+      "name": "makeClientConstructor",
+      "grade": "S",
+      "scope": "Create a Client subclass with generated methods, original-name aliases, and service metadata.",
+      "signatureNotes": "Retains native (methods: ServiceDefinition, serviceName: string, classOptions?: {}) => ServiceClientConstructor. Client-stream and bidi method creation preserves the surface but execution requires explicit gateway request-streaming opt-in."
+    },
+    {
+      "name": "makeGenericClientConstructor",
+      "grade": "S",
+      "scope": "Alias of makeClientConstructor using the same factory identity and contract.",
+      "signatureNotes": "Retains the pinned native alias and the methods/serviceName/optional-classOptions signature. It is not a second implementation or a separate configuration singleton."
+    },
+    {
+      "name": "propagate",
+      "grade": "S",
+      "scope": "Pinned numeric propagation flags DEADLINE=1, CENSUS_STATS_CONTEXT=2, CENSUS_TRACING_CONTEXT=4, CANCELLATION=8, DEFAULTS=65535.",
+      "signatureNotes": "Preserves native names, values, and reverse lookup shape. Runtime propagation implements only structural parent deadlines and cancellation; the legacy Census bits do not create tracing or statistics context propagation."
+    },
+    {
+      "name": "requestCallback",
+      "grade": "T",
+      "scope": "Type-only native root alias for the unary response callback.",
+      "signatureNotes": "Retains (err: ServiceError or null, value?: ResponseType) => void and aliases the adapter UnaryCallback interface. The extra UnaryCallback root name refers to the same declaration, not a different callback contract."
+    },
+    {
+      "name": "sendUnaryData",
+      "grade": "U",
+      "scope": "Native unary server completion callback type is not exported.",
+      "signatureNotes": "Its error/status, nullable result, trailing Metadata, and flags parameters belong to native server calls. Fetch handlers return response values and use GrpcWebServerError under /server."
+    },
+    {
+      "name": "serialize",
+      "grade": "T",
+      "scope": "Type-only message codec from a generic request/response to Buffer.",
+      "signatureNotes": "Retains native Serialize<T>'s T input and Buffer output. It is not a runtime serialization helper; client and server methods receive concrete codecs through method definitions."
+    },
+    {
+      "name": "setLogVerbosity",
+      "grade": "U",
+      "scope": "Native process-wide logging configuration function is not exported.",
+      "signatureNotes": "The native enum-valued setter has no adapter logging backend to configure. Use /config observer callbacks to receive bounded call/attempt events."
+    },
+    {
+      "name": "setLogger",
+      "grade": "U",
+      "scope": "Native process-wide logger injection function is not exported.",
+      "signatureNotes": "The native Partial<Console> setter is not emulated. Observer exceptions are isolated by the adapter and observers do not expose native diagnostic log streams."
+    },
+    {
+      "name": "status",
+      "grade": "S",
+      "scope": "Pinned numeric gRPC status constants OK through UNAUTHENTICATED.",
+      "signatureNotes": "Preserves all 17 native enum names, values 0 through 16, and reverse lookup shape. Equal status numbers do not imply identical transport retry, readiness, or unary-cardinality behavior."
+    },
+    {
+      "name": "waitForClientReady",
+      "grade": "I",
+      "scope": "Importable readiness helper that asynchronously reports UNIMPLEMENTED without network work.",
+      "signatureNotes": "Retains native (client, deadline: Date or number, callback: (error?: Error) => void) => void. Delegates to Client.waitForReady, which reports WGA_CONNECTIVITY_UNSUPPORTED and never reports native connection readiness or success."
+    }
+  ],
+  "extensions": [
+    {
+      "entry": "./config",
+      "scope": "Global immutable transport configuration, resource limits, observer callbacks, explicit unary retry and retry throttling.",
+      "documentation": "docs/api.md",
+      "signatureNotes": "configureWorkersGrpc and getWorkersGrpcConfig return adapter snapshots; WorkersGrpcConfigurationError retains root identity. Exported WorkersGrpc types describe these settings, not native ChannelOptions or ServiceConfig. Configuration is locked only after a successful globally configured Channel."
+    },
+    {
+      "entry": "./adapter",
+      "scope": "Per-instance transport factory binding shared resource and retry budgets to generated grpc-js and GAX client options.",
+      "documentation": "docs/api.md",
+      "signatureNotes": "createWorkersGrpcTransport returns channelCredentials, grpcOptions, gaxOptions, resourceUsage, and retryUsage; gaxOptions retains the caller record while adding this root grpc module and fallback:false. Separate factories keep configuration and budgets independent."
+    },
+    {
+      "entry": "./server",
+      "scope": "Fetch Request-to-Response binary gRPC-Web handlers for all four RPC shapes, with lazy AsyncIterable request streams.",
+      "documentation": "docs/server.md",
+      "signatureNotes": "createGrpcWebHandler infers handler kinds from literal stream flags; GrpcWebServerContext implements structural ParentCall. GrpcWebServerError controls explicit peer-visible status. These runtime and type exports are distinct from the unsupported native root Server APIs."
+    },
+    {
+      "entry": "./status-details",
+      "scope": "Optional bounded google.rpc.Status decoding that preserves the original status or error object.",
+      "documentation": "docs/status-details.md",
+      "signatureNotes": "decodeGrpcStatusDetails<T> returns GrpcStatusDetailsResult<T> with the identical original status, optional decoded Any details, and bounded diagnostics. Exact-type-URL decoders are synchronous; their failures do not replace the RPC status."
+    },
+    {
+      "entry": "./build",
+      "scope": "Opt-in Node-only SDK build tooling and diagnostics for two exact pinned dependency and schema profiles.",
+      "documentation": "docs/profiles.md",
+      "signatureNotes": "createGoogleWorkerBuild requires the installed TypeScript module and returns an esbuild plugin, registry path, and manifest; inspectGoogleWorkerProfile returns structured diagnostics. The literal GoogleWorkerProfile union is intentionally closed. This entry is excluded from Worker runtime imports and native root parity."
+    },
+    {
+      "entry": "./build/src/client",
+      "scope": "Explicit compatibility deep client entry sharing Client and helper identity with the root module.",
+      "documentation": "docs/exports.md",
+      "signatureNotes": "Exports the client declaration module, including callErrorFromStatus and type-only SurfaceCall in addition to root client names. Client.waitForReady and waitForClientReady retain the root import-only failure contract. This allowlisted path does not expose arbitrary upstream internals."
+    },
+    {
+      "entry": "./build/src/client.js",
+      "scope": "Extension-suffixed alias of the same explicit deep client entry for consumers that include .js.",
+      "documentation": "docs/exports.md",
+      "signatureNotes": "Resolves to exactly the same client declarations and CommonJS/ESM implementation as ./build/src/client; constructors and helpers keep root identity. Readiness still fails explicitly, and other build/src deep paths remain unexported."
+    }
+  ]
+}
