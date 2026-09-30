@@ -117,20 +117,49 @@ test('EVIDENCE Datastore transactions accepts complete synthetic validator input
 });
 
 test('EVIDENCE Datastore transactions accepts measured deadline response/reset races and completion order', () => {
+  for (const profile of ['google-static-v1', 'google-modern-v1'])
+  for (const runtime of ['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd-grpc-web', 'workerd-cloudflare'])
   for (const [termination, resetCode, responseSent, receivedStatus, reversed] of [
     ['client-reset', 8, false, null, false],
     ['peer-deadline', 0, true, 4, false],
     ['peer-deadline', 0, true, 4, true],
+    // Captured in a real native/Envoy run: the peer closes normally after
+    // replying, while Envoy completes the cancelled request without a response.
+    ['peer-deadline', 0, true, null, false],
+    ['peer-deadline', 0, true, null, true],
     ['peer-deadline', 2, true, null, false],
     ['peer-deadline', 8, true, null, false],
     ['peer-deadline', 2, true, 4, false],
   ]) {
-    const report = fixture(), result = row(report, 'v1-deadline-commit');
+    const report = fixture(), result = row(report, 'v1-deadline-commit', runtime, profile);
     Object.assign(result.requests[1], { termination, http2ResetCode: resetCode, responseSent, cancelled: resetCode === 8 });
     const index = report.wire.findIndex(receipt => receipt.invocation === `${result.profile}/${result.runtime}/${result.scenario}` && receipt.method.endsWith('/Commit'));
     Object.assign(report.wire[index], { grpcStatus: receivedStatus, httpStatus: receivedStatus === null ? 0 : 200 });
     if (reversed) [report.wire[index], report.wire[index + 1]] = [report.wire[index + 1], report.wire[index]];
     validateDatastoreTransactionReport(report);
+  }
+});
+
+test('EVIDENCE Datastore transactions rejects inconsistent peer and proxy deadline receipts', () => {
+  for (const [httpStatus, grpcStatus, flags] of [
+    [0, 4, '-'], [200, null, '-'], [200, 0, '-'], [200, 14, '-'],
+    [503, null, '-'], [0, null, 'UR'], [200, 4, 'UR'],
+  ]) {
+    const report = fixture(), result = row(report, 'v1-deadline-commit');
+    Object.assign(result.requests[1], { termination: 'peer-deadline', http2ResetCode: 0, responseSent: true, cancelled: false });
+    const receipt = report.wire.find(value => value.invocation === `${result.profile}/${result.runtime}/${result.scenario}` && value.method.endsWith('/Commit'));
+    Object.assign(receipt, { httpStatus, grpcStatus, flags });
+    assert.throws(() => validateDatastoreTransactionReport(report), /peer deadline response or response\/reset race/,
+      JSON.stringify({ httpStatus, grpcStatus, flags }));
+  }
+  for (const mutation of [
+    { http2ResetCode: 7 }, { responseSent: false }, { cancelled: true },
+  ]) {
+    const report = fixture(), result = row(report, 'v1-deadline-commit');
+    Object.assign(result.requests[1], { termination: 'peer-deadline', http2ResetCode: 0, responseSent: true, cancelled: false }, mutation);
+    const receipt = report.wire.find(value => value.invocation === `${result.profile}/${result.runtime}/${result.scenario}` && value.method.endsWith('/Commit'));
+    Object.assign(receipt, { httpStatus: 0, grpcStatus: null, flags: '-' });
+    assert.throws(() => validateDatastoreTransactionReport(report), /deadline termination is measured/);
   }
 });
 

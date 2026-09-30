@@ -222,6 +222,19 @@ operation has a bounded lifetime. A workerd service-binding call reaching its
 local deadline does not establish immediate backend cancellation; client stream
 reset and peer deadline cleanup are recorded separately.
 
+The peer's local HTTP/2 close and Envoy's upstream access record are separate
+observations. In the deadline race, the peer can send its response and close
+with reset code 0 while Envoy records HTTP 0 with no gRPC status because the
+downstream call has already ended. The validator accepts that observed pair,
+as well as an observed HTTP 200/status 4 response, without inferring delivery
+from the peer's close code. It still requires the caller's status 4, the applied
+mutation, exact RPC/Fetch counts and complete cleanup. Deterministic validator
+tests cover both Commit/recovery completion orders across both profiles and all
+five runtimes; invalid status pairs, response flags and peer receipts still fail.
+When report validation fails, `TX_REPORT_INVALID` now includes the validator's
+fixed contract description in `validationFailure`; arbitrary exception text and
+request contents are not emitted.
+
 Two transactions also run in crossed order with distinct IDs and synthetic
 identity metadata. The test checks that their requests and results stay separate.
 These headers are fixture labels, not distinct authentication providers or Google

@@ -218,13 +218,20 @@ main().catch(error => { report.status = 'failed'; report.diagnostic = safe(error
   if (cleanupFailures.length) { report.status = 'failed'; report.diagnostic = 'TX_CLEANUP_FAILURE'; process.exitCode = 1; }
   if (report.status === 'passed') {
     try { require('./datastore-transaction-evidence.cjs').validateDatastoreTransactionReport(report); }
-    catch { report.status = 'failed'; report.diagnostic = 'TX_REPORT_INVALID'; report.failureStage = 'report-validation'; process.exitCode = 1; }
+    catch (error) {
+      report.status = 'failed'; report.diagnostic = 'TX_REPORT_INVALID'; report.failureStage = 'report-validation'; process.exitCode = 1;
+      // This validator emits fixed contract descriptions, never report values
+      // or payloads. Preserve that reason without exposing arbitrary exceptions.
+      const prefix = 'WGA_EVIDENCE_INVALID: datastore-transactions ';
+      if (typeof error?.message === 'string' && error.message.startsWith(prefix)) report.validationFailure = error.message.slice(prefix.length);
+    }
   }
   fs.mkdirSync(path.join(root, 'verification'), { recursive: true });
   fs.writeFileSync(path.join(root, 'verification/datastore-transactions.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
   fs.rmSync(scratch, { recursive: true, force: true });
   console.log(JSON.stringify({ status: report.status, cases: report.caseCount, rpcCount: report.rpcCount,
-    ...(report.status === 'failed' ? { diagnostic: report.diagnostic, stage: report.failureStage, peerFaults: report.peerFaults } : {}),
+    ...(report.status === 'failed' ? { diagnostic: report.diagnostic, stage: report.failureStage, peerFaults: report.peerFaults,
+      ...(report.validationFailure ? { validationFailure: report.validationFailure } : {}) } : {}),
     report: 'verification/datastore-transactions.json' }));
   // A timed-out SDK operation can retain its own retry timers. All owned
   // processes/listeners above have received cleanup before exiting this failed

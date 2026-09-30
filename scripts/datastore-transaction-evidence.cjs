@@ -172,8 +172,13 @@ function validateDatastoreTransactionReport(report) {
       need(receipt.invocation === (row.runtime === 'native' && call.method === 'Rollback' && call.identity === null ? null : id), 'invocation or anchored native automatic rollback');
       need(receipt.runtime === (row.runtime === 'native' ? 'native' : row.runtime.startsWith('adapter-') ? 'replacement' : 'workerd')
         && receipt.upstream === 'datastore' && receipt.method === `/google.datastore.v1.Datastore/${call.method}`, 'exact upstream listener/method/sequence');
+      // The peer's local close code and Envoy's response observation are
+      // independent. Even after headersSent and a clean peer close, downstream
+      // cancellation can leave Envoy with no response. Validate each receipt
+      // at its own observation point; the peer's 0/2/8 close codes and response
+      // attempt are checked above, and the application must still report code 4.
       if (call.termination === 'peer-deadline') need(receipt.flags === '-' && (receipt.httpStatus === 200 && receipt.grpcStatus === 4
-        || call.http2ResetCode !== 0 && receipt.httpStatus === 0 && receipt.grpcStatus === null), 'peer deadline response or response/reset race');
+        || receipt.httpStatus === 0 && receipt.grpcStatus === null), 'peer deadline response or response/reset race');
       else if (call.termination === 'server-response') need(receipt.httpStatus === 200 && receipt.grpcStatus === call.statusCode && receipt.flags === '-', 'upstream response status');
       else need(receipt.httpStatus === 0 && receipt.grpcStatus === null && receipt.flags === (call.disconnect ? 'UR' : '-'), 'actual upstream reset without grpc-status');
     });
