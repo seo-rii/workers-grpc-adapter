@@ -13,16 +13,19 @@ const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('m
 const esbuild = workerRequire('esbuild');
 const { createGoogleWorkerBuild } = googleRequire('@grpc/grpc-js/build');
 const { encodeFrame } = require('../dist/wire.js');
+const { inspectSDKBundle } = require('./sdk-bundle-inspection.cjs');
 const compatibilityDate = '2026-09-21';
 const digest = value => createHash('sha256').update(value).digest('hex');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-sdk-worker-'));
 const report = { startedAt: new Date().toISOString(), status: 'running', cancelBodyObserved: false, runtimeExecuted: false, realGoogleSDK: true, cloudflareTranslation: false, liveGoogle: false, compatibilityDate, miniflare: workerRequire('miniflare/package.json').version, workerd: workerRequire('workerd/package.json').version, wrangler: workerRequire('wrangler/package.json').version, esbuild: esbuild.version, requests: [], checks: [] };
-function wranglerBundle(entry, name) {
+function wranglerBundle(entry, name, provenance) {
   const out = path.join(temporary, name);
   fs.mkdirSync(out, { recursive: true });
   const config = path.join(out, 'wrangler.json');
   fs.writeFileSync(config, JSON.stringify({ name: 'wga-local-sdk-fixture', main: entry, compatibility_date: compatibilityDate, compatibility_flags: ['nodejs_compat'], send_metrics: false }));
-  execFileSync(process.execPath, [path.join(path.dirname(workerRequire.resolve('wrangler/package.json')), 'bin/wrangler.js'), 'deploy', '--dry-run', '--config', config, '--outdir', path.join(out, 'bundle'), '--no-autoconfig'], { env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 });
+  const metafile = path.join(out, 'metafile.json');
+  execFileSync(process.execPath, [path.join(path.dirname(workerRequire.resolve('wrangler/package.json')), 'bin/wrangler.js'), 'deploy', '--dry-run', '--config', config, '--outdir', path.join(out, 'bundle'), '--no-autoconfig', ...(provenance ? ['--metafile', metafile] : [])], { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 });
+  if (provenance) provenance.metafile = JSON.parse(fs.readFileSync(metafile, 'utf8'));
   return fs.readFileSync(path.join(out, 'bundle', path.basename(entry).replace(/\.[^.]+$/, '.js')), 'utf8');
 }
 function runtime(script, outboundService) {
@@ -64,10 +67,15 @@ async function main() {
   assert.equal(typeof descriptorModule.exports.FileDescriptorProto.encode, 'function');
   const registry = require(preset.registryFile);
   assert.throws(() => registry.fromJSON(googleRequire('protobufjs'), { nested: { UnexpectedSchema: { fields: {} } } }), { code: 'WGA_SCHEMA_MISMATCH' });
-  await esbuild.build({ entryPoints: [path.join(root, 'fixtures/google/static-worker.mjs')], bundle: true, format: 'cjs', platform: 'node', target: 'es2022', outfile: path.join(temporary, 'sdk.cjs'), plugins: [preset.plugin] });
+  const build = await esbuild.build({ absWorkingDir: root, entryPoints: [path.join(root, 'fixtures/google/static-worker.mjs')], bundle: true, format: 'cjs', platform: 'node', target: 'es2022', outfile: path.join(temporary, 'sdk.cjs'), plugins: [preset.plugin], metafile: true });
   const entry = path.join(temporary, 'worker.mjs');
   fs.writeFileSync(entry, 'import bundle from "./sdk.cjs";export default bundle.default;\n');
-  const script = wranglerBundle(entry, 'prepared');
+  const wrangler = {};
+  const script = wranglerBundle(entry, 'prepared', wrangler);
+  report.bundleInspection = inspectSDKBundle({ script, stages: [
+    { name: 'sdk-preset', metafile: build.metafile, workingDirectory: root },
+    { name: 'wrangler', metafile: wrangler.metafile, workingDirectory: root },
+  ] });
   const manifest = preset.manifest();
   fs.writeFileSync(path.join(root, 'verification/workers-sdk-build.json'), JSON.stringify(manifest, null, 2) + '\n');
   report.bundleBytes = Buffer.byteLength(script);
@@ -75,7 +83,7 @@ async function main() {
   report.bundleSha256 = digest(script);
   report.profile = manifest.profile;
   report.sdkVersions = manifest.packages.filter(item => item.name.startsWith('@google-cloud/')).map(({name,version})=>({name,version}));
-  report.evidence = Object.fromEntries(['scripts/workers-sdk-test.cjs','fixtures/google/static-worker.mjs','fixtures/google/package-lock.json','fixtures/worker/package-lock.json'].map(file=>[file,digest(fs.readFileSync(path.join(root,file)))]));
+  report.evidence = Object.fromEntries(['scripts/workers-sdk-test.cjs','scripts/sdk-bundle-inspection.cjs','fixtures/google/static-worker.mjs','fixtures/google/package-lock.json','fixtures/worker/package-lock.json'].map(file=>[file,digest(fs.readFileSync(path.join(root,file)))]));
   // Node builds expected protobuf replies; SDK request/response codecs run inside workerd.
   const P = googleRequire('protobufjs');
   const schema = (name, relative) => {

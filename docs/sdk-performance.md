@@ -20,6 +20,34 @@ bundling. Copied inputs and generated temporary directories are removed even on
 failure. Raw SDK inputs, adapter/build implementation, and the selected profile
 have separate per-graph hashes in the report.
 
+## SDK bundle transport inspection
+
+The existing `npm run test:workers:sdk` and `node scripts/test-modern-sdk.cjs`
+gates inspect the complete three-SDK Worker for their respective profiles before
+executing that same final JavaScript in workerd. Their `bundleInspection` records
+in `verification/workers-sdk.json` and `verification/modern-sdk.json` contain:
+
+- Included input package names and versions, resolved from the installed package
+  manifests. An adapter installed under `@grpc/grpc-js` remains identifiable as
+  `workers-grpc-adapter`; native grpc-js under another alias is rejected.
+- External import edges from both the SDK preset's esbuild metafile and the
+  final Wrangler dry-run metafile, with hashes for both stages.
+- An AST inventory of literal executable imports, exports, dynamic imports and
+  CommonJS/esbuild require calls in the emitted JavaScript, bound to its hash.
+
+Bundled native `@grpc/grpc-js`/`grpc` packages and external native gRPC or `http2`
+imports fail the gate. Unit negative controls cover the package provenance,
+both metadata edge locations and final JavaScript independently. Type-only
+imports erased by compilation, comments and documentation strings do not count
+as runtime dependencies. Auth and proxy dependencies may retain `http`, `https`,
+`net` and `tls`; the report lists those separately rather than claiming that the
+entire SDK graph has no Node networking imports.
+
+This inspection covers included package provenance and static executable import
+specifiers in the pinned build pipeline. It does not resolve arbitrary computed
+module names. Runtime SDK calls and the existing exact profile checks remain
+separate requirements.
+
 ## What is measured
 
 | Measurement | Actual work performed |

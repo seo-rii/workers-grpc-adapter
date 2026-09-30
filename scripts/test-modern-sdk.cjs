@@ -17,6 +17,7 @@ const modernRequire = createRequire(path.join(modernRoot, 'package.json'));
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
 const { inspect } = require('./doctor.cjs');
+const { inspectSDKBundle } = require('./sdk-bundle-inspection.cjs');
 const { ts, typeRoots } = require('./toolchain.cjs').toolchain();
 const sourceBuild = process.argv.includes('--source-build');
 const { createGoogleWorkerBuild } = sourceBuild ? require('../src/build/index.cjs') : modernRequire('@grpc/grpc-js/build');
@@ -104,7 +105,7 @@ async function main() {
   checkProfileRejections();
   const sharedFile = path.join(modernRoot, 'shared.mjs'), shared = fs.readFileSync(sharedFile);
   report.sharedSourceSha256 = digest(shared);
-  report.evidence = Object.fromEntries(['scripts/test-modern-sdk.cjs', 'scripts/google-controlled-server.cjs', 'fixtures/modern/shared.mjs',
+  report.evidence = Object.fromEntries(['scripts/test-modern-sdk.cjs', 'scripts/sdk-bundle-inspection.cjs', 'scripts/google-controlled-server.cjs', 'fixtures/modern/shared.mjs',
     'fixtures/modern/worker.mjs', 'fixtures/modern/package-lock.json', 'fixtures/modern-native/package-lock.json',
     'fixtures/google/types/consumer.mts', 'fixtures/native/package-lock.json'].map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
   const controlled = await require('./google-controlled-server.cjs').createControlledServer();
@@ -183,9 +184,14 @@ async function main() {
     const entry = path.join(temporary, 'worker.mjs'); fs.writeFileSync(entry, 'import bundle from "./sdk.cjs";export default bundle.default;\n');
     const config = path.join(temporary, 'wrangler.json');
     fs.writeFileSync(config, JSON.stringify({ name: 'wga-modern-local', main: entry, compatibility_date: compatibilityDate, compatibility_flags: ['nodejs_compat'], send_metrics: false }));
-    execFileSync(process.execPath, [path.join(path.dirname(workerRequire.resolve('wrangler/package.json')), 'bin/wrangler.js'), 'deploy', '--dry-run', '--config', config, '--outdir', path.join(temporary, 'bundle'), '--no-autoconfig'],
-      { env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 });
+    const metafile = path.join(temporary, 'wrangler-metafile.json');
+    execFileSync(process.execPath, [path.join(path.dirname(workerRequire.resolve('wrangler/package.json')), 'bin/wrangler.js'), 'deploy', '--dry-run', '--config', config, '--outdir', path.join(temporary, 'bundle'), '--no-autoconfig', '--metafile', metafile],
+      { cwd: root, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' }, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 });
     const script = fs.readFileSync(path.join(temporary, 'bundle/worker.js'), 'utf8');
+    report.bundleInspection = inspectSDKBundle({ script, stages: [
+      { name: 'sdk-preset', metafile: build.metafile, workingDirectory: root },
+      { name: 'wrangler', metafile: JSON.parse(fs.readFileSync(metafile, 'utf8')), workingDirectory: root },
+    ] });
     report.build = preset.manifest(); report.bundleSha256 = digest(script);
     const runtimeOptions = { modules: true, script, compatibilityDate, compatibilityFlags: ['nodejs_compat'], log: new Log(LogLevel.NONE), outboundService: async request => {
       try {
