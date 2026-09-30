@@ -6,11 +6,9 @@
   "cases": [
     {
       "id": "PKG-001",
-      "coverage": "partial",
-      "reason": "Separate tarball alias and graph-doctor negative controls execute.",
-      "gaps": [
-        "The same real nested-GAX fixture is not exercised by both the install and doctor controls."
-      ],
+      "coverage": "covered",
+      "reason": "The actual nested-GAX SDK graph is installed from pinned upstream archives with only the root alias; doctor rejects every remaining native gRPC resolution and records per-consumer provenance. Native archive integrity and entry bytes are checked independently of the synthetic control.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -34,17 +32,36 @@
           "source": "test/sdk-graph.test.cjs",
           "command": "tests",
           "name": "SDK doctor rejects a native grpc shadowed under a second GAX"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/checks",
+          "where": {
+            "id": "real-sdk-alias-only-negative-control"
+          },
+          "anchor": "real-sdk-alias-only-negative-control",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/nativeResolutions",
+              "equals": 18
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "99899e1d630f34d3e320d72fadcd148908b8ced4a8852eb2e833e6759e31b7f8"
     },
     {
       "id": "PKG-002",
-      "coverage": "partial",
-      "reason": "The clean temporary-registry npm alias/$ref control proves packed identity with mock GAX; the modern profile separately resolves every real SDK/GAX consumer to one file-tarball replacement.",
-      "gaps": [
-        "Execute the npm alias plus $ref clean-install procedure with the real nested GAX consumers in the same graph; the current real SDK fixture uses a file: tarball dependency rather than the npm: alias fixture."
-      ],
+      "coverage": "covered",
+      "reason": "Both pinned real SDK graphs clean-install the actual replacement tarball through a temporary npm registry alias and root $ref override; all application, SDK and nested GAX imports share the same replacement.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -144,6 +161,72 @@
                   "grpcImportCount": 6
                 }
               ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/alias",
+              "equals": "npm:workers-grpc-adapter@0.0.0-prototype.1"
+            },
+            {
+              "pointer": "/override",
+              "equals": "$@grpc/grpc-js"
+            },
+            {
+              "pointer": "/noNativeGrpcPackage",
+              "equals": true
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/alias",
+              "equals": "npm:workers-grpc-adapter@0.0.0-prototype.1"
+            },
+            {
+              "pointer": "/override",
+              "equals": "$@grpc/grpc-js"
+            },
+            {
+              "pointer": "/noNativeGrpcPackage",
+              "equals": true
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
             }
           ]
         }
@@ -251,11 +334,9 @@
     },
     {
       "id": "PKG-004",
-      "coverage": "partial",
-      "reason": "npm ci repeats replacement identity assertions from the lockfile.",
-      "gaps": [
-        "The repeat install reuses the same directory; the catalog requires a fresh directory."
-      ],
+      "coverage": "covered",
+      "reason": "Each actual SDK alias graph is installed again by npm ci in a separate initially empty directory, preserving exact lock bytes, package locations, versions, archive integrity and runtime resolution identity.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -273,17 +354,73 @@
               "equals": "passed"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/freshDirectory",
+              "equals": true
+            },
+            {
+              "pointer": "/lockUnchanged",
+              "equals": true
+            },
+            {
+              "pointer": "/resolutionIdentityReproduced",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/freshDirectory",
+              "equals": true
+            },
+            {
+              "pointer": "/lockUnchanged",
+              "equals": true
+            },
+            {
+              "pointer": "/resolutionIdentityReproduced",
+              "equals": true
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "ecc89bf917204a9ea6ae0c918f25b0037243af48569e88e58c6277a956c45804"
     },
     {
       "id": "PKG-005",
-      "coverage": "partial",
-      "reason": "A clean tarball consumer executes a unary RPC.",
-      "gaps": [
-        "Not every exported declaration, asset and license is asserted in the packed consumer."
-      ],
+      "coverage": "covered",
+      "reason": "Standalone real SDK consumers verify every packed file hash, exported runtime/type target, profile asset and license/notice, and compile all exported type entries without workspace resolution.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -301,17 +438,89 @@
               "equals": "passed"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/noWorkspaceResolution",
+              "equals": true
+            },
+            {
+              "pointer": "/packedFiles",
+              "equals": 112
+            },
+            {
+              "pointer": "/declarations/results/0/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/1/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/2/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/noWorkspaceResolution",
+              "equals": true
+            },
+            {
+              "pointer": "/packedFiles",
+              "equals": 112
+            },
+            {
+              "pointer": "/declarations/results/0/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/1/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/2/status",
+              "equals": "passed"
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "758a923c9948d85fbf1c1bbd6e1a009d2c86b123df845a16ab563b7237916720"
     },
     {
       "id": "PKG-006",
-      "coverage": "partial",
-      "reason": "The packed mock GAX directly reads the public package.json export; the real modern SDK graph separately verifies replacement manifest names and versions.",
-      "gaps": [
-        "Assert both name and version from a direct public @grpc/grpc-js/package.json import inside a real GAX consumer; graph manifest inspection and the packed name assertion currently run separately."
-      ],
+      "coverage": "covered",
+      "reason": "Every real GAX consumer directly imports the packed public package.json and checks the actual adapter name and version against the application alias.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -411,6 +620,64 @@
                   "grpcImportCount": 6
                 }
               ]
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/consumers/0/implementation",
+              "equals": "workers-grpc-adapter"
+            },
+            {
+              "pointer": "/consumers/0/implementationVersion",
+              "equals": "0.0.0-prototype.1"
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/consumers/0/implementation",
+              "equals": "workers-grpc-adapter"
+            },
+            {
+              "pointer": "/consumers/0/implementationVersion",
+              "equals": "0.0.0-prototype.1"
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
             }
           ]
         }
@@ -553,28 +820,74 @@
     },
     {
       "id": "PKG-008",
-      "coverage": "partial",
-      "reason": "The graph doctor rejects a missing deep grpc import in a synthetic GAX consumer.",
-      "gaps": [
-        "Execute an unsupported deep import from the actual packed package and assert its explicit export failure without resolving native grpc-js."
-      ],
+      "coverage": "covered",
+      "reason": "Actual packed consumers reject unsupported deep imports with ERR_PACKAGE_PATH_NOT_EXPORTED in CommonJS and ESM, while doctor and package inventory prove no native fallback.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/sdk-graph.test.cjs",
           "command": "tests",
           "name": "SDK doctor verifies deep imports instead of checking only package name"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/unsupportedDeepImportsRejected",
+              "equals": true
+            },
+            {
+              "pointer": "/noNativeGrpcPackage",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/unsupportedDeepImportsRejected",
+              "equals": true
+            },
+            {
+              "pointer": "/noNativeGrpcPackage",
+              "equals": true
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "efabaf9f112f2c9accb3a9b2129c34309050ec2c1b299f75e24c5e515d6703b0"
     },
     {
       "id": "PKG-009",
-      "coverage": "partial",
-      "reason": "ESM/CJS Metadata, Client and credential identity is exercised.",
-      "gaps": [
-        "Complete composition across real app ESM and nested GAX CJS is not asserted as one scenario."
-      ],
+      "coverage": "covered",
+      "reason": "Application ESM and every real nested GAX CommonJS consumer share Client, Metadata and credential identity and successfully compose channel and call credentials in the same standalone installation.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -598,27 +911,138 @@
               "equals": "passed"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
+            },
+            {
+              "pointer": "/credentialComposition",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/esmCjsIdentity",
+              "equals": true
+            },
+            {
+              "pointer": "/credentialComposition",
+              "equals": true
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "8201ec44d0e0750fd3e44263742f185994a1afe9a1480566228fd3f8e8bf9570"
     },
     {
       "id": "PKG-010",
-      "coverage": "unimplemented",
-      "reason": "The catalog requires detecting two adapter installations, while the current graph doctor primarily rejects a native implementation or unresolved import.",
-      "gaps": [
-        "Install the adapter under its own name and its grpc alias with distinct versions, then verify doctor rejects constructor/credential identity splits between those adapter copies."
+      "coverage": "covered",
+      "reason": "Separate same-version and different-version tarball installations expose distinct Client, Metadata and credential constructors; doctor rejects both with physical-path and consumer provenance.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/duplicates",
+          "where": {
+            "versions": [
+              "0.0.0-prototype.1",
+              "0.0.0-prototype.1"
+            ]
+          },
+          "anchor": "duplicates.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/classSplit",
+              "equals": true
+            },
+            {
+              "pointer": "/identity/status",
+              "equals": "duplicate-installations"
+            },
+            {
+              "pointer": "/diagnostics/0/code",
+              "equals": "WGA_DUPLICATE_ADAPTER_INSTALLATIONS"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/duplicates",
+          "where": {
+            "versions": [
+              "0.0.0-prototype.1",
+              "0.0.0-packaging-duplicate.1"
+            ]
+          },
+          "anchor": "duplicates.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/classSplit",
+              "equals": true
+            },
+            {
+              "pointer": "/identity/status",
+              "equals": "duplicate-installations"
+            },
+            {
+              "pointer": "/diagnostics/0/code",
+              "equals": "WGA_DUPLICATE_ADAPTER_INSTALLATIONS"
+            }
+          ]
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "671ac9177f2eb772851c955636aaafc60ca4a10870e13607ae9e2210e002d6ca"
     },
     {
       "id": "PKG-011",
-      "coverage": "partial",
-      "reason": "The export contract walks executable adapter requires and rejects native network builtins; installed type consumers separately verify server-only type imports disappear from emitted JavaScript.",
-      "gaps": [
-        "Inspect the complete Google SDK Worker bundle executable import graph, distinguishing type-only inputs and proving no native grpc-js/http2 transport closure remains."
-      ],
+      "coverage": "covered",
+      "reason": "Both pinned three-SDK Workers inspect included package identities and static executable imports from SDK-preset and final Wrangler builds before executing the same JavaScript in workerd; type-only references are separately verified as erased.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -936,23 +1360,193 @@
               "equals": "Supported root server type surface, not native server handler implementation parity"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-sdk.json",
+          "source": "scripts/workers-sdk-test.cjs",
+          "command": "workers-sdk",
+          "array": "/bundleInspection/stages",
+          "where": {
+            "name": "sdk-preset"
+          },
+          "anchor": "report.bundleInspection = inspectSDKBundle",
+          "assertions": [
+            {
+              "pointer": "/bundledInputs",
+              "equals": 701
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-sdk.json",
+          "source": "scripts/workers-sdk-test.cjs",
+          "command": "workers-sdk",
+          "array": "/bundleInspection/stages",
+          "where": {
+            "name": "wrangler"
+          },
+          "anchor": "report.bundleInspection = inspectSDKBundle",
+          "assertions": [
+            {
+              "pointer": "/bundledInputs",
+              "equals": 35
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/modern-sdk.json",
+          "source": "scripts/test-modern-sdk.cjs",
+          "command": "modern-sdk",
+          "array": "/bundleInspection/stages",
+          "where": {
+            "name": "sdk-preset"
+          },
+          "anchor": "report.bundleInspection = inspectSDKBundle",
+          "assertions": [
+            {
+              "pointer": "/bundledInputs",
+              "equals": 566
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/modern-sdk.json",
+          "source": "scripts/test-modern-sdk.cjs",
+          "command": "modern-sdk",
+          "array": "/bundleInspection/stages",
+          "where": {
+            "name": "wrangler"
+          },
+          "anchor": "report.bundleInspection = inspectSDKBundle",
+          "assertions": [
+            {
+              "pointer": "/bundledInputs",
+              "equals": 35
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/sdk-bundle-inspection.test.cjs",
+          "name": "SDK bundle inspection rejects bundled native grpc-js even under an unrelated npm alias"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/sdk-bundle-inspection.test.cjs",
+          "name": "SDK bundle inspection rejects native imports in final Wrangler JavaScript independently of earlier metadata"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/sdk-bundle-inspection.test.cjs",
+          "name": "SDK bundle inspection ignores comments strings and erased type-only imports"
         }
       ],
       "catalogCaseSha256": "bed1d7c0234d0fe94eccfb041df50e93d1279a2d10866a9d7144664f89259442"
     },
     {
       "id": "PKG-012",
-      "coverage": "partial",
-      "reason": "The doctor CLI runs against the installed SDK graph and checks supported and mismatched profile diagnostics.",
-      "gaps": [
-        "Run the doctor with credentials absent and outbound networking denied, asserting zero authentication and Fetch calls rather than inferring this from its source."
-      ],
+      "coverage": "covered",
+      "reason": "Doctor executes on both actual temporary-registry SDK installations in subprocesses with no credential environment and denied network, authentication, credential reads and inspected runtime imports; every counter stays zero.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/build-profiles.test.cjs",
           "command": "tests",
           "name": "BUILD doctor CLI includes requested profile diagnostics and preserves graph checks"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/offlineDoctor/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/offlineDoctor/doctorPassed",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/credentialsEnvironmentAbsent",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/networkDenied",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/counters",
+              "equals": {
+                "network": 0,
+                "fetch": 0,
+                "auth": 0,
+                "runtimeImports": 0,
+                "credentialReads": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/offlineDoctor/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/offlineDoctor/doctorPassed",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/credentialsEnvironmentAbsent",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/networkDenied",
+              "equals": true
+            },
+            {
+              "pointer": "/offlineDoctor/counters",
+              "equals": {
+                "network": 0,
+                "fetch": 0,
+                "auth": 0,
+                "runtimeImports": 0,
+                "credentialReads": 0
+              }
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "8dbb788dad3cbecc32db1e5b4cd17da4d34003a9629d3456f88a21922adaf812"
@@ -976,11 +1570,9 @@
     },
     {
       "id": "PKG-014",
-      "coverage": "partial",
-      "reason": "Strict example consumers compile against installed packed SDK/adapter graphs in all three module-resolution modes.",
-      "gaps": [
-        "Compile in a standalone consumer with no workspace typeRoots or symlinks; current SDK fixtures still use the repository compiler/type roots."
-      ],
+      "coverage": "covered",
+      "reason": "ESM/CommonJS SDK, configuration, server and all-export examples compile under Node16, NodeNext and Bundler in separate tarball consumers using only locally installed pinned compiler and Node types, without workspace typeRoots or symlinks.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -1080,6 +1672,208 @@
             },
             {
               "pointer": "/contracts/rootAndDeep",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-static-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/noWorkspaceResolution",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/typescript",
+              "equals": "5.8.3"
+            },
+            {
+              "pointer": "/declarations/nodeTypes",
+              "equals": "22.15.30"
+            },
+            {
+              "pointer": "/declarations/results/0/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/0/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/0/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/allCompilerInputsInsideConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/1/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/1/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/1/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/allCompilerInputsInsideConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/2/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/2/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/2/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/allCompilerInputsInsideConsumer",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/packaging.json",
+          "source": "scripts/test-pack.cjs",
+          "command": "packaging",
+          "array": "/profiles",
+          "where": {
+            "profile": "google-modern-v1"
+          },
+          "anchor": "profiles.push",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/noWorkspaceResolution",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/typescript",
+              "equals": "5.8.3"
+            },
+            {
+              "pointer": "/declarations/nodeTypes",
+              "equals": "22.15.30"
+            },
+            {
+              "pointer": "/declarations/results/0/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/0/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/0/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/0/allCompilerInputsInsideConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/1/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/1/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/1/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/1/allCompilerInputsInsideConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/2/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/declarations/results/2/strict",
+              "equals": true
+            },
+            {
+              "pointer": "/declarations/results/2/skipLibCheck",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/customTypeRoots",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/workspaceSymlinks",
+              "equals": false
+            },
+            {
+              "pointer": "/declarations/results/2/allCompilerInputsInsideConsumer",
               "equals": true
             }
           ]
@@ -7285,13 +8079,55 @@
     },
     {
       "id": "WIRE-018",
-      "coverage": "unimplemented",
-      "reason": "Existing HTTP fallback tests execute seven required statuses, but their dynamically generated TAP names are not addressable by the current literal-name evidence validator; 502 and 504 cases are also missing.",
+      "coverage": "partial",
+      "reason": "Seven status-less HTTP fallback cases have literal-table source provenance and individually successful TAP results.",
       "gaps": [
-        "Record individually referenceable execution results for the existing 400/401/403/404/429/503/200 fallback cases without weakening source-to-test validation.",
-        "Add the required status-less HTTP 502 and 504 cases and verify their fallback gRPC status."
+        "Add status-less HTTP 502 and 504 cases; the original mapping matrix also requires these gateway failures."
       ],
-      "references": [],
+      "references": [
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 400"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 401"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 403"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 404"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 429"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 503"
+        },
+        {
+          "kind": "tap",
+          "command": "tests",
+          "source": "test/client.test.cjs",
+          "name": "CLIENT HTTP fallback 200"
+        }
+      ],
       "catalogCaseSha256": "63d523d2d592ea7616175a3757a6bb7be4eac6f937e1052edcdfa2f63ed97520"
     },
     {

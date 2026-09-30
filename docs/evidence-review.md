@@ -1,25 +1,54 @@
 # Original catalog evidence review
 
-Reviewed on 2026-09-30 against the existing implementation, test sources and
-completed local reports. This reconciliation adds evidence references and
-corrects remaining conditions; it adds no runtime features or test scenarios.
+Reviewed on 2026-09-30 against the implementation, test sources and completed
+local reports. The initial reconciliation connected existing evidence. The
+subsequent packaging work adds executable installation, identity, offline-doctor
+and complete SDK bundle checks, plus addressable literal-table TAP cases.
 
 The unchanged [original catalog](../compatibility/test-catalog.json) contains
 189 requirements. The [reviewed mapping](../compatibility/test-evidence.json)
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After review | Meaning |
-| --- | ---: | ---: | --- |
-| Covered | 41 | 58 | Existing execution satisfies the original case. |
-| Partial | 112 | 118 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging work | Meaning |
+| --- | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 69 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 109 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
-Seventeen cases move to covered, and 22 without references gain partial evidence.
-One previously unreferenced case moves directly to covered. The remaining
-131 unsatisfied cases cannot be translated into a percentage of implementation
-work: a missing assertion, an SDK behavior difference and a cloud release gate
-have very different costs. `releaseEligible` remains `false`.
+Packaging work satisfies eleven additional cases and connects seven existing
+HTTP fallback tests to individual execution references. The remaining 120
+unsatisfied cases cannot be translated into a percentage of implementation work:
+a missing assertion, an SDK behavior difference and a cloud release gate have
+very different costs. `releaseEligible` remains `false`.
+
+## Packaging work executed
+
+Both pinned real SDK graphs now install the actual tarball through a temporary
+registry using the npm alias and root `$ref` override. Each graph is installed
+again by `npm ci` in a separate empty directory, preserving package locations,
+versions, integrity, lock bytes and application/GAX runtime identity. The real
+alias-only negative control retains native grpc-js; doctor rejects it and records
+the failing consumers. Its native archive and runtime bytes are independently
+checked, using a separate cache from the synthetic negative control.
+
+Standalone consumers verify all packed exports, assets, license/notice files and
+type entry points. ESM/CommonJS examples compile in all three resolution modes
+with the pinned compiler and Node typings installed inside the consumer; no
+workspace type roots or symlinks supply missing declarations. Unsupported deep
+imports fail explicitly. Same-version and different-version duplicate tarballs
+produce separate classes, which doctor now diagnoses. On the two real SDK graphs,
+doctor also passes with credential environment variables absent and network,
+authentication, credential reads and dependency execution blocked; all counters
+remain zero.
+
+Both complete three-SDK Workers inspect package provenance and executable imports
+at the SDK-preset and final Wrangler stages before executing the same JavaScript
+in workerd. Native gRPC/HTTP2 dependencies fail the gate; erased type-only imports
+and legitimate authentication networking are distinguished. This is a static
+import/provenance check of the pinned pipeline, not arbitrary dynamic-loader
+analysis. The packaging catalog now has thirteen covered cases; `PKG-013` retains
+its full export/signature classification gap.
 
 ## Evidence that was already present
 
@@ -44,12 +73,12 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 
 | Area | Covered | Partial | No current reference |
 | --- | ---: | ---: | ---: |
-| Packaging | 2 | 11 | 1 |
+| Packaging | 13 | 1 | 0 |
 | Types | 7 | 0 | 0 |
 | Public API | 15 | 1 | 0 |
 | Configuration | 11 | 0 | 0 |
 | Authentication | 4 | 11 | 0 |
-| Wire protocol | 5 | 21 | 1 |
+| Wire protocol | 5 | 22 | 0 |
 | Call lifecycle | 0 | 18 | 0 |
 | Flow control | 0 | 7 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
@@ -70,14 +99,10 @@ the tests that already pass.
 
 The next local work units, in order, are:
 
-1. **Packaging and evidence addressability.** Exercise real GAX under the same
-   npm alias/override clean-install graph (`PKG-002`), lockfile installation in a
-   new directory (`PKG-004`), complete packed assets (`PKG-005`) and a standalone
-   consumer without workspace type roots (`PKG-014`). Test duplicate adapter
-   installations and doctor identity diagnostics (`PKG-010`). Inspect executable
-   imports of the full SDK Worker bundle (`PKG-011`) and run doctor with network
-   and credentials explicitly unavailable (`PKG-012`). Preserve strict reference
-   validation while making dynamic protocol test results individually addressable.
+1. **Export/signature classification.** Complete the comparison between pinned
+   upstream/consumer imports and all supported, intentionally unsupported and
+   type-only signatures (`PKG-013`). Runtime-name inventory alone does not explain
+   every signature difference. Other packaging cases now have executable evidence.
 2. **Exact transport schedules and resource assertions.** Add the missing
    status-less HTTP 502/504 cases (`WIRE-018`), precise allocation/copy counters,
    deterministic auth-before-message and EOF/cancel orderings, late read
@@ -96,12 +121,13 @@ The next local work units, in order, are:
    examples, support tables, diagnostic IDs and release provenance checks to
    executed fixtures instead of relying on source hashes alone (`PERF-*`, `DOC-*`).
 
-The thirteen cases without an accepted current reference are `PKG-010`,
-`WIRE-018`, `DS-005`, `DS-019`, `CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
+The eleven cases without an accepted current reference are `DS-005`, `DS-019`,
+`CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
 Their individual procedures and remaining conditions are in the mapping.
-For `WIRE-018`, seven existing HTTP fallback tests already pass, but their
-generated TAP titles cannot be referenced by the current literal-title checker;
-502 and 504 are additionally missing. No evidence policy was relaxed to hide this.
+For `WIRE-018`, seven existing HTTP fallback tests have individual source and TAP
+references; 502 and 504 remain missing. The checker expands only bounded literal
+`const` tables with direct test registrations and still requires each exact TAP
+result to pass. It does not execute source or infer success for unrun cases.
 
 ## Expectations that need a compatibility decision
 

@@ -26,7 +26,7 @@ Destroying a readable with an error can discard a buffered final message before 
 
 ## D-006: Keep evidence layers distinct
 
-Controlled HTTP/2 tests use real sockets and trailers but purpose-built local services and bridges. Tarball alias tests use real npm with small synthetic SDK/GAX packages. Real Google SDK, Envoy, emulator and deployed-cloud evidence are separate layers; passing one does not imply the others passed.
+Controlled HTTP/2 tests use real sockets and trailers but purpose-built local services and bridges. Tarball alias tests use real npm with both synthetic negative controls and the two pinned real SDK/GAX graphs, including independent clean installs and offline inspection. Package resolution, SDK runtime behavior, Envoy, emulator and deployed-cloud evidence remain separate layers; passing one does not imply the others passed.
 
 ## D-007: Disable live execution by default
 

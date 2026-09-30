@@ -8,10 +8,11 @@ records the coverage decision for each ID; the generated
 
 Local verification covers all 11 configuration cases, seven type cases and 15 of the
 16 API cases. `API-011` retains a concrete native divergence below. Across the
-unchanged 189-case catalog the reviewed mapping has 58 covered, 118 partial
-and 13 without accepted current execution references. The mapping retains the
-legacy `unimplemented` label for that last category; it does not mean 13 runtime
-features are absent. These counts describe requirements, not test totals. See
+unchanged 189-case catalog, current coverage totals are maintained in the
+evidence reconciliation below. The mapping retains the legacy `unimplemented`
+label for cases without accepted current execution references; that label does
+not mean a runtime feature is absent. Coverage counts describe requirements,
+not test totals. See
 the [evidence reconciliation](https://github.com/seo-rii/workers-grpc-adapter/blob/main/docs/evidence-review.md)
 for the remaining conditions and the distinction from dated deployment evidence.
 

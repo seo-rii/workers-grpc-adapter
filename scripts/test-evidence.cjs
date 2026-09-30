@@ -22,7 +22,8 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/datastore-transactions.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
-    'verification/packaging.json', 'verification/packaging-fixture.lock.json', 'verification/native-differential.json',
+    'verification/packaging.json', 'verification/packaging-fixture.lock.json',
+    'verification/packaging-google-static-v1.lock.json', 'verification/packaging-google-modern-v1.lock.json', 'verification/native-differential.json',
     'verification/google-auth.json', 'verification/workers.json', 'verification/workers-sdk.json',
     'verification/workers-gax-modes.json', 'verification/workers-lazy-sdk.json', 'verification/workers-auth.json',
     'verification/datastore-pagination.json', 'verification/workers-resilience.json',
@@ -641,6 +642,11 @@ function validateProvenance(root, report) {
     need(digest(bytes) === packaging.sha256, 'packaged artifact hash drift');
     validateRuntimeCopies(root);
     const sri = 'sha512-' + digest(bytes, 'sha512', 'base64');
+    for (const profile of packaging.profiles) {
+        need(hash(root, profile.lockArtifact) === profile.installedLockSha256
+            && hash(root, `${profile.fixture}/package-lock.json`) === profile.inputLockSha256
+            && profile.artifactIntegrity === sri, 'standalone packaging lock or tarball provenance drift');
+    }
     for (const fixture of ['google', 'worker']) {
         const lock = read(root, `fixtures/${fixture}/package-lock.json`);
         need(lock.packages?.['node_modules/@grpc/grpc-js']?.integrity === sri, `${fixture}: installed tarball lock integrity drift`);
@@ -676,6 +682,15 @@ function validateProvenance(root, report) {
         && hash(root, `fixtures/google/${entry.path}/package.json`) === entry.packageJsonSha256, `${entry.path}: profile package drift`);
     for (const entry of build.schemas) need(hash(root, `fixtures/google/${entry.path}`) === entry.sourceSha256, `${entry.path}: executed schema drift`);
     for (const [file, expected] of Object.entries(report.workersSdk.evidence || {})) need(hash(root, file) === expected, `${file}: Workers execution input drift`);
+    for (const sdk of [report.workersSdk, report.modernSdk]) {
+        const inspection = sdk.bundleInspection;
+        need(inspection?.status === 'passed' && inspection.bundleSha256 === sdk.bundleSha256
+            && inspection.scope === 'included-package-provenance-and-static-executable-imports'
+            && isDeepStrictEqual(inspection.stages.map(stage => stage.name), ['sdk-preset', 'wrangler'])
+            && inspection.stages.every(stage => Number.isSafeInteger(stage.bundledInputs) && stage.bundledInputs > 0)
+            && inspection.nativeGrpcPackages.length === 0 && inspection.violations.length === 0,
+            'SDK bundle transport inspection is missing or differs from executed JavaScript');
+    }
     for (const [file, expected] of Object.entries(report.workersShared.evidence || {})) need(hash(root, file) === expected, `${file}: shared Worker execution input drift`);
     for (const [runtime, hashes] of Object.entries(report.workersShared.sourceHashes || {})) {
         for (const [file, expected] of Object.entries(hashes)) need(hash(root, `fixtures/google/shared/${file}`) === expected, `${runtime}/${file}: shared business source drift`);
