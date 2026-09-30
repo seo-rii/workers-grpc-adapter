@@ -150,8 +150,8 @@ See [Testing](docs/testing.md) for the commands and report inventory.
 These require a separately authorized test environment. Normal CI stays local.
 
 - [x] Verify per-request Cloudflare conversion and explicit gateway paths with
-  deployed unary, streaming and non-OK calls. See the corrected 2026-09-26 probe;
-  historical deployment results do not certify later changes automatically.
+  deployed unary, streaming and non-OK calls. See the 2026-09-30 regression at
+  commit `5e6f87c`; deployment results do not certify later changes automatically.
 - [ ] Extend deployed checks to controlled deadline/cancellation faults and
   prolonged traffic, quotas and recovery.
 - [ ] Prepare a dedicated Google Cloud project with least-privilege credentials,

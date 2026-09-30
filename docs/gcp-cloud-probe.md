@@ -68,6 +68,40 @@ Before running RPCs, every Worker must return an authenticated, mode-matching JS
 
 Successful fallback calls establish Worker → private Envoy → real Google API behavior. Automatic conversion additionally requires successful calls to the controlled native gRPC origin, with matching native positive and direct gRPC-Web negative controls. An existing gRPC-Web service cannot prove Cloudflare translation. Public-service success, SDK initialization and local emulator results remain separate evidence categories. Load, failure recovery and full grpc-js API compatibility are outside this finite smoke test; `releaseEligible` remains `false`.
 
+## Latest regression: 2026-09-30
+
+Run `wga-probe-20260930-cf08e0d1` tested source commit
+[`5e6f87c`](https://github.com/seo-rii/workers-grpc-adapter/commit/5e6f87c2cad3d477d79fa4d7b48c50bfe00de421)
+after the Firestore read and Datastore transaction regression gates were added.
+The deployed bundle SHA-256 was
+`3347803bd7999bebd74c7e7914401af749251c64eec53d30f0af5bb259663974`.
+Both Workers used only `nodejs_compat`; authenticated readiness succeeded on
+the first attempt for each mode.
+
+| Check | Result |
+|---|---|
+| Native grpc-js Google baseline | All five suites passed |
+| Worker automatic conversion → Google APIs | All five suites passed |
+| Worker fallback → private Envoy → Google APIs | All five suites passed |
+| Native and both Worker modes → private native origin | Unary, ten-message stream and exact status-3 error passed |
+| Worker request without conversion → native origin | Expected HTTP 502/plain-text negative control |
+| Direct HTTP/2 gRPC-Web → native origin | Expected HTTP 502/plain-text negative control |
+
+The Google suites exercise Datastore and Firestore CRUD/query and transactions,
+plus Secret Manager metadata `GetSecret`. The new local fault matrices remain
+separate evidence: this live run does not reproduce their injected connection
+resets, deadlines or SDK retry sequences. It also does not establish production
+token renewal, quotas, transaction contention, sustained load or deployed
+request streaming. `releaseEligible` remains `false`.
+
+All eight created resources were deleted. Both database deletion operations
+completed, and every final resource lookup returned `404`. The existing GCP
+inventory and recorded identity/configuration fields were unchanged: 81 Cloud
+Run services, three databases, 34 secrets, 31 service accounts and six artifact
+repositories. The temporary Worker secret upload file was removed. The runner
+exited `0` with status `passed`; the per-run receipt records both
+`allCreatedResourcesDeleted: true` and `existingResourcesUnchanged: true`.
+
 ## Corrected results: 2026-09-26
 
 Run `wga-probe-20260926-6c3b0f09` deployed the corrected adapter with bundle SHA-256 `5dbcd1c3a4597c9c2d19aced212e70301fdf7e54c8491873f2a9def72f16c67c`. Both Workers used only `nodejs_compat`, verified from deployed settings. The adapter explicitly sends `cf.grpcWeb: "convert"` with bare `application/grpc-web` for direct calls, and `passthrough` with `application/grpc-web+proto` for the gateway. It does not require a Worker-wide conversion flag.
