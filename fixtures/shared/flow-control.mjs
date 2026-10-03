@@ -16,6 +16,18 @@ const zeroExecution = Object.freeze({ activePumps: 0, pendingMessages: 0, pendin
 const maxBufferedBytes = 1024 * 1024;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Timer eligibility and the observed clock can differ by a millisecond. Keep
+// the full measured pause instead of treating one timer callback as its proof.
+export function schedulePauseWindow(schedule, now, duration, complete) {
+  const start = now();
+  function check() {
+    const elapsed = now() - start;
+    if (elapsed < duration) { schedule(Math.max(1, duration - elapsed), check); return; }
+    complete(elapsed);
+  }
+  schedule(duration, check);
+}
+
 function transportCall(surface) {
   let current = surface;
   const seen = new Set();
@@ -106,9 +118,9 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
           surface.pause(); later(1, () => { sample(); surface.resume(); });
         } else if (spec.scenario === 'pause' && deliveredCount === 8) {
           surface.pause(); controlPending = true;
-          const pausedCount = deliveredCount, start = Date.now();
-          later(20, () => {
-            sample(); pausedSample = snapshot(); pauseWindowMs = Date.now() - start;
+          const pausedCount = deliveredCount;
+          schedulePauseWindow(later, Date.now, 20, elapsed => {
+            sample(); pausedSample = snapshot(); pauseWindowMs = elapsed;
             pauseDeliveredDuringWindow = deliveredCount - pausedCount;
             assert.equal(pauseDeliveredDuringWindow, 0, 'pause suppresses public data events');
             controlPending = false; surface.resume();
