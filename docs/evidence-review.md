@@ -11,15 +11,16 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | Meaning |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
-seventeen completed call cases and the full HTTP fallback matrix. The remaining 101
+seventeen completed call cases and the full HTTP fallback matrix. Flow-control
+work satisfies six additional cases. The remaining 95
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -87,6 +88,29 @@ for the exact byte categories and controlled-reader boundary.
 retains the invalid-Date error-policy difference below. `WIRE-018` now executes
 all nine required HTTP mappings, including status-less 502 and 504.
 
+## Flow-control work executed
+
+The installed adapter runs eight scenarios in each Node/workerd and transport
+mode combination, giving 32 adapter observations. The pinned native client runs
+eight corresponding observations, plus an independent consuming HTTP/2 control
+for malformed unary cardinality. Public streams use a native grpc-js loopback
+server and a demand-driven framing bridge; all remote calls and Fetch attempts
+are counted separately.
+
+Slow consumption, pause/resume and cancellation positively occupy the public
+queue, pending-message slot and parser assembly before their bounds and cleanup
+are checked. The long stream delivers 513 × 64 KiB, exceeding the default 32 MiB
+transport ceiling while the adapter has a 1 MiB buffer budget. A separate
+128-frame response is deliberately coalesced by a bounded fixture to measure
+retained runtime-chunk bytes without claiming native chunk-boundary parity.
+
+`FLOW-001`–`FLOW-005` and `FLOW-007` are covered. `FLOW-006` records the native
+duplicate-unary divergence and remains partial. Queued public messages can
+drain after status in both implementations; workerd service binding cancellation
+can also leave the backend producing. These are explicit boundaries in the
+[flow-control contract](local-contracts.md#flow-control-and-public-queues), not
+claims of total heap bounds or deployed cancellation propagation.
+
 ## Evidence that was already present
 
 - `PKG-003/007`: real nested GAX dependency graphs and packed root/deep Client
@@ -117,7 +141,7 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Authentication | 4 | 11 | 0 |
 | Wire protocol | 6 | 21 | 0 |
 | Call lifecycle | 17 | 1 | 0 |
-| Flow control | 0 | 7 | 0 |
+| Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
 | Datastore | 1 | 21 | 2 |
 | Transactions | 7 | 2 | 0 |
@@ -127,19 +151,18 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Performance | 0 | 5 | 0 |
 | Documentation | 0 | 3 | 2 |
 
-Flow control has substantial executed tests. Its original cases additionally
-require native comparisons and specific large-stream/pause/ownership scenarios.
-The new lifecycle counter checks do not automatically satisfy those scenarios.
+Flow control now includes the native comparisons and specific
+large-stream/pause/ownership scenarios. The remaining unary discrepancy is
+retained rather than treated as transport equivalence.
 
 ## Remaining work
 
 The next local work units, in order, are:
 
-1. **Flow control and wire resource assertions.** Use the new ownership counters
-   in exact slow-consumer, pause/resume, total-stream-above-safety-ceiling,
-   backpressure cancellation, partial-error, unary lookahead and many-frame-chunk
-   scenarios, including the required native comparisons (`FLOW-*`). Wire cases
-   still need their separate allocation/copy and framing boundary assertions.
+1. **Wire resource and framing assertions.** Add the remaining allocation/copy,
+   metadata and framing boundary assertions to the exact `WIRE-*` cases. The
+   completed stream ownership cases do not substitute for these parser-specific
+   conditions.
 2. **SDK call accounting and combinations.** Add logical call IDs and separate
    data/auth Fetch counters to the older Datastore Lookup/pagination reports;
    cover remaining batches, overloads, query stream failures and routing fields.
@@ -173,6 +196,10 @@ These cannot be closed just by adding a reference:
 - `LIFE-015`: invalid Date returns adapter `INTERNAL`, whereas the catalog asks
   for `INVALID_ARGUMENT`. Pinned native throws `RangeError` synchronously before
   returning a call. This is an API error-policy decision, not missing execution.
+- `FLOW-006`: the adapter reads trailers and rejects a duplicate unary message
+  with one read demand; pinned native delivers the first internally and waits
+  for deadline. The new flow suite reproduces the `API-011` cardinality
+  difference with counted read demands and an independent complete-wire control.
 - `DS-021`: pinned native Datastore and the adapter both continue paging after
   `runQueryStream().destroy()`; `end()` stops later pages but does not cancel a
   pending unary page. The original no-extra-page expectation is unmet.

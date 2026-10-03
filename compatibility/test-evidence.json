@@ -7886,9 +7886,9 @@
     {
       "id": "WIRE-010",
       "coverage": "partial",
-      "reason": "Every 1\u20134 byte truncated header rejects in parser tests; the explicit 4-byte workerd case checks the exact valid prefix, INTERNAL, one terminal and clean response readers.",
+      "reason": "Every 1–4 byte truncated header rejects in parser tests; the explicit 4-byte workerd case checks the exact valid prefix, INTERNAL, one terminal and clean response readers.",
       "gaps": [
-        "The 1\u20133 byte vectors still lack individually recorded Client callback/status assertions; workerd corpus selector 3 fixes the header length at 4."
+        "The 1–3 byte vectors still lack individually recorded Client callback/status assertions; workerd corpus selector 3 fixes the header length at 4."
       ],
       "references": [
         {
@@ -9790,11 +9790,9 @@
     },
     {
       "id": "FLOW-001",
-      "coverage": "partial",
-      "reason": "Both workerd modes already complete delayed 128-message streams with exact 1 KiB payload order, bounded readable queues and at most 1 KiB of reported transport response bytes.",
-      "gaps": [
-        "Native interop for this exact slow-consumer scenario and separate pending-message/assembly counters are still absent; responseBytes is not a complete allocation counter."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node and workerd adapters in both modes consume 128 delayed 1 KiB messages from a native grpc-js server; native results, ordering, occupied queues and separate pending/assembly ownership are verified.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -9851,17 +9849,58 @@
               "equals": 1024
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-001"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "97aeb9d86de952a14209087443410dc4748a88bb770be82ab8f487f4c05bef7a"
     },
     {
       "id": "FLOW-002",
-      "coverage": "partial",
-      "reason": "The existing workerd slow-reader case pauses every eighth message and resumes after a delay; all 128 messages are verified in order with no duplicates or losses in both modes.",
-      "gaps": [
-        "No explicit no-data-during-each-pause counter is recorded; the required native interop and separate pending/assembly invariants remain."
-      ],
+      "coverage": "covered",
+      "reason": "All adapter runtime/mode combinations and the native client pause after eight messages with zero public data events during the measured pause, then receive all 96 ordered messages; bounded ownership and cleanup are checked.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -9912,34 +9951,116 @@
               "equals": 1024
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-002"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "5d8ee19135ed288fd874b23d56641a1d33dc5a4ce6344a22c25fb37c787e3357"
     },
     {
       "id": "FLOW-003",
-      "coverage": "partial",
-      "reason": "Stream total exceeds the configured per-message cap without response aggregation.",
-      "gaps": [
-        "Use a stream total exceeding the transport safety ceiling itself."
-      ],
+      "coverage": "covered",
+      "reason": "Each client consumes 513 messages of 64 KiB (33,619,968 payload bytes), exceeding the default 32 MiB transport ceiling, with exact payload verification; adapter resource budget is 1 MiB and cleanup is checked.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM many small messages exceed per-message limit in total"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-003"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "6870ada6194e110b41a613fa366331ce77fa554ec87d960a6829c1cffd0383d4"
     },
     {
       "id": "FLOW-004",
-      "coverage": "partial",
-      "reason": "Paused lookahead can be cancelled and a pending reader is separately released.",
-      "gaps": [
-        "Measure pending and assembly bytes becoming zero while cancellation occurs under backpressure."
-      ],
+      "coverage": "covered",
+      "reason": "Cancellation occurs only after the public queue is full and the adapter pending-message slot/parser assembly are occupied; local reader/pending/assembly owners unwind to zero before client close. Public queued objects and any workerd backend production are recorded separately.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -9952,23 +10073,107 @@
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM cancellation cleans pending reader and active call"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-004"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "60697390415dbfb8bc60b70d8e9929a56ca6c1dc0c9301d89fe04edf54e5ec49"
     },
     {
       "id": "FLOW-005",
-      "coverage": "partial",
-      "reason": "Partial data is delivered once before UNAVAILABLE, with exactly one fetch.",
-      "gaps": [
-        "Run this exact partial-stream failure with a slow consumer in workerd and against native interop, including pending/assembly counters."
-      ],
+      "coverage": "covered",
+      "reason": "Native and installed Node/workerd adapters deliver eight ordered 1 KiB messages from the actual native server with UNAVAILABLE and one backend call/Fetch; slow-consumer queue draining, event ordering and owner cleanup are measured.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM valid messages then remote failure does not restart"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-005"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "7e3417a03cd282d7b9f2c8dd5237c49736b769a37ecc8bc0bd04599651a2815c"
@@ -9976,9 +10181,9 @@
     {
       "id": "FLOW-006",
       "coverage": "partial",
-      "reason": "The low-level bridge test explicitly grants one startRead demand and reaches one final status; high-level unary checks also reject a second response message.",
+      "reason": "Exactly one low-level startRead reaches trailers for one unary message and rejects a duplicate in Node/workerd. Independent native HTTP/2 probes reproduce the cardinality divergence and verify complete duplicate response bytes and OK trailers.",
       "gaps": [
-        "The duplicate-response case does not explicitly grant one low-level demand; native interop/workerd execution with pending/assembly counters is still absent."
+        "Pinned native unary delivers only the first response internally and waits for deadline (4), while the adapter promptly rejects a second message (12); native cardinality equivalence is intentionally not claimed."
       ],
       "references": [
         {
@@ -9998,17 +10203,58 @@
           "source": "test/transport-contract.test.cjs",
           "command": "tests",
           "name": "BRIDGE identity write flags and unsupported WriteThrough terminate once"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-006"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": false
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "caadce9e2bc1d1e912646ef44333f86fce751a1cfd558609c6f518413af4b62e"
     },
     {
       "id": "FLOW-007",
-      "coverage": "partial",
-      "reason": "Decoder tests separately account coalesced runtime chunk bytes plus one current frame and reject a coalesced chunk that exhausts the shared budget.",
-      "gaps": [
-        "A large many-small-frame chunk still needs end-to-end workerd/native interop with pending/assembly measurements; current tests use two/four messages in Node parser tests."
-      ],
+      "coverage": "covered",
+      "reason": "A real native server response containing 128 small frames is coalesced by a bounded fixture into one Fetch chunk in Node/workerd; exact delivery, one pending message/assembly, separate retained chunk bytes and cleanup are verified against a native client baseline.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -10021,6 +10267,49 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER an oversized coalesced Fetch chunk fails even when each message is within its limit"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "scripts/test-flow-control.cjs",
+          "command": "flow-control",
+          "array": "/catalogCases",
+          "where": {
+            "id": "FLOW-007"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nativeScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "a1c97c28aeece7d4b557337b37430437170726df41e57e77d7c2b4b99ea58e3c"
@@ -11268,10 +11557,10 @@
     {
       "id": "DS-005",
       "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: \ubd88\uc644\uc804 key.",
+      "reason": "No concrete executed evidence yet covers this planned case: 불완전 key.",
       "gaps": [
-        "incomplete key\ub85c \uc800\uc7a5\ud55c\ub2e4",
-        "\uc2e4\ud589 \ub0b4 \ud560\ub2f9 key \ucc38\uc870 \ubc0f \ud6c4\uc18d \uc870\ud68c \uc77c\uad00\uc131"
+        "incomplete key로 저장한다",
+        "실행 내 할당 key 참조 및 후속 조회 일관성"
       ],
       "references": [],
       "catalogCaseSha256": "c8558e73fdd168f54bbac2564b1f2536d3fcc6f397c6501cfdd6f9145c6c2bc9"
@@ -16943,10 +17232,10 @@
     {
       "id": "DS-019",
       "coverage": "unimplemented",
-      "reason": "No concrete executed evidence yet covers this planned case: index/invalid query \uc624\ub958.",
+      "reason": "No concrete executed evidence yet covers this planned case: index/invalid query 오류.",
       "gaps": [
-        "\ud1b5\uc81c\ub41c \uc624\ub958 \ubc0f \uc2e4\uc81c index \uc694\uad6c\ub97c \ubd84\ub9ac \uc2dc\ud5d8\ud55c\ub2e4",
-        "code/details/metadata \ubcf4\uc874"
+        "통제된 오류 및 실제 index 요구를 분리 시험한다",
+        "code/details/metadata 보존"
       ],
       "references": [],
       "catalogCaseSha256": "d984fe5ab18ec196f0b33dc4b5c6dfbad63ee966e5e690ea41409992287d5e70"

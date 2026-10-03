@@ -95,6 +95,46 @@ instead throws `RangeError` synchronously while formatting that Date. The
 catalog expectation is therefore not native-parity behavior; no error policy
 was changed to conceal this mismatch.
 
+## Flow control and public queues
+
+`npm run test:flow:control` runs 32 adapter scenarios using the installed package
+in Node and workerd, through both transport modes. A pinned native grpc-js
+client provides eight corresponding observations. Five public streaming cases
+and the many-frame case use an actual native grpc-js loopback server. A
+demand-driven HTTP/2 bridge preserves its message bytes and remote status.
+Cloudflare mode uses this local peer; it does not test the deployed translator.
+
+The suite verifies delayed consumption of 128 messages, an explicit pause after
+eight messages with no data events during the pause, cancellation with an occupied
+public queue and pending transport message, and eight messages followed by
+`UNAVAILABLE` without replay. A 513-message stream delivers 33,619,968 payload
+bytes, exceeding the default 32 MiB transport message ceiling. Each message is
+64 KiB and the adapter's configured buffer budget is 1 MiB. Every payload byte
+and sequence number is checked without retaining the whole response.
+
+The public queue is configured to one object. Pending decoded messages and
+parser assemblies stay at most one, and their actual occupied states are
+checked before cancellation. Runtime chunks are measured separately. In the
+many-frame case the fixture deliberately coalesces a bounded native response
+into one chunk containing 128 frames; it does not claim native HTTP/2 or Fetch
+naturally preserves that boundary. Adapter ownership is checked before closing
+clients or disposing workerd, and peer sessions are accounted for separately.
+
+Public stream `status` and the draining of an existing Readable queue are
+separate events. Both native grpc-js and the adapter can deliver already queued
+data after status, including a non-OK status. Likewise, `cancel()` while paused
+can retain previously queued objects until the application reads or discards
+them. The suite records these objects separately from released RPC buffers.
+Local workerd service bindings may also allow the backend to finish producing
+after client cancellation; a locally cleaned-up call does not certify backend
+cancellation propagation.
+
+Six of the seven `FLOW-*` catalog cases are covered. `FLOW-006` retains the
+native unary cardinality difference described above: exactly one `startRead()`
+allows the adapter to consume trailers or reject a second message promptly,
+while pinned native waits for its deadline in the duplicate-message case.
+An independent HTTP/2 consuming control verifies both frames and OK trailers.
+
 ## Configuration
 
 `test/config-catalog.test.cjs` gives each `CFG-001`–`CFG-011` requirement its own

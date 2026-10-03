@@ -15,6 +15,7 @@ const { validateSecretManagerReport } = require('./secret-manager-evidence.cjs')
 const { validateFirestoreReadReport } = require('./firestore-read-evidence.cjs');
 const { validateDatastoreTransactionReport } = require('./datastore-transaction-evidence.cjs');
 const { validateCallLifecycleReport } = require('./call-lifecycle-evidence.cjs');
+const { validateFlowControlReport } = require('./flow-control-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
@@ -22,6 +23,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/firestore-read-errors.json',
     'verification/datastore-transactions.json',
     'verification/call-lifecycle.json',
+    'verification/flow-control.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json',
@@ -569,7 +571,7 @@ function validateProvenance(root, report) {
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
-        ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
+        ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['apiContracts', 'verification/api-contracts.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
@@ -610,10 +612,11 @@ function validateProvenance(root, report) {
     validateFirestoreReadReport(report.firestoreReadErrors);
     validateDatastoreTransactionReport(report.datastoreTransactions);
     validateCallLifecycleReport(report.callLifecycle);
+    validateFlowControlReport(report.flowControl);
     for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
-        ['datastore-transactions', report.datastoreTransactions], ['call-lifecycle', report.callLifecycle]]) {
+        ['datastore-transactions', report.datastoreTransactions], ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {
