@@ -111,7 +111,7 @@ test('CLIENT no gRPC status never becomes success', async () => withFetch(async 
     await assert.rejects(unary(c).promise, { code: 2 });
     c.close();
 }));
-for (const [http, code] of [[400, 13], [401, 16], [403, 7], [404, 12], [429, 14], [503, 14], [200, 2]]) {
+for (const [http, code] of [[400, 13], [401, 16], [403, 7], [404, 12], [429, 14], [502, 14], [503, 14], [504, 14], [200, 2]]) {
     test(`CLIENT HTTP fallback ${http}`, async () => withFetch(async () => new Response('not grpc', { status: http }), async () => {
         const c = client();
         await assert.rejects(unary(c).promise, { code });

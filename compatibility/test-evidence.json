@@ -8216,11 +8216,9 @@
     },
     {
       "id": "WIRE-018",
-      "coverage": "partial",
-      "reason": "Seven status-less HTTP fallback cases have literal-table source provenance and individually successful TAP results.",
-      "gaps": [
-        "Add status-less HTTP 502 and 504 cases; the original mapping matrix also requires these gateway failures."
-      ],
+      "coverage": "covered",
+      "reason": "All nine planned status-less HTTP responses have exact mapping assertions and individually checked TAP results, including HTTP 502 and 504.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8263,6 +8261,18 @@
           "command": "tests",
           "source": "test/client.test.cjs",
           "name": "CLIENT HTTP fallback 200"
+        },
+        {
+          "kind": "tap",
+          "source": "test/client.test.cjs",
+          "command": "tests",
+          "name": "CLIENT HTTP fallback 502"
+        },
+        {
+          "kind": "tap",
+          "source": "test/client.test.cjs",
+          "command": "tests",
+          "name": "CLIENT HTTP fallback 504"
         }
       ],
       "catalogCaseSha256": "63d523d2d592ea7616175a3757a6bb7be4eac6f937e1052edcdfa2f63ed97520"
