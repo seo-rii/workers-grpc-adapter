@@ -71,7 +71,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:secret-manager` | Native/adapter/workerd Secret Manager pagination, method errors, metadata, recovery and payload checksum handling | `verification/secret-manager-extended.json` |
 | `npm run test:firestore-read-errors` | Both pinned Firestore profiles: intermediate read failures, SDK retry requests, events and cleanup in native/Node/workerd | `verification/firestore-read-errors.json` |
 | `npm run test:datastore-transactions` | Both pinned Datastore profiles: transaction requests, rollback, failures, interrupted Commit outcomes and cleanup in native/Node/workerd | `verification/datastore-transactions.json` |
-| `node scripts/test-datastore-pagination.cjs` | Native/adapter/workerd query pagination, `end()` versus `destroy()`, pending-page behavior and reuse | `verification/datastore-pagination.json` |
+| `node scripts/test-datastore-pagination.cjs` | 50 native/Node/workerd query cases: pagination, overloads, stream errors, `end()` versus `destroy()`, per-call accounting and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
@@ -287,6 +287,35 @@ independent evidence validator checks the complete runtime/profile matrix, sourc
 and installed dependency hashes, backend receipts and clean process shutdown.
 Finite local failure injection does not establish production conflict handling,
 IAM, quota behavior or long-running transaction reliability.
+
+## Datastore query pagination and overloads
+
+`node scripts/test-datastore-pagination.cjs` runs ten shared scenarios under
+native grpc-js and both adapter modes in Node/workerd: 50 cases, 310 service RPCs,
+248 actual data Fetches and 30 separate control requests. Every adapter page and
+recovery Lookup joins its actual logical call ID, observer events, physical Fetch
+and peer receipt. Timers, buffers, parser ownership, pumps, pending callbacks and
+channel registrations are checked before SDK close. Cached OAuth credentials use
+no network; a guarded auth transporter counts any attempted authentication I/O
+separately. These test hooks do not measure the entire JavaScript heap.
+
+The successful three-page query checks cursor continuity, consumed offset,
+decreasing limits and ordered entities. Promise results have two tuple elements;
+callbacks receive error, entities and info. A controlled invalid query verifies
+Promise rejection and the callback's sole error argument. A second-page index
+error preserves the two already delivered entities, then emits one error without
+`info` or `end`. Status, details and text/binary metadata are checked against an
+independent contract. These injected errors do not establish which indexes
+production Datastore requires.
+
+The gate records the complete `data`/`info`/`error`/`end` sequence and checks close
+for stopped or failed public streams. Both `destroy()` and `end()` are exercised
+after the first entity and while another page is held. The pinned native SDK
+continues paging after `destroy()`; `end()` stops future pages. Neither cancels an
+already pending unary page. Every scenario ends with a successful Lookup and
+three-page query on the same client. The strict evidence validator rejects
+missing runtime combinations, broken event/tuple contracts and inconsistent
+per-call counters or cleanup receipts.
 
 ## Official database emulators
 

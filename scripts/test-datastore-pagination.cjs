@@ -19,11 +19,19 @@ const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.jso
 const native = nativeRequire('@grpc/grpc-js');
 const loader = nativeRequire('@grpc/proto-loader');
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
-const scenarios = ['complete', 'destroy-first', 'destroy-inflight', 'end-first', 'end-inflight'];
+const scenarios = ['complete', 'destroy-first', 'destroy-inflight', 'end-first', 'end-inflight',
+  'promise-complete', 'callback-complete', 'promise-error', 'callback-error', 'stream-error'];
+const pageCounts = { complete: 3, 'destroy-first': 3, 'destroy-inflight': 3, 'end-first': 1, 'end-inflight': 2,
+  'promise-complete': 3, 'callback-complete': 3, 'promise-error': 1, 'callback-error': 1, 'stream-error': 2 };
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const report = { status: 'running', startedAt: new Date().toISOString(), liveGoogle: false,
   cloudflareTranslation: false, officialEmulator: false, controlledNativeGrpcServer: true,
-  workerAbortPropagationTested: false, perPageTimeoutMs: 5000,
+  workerAbortPropagationTested: false, perPageTimeoutMs: 5000, authNetworkRequests: 0,
+  authScope: 'cached OAuth credential; counted and rejected OAuth transporter network requests; no token refresh proof',
+  instrumentation: { syntheticCallIdHeader: true, internalCallDiagnostics: true, oauthNetworkGuard: true, sdkCloseAfterSnapshot: true },
+  compatibilityDate: '2026-09-21', workerdVersion: workerRequire('workerd/package.json').version,
+  miniflareVersion: workerRequire('miniflare/package.json').version, runtimeDisposed: false, resourcesCheckedBeforeClose: true,
+  callAccounting: 'fixture-only logical-call header joins observer, transport Fetch and actual calls',
   scope: 'Pinned SDK page progression and public stream stop semantics; no sustained-load or edge-conversion certification',
   sameSharedSource: false, sourceHashes: {}, runtime: process.version, nativeGrpcVersion: nativeRequire('@grpc/grpc-js/package.json').version,
   sdkVersion: nativeRequire('@google-cloud/datastore/package.json').version, results: [], checks: [] };
@@ -48,8 +56,18 @@ function bounded(promise, label, timeoutMs = 10000) {
 async function main() {
   assert.equal(googleRequire('@google-cloud/datastore/package.json').version, report.sdkVersion);
   report.evidence = Object.fromEntries(['scripts/test-datastore-pagination.cjs', 'fixtures/google/pagination-worker.mjs',
-    'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json']
+    'scripts/datastore-pagination-evidence.cjs', 'fixtures/google/shared/sdk-call-accounting.mjs',
+    'fixtures/google/shared/datastore-pagination.mjs', 'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json']
     .map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
+  report.installedInputs = {};
+  for (const fixture of ['native', 'google']) for (const file of [
+    '@grpc/grpc-js/package.json', fixture === 'native' ? '@grpc/grpc-js/build/src/index.js' : '@grpc/grpc-js/dist/index.js',
+    '@google-cloud/datastore/package.json', '@google-cloud/datastore/build/src/request.js',
+    '@google-cloud/datastore/build/src/query.js', '@google-cloud/datastore/build/src/index.js',
+    'google-gax/package.json', 'google-auth-library/package.json']) {
+    const key = `fixtures/${fixture}/node_modules/${file}`;
+    report.installedInputs[key] = digest(fs.readFileSync(path.join(root, key)));
+  }
   const states = new Map();
   const proto = path.join(path.dirname(nativeRequire.resolve('@google-cloud/datastore/package.json')), 'build/protos/protos.json');
   const packages = native.loadPackageDefinition(loader.fromJSON(JSON.parse(fs.readFileSync(proto)),
@@ -72,7 +90,17 @@ async function main() {
         assert.equal(request.query.limit.value, 6 - page * 2, 'SDK decreases page limit');
         assert.equal(request.query.offset, page === 0 ? 3 : 0, 'SDK consumes skipped offset');
         assert.equal(request.query.order[0].property.name, 'rank');
-        state.trace.push({ method: 'RunQuery', kind, cursor, limit: request.query.limit.value, offset: request.query.offset });
+        const statusCode = kind === 'Pagination' && state.scenario.endsWith('-error')
+          ? state.scenario === 'stream-error' ? page === 1 ? 9 : 0 : 3 : 0;
+        state.trace.push({ method: 'RunQuery', kind, cursor, limit: request.query.limit.value, offset: request.query.offset,
+          statusCode, logicalCallId: call.metadata.get('x-wga-sdk-call-id')[0] ?? null });
+        if (statusCode) {
+          const metadata = new native.Metadata();
+          metadata.set('x-wga-index', 'controlled-index');
+          metadata.set('x-wga-detail-bin', Buffer.from([0, 255, 65]));
+          callback({ code: statusCode, details: statusCode === 9 ? 'controlled-index-required' : 'controlled-invalid-query', metadata });
+          return;
+        }
         const rows = [page * 2, page * 2 + 1];
         const reply = { batch: {
           entityResultType: 'FULL', skippedResults: page === 0 ? 3 : 0,
@@ -102,7 +130,7 @@ async function main() {
         assert.equal(call.request.keys.length, 1);
         assert.equal(call.request.keys[0].path[0].kind, 'PaginationMarker');
         assert.equal(call.request.keys[0].path[0].name, 'alive');
-        state.trace.push({ method: 'Lookup' });
+        state.trace.push({ method: 'Lookup', statusCode: 0, logicalCallId: call.metadata.get('x-wga-sdk-call-id')[0] ?? null });
         callback(null, { found: [{ entity: { key: call.request.keys[0], properties: { rank: { integerValue: '99' } } } }] });
       } catch (error) {
         errors.push(error.message);
@@ -127,7 +155,8 @@ async function main() {
     session.on('close', () => sessions.delete(session));
     session.on('error', () => response.destroy());
     const upstream = session.request({ ':method': 'POST', ':path': request.url, 'content-type': 'application/grpc', te: 'trailers',
-      ...(request.headers['grpc-timeout'] ? { 'grpc-timeout': request.headers['grpc-timeout'] } : {}) });
+      ...(request.headers['grpc-timeout'] ? { 'grpc-timeout': request.headers['grpc-timeout'] } : {}),
+      ...(request.headers['x-wga-sdk-call-id'] ? { 'x-wga-sdk-call-id': request.headers['x-wga-sdk-call-id'] } : {}) });
     let hasStatus = false, ended = false;
     upstream.on('response', headers => {
       response.writeHead(200, { 'content-type': contentType });
@@ -159,7 +188,7 @@ async function main() {
   }
   function setup(runtime, scenario) {
     const namespace = `${runtime}-${scenario}`;
-    const state = { scenario, trace: [], held: null };
+    const state = { scenario, trace: [], held: null, controlRequests: 0 };
     state.arrival = new Promise(resolve => { state.arrived = resolve; });
     states.set(namespace, state);
     return namespace;
@@ -167,6 +196,7 @@ async function main() {
   async function control(namespace, operation) {
     const state = states.get(namespace);
     assert.ok(state);
+    state.controlRequests++;
     if (operation === 'await-held') { await bounded(state.arrival, 'held-page-arrival'); return { arrived: true }; }
     assert.ok(state.held, 'Held page exists');
     const pending = !state.held.replied;
@@ -178,10 +208,10 @@ async function main() {
     state.held.callback(null, state.held.reply);
     return { released: true };
   }
-  function verify(runtime, scenario, namespace, result, before) {
+  function verify(runtime, scenario, namespace, result, before, authNetworkRequests) {
     assert.deepEqual(errors, [], 'Controlled server and bridge invariants');
     const state = states.get(namespace);
-    const count = scenario === 'end-first' ? 1 : scenario === 'end-inflight' ? 2 : 3;
+    const count = pageCounts[scenario];
     const pages = state.trace.filter(item => item.kind === 'Pagination');
     assert.equal(pages.length, count, 'Observed SDK stop behavior has exact page count');
     assert.deepEqual(pages.map(item => item.cursor), ['', 'cursor-2', 'cursor-4'].slice(0, count));
@@ -192,13 +222,13 @@ async function main() {
     const requests = grpcWebRequests - before;
     assert.equal(requests, runtime === 'native' ? 0 : state.trace.length);
     report.results.push({ runtime, scenario, status: 'passed', rpcCount: state.trace.length, grpcWebRequests: requests,
-      trace: state.trace, result, ...(state.held ? { cancelledBeforeReply: state.held.cancelledBeforeReply } : {}) });
+      trace: state.trace, controlRequests: state.controlRequests, authNetworkRequests, result, ...(state.held ? { cancelledBeforeReply: state.held.cancelledBeforeReply } : {}) });
   }
   try {
-    const helperNames = ['datastore-pagination.mjs', 'assert.mjs'];
+    const helperNames = ['datastore-pagination.mjs', 'assert.mjs', 'sdk-call-accounting.mjs'];
     report.sharedSourceHashes = Object.fromEntries(helperNames.map(file => [file,
       digest(fs.readFileSync(path.join(root, 'fixtures/google/shared', file)))]));
-    for (const runtime of ['native', 'adapter']) {
+    for (const runtime of ['native', 'adapter-grpc-web', 'adapter-cloudflare']) {
       const fixture = path.join(root, 'fixtures', runtime === 'native' ? 'native' : 'google');
       const req = createRequire(path.join(fixture, 'package.json'));
       const grpc = req('@grpc/grpc-js');
@@ -214,15 +244,30 @@ async function main() {
         const { runDatastorePagination } = await import(pathToFileURL(path.join(consumer, 'datastore-pagination.mjs')).href);
         const authClient = new (req('google-auth-library').OAuth2Client)();
         authClient.setCredentials({ access_token: 'pagination-local-fixture' });
+        let authNetworkRequests = 0;
+        authClient.transporter.request = async () => { authNetworkRequests++; throw new Error('unexpected-pagination-auth-network'); };
         const base = { projectId: 'wga-pagination', apiEndpoint: `127.0.0.1:${port}`, sslCreds: grpc.credentials.createInsecure() };
-        const options = runtime === 'native' ? base : req('@grpc/grpc-js/adapter').createWorkersGrpcTransport({
-          mode: 'grpc-web', allowInsecureLocalhost: true, endpoints: { [`127.0.0.1:${port}`]: bridgeOrigin },
-        }).gaxOptions({ projectId: base.projectId, apiEndpoint: base.apiEndpoint, authClient });
+        const { startSdkCallAccounting } = await import(pathToFileURL(path.join(consumer, 'sdk-call-accounting.mjs')).href);
         for (const scenario of scenarios) {
-          const namespace = setup(runtime, scenario), before = grpcWebRequests;
-          const result = await bounded(runDatastorePagination({ options, scenario, namespace,
-            control: operation => control(namespace, operation) }), 'node-scenario', 20000);
-          verify(runtime, scenario, namespace, result, before);
+          const tracker = runtime === 'native' ? null : startSdkCallAccounting(grpc);
+          const mode = runtime === 'adapter-cloudflare' ? 'cloudflare' : 'grpc-web';
+          const transport = tracker ? req('@grpc/grpc-js/adapter').createWorkersGrpcTransport({
+            ...(mode === 'cloudflare' ? { mode } : { mode, endpoints: { 'datastore.googleapis.com': 'https://pagination-gateway.invalid' } }),
+            observer: tracker.observer, fetcher: { fetch: tracker.wrapFetcher(async (url, init) => {
+              const destination = new URL(url);
+              assert.equal(destination.hostname, mode === 'cloudflare' ? 'datastore.googleapis.com' : 'pagination-gateway.invalid');
+              assert.equal(new Headers(init.headers).get('authorization'), 'Bearer pagination-local-fixture');
+              return fetch(`${bridgeOrigin}${destination.pathname}`, init);
+            }) },
+          }) : null;
+          const options = transport ? transport.gaxOptions({ projectId: base.projectId, authClient }) : base;
+          try {
+            const namespace = setup(runtime, scenario), before = grpcWebRequests, beforeAuth = authNetworkRequests;
+            const result = await bounded(runDatastorePagination({ options, scenario, namespace,
+              control: operation => control(namespace, operation),
+              ...(tracker ? { beforeClose: () => tracker.snapshot(transport) } : {}) }), 'node-scenario', 20000);
+            verify(runtime, scenario, namespace, result, before, authNetworkRequests - beforeAuth);
+          } finally { tracker?.restore(); }
         }
       } finally { fs.rmSync(consumer, { recursive: true, force: true }); }
     }
@@ -231,7 +276,8 @@ async function main() {
       sha256: bundle.manifest.profileSha256, registrySha256: bundle.manifest.registrySha256 };
     report.sourceHashes.workerd = Object.fromEntries(helperNames.map(file => [file,
       bundle.manifest.sourceHashes[`fixtures/google/shared/${file}`]]));
-    assert.deepEqual(report.sourceHashes.native, report.sourceHashes.adapter);
+    assert.deepEqual(report.sourceHashes.native, report.sourceHashes['adapter-grpc-web']);
+    assert.deepEqual(report.sourceHashes.native, report.sourceHashes['adapter-cloudflare']);
     assert.deepEqual(report.sourceHashes.native, report.sourceHashes.workerd);
     report.sameSharedSource = true;
     const config = path.join(temporary, 'wrangler.json');
@@ -283,30 +329,35 @@ async function main() {
           assert.deepEqual(errors, [], 'Worker outbound invariants');
           assert.equal(response.status, 200, JSON.stringify(body));
           assert.equal(body.status, 'passed');
-          verify(`workerd-${mode}`, scenario, namespace, body.result, before);
+          verify(`workerd-${mode}`, scenario, namespace, body.result, before, body.authNetworkRequests);
         }
       } finally { releasePending(); await worker.dispose(); }
     }
     // Compare normalized public events and exact server-side cursor traces.
     // Completed Transform streams need not emit close before the helper returns.
-    const comparable = item => ({ scenario: item.scenario, trace: [...item.trace].sort((a, b) =>
+    const comparable = item => ({ scenario: item.scenario, trace: item.trace.map(({logicalCallId, ...call}) => call).sort((a, b) =>
       `${a.kind || a.method}/${a.cursor || ''}`.localeCompare(`${b.kind || b.method}/${b.cursor || ''}`)),
-      result: { ...item.result,
-        original: { ...item.result.original, close: item.scenario === 'complete' ? undefined : item.result.original.close },
+      result: { ...item.result, accounting: undefined,
+        original: item.result.original ? { ...item.result.original, close: item.scenario === 'complete' ? undefined : item.result.original.close } : null,
         reused: { ...item.result.reused, close: undefined },
       } });
-    for (const runtime of ['adapter', 'workerd-grpc-web', 'workerd-cloudflare']) {
+    for (const runtime of ['adapter-grpc-web', 'adapter-cloudflare', 'workerd-grpc-web', 'workerd-cloudflare']) {
       assert.deepEqual(report.results.filter(item => item.runtime === runtime).map(comparable),
         report.results.filter(item => item.runtime === 'native').map(comparable), `${runtime}: upstream SDK parity`);
     }
-    assert.equal(report.results.length, 20);
+    report.nativeBusinessEquivalent = true;
+    assert.equal(report.results.length, 50);
     report.rpcCount = report.results.reduce((total, item) => total + item.rpcCount, 0);
-    assert.equal(report.rpcCount, 128);
+    assert.equal(report.rpcCount, 310);
     report.grpcWebRequests = grpcWebRequests;
     report.checks = ['three-observed-unary-pages', 'cursor-limit-and-offset-progression', 'ordered-entity-keys',
       'single-terminal-info', 'bare-destroy-stops-delivery-but-continues-pagination', 'stop-while-second-page-pending',
       'pending-unary-is-not-cancelled-by-sdk', 'no-late-entities-after-release', 'end-suppresses-subsequent-pages',
-      'concurrent-lookup-after-destroy', 'same-client-three-page-reuse', 'native-adapter-workerd-parity'];
+      'concurrent-lookup-after-destroy', 'same-client-three-page-reuse', 'native-adapter-workerd-parity',
+      'promise-and-callback-tuples', 'partial-page-error-event-order', 'controlled-error-code-details-metadata',
+      'per-logical-call-physical-data-fetch', 'cached-token-auth-fetch-separation', 'cleanup-before-sdk-close'];
+    report.authNetworkRequests = report.results.reduce((sum, row) => sum + row.authNetworkRequests, 0);
+    report.controlRequests = report.results.reduce((sum, row) => sum + row.controlRequests, 0);
     report.status = 'passed';
   } finally {
     // Failures must not leave a deliberately withheld RPC alive.
@@ -316,9 +367,12 @@ async function main() {
     await new Promise(resolve => bridge.close(resolve));
     server.forceShutdown();
     fs.rmSync(temporary, { recursive: true, force: true });
+    report.runtimeDisposed = true;
   }
 }
-main().catch(error => { report.status = 'failed'; report.error = error.message; console.error(error); process.exitCode = 1; }).finally(() => {
+main().then(() => {
+  if (!process.argv.includes('--development')) require('./datastore-pagination-evidence.cjs').validateDatastorePaginationReport(report);
+}).catch(error => { report.status = 'failed'; report.error = error.message; console.error(error); process.exitCode = 1; }).finally(() => {
   report.finishedAt = new Date().toISOString();
   fs.mkdirSync(path.join(root, 'verification'), { recursive: true });
   fs.writeFileSync(path.join(root, 'verification/datastore-pagination.json'), JSON.stringify(report, null, 2) + '\n');

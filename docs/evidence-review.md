@@ -11,16 +11,17 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After Lookup | Meaning |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK reads | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 119 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 59 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 122 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 57 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
-work satisfies six additional cases, wire checks satisfy eighteen, and Lookup accounting satisfies seven. The remaining 70
+work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
+accounting satisfies ten. The remaining 67
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -163,6 +164,14 @@ project/database routing fields are checked in one shared execution.
 This controlled Datastore 10.1.0 gate does not establish actual token renewal,
 production storage behavior or deployed Cloudflare conversion.
 
+Query pagination adds 50 cases across the same five runtimes, 310 service RPCs,
+248 actual data Fetches and pre-close cleanup. Promise/callback tuple shapes,
+invalid-query rejection, second-page stream errors and full public event order
+have independent expected contracts. `DS-016/020/023` are covered; `DS-019` now has
+controlled error evidence but still requires separate production index testing.
+Bare `destroy()` continues paging in both pinned native and adapter SDK clients,
+so `DS-021` retains that original expectation as an explicit unmet condition.
+
 Actual SDK workerd benchmarks already run, but do not separately time every
 initialization phase or measure every owned buffer category. Those are narrower
 remaining conditions than “not tested.”
@@ -180,7 +189,7 @@ remaining conditions than “not tested.”
 | Call lifecycle | 17 | 1 | 0 |
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
-| Datastore | 7 | 15 | 2 |
+| Datastore | 10 | 13 | 1 |
 | Transactions | 7 | 2 | 0 |
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
@@ -196,11 +205,12 @@ retained rather than treated as transport equivalence.
 
 The next local work units, in order, are:
 
-1. **SDK call accounting and combinations.** Add logical call IDs and separate
-   data/auth Fetch counters to the older Datastore pagination reports;
-   cover remaining batches, overloads, query stream failures and routing fields.
-   Crossed transaction IDs still need distinct credential providers (`TX-009`).
-   Keep the explicit Commit cancellation limitation below visible (`TX-008`).
+1. **Remaining SDK mutation and emulator combinations.** Extend per-call
+   accounting to mutation and emulator reports; cover incomplete-key allocation,
+   full batch/error semantics, explicit undefined values, query tie-breaking and
+   empty aggregation results. Crossed transaction IDs still need distinct
+   credential providers (`TX-009`). Keep the Commit cancellation limitation below
+   visible (`TX-008`).
 2. **Performance and executable documentation checks.** Refresh the separate
    transport-only benchmark within the evidence pipeline; measure import,
    construction, initialization and first-message timing independently. Sample
@@ -208,7 +218,7 @@ The next local work units, in order, are:
    examples, support tables, diagnostic IDs and release provenance checks to
    executed fixtures instead of relying on source hashes alone (`PERF-*`, `DOC-*`).
 
-The eleven cases without an accepted current reference are `DS-005`, `DS-019`,
+The ten cases without an accepted current reference are `DS-005`,
 `CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
 Their individual procedures and remaining conditions are in the mapping.
 For `WIRE-018`, all nine HTTP fallback tests have individual source and TAP
