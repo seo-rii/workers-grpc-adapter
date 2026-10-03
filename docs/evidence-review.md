@@ -11,16 +11,16 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | Meaning |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
-work satisfies six additional cases. The remaining 95
+work satisfies six additional cases, and wire checks satisfy eighteen. The remaining 77
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -111,6 +111,30 @@ can also leave the backend producing. These are explicit boundaries in the
 [flow-control contract](local-contracts.md#flow-control-and-public-queues), not
 claims of total heap bounds or deployed cancellation propagation.
 
+## Wire work executed
+
+The installed adapter executes 369 independent response/request vectors in each
+Node/workerd and transport-mode combination: 1,476 public calls. Exact header
+splits, bytewise and seeded fragmentation, 128 coalesced messages, all 252 reserved
+flags, truncated frames, trailer order, HTTP fallbacks, metadata and receive caps
+have individually addressable observations. The 24 receive-limit variants include
+zero, the default 4 MiB cap, GAX `-1`, configured transport limits and exactly
+32 MiB. Large peer payloads are generated in 64 KiB pieces.
+
+A separate Node probe records 286 parser scenarios with actual Buffer allocation,
+copy and concat instrumentation. Positive controls verify the instruments and
+their restoration. Oversized and unsigned-maximum headers allocate five bytes,
+reject before another payload pull, and retain no parser resources. Bytewise
+inputs at three sizes have linear copied bytes and no concat calls. These are
+direct internal-parser measurements, not workerd allocation instrumentation or
+measurements of total JS heap.
+
+Final metadata budgets include protocol controls, base64 and percent encoding.
+Every public row checks decoded bytes, callback/status cardinality and cleanup
+before closing its client. All 27 wire cases now have exact local observations;
+24 are covered and three retain the compatibility differences below. See the
+[wire contract](local-contracts.md#wire-boundaries-and-allocation-measurement).
+
 ## Evidence that was already present
 
 - `PKG-003/007`: real nested GAX dependency graphs and packed root/deep Client
@@ -139,7 +163,7 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Public API | 15 | 1 | 0 |
 | Configuration | 11 | 0 | 0 |
 | Authentication | 4 | 11 | 0 |
-| Wire protocol | 6 | 21 | 0 |
+| Wire protocol | 24 | 3 | 0 |
 | Call lifecycle | 17 | 1 | 0 |
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
@@ -159,16 +183,12 @@ retained rather than treated as transport equivalence.
 
 The next local work units, in order, are:
 
-1. **Wire resource and framing assertions.** Add the remaining allocation/copy,
-   metadata and framing boundary assertions to the exact `WIRE-*` cases. The
-   completed stream ownership cases do not substitute for these parser-specific
-   conditions.
-2. **SDK call accounting and combinations.** Add logical call IDs and separate
+1. **SDK call accounting and combinations.** Add logical call IDs and separate
    data/auth Fetch counters to the older Datastore Lookup/pagination reports;
    cover remaining batches, overloads, query stream failures and routing fields.
    Crossed transaction IDs still need distinct credential providers (`TX-009`).
    Keep the explicit Commit cancellation limitation below visible (`TX-008`).
-3. **Performance and executable documentation checks.** Refresh the separate
+2. **Performance and executable documentation checks.** Refresh the separate
    transport-only benchmark within the evidence pipeline; measure import,
    construction, initialization and first-message timing independently. Sample
    heap trends in the same failure/cancel workload. Connect documentation
@@ -193,6 +213,13 @@ These cannot be closed just by adding a reference:
   implemented gzip/deflate support. Supported compression, unsupported encoding
   and malformed flags now have distinct results. Keep the original case visible
   until its historical expectation is explicitly superseded.
+- `WIRE-016`: missing status returns `UNKNOWN / WGA_MISSING_GRPC_STATUS`;
+  the original catalog names `WGA_STATUS_MISSING`. The precise diagnostic is now
+  exercised without claiming that the names match.
+- `WIRE-023`: `AQI==` has an extra padding character but currently decodes to
+  bytes `0102` in both headers and trailers. Other malformed alphabet, padding
+  and trailing-bit cases reject. Complete malformed-padding rejection still
+  needs a compatibility change; these two acceptance controls remain visible.
 - `LIFE-015`: invalid Date returns adapter `INTERNAL`, whereas the catalog asks
   for `INVALID_ARGUMENT`. Pinned native throws `RangeError` synchronously before
   returning a call. This is an API error-policy decision, not missing execution.

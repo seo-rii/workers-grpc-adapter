@@ -135,6 +135,50 @@ allows the adapter to consume trailers or reject a second message promptly,
 while pinned native waits for its deadline in the duplicate-message case.
 An independent HTTP/2 consuming control verifies both frames and OK trailers.
 
+## Wire boundaries and allocation measurement
+
+`npm run test:wire:catalog` executes 1,476 public calls using the installed
+adapter: 369 vectors in each Node/workerd and transport-mode combination. The
+peer supplies independently encoded bytes through a controlled Fetcher. This
+checks local framing and routing, not native HTTP/2 or the deployed Cloudflare
+translator. Reports record exact message lengths and SHA-256 digests, initial
+and trailing metadata, callbacks, terminal events, input demand and ownership
+before client close. Large metadata values are summarized in the report only
+after their full values have been checked.
+
+The matrix includes every split inside a five-byte header, bytewise and seeded
+chunks, 128 coalesced messages, all reserved flags, truncated input and invalid
+trailer order. Twenty-four receive-cap scenarios exercise limit minus one,
+exactly the limit and limit plus one across default, explicit, zero and GAX `-1`
+settings. Exactly 32 MiB is accepted where configured; oversized declarations
+and `0xffffffff` are rejected from the header. Large peer payloads are generated
+incrementally rather than retained as another complete fixture buffer.
+
+Another 286 Node-only internal-parser scenarios instrument actual
+`Buffer.allocUnsafe`, `Buffer.prototype.set` and `Buffer.concat` calls. Positive
+controls must observe allocation/copy/concat activity; restoration also runs
+after injected read failure. Rejected length declarations allocate only the
+five-byte header and never request the separately offered payload. At three
+bytewise payload sizes, copied bytes equal input bytes and concat calls stay
+zero. Coalesced and fragmented representations preserve the same frame bytes.
+These counters describe the measured parser operations, not deserialized object
+sizes, all allocator APIs, total JS heap or workerd heap usage.
+
+Metadata checks include repeated request values, comma-combined padded/unpadded
+binary fields, exact `grpc-status-details-bin`, percent-encoded Korean details,
+malformed escapes, all HTTP fallback codes and HTML/JSON/text-mode rejection.
+Request, header and trailer boundary fixtures count the final encoded fields
+including controls; 65,536 bytes pass and the next byte fails. An overbudget
+request has no Fetch attempt. Headers-only errors preserve custom metadata in
+the initial event and terminal status; this is the adapter's observed event
+classification, without claiming native event parity.
+
+Three original requirements remain partial: `WIRE-013` predates supported
+gzip/deflate compression; `WIRE-016` requests a different missing-status
+diagnostic name; `WIRE-023` expects rejection of malformed padding, but `AQI==`
+currently remains accepted. Explicit controls preserve these differences in
+the evidence instead of treating a passing suite as complete catalog parity.
+
 ## Configuration
 
 `test/config-catalog.test.cjs` gives each `CFG-001`–`CFG-011` requirement its own

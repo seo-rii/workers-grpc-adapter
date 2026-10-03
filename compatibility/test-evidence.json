@@ -7629,17 +7629,54 @@
     },
     {
       "id": "WIRE-001",
-      "coverage": "partial",
-      "reason": "One framed message is delivered with OK status and trailing metadata.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "Independent unary bytes and OK trailer preserve the exact decoded payload and one callback/status. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT unary makes one framed request and reports metadata/callback/status"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-001"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "d73d1823ee505a5d4bb18a56236e97a71c148333ade2a2bbb3a6b55593764370"
@@ -7647,7 +7684,7 @@
     {
       "id": "WIRE-002",
       "coverage": "covered",
-      "reason": "Explicit identity empty-message workerd corpus preserves a zero-byte unary value with one callback and OK status; the separate missing-message unary control rejects. Shared decoder budget tests establish pre-allocation reservation.",
+      "reason": "A framed empty message remains a zero-byte unary value, distinct from the existing missing-message control. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -7690,34 +7727,108 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-002"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "6b167d5900e20e86f843cd06375fa2b43a04bf3a9172741051b54267c2a2f75c"
     },
     {
       "id": "WIRE-003",
-      "coverage": "partial",
-      "reason": "A stream containing no data messages completes successfully.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "A trailer-only empty server stream completes with no message and one OK status. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM zero-message success is valid"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-003"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "3a1a3b835159c269a914efb34c9c0097e8881b963d41b95fa92ad21ee93ace84"
     },
     {
       "id": "WIRE-004",
-      "coverage": "partial",
-      "reason": "Seeded arbitrary fragmentation and bytewise stream decoding preserve payload order.",
-      "gaps": [
-        "Add the exact prescribed split/chunk pattern and its allocation/queue invariant as a dedicated case."
-      ],
+      "coverage": "covered",
+      "reason": "Each of the four split positions inside the five-byte frame header preserves the original payload. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7730,17 +7841,54 @@
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM incrementally returns messages and trailing metadata"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-004"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 16
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "e1364d77e30543611981bb4aecbee10132b6d81a8a5f5e2f7776f67648ba05f0"
     },
     {
       "id": "WIRE-005",
-      "coverage": "partial",
-      "reason": "Bytewise response decoding and bytewise resource accounting already execute and preserve payload order.",
-      "gaps": [
-        "The exact one-byte input pattern is covered; a copy/allocation count proving no quadratic concatenation is still absent."
-      ],
+      "coverage": "covered",
+      "reason": "Bytewise input preserves bytes; actual parser Buffer allocation and copy counts at three payload sizes grow linearly with zero concat calls. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7759,17 +7907,54 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER fragmented and coalesced decoding holds one frame and current chunk until transfer"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-005"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 3
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "063a95a587670f811a589a2242e35438c8969d24bdba837e27f8f90a48424dcf"
     },
     {
       "id": "WIRE-006",
-      "coverage": "partial",
-      "reason": "Independent coalesced-versus-fragmented decoding checks retain one frame plus the current runtime chunk and preserve both message payloads.",
-      "gaps": [
-        "A complete coalesced multi-message-plus-trailer Client call still needs its single-terminal and bounded queue invariants linked in the same scenario."
-      ],
+      "coverage": "covered",
+      "reason": "A single coalesced chunk containing 128 messages and a trailer preserves order with at most one pending message and parser assembly. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7788,34 +7973,108 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER fragmented and coalesced decoding holds one frame and current chunk until transfer"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-006"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "2e3ee9e327c30ba974c5fdea7becf3ff74ff3e7bda1fc53876ba3c4123e167e5"
     },
     {
       "id": "WIRE-007",
-      "coverage": "partial",
-      "reason": "Seeded arbitrary payload/trailer fragmentation matches independently generated frame bytes.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "Four fixed-seed fragmentations preserve payload/trailer bytes; independently measured allocation and copied bytes do not depend on fragmentation. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/wire-fuzz.test.cjs",
           "command": "tests",
           "name": "FUZZ deterministic seeded payloads, arbitrary fragmentation and empty chunks match independent frame oracle"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-007"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 16
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "07038883bb93da199dd94c37af999d15d6fe78e47459d9c6cd6c209c0d20334c"
     },
     {
       "id": "WIRE-008",
-      "coverage": "partial",
-      "reason": "Boundary, oversized header and GAX unlimited receive behaviors execute.",
-      "gaps": [
-        "Cover limit-1 and all effective-cap combinations with one allocation counter contract."
-      ],
+      "coverage": "covered",
+      "reason": "Twenty-four public receive-limit cases exercise limit-1/exact/+1, zero, GAX -1 and configured transport caps including exactly 32 MiB. Parser message/wire cap probes reject before payload allocation or demand. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7834,17 +8093,54 @@
           "source": "test/wire-fuzz.test.cjs",
           "command": "tests",
           "name": "FUZZ malicious size headers reject without requesting payload bytes"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-008"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 96
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 7
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "7f9c365333b9649ca0f43b649a3ac61865ffbe591f9643b527fd7bb8ff12b489"
     },
     {
       "id": "WIRE-009",
-      "coverage": "partial",
-      "reason": "Unsigned-maximum headers reject before another payload pull; the explicit workerd oversize corpus selects 0xffffffff and checks one terminal, no retained request/response bytes and reader release.",
-      "gaps": [
-        "The exact 0xffffffff vector lacks an allocation spy proving that its rejected declared payload was never allocated; the shared resource-budget allocation spy covers a different declared size."
-      ],
+      "coverage": "covered",
+      "reason": "An unsigned 0xffffffff declared length produces one RESOURCE_EXHAUSTED terminal; the parser allocates only its five-byte header and never pulls the offered payload. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7879,17 +8175,54 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-009"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "98698818f61432acc8c3b80e5dc89d3c22bf0adae91e7040abc5003eb9700179"
     },
     {
       "id": "WIRE-010",
-      "coverage": "partial",
-      "reason": "Every 1–4 byte truncated header rejects in parser tests; the explicit 4-byte workerd case checks the exact valid prefix, INTERNAL, one terminal and clean response readers.",
-      "gaps": [
-        "The 1–3 byte vectors still lack individually recorded Client callback/status assertions; workerd corpus selector 3 fixes the header length at 4."
-      ],
+      "coverage": "covered",
+      "reason": "All one-to-four-byte truncated headers produce one INTERNAL terminal, no deserializer invocation and released reader/buffers. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -7924,6 +8257,45 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-010"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 16
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1b12f07b3b8811703a24691552b71e7fe66b68d111e791ba0aa289fdb667367d"
@@ -7931,7 +8303,7 @@
     {
       "id": "WIRE-011",
       "coverage": "covered",
-      "reason": "Every parser truncation rejects INTERNAL. The explicit workerd short-payload vector delivers only its complete prefix, rejects the incomplete message, emits one terminal and clears owned bytes/readers; shared decoder guards reserve before allocation.",
+      "reason": "Truncated payloads never reach the deserializer; a complete preceding message is preserved, with one INTERNAL status and released ownership. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -7967,23 +8339,99 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-011"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "b8404bbd495322b3dab4c46d9c582d7c253bda539d44047ac344f3565ef62a9b"
     },
     {
       "id": "WIRE-012",
-      "coverage": "partial",
-      "reason": "Every reserved frame flag is rejected with the expected INTERNAL diagnostic.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "All 252 reserved flags produce INTERNAL with no decoded message; allocation probes prove only the header was allocated before rejection. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/wire-fuzz.test.cjs",
           "command": "tests",
           "name": "FUZZ all 254 noncanonical flag values fail with exact protocol/compression status"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-012"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 1008
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 252
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "68efe2d549aa12ab482f461de3767c84706514377fd8e6d506e26e0884d0a043"
@@ -7991,10 +8439,9 @@
     {
       "id": "WIRE-013",
       "coverage": "partial",
-      "reason": "The current runtime supports gzip/deflate frames. Unsupported encoding and compressed trailers fail UNIMPLEMENTED, while a compressed flag with identity encoding fails INTERNAL; the old mapping statement that both flags are UNIMPLEMENTED was inaccurate.",
+      "reason": "Ten public compression variants per runtime/mode distinguish supported gzip/deflate, malformed payload, identity mismatch, unknown codec and compressed trailers. Rejected bytes never reach deserialization. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [
-        "The original compressed-frame rejection expectation predates implemented compression and needs an explicit specification decision; unsupported-encoding evidence does not mean all compressed frames are rejected.",
-        "The malformed compressed bytes are never returned by the corpus, but a direct deserialize invocation counter is absent."
+        "The historical catalog requires blanket compressed-frame rejection, which predates implemented gzip/deflate support. Its expectation needs an explicit compatibility decision."
       ],
       "references": [
         {
@@ -8046,6 +8493,45 @@
               "equals": 2
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-013"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": false
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 40
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 3
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "39f82d13df113283b9b2860c66c95ae5e39520bf33ee8db543d4cb66180cd398"
@@ -8053,7 +8539,7 @@
     {
       "id": "WIRE-014",
       "coverage": "covered",
-      "reason": "Parser fragmentation tests and explicit unary/server-stream workerd corpus reject duplicate-trailer with one INTERNAL status, preserve only complete data prefixes, and never finalize early OK. Shared decoder guards establish pre-allocation reservation.",
+      "reason": "Duplicate trailers in unary and streaming calls produce one INTERNAL terminal and never commit an early OK. The second payload is not allocated. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -8111,6 +8597,45 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-014"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "5b079abda924ac563921aaa1bfbc72ff2c55debcef6bd1c65d6bb1cc7afadbad"
@@ -8118,7 +8643,7 @@
     {
       "id": "WIRE-015",
       "coverage": "covered",
-      "reason": "Parser fragmentation tests and explicit unary/server-stream workerd corpus reject after-trailer with one INTERNAL status, preserve only complete data prefixes, and never finalize early OK. Shared decoder guards establish pre-allocation reservation.",
+      "reason": "Data following a trailer fails once with INTERNAL without exposing the forbidden message or allocating its payload. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -8176,6 +8701,45 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-015"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "689ac935f30609c551b5de5502c68eae49bd56d287bdaa9090afc90504167482"
@@ -8183,9 +8747,9 @@
     {
       "id": "WIRE-016",
       "coverage": "partial",
-      "reason": "An HTTP 200 response missing gRPC status fails UNKNOWN.",
+      "reason": "Data followed by EOF without status preserves the complete message and terminates UNKNOWN with the actual WGA_MISSING_GRPC_STATUS diagnostic. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [
-        "Assert the exact WGA_STATUS_MISSING diagnostic."
+        "The original catalog names WGA_STATUS_MISSING; the executed diagnostic is WGA_MISSING_GRPC_STATUS. No runtime diagnostic was renamed to conceal this difference."
       ],
       "references": [
         {
@@ -8193,23 +8757,99 @@
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT no gRPC status never becomes success"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-016"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": false
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "9521cbe1339d668f83616ae933433e03b2469d5f41412007aa0e45738684a04c"
     },
     {
       "id": "WIRE-017",
-      "coverage": "partial",
-      "reason": "HTTP 200 preserves PERMISSION_DENIED and binary status details.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "HTTP 200 does not override a PERMISSION_DENIED trailer; the complete message and trailing metadata remain intact. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT status error is not hidden by HTTP 200"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-017"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1d39d70ea72fdfd467c045f2a9de4b9b9a54a6cc1fbf1a86476e23439101e617"
@@ -8217,7 +8857,7 @@
     {
       "id": "WIRE-018",
       "coverage": "covered",
-      "reason": "All nine planned status-less HTTP responses have exact mapping assertions and individually checked TAP results, including HTTP 502 and 504.",
+      "reason": "All nine prescribed status-less HTTP responses have individual Node/workerd observations and exact fallback status assertions. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -8316,34 +8956,108 @@
               "equals": 36
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-018"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 36
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "63d523d2d592ea7616175a3757a6bb7be4eac6f937e1052edcdfa2f63ed97520"
     },
     {
       "id": "WIRE-019",
-      "coverage": "partial",
-      "reason": "Header-only UNAUTHENTICATED and decoded details reach the call error.",
-      "gaps": [
-        "Assert initial-versus-trailing metadata event classification."
-      ],
+      "coverage": "covered",
+      "reason": "A headers-only UNAUTHENTICATED response preserves details and binary/custom trailing metadata, and explicitly records the separate initial metadata event. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT trailers-only response via headers"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-019"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "7d9de060ab65a0cf9b75dafba13f7ceec87f7291c462574f2279166d87f46775"
     },
     {
       "id": "WIRE-020",
-      "coverage": "partial",
-      "reason": "Explicit workerd boundary records execute a nonnumeric grpc-status value (1, 2) and conflicting duplicate 0/7 values; each fails INTERNAL with exactly one terminal.",
-      "gaps": [
-        "Out-of-range -1/17 parser tests pass under dynamically generated TAP titles, which the current literal-title reference validator cannot address; no exact out-of-range workerd row is emitted."
-      ],
+      "coverage": "covered",
+      "reason": "Twelve header/trailer status variants reject alphabetic, negative, out-of-range, duplicate and conflicting statuses, including header/body collisions. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -8388,17 +9102,54 @@
               "equals": 2
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-020"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 48
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "da4a1ac97281ae611f9730e0b90f39641d5a2855404e5460767b4002a7b1b2d6"
     },
     {
       "id": "WIRE-021",
-      "coverage": "partial",
-      "reason": "Padded/unpadded bytes and multiple trailer values round-trip.",
-      "gaps": [
-        "Add the exact comma-combined header and trailer variants to the reviewed mapping."
-      ],
+      "coverage": "covered",
+      "reason": "Padded, unpadded and comma-combined binary fields preserve exact bytes in both response headers and trailers. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8411,23 +9162,99 @@
           "source": "test/wire.test.cjs",
           "command": "tests",
           "name": "WIRE trailers preserve details and binary values"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-021"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 24
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "9de8f12d6d47872d64fdcaad738b2156ce15907f9ba7d42c26ab1c033db00aec"
     },
     {
       "id": "WIRE-022",
-      "coverage": "partial",
-      "reason": "Repeated request metadata values survive header serialization.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "Repeated text and binary request metadata reach Fetch with exact combined values; the unary response terminates once with preserved bytes. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/wire.test.cjs",
           "command": "tests",
           "name": "WIRE request retains multiple metadata and encodes binary"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-022"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "2279166f471d996843377f094931c08cfb40b62518746efb58ebe645810c0b6c"
@@ -8435,9 +9262,9 @@
     {
       "id": "WIRE-023",
       "coverage": "partial",
-      "reason": "Invalid alphabets, padding and noncanonical trailing bits fail protocol validation.",
+      "reason": "Invalid alphabet, excessive/embedded padding and noncanonical trailing bits reject before deserialization. Two acceptance controls also expose the remaining extra-padding policy gap. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
+        "AQI== contains one extra padding character but is currently accepted as bytes 0102 in both response headers and trailers. The original malformed-padding rejection expectation is not fully met."
       ],
       "references": [
         {
@@ -8445,17 +9272,54 @@
           "source": "test/wire-fuzz.test.cjs",
           "command": "tests",
           "name": "FUZZ binary metadata round-trips padding variants and rejects invalid alphabets and trailing bits"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-023"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": false
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 40
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1cbe566ad73704c4c6704b9dd56b0db7eb1887ab9743435f35d1471089adda23"
     },
     {
       "id": "WIRE-024",
-      "coverage": "partial",
-      "reason": "Korean UTF-8 percent encoding decodes and malformed escapes preserve safe text.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "Percent-encoded Korean details decode identically in headers and trailers; malformed escapes and incomplete UTF-8 preserve safe original text. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8468,23 +9332,99 @@
           "source": "test/wire.test.cjs",
           "command": "tests",
           "name": "WIRE malformed percent escapes do not crash"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-024"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 24
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "21d42944cca384f8aa8c503b9c92806f624a66ad2b535321ad149898d638a854"
     },
     {
       "id": "WIRE-025",
-      "coverage": "partial",
-      "reason": "Known grpc-status-details-bin bytes remain byte-identical in the caller metadata.",
-      "gaps": [
-        "The exact primary wire vector is tested, but the complete catalog allocation-before-length-limit and single-terminal-delivery invariants are not established by the cited references."
-      ],
+      "coverage": "covered",
+      "reason": "Known google.rpc.Status bytes in grpc-status-details-bin are preserved exactly from both header and trailer locations. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT status error is not hidden by HTTP 200"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-025"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "bd2eb00d6ff879117ddc6f070587ac4521336ab4c6dd3520c1ad01084e93e514"
@@ -8492,7 +9432,7 @@
     {
       "id": "WIRE-026",
       "coverage": "covered",
-      "reason": "Existing boundary tests cover exact final request/header/trailer budgets and +1 rejection including control fields, base64 expansion and percent encoding; server output remains a readable single-trailer RESOURCE_EXHAUSTED response.",
+      "reason": "Final header/trailer/request limits count control fields, percent encoding and base64: exactly 65536 bytes pass, plus one fails RESOURCE_EXHAUSTED; overbudget requests never Fetch. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [],
       "references": [
         {
@@ -8536,23 +9476,99 @@
           "source": "test/buffer-budget.test.cjs",
           "command": "tests",
           "name": "BUFFER header and declared payload reservations fail before allocation and cancel the reader"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-026"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 24
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "7fb3d96e352eeb2841f53c3a88011139d5cdf862b0815438dd427dc1a1a0aecf"
     },
     {
       "id": "WIRE-027",
-      "coverage": "partial",
-      "reason": "A wrong response MIME is exercised with native application/grpc and fails safely with response-body cancellation and one destination.",
-      "gaps": [
-        "The prescribed HTML, JSON and grpc-web-text response matrix has no exact executed cases; the native-grpc MIME negative control is related partial evidence only."
-      ],
+      "coverage": "covered",
+      "reason": "HTML, JSON and grpc-web-text responses fail once without deserialization and release/cancel their response bodies. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/transport-modes.test.cjs",
           "command": "tests",
           "name": "MODES native gRPC responses fail without trying another destination"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/wire-catalog.json",
+          "source": "scripts/test-wire-catalog.cjs",
+          "command": "wire-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-027"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 12
+            },
+            {
+              "pointer": "/allocationScenarioCount",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "0c89a88a8b9dc17d0fedd06ec5975a0e2532a27075dc81c709e0d6c9a5b14fad"
