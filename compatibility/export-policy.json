@@ -57,7 +57,7 @@
       "name": "Channel",
       "grade": "S",
       "scope": "Logical target, routing, credentials, active call lifetime, and close management; no persistent connection management.",
-      "signatureNotes": "Constructor options become optional. getConnectivityState accepts an optional boolean and returns only IDLE or SHUTDOWN; watchConnectivityState reports UNIMPLEMENTED. getChannelzRef returns an unregistered sentinel, and createCall(): never replaces native five-argument call creation and throws WGA_METHOD_CONTEXT_REQUIRED. createCallForMethod, createCallLifetime, getReadQueueLimit, and activeCallCount are adapter bridges, not native channel contracts."
+      "signatureNotes": "Constructor options become optional. getConnectivityState accepts an optional boolean and returns only IDLE or SHUTDOWN; watchConnectivityState reports UNIMPLEMENTED. getChannelzRef returns an unregistered sentinel, and createCall(): never replaces native five-argument call creation and throws WGA_METHOD_CONTEXT_REQUIRED. createCallForMethod, createCallLifetime, getReadQueueLimit, and activeCallCount are adapter bridges, not native channel contracts. The bridge call also exposes executionDiagnostics() for asynchronous pump/write/parser ownership; those internal counters extend the adapter and do not implement a native grpc-js method."
     },
     {
       "name": "ChannelCredentials",

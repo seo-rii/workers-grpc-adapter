@@ -82,6 +82,7 @@ function main() {
     run('workers-server', ['scripts/test-workers-server.cjs']);
     run('workerd-integration', ['scripts/test-workerd-integration.cjs']);
     run('workerd-lifecycle', ['scripts/test-workerd-lifecycle.cjs']);
+    run('call-lifecycle', ['scripts/test-call-lifecycle.cjs']);
     run('workerd-observer', ['scripts/test-workerd-observer.cjs']);
     run('workerd-server-streaming', ['scripts/test-workerd-server-streaming.cjs']);
     run('workerd-transport-extensions', ['scripts/test-workerd-transport-extensions.cjs']);
@@ -155,7 +156,7 @@ function main() {
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
         apiContracts: read('api-contracts.json'),
-        workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
+        workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), callLifecycle: read('call-lifecycle.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
         workerdServerStreaming: read('workerd-server-streaming.json'), workerdTransportExtensions: read('workerd-transport-extensions.json'), sdkBenchmark: read('sdk-benchmark.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),

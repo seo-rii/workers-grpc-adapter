@@ -52,6 +52,49 @@ both response frames, OK trailers and stream completion. This is a recorded
 cardinality difference, not evidence for the original catalog's native-parity
 expectation. The adapter retains its bounded rejection behavior.
 
+## Call lifetime and asynchronous ownership
+
+`npm run test:call:lifecycle` executes the same controlled-clock, credential,
+Fetch and reader schedules in Node and an installed-package workerd bundle,
+through both transport modes. It records each low-level write callback and
+terminal result, rejects messages after termination, and checks resources before
+closing the client or disposing the runtime. Each runtime and mode also runs
+exactly 100 successful, 100 failed and 100 cancelled calls. The unhandled-rejection
+monitor must detect a separate deliberate rejection before its zero-error
+results are accepted.
+
+The internal `WorkersCall.executionDiagnostics()` complements `diagnostics()`:
+
+| Counter | Ownership measured |
+| --- | --- |
+| `activePumps` | Active transport execution, including pending Fetch and response-reader work; at most one per call. |
+| `pendingWriteCallbacks` | Supplied write callbacks not yet invoked, including callbacks queued in microtasks. |
+| `pendingMessages`, `pendingMessageBytes` | The single decoded message waiting for delivery demand. |
+| `parserAssemblies`, `parserAssemblyBytes` | The current frame assembly, including its header and encoded payload allocations. A yielded frame remains owned until the iterator advances. |
+| `runtimeChunkBytes` | The complete Fetch chunk currently retained by the decoder, including its already-consumed prefix. |
+
+These counts are not reset merely because local status has been delivered. A
+custom Fetcher ignoring abort or a fault-injected reader can still own buffers
+and an active pump; tests explicitly settle that operation and then require
+zero ownership. Parser bytes exclude decompression scratch, deserialized objects,
+and runtime heap overhead. The existing resource budget covers its reserved
+buffers separately; overlapping counters must not be summed as heap usage.
+
+EOF arrival and terminal commitment are separate events. Closing a response
+stream queues parser work; a synchronous cancel can win before that work commits
+OK. The suite records both same-turn EOF/cancel orders and the control where OK
+has already committed before cancellation. It also distinguishes a real late
+underlying-source rejection from a deliberately wrapped reader whose exposed
+read promise rejects after cancellation. These are controlled lifecycle tests,
+not evidence for deployed cancellation propagation.
+
+`LIFE-015` remains partial: an invalid `Date` produces asynchronous
+`INTERNAL / WGA_INVALID_DEADLINE` before authentication or Fetch, while the
+original catalog asks for `INVALID_ARGUMENT`. Pinned native grpc-js 1.14.0
+instead throws `RangeError` synchronously while formatting that Date. The
+catalog expectation is therefore not native-parity behavior; no error policy
+was changed to conceal this mismatch.
+
 ## Configuration
 
 `test/config-catalog.test.cjs` gives each `CFG-001`–`CFG-011` requirement its own

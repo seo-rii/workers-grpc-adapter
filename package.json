@@ -46,6 +46,7 @@
     "test:fuzz:extended": "node scripts/fuzz-campaign.cjs --profile=extended",
     "test:workerd:integration": "node scripts/test-workerd-integration.cjs",
     "test:workerd:lifecycle": "node scripts/test-workerd-lifecycle.cjs",
+    "test:call:lifecycle": "node scripts/test-call-lifecycle.cjs",
     "test:workerd:observer": "node scripts/test-workerd-observer.cjs",
     "test:workerd:server-streaming": "node scripts/test-workerd-server-streaming.cjs",
     "test:workerd:transport-extensions": "node scripts/test-workerd-transport-extensions.cjs",

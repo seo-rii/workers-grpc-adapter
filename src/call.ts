@@ -4,7 +4,7 @@ import { CallCredentials, ChannelCredentials } from './credentials';
 import { status, propagate, authErrorCode, TransportError, httpStatusToGrpc } from './status';
 import { WorkersGrpcConfigSnapshot, normalizeAuthority, retryThrottleFor } from './config-internal';
 import { ValidatedOptions } from './options';
-import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders } from './wire';
+import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders, type FrameParserDiagnostics } from './wire';
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot, type RetryThrottle } from './retry';
 import { RequestStreamBody } from './request-stream';
@@ -94,6 +94,13 @@ export class WorkersCall {
     private readonly aborter = new AbortController();
     private fetchCount = 0;
     private responseBytes = 0;
+    private activePumps = 0;
+    private pendingMessages = 0;
+    private pendingMessageBytes = 0;
+    private pendingWriteCallbacks = 0;
+    private readonly parserDiagnostics: FrameParserDiagnostics = {
+        parserAssemblies: 0, parserAssemblyBytes: 0, runtimeChunkBytes: 0,
+    };
     private readonly observation?: CallObservation;
     private readonly retryThrottle?: RetryThrottle;
     constructor(private readonly context: CallContext) {
@@ -130,6 +137,25 @@ export class WorkersCall {
         timerActive: boolean;
     } {
         return { terminal: !!this.terminal, fetchCount: this.fetchCount, requestBytes: this.requestBody?.bufferedBytes() ?? this.request?.length ?? 0, responseBytes: this.responseBytes, timerActive: this.timer !== undefined || (this.context.lifetime?.timerActive() ?? false) };
+    }
+    /**
+     * Internal owner counts survive logical termination until asynchronous work
+     * actually unwinds. Parser bytes count explicit framing allocations and the
+     * retained Fetch chunk, excluding codec scratch, decoded objects, and heap
+     * overhead. A yielded frame remains one assembly until its iterator resumes.
+     */
+    executionDiagnostics(): {
+        activePumps: number;
+        pendingMessages: number;
+        pendingMessageBytes: number;
+        pendingWriteCallbacks: number;
+        parserAssemblies: number;
+        parserAssemblyBytes: number;
+        runtimeChunkBytes: number;
+    } {
+        return { activePumps: this.activePumps, pendingMessages: this.pendingMessages,
+            pendingMessageBytes: this.pendingMessageBytes, pendingWriteCallbacks: this.pendingWriteCallbacks,
+            ...this.parserDiagnostics };
     }
     setCredentials(creds: CallCredentials): void {
         if (this.fetching || this.authReady || this.started) {
@@ -295,44 +321,55 @@ export class WorkersCall {
         callback?: (error?: Error | null) => void;
         flags?: number;
     }, message: Buffer): void {
+        let callback = context.callback;
+        if (callback) {
+            const original = callback;
+            this.pendingWriteCallbacks++;
+            callback = error => {
+                // A callback may cancel or write again. Drop this ownership
+                // before invoking it, including when it throws.
+                this.pendingWriteCallbacks--;
+                original(error);
+            };
+        }
         // BufferHint=1 keeps the single request buffered; NoCompress=2 bypasses
         // the configured message codec. WriteThrough=4 cannot promise a fetch flush.
         if (context.flags !== undefined && (!Number.isInteger(context.flags) || context.flags < 0 || context.flags > 3)) {
-            context.callback?.(new Error('WGA_WRITE_FLAGS'));
+            callback?.(new Error('WGA_WRITE_FLAGS'));
             this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             return;
         }
         if (this.terminal) {
-            if (context.callback) {
-                queueMicrotask(() => notify(() => context.callback!(new Error('WGA_CALL_TERMINATED'))));
+            if (callback) {
+                queueMicrotask(() => notify(() => callback!(new Error('WGA_CALL_TERMINATED'))));
             }
             return;
         }
         if (this.requestBody) {
             void this.requestBody.write(message, ((context.flags ?? 0) & 2) !== 0).then(() => {
-                if (context.callback) queueMicrotask(() => notify(() => context.callback!()));
+                if (callback) queueMicrotask(() => notify(() => callback!()));
             }).catch(error => {
                 if (!this.terminal && this.uploadCancelled) {
                     // Preserve the remote RPC status ahead of a Writable's
                     // generic write error while response EOF is still pending.
-                    if (context.callback) this.stoppedUploadCallbacks.push(() => context.callback!(error));
+                    if (callback) this.stoppedUploadCallbacks.push(() => callback!(error));
                     return;
                 }
                 if (!this.terminal && !this.uploadCancelled) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
                     error instanceof TransportError ? error.diagnostic : 'WGA_REQUEST_STREAM_FAILED');
-                if (context.callback) queueMicrotask(() => notify(() => context.callback!(error)));
+                if (callback) queueMicrotask(() => notify(() => callback!(error)));
             });
             this.maybeFetch();
             return;
         }
         if (this.request !== undefined) {
-            if (context.callback) {
-                queueMicrotask(() => notify(() => context.callback!(new Error('WGA_MULTIPLE_REQUESTS'))));
+            if (callback) {
+                queueMicrotask(() => notify(() => callback!(new Error('WGA_MULTIPLE_REQUESTS'))));
             }
             this.finish(status.INTERNAL, 'WGA_MULTIPLE_REQUESTS');
             return;
         }
-        this.writeCallback = context.callback;
+        this.writeCallback = callback;
         if (message.length > this.context.limits.maxSend) {
             this.finish(status.RESOURCE_EXHAUSTED, 'WGA_REQUEST_SIZE');
             return;
@@ -403,60 +440,63 @@ export class WorkersCall {
         void this.execute();
     }
     private async execute(): Promise<void> {
-        const c = this.context;
-        const policy = !c.requestStream && !c.responseStream && c.config.retryPolicy?.methods.includes(c.path)
-            ? c.config.retryPolicy : undefined;
-        let previous: AttemptOutcome | undefined;
-        for (let attempt = 1; !this.terminal; attempt++) {
-            try {
-                const outcome = await this.executeAttempt(policy, attempt, previous);
-                if (!outcome || this.terminal) return;
-                this.observation?.endAttempt(outcome.result.code);
-                if (outcome.throttled) {
-                    this.retryThrottle?.suppress();
-                    this.observation?.throttled(attempt - 1, outcome.result.code);
-                } else if (outcome.result.code === status.OK) this.retryThrottle?.success();
-                else if (outcome.countFailure && policy?.retryableStatusCodes.includes(outcome.result.code)) this.retryThrottle?.failure();
-                let delay = policy && outcome.retryable && policy.retryableStatusCodes.includes(outcome.result.code)
-                    ? retryDelay(policy, attempt, outcome.result.metadata.get('grpc-retry-pushback-ms')) : undefined;
-                if (delay !== undefined && this.retryThrottle && !this.retryThrottle.allowed()) {
-                    this.retryThrottle.suppress();
-                    this.observation?.throttled(attempt, outcome.result.code);
-                    delay = undefined;
-                }
-                if (delay === undefined) {
-                    if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
-                    this.finishObject(outcome.result);
+        this.activePumps++;
+        try {
+            const c = this.context;
+            const policy = !c.requestStream && !c.responseStream && c.config.retryPolicy?.methods.includes(c.path)
+                ? c.config.retryPolicy : undefined;
+            let previous: AttemptOutcome | undefined;
+            for (let attempt = 1; !this.terminal; attempt++) {
+                try {
+                    const outcome = await this.executeAttempt(policy, attempt, previous);
+                    if (!outcome || this.terminal) return;
+                    this.observation?.endAttempt(outcome.result.code);
+                    if (outcome.throttled) {
+                        this.retryThrottle?.suppress();
+                        this.observation?.throttled(attempt - 1, outcome.result.code);
+                    } else if (outcome.result.code === status.OK) this.retryThrottle?.success();
+                    else if (outcome.countFailure && policy?.retryableStatusCodes.includes(outcome.result.code)) this.retryThrottle?.failure();
+                    let delay = policy && outcome.retryable && policy.retryableStatusCodes.includes(outcome.result.code)
+                        ? retryDelay(policy, attempt, outcome.result.metadata.get('grpc-retry-pushback-ms')) : undefined;
+                    if (delay !== undefined && this.retryThrottle && !this.retryThrottle.allowed()) {
+                        this.retryThrottle.suppress();
+                        this.observation?.throttled(attempt, outcome.result.code);
+                        delay = undefined;
+                    }
+                    if (delay === undefined) {
+                        if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
+                        this.finishObject(outcome.result);
+                        return;
+                    }
+                    this.observation?.retry(attempt, delay, outcome.result.code);
+                    await new Promise<void>(resolve => {
+                        const signal = this.aborter.signal;
+                        let timer: ReturnType<typeof setTimeout>;
+                        const done = () => { clearTimeout(timer); signal.removeEventListener('abort', done); resolve(); };
+                        timer = setTimeout(done, delay);
+                        signal.addEventListener('abort', done, { once: true });
+                        if (signal.aborted) done();
+                    });
+                    if (this.terminal) return;
+                    // Another call may have exhausted the shared budget during backoff.
+                    if (this.retryThrottle && !this.retryThrottle.allowed()) {
+                        this.retryThrottle.suppress();
+                        this.observation?.throttled(attempt, outcome.result.code);
+                        if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
+                        this.finishObject(outcome.result);
+                        return;
+                    }
+                    previous = outcome;
+                    await this.refreshCredentials();
+                } catch (error) {
+                    if (!this.terminal) {
+                        if (error instanceof TransportError) this.finish(error.code, error.diagnostic);
+                        else this.finish(status.UNAVAILABLE, 'WGA_FETCH_FAILED');
+                    }
                     return;
                 }
-                this.observation?.retry(attempt, delay, outcome.result.code);
-                await new Promise<void>(resolve => {
-                    const signal = this.aborter.signal;
-                    let timer: ReturnType<typeof setTimeout>;
-                    const done = () => { clearTimeout(timer); signal.removeEventListener('abort', done); resolve(); };
-                    timer = setTimeout(done, delay);
-                    signal.addEventListener('abort', done, { once: true });
-                    if (signal.aborted) done();
-                });
-                if (this.terminal) return;
-                // Another call may have exhausted the shared budget during backoff.
-                if (this.retryThrottle && !this.retryThrottle.allowed()) {
-                    this.retryThrottle.suppress();
-                    this.observation?.throttled(attempt, outcome.result.code);
-                    if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
-                    this.finishObject(outcome.result);
-                    return;
-                }
-                previous = outcome;
-                await this.refreshCredentials();
-            } catch (error) {
-                if (!this.terminal) {
-                    if (error instanceof TransportError) this.finish(error.code, error.diagnostic);
-                    else this.finish(status.UNAVAILABLE, 'WGA_FETCH_FAILED');
-                }
-                return;
             }
-        }
+        } finally { this.activePumps--; }
     }
     private async executeAttempt(policy: RetryPolicySnapshot | undefined, attempt: number, previous?: AttemptOutcome): Promise<AttemptOutcome | undefined> {
         const c = this.context;
@@ -546,7 +586,7 @@ export class WorkersCall {
             if (response.body) {
                 for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
                     { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes,
-                        budget: c.resources, onChunk: this.observation ? bytes => this.observation!.received(bytes) : undefined })) {
+                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: this.observation ? bytes => this.observation!.received(bytes) : undefined })) {
                     if (this.terminal) return;
                     if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
                     if (frame.trailer) {
@@ -557,17 +597,26 @@ export class WorkersCall {
                     committed = true;
                     this.observation?.message(frame.payload.length);
                     this.releaseRequest();
-                    if (pendingInitial) {
-                        const metadata = pendingInitial; pendingInitial = undefined;
-                        notify(() => this.listener!.onReceiveMetadata(metadata));
+                    this.pendingMessages = 1;
+                    this.pendingMessageBytes = frame.payload.length;
+                    try {
+                        if (pendingInitial) {
+                            const metadata = pendingInitial; pendingInitial = undefined;
+                            notify(() => this.listener!.onReceiveMetadata(metadata));
+                        }
+                        if (this.terminal) return;
+                        this.responseBytes = frame.payload.length;
+                        while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
+                        if (this.terminal) return;
+                        this.readDemand = !c.responseStream;
+                        this.responseBytes = 0;
+                        this.pendingMessages = 0;
+                        this.pendingMessageBytes = 0;
+                        notify(() => this.listener!.onReceiveMessage(frame.payload));
+                    } finally {
+                        this.pendingMessages = 0;
+                        this.pendingMessageBytes = 0;
                     }
-                    if (this.terminal) return;
-                    this.responseBytes = frame.payload.length;
-                    while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
-                    if (this.terminal) return;
-                    this.readDemand = !c.responseStream;
-                    this.responseBytes = 0;
-                    notify(() => this.listener!.onReceiveMessage(frame.payload));
                 }
             }
             if (this.terminal) return;

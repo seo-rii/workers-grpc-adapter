@@ -8273,6 +8273,49 @@
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT HTTP fallback 504"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "WIRE-018"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 36
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 36
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "63d523d2d592ea7616175a3757a6bb7be4eac6f937e1052edcdfa2f63ed97520"
@@ -8516,28 +8559,67 @@
     },
     {
       "id": "LIFE-001",
-      "coverage": "partial",
-      "reason": "Immediate repeated cancellation yields one status and zero auth/fetch.",
-      "gaps": [
-        "Cancel the low-level call before start/listener installation."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "LIFE immediate cancellation before auth microtask"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-001"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "e5cd4a9e867f586a14a429535b2971024444acc7d45593469d0eb7326bf177af"
     },
     {
       "id": "LIFE-002",
-      "coverage": "partial",
-      "reason": "Delayed credential completion after unary request/half-close is now covered in Node property schedules and both workerd modes: no Fetch until auth completes, one Fetch thereafter and terminal cleanup.",
-      "gaps": [
-        "The complete catalog write-completion and pump counters are not explicitly measured for this delayed-auth unary scenario."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8624,34 +8706,116 @@
               "equals": 0
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-002"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "17515a0669116cabfd6588737b660bc3d07c82040806ee15e5e00d4caeb393f6"
     },
     {
       "id": "LIFE-003",
-      "coverage": "partial",
-      "reason": "Generated Node schedules independently release authentication and intercepted message completion, asserting no Fetch until both are ready and one terminal afterward.",
-      "gaps": [
-        "The report does not enumerate a deterministic auth-before-message/half-close schedule, and this exact ordering lacks a workerd case and write/pump completion counters."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/call-lifetime-property.test.cjs",
           "command": "tests",
           "name": "PROPERTY LIFETIME generated interceptor and terminal schedules preserve exactly one result without late Fetch"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-003"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "ba4d3e11989670485bcfa71bd7e94e67c7aad8ca83f68f8972d70baf87a4afee"
     },
     {
       "id": "LIFE-004",
-      "coverage": "partial",
-      "reason": "The explicit workerd empty-payload corpus sends a zero-byte unary request, verifies its frame at the independent peer and completes one Fetch and terminal in both modes.",
-      "gaps": [
-        "A low-level sendMessage/halfClose case with write-completion and pump counters is still absent; high-level unary corpus drives those operations implicitly."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -8681,34 +8845,116 @@
           "source": "test/request-stream.test.cjs",
           "command": "tests",
           "name": "REQUEST STREAM a zero decoded-message limit still permits an empty protobuf message"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-004"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "3982d3452e9a7bd4cb5b0b34b24817af0048efe0d7ff371516785cf86928d17d"
     },
     {
       "id": "LIFE-005",
-      "coverage": "partial",
-      "reason": "Request-stream property schedules race writes, pulls and terminal operations, settle each write promise once and clear retained bytes.",
-      "gaps": [
-        "This is request-body write-promise evidence; the original low-level call send-then-cancel write callback race is not directly measured in both Node and workerd."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/request-stream-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property racing writes pulls and terminal operations settle once without late data"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-005"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "d16e17593a0cf9b932ffc4405c719d372aa81bb0f5e4b1199c5ca99eee3b237d"
     },
     {
       "id": "LIFE-006",
-      "coverage": "partial",
-      "reason": "Generated Node schedules include pending Fetch rejection/cancellation with one terminal callback/status and no retained timer/request/response bytes; the late resolved-body control cancels that body.",
-      "gaps": [
-        "The exact pending-Fetch rejection-after-cancel scenario lacks a workerd row and an explicit unhandled-rejection counter."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8721,52 +8967,174 @@
           "source": "test/lifecycle-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property lifecycle action sequences preserve one terminal and release all resources in both modes"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-006"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "d78577b94fe0d0357efadeab1913205b2d79fb072a12c636da99c39220d82194"
     },
     {
       "id": "LIFE-007",
-      "coverage": "partial",
-      "reason": "Cancellation from the first data listener closes the reader and releases the active call.",
-      "gaps": [
-        "The catalog requires this exact unit+workers scenario; the cited evidence executes this scenario in Node only. Generic SDK workerd smoke is not equivalent evidence.",
-        "Supply later data after cancellation and measure zero further messages, timers, pumps and owned bytes; the current body contains only one frame before waiting."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM cancellation cleans pending reader and active call"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-007"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1354327c50b0d23e4a30e8517b05c535265479360c84bda608b47489373b0b0e"
     },
     {
       "id": "LIFE-008",
-      "coverage": "partial",
-      "reason": "Generated Node lifecycle schedules preserve first-terminal-wins across reply, cancel and close and assert one callback/status after every action.",
-      "gaps": [
-        "A deterministic same-turn EOF-versus-cancel race in both completion orders is not recorded; each generated action currently drains asynchronous work before the next action, and workerd parity is absent."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property lifecycle action sequences preserve one terminal and release all resources in both modes"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-008"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 12
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 12
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "46301f9e458caa01c71dfcdd1208f71caeb08c6a37d6f73ca36ca586d2ce5fd7"
     },
     {
       "id": "LIFE-009",
-      "coverage": "partial",
-      "reason": "Generated concurrent calls and reentrant channel close are now covered with one terminal per call, closed-channel rejection, zero new authentication/Fetch and repeated close.",
-      "gaps": [
-        "The exact two-active-calls, close-twice case still lacks a dedicated workerd run and pump/write-completion accounting."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8779,17 +9147,58 @@
           "source": "test/lifecycle-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property reentrant channel close from a success callback terminates generated peer stages exactly once"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-009"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 12
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "2e382d4833df0cca670ebcd1fb56ef5a78793a0e358151001f8f756d5f674fb0"
     },
     {
       "id": "LIFE-010",
-      "coverage": "partial",
-      "reason": "Node property schedules separately gate each call credential and response, correlate outgoing credential metadata and AbortSignal to the correct call, cancel only the victim and complete its peer.",
-      "gaps": [
-        "Exact response-reader identity separation and this same cancellation scenario in workerd remain unproven."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8802,17 +9211,58 @@
           "source": "test/lifecycle-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property cancelling a generated concurrent call leaves its peer authentication and response independent"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-010"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 8
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "866564f3bb7f80e1c4a1037b14a80e76b1648e0a357e3efe8537bc2422b3fbe9"
     },
     {
       "id": "LIFE-011",
-      "coverage": "partial",
-      "reason": "Late authentication and generated Fetch rejection paths execute in Node while terminal callback/status counts and owned resources remain stable.",
-      "gaps": [
-        "A late read rejection and explicit unhandled-rejection accounting are still absent; workerd equivalence for all three rejection sources is not established."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8831,51 +9281,174 @@
           "source": "test/lifecycle-property.test.cjs",
           "command": "tests",
           "name": "FUZZ property lifecycle action sequences preserve one terminal and release all resources in both modes"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-011"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 16
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 16
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "3cff97311464439a07cf58c7e90b435e0d252a51310c82f41bfc30aef29e52f8"
     },
     {
       "id": "LIFE-012",
-      "coverage": "partial",
-      "reason": "A message listener cancels reentrantly and cleanup completes.",
-      "gaps": [
-        "Exercise startRead reentrancy and assert no duplicate pump/message delivery."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "STREAM cancellation cleans pending reader and active call"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-012"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "b64d1301cefee47247b021c57b918cd86d8b01f327112274caa269158a8f6c37"
     },
     {
       "id": "LIFE-013",
-      "coverage": "partial",
-      "reason": "Infinity overrides a configured default without a timeout header.",
-      "gaps": [
-        "Assert no timer is scheduled, not only that the deadline does not fire."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "LIFE explicitly infinite deadline is not overridden by factory default"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-013"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1c44e801504b12040b4f0df1ee29cd8043351d0be21ff9b2954e971a7623e35c"
     },
     {
       "id": "LIFE-014",
-      "coverage": "partial",
-      "reason": "The Node lifetime property also uses a controlled clock for configured default deadlines and checks timer creation/disposal across generated schedules.",
-      "gaps": [
-        "The exact configured relative duration/header is not asserted; the property advances by 50 ms for a 40 ms timeout. Workerd omission-with/without-default and full lifecycle counters remain separate gaps."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8894,6 +9467,49 @@
           "source": "test/call-lifetime-property.test.cjs",
           "command": "tests",
           "name": "PROPERTY LIFETIME generated interceptor and terminal schedules preserve exactly one result without late Fetch"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-014"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 8
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "87b34737a2439ad8eade40f8ea153bf965d6604f8c230e8f7dab2ae6752b8e08"
@@ -8901,9 +9517,9 @@
     {
       "id": "LIFE-015",
       "coverage": "partial",
-      "reason": "Past deadlines fail before auth or fetch.",
+      "reason": "Past numeric and Date deadlines terminate before authentication/Fetch in Node and workerd. Invalid Date also terminates and releases resources, but reports INTERNAL rather than the original INVALID_ARGUMENT expectation.",
       "gaps": [
-        "Exercise invalid Date as INVALID_ARGUMENT."
+        "An explicit API error-policy decision is required for invalid Date: adapter reports asynchronous INTERNAL/WGA_INVALID_DEADLINE; the catalog asks for INVALID_ARGUMENT, and pinned native grpc-js instead throws RangeError synchronously."
       ],
       "references": [
         {
@@ -8911,34 +9527,116 @@
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "LIFE past deadline sends no auth and no request"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-015"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": false
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 12
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 12
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "1ce04da718a0dd23818c569410ab0ecc4d8a1bc84e7d4eec9d43ff35cc427add"
     },
     {
       "id": "LIFE-016",
-      "coverage": "partial",
-      "reason": "Timeout header unit and digit boundaries are tested.",
-      "gaps": [
-        "Exercise long timer scheduling without overflow."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/wire.test.cjs",
           "command": "tests",
           "name": "WIRE timeout uses <=8 digits with safe unit rounding"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-016"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 36
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 36
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c0cb7af76bc0504466c74f935db6298829c18c250a25bdabbb4e5c0614377940"
     },
     {
       "id": "LIFE-017",
-      "coverage": "partial",
-      "reason": "Existing Node stress plus repeated mixed success/error/cancel workerd waves check one terminal, zero active calls, retained bytes and timers before client disposal.",
-      "gaps": [
-        "The exact prescribed 100 success, 100 error and 100 cancellation repetitions with explicit pump/write-completion counters are not executed."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -8985,23 +9683,107 @@
               "equals": "zero-active-calls-after-each-wave"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-017"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 1200
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "531fe68ec73ccca72fc4722cf3817255041bed33d1304b5ccea3661893705508"
     },
     {
       "id": "LIFE-018",
-      "coverage": "partial",
-      "reason": "RequestStreamBody explicitly snapshots input before the caller mutates its Buffer, then checks the original bytes and one acknowledgement on downstream pull.",
-      "gaps": [
-        "A public unary/server-stream call Buffer mutation immediately after send, and the equivalent workerd case with full call lifetime counters, remain untested."
-      ],
+      "coverage": "covered",
+      "reason": "The same deterministic controlled credential/Fetch/reader/clock schedules execute in Node and installed workerd in both modes, recording write completion, terminal/message order, and actual pump/parser/buffer/timer/registry cleanup before disposal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/request-stream.test.cjs",
           "command": "tests",
           "name": "REQUEST STREAM holds exactly one immutable frame until downstream pull accepts it"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/call-lifecycle.json",
+          "source": "scripts/test-call-lifecycle.cjs",
+          "command": "call-lifecycle",
+          "array": "/catalogCases",
+          "where": {
+            "id": "LIFE-018"
+          },
+          "anchor": "catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 12
+            },
+            {
+              "pointer": "/callCount",
+              "equals": 12
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "07097640a69fc0fe7152efe89fad05e72c95cd47d68001bbe8e8983e35f3ba47"

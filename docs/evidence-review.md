@@ -1,6 +1,6 @@
 # Original catalog evidence review
 
-Reviewed on 2026-09-30 against the implementation, test sources and completed
+Reviewed on 2026-10-03 against the implementation, test sources and completed
 local reports. The initial reconciliation connected existing evidence. The
 subsequent packaging work adds executable installation, identity, offline-doctor,
 complete SDK bundle checks, reviewed export/declaration contracts, and addressable
@@ -11,14 +11,15 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging work | Meaning |
-| --- | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | Meaning |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
-HTTP fallback tests to individual execution references. The remaining 119
+HTTP fallback tests to individual execution references. Lifecycle work adds
+seventeen completed call cases and the full HTTP fallback matrix. The remaining 101
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -64,6 +65,28 @@ parity remains false; matching signatures and classified differences do not
 establish identical transport behavior. All fourteen packaging catalog cases
 now have accepted execution evidence.
 
+## Lifecycle work executed
+
+The same 45 controlled scenarios run in each of Node/workerd and the two
+transport modes: 180 recorded scenarios covering 1,388 calls. Authentication
+and half-close ordering, cancel before listener installation, queued write
+acknowledgements, pending Fetch/read failures, EOF/cancel ordering, channel close,
+independent calls and reentrant listeners have explicit traces and owner counts.
+Each runtime/mode executes 100 success, 100 error and 100 cancellation calls,
+with real timers and pending write callbacks observed before each wave settles.
+Both unhandled-rejection monitors must detect their separate positive control.
+
+Internal execution diagnostics preserve active pump, queued write, pending
+message, parser assembly and runtime-chunk ownership until the owner unwinds.
+Logical terminal delivery cannot zero those counters prematurely. These are
+adapter-visible counts, not total JS heap measurements. See the
+[lifetime contract](local-contracts.md#call-lifetime-and-asynchronous-ownership)
+for the exact byte categories and controlled-reader boundary.
+
+`LIFE-001`–`LIFE-014` and `LIFE-016`–`LIFE-018` are now covered. `LIFE-015`
+retains the invalid-Date error-policy difference below. `WIRE-018` now executes
+all nine required HTTP mappings, including status-less 502 and 504.
+
 ## Evidence that was already present
 
 - `PKG-003/007`: real nested GAX dependency graphs and packed root/deep Client
@@ -92,8 +115,8 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Public API | 15 | 1 | 0 |
 | Configuration | 11 | 0 | 0 |
 | Authentication | 4 | 11 | 0 |
-| Wire protocol | 5 | 22 | 0 |
-| Call lifecycle | 0 | 18 | 0 |
+| Wire protocol | 6 | 21 | 0 |
+| Call lifecycle | 17 | 1 | 0 |
 | Flow control | 0 | 7 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
 | Datastore | 1 | 21 | 2 |
@@ -104,21 +127,19 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Performance | 0 | 5 | 0 |
 | Documentation | 0 | 3 | 2 |
 
-Lifecycle and flow control have substantial executed tests. Their original
-cases also require specific schedules, runtime/native comparisons and cleanup
-counters; partial coverage retains those extra conditions rather than denying
-the tests that already pass.
+Flow control has substantial executed tests. Its original cases additionally
+require native comparisons and specific large-stream/pause/ownership scenarios.
+The new lifecycle counter checks do not automatically satisfy those scenarios.
 
 ## Remaining work
 
 The next local work units, in order, are:
 
-1. **Exact transport schedules and resource assertions.** Add the missing
-   status-less HTTP 502/504 cases (`WIRE-018`), precise allocation/copy counters,
-   deterministic auth-before-message and EOF/cancel orderings, late read
-   rejection, and matching workerd/native checks. Record write completion,
-   pending message and parser assembly ownership in the specific scenarios
-   listed under `LIFE-*` and `FLOW-*`.
+1. **Flow control and wire resource assertions.** Use the new ownership counters
+   in exact slow-consumer, pause/resume, total-stream-above-safety-ceiling,
+   backpressure cancellation, partial-error, unary lookahead and many-frame-chunk
+   scenarios, including the required native comparisons (`FLOW-*`). Wire cases
+   still need their separate allocation/copy and framing boundary assertions.
 2. **SDK call accounting and combinations.** Add logical call IDs and separate
    data/auth Fetch counters to the older Datastore Lookup/pagination reports;
    cover remaining batches, overloads, query stream failures and routing fields.
@@ -134,8 +155,8 @@ The next local work units, in order, are:
 The eleven cases without an accepted current reference are `DS-005`, `DS-019`,
 `CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
 Their individual procedures and remaining conditions are in the mapping.
-For `WIRE-018`, seven existing HTTP fallback tests have individual source and TAP
-references; 502 and 504 remain missing. The checker expands only bounded literal
+For `WIRE-018`, all nine HTTP fallback tests have individual source and TAP
+references, alongside the shared Node/workerd matrix. The checker expands only bounded literal
 `const` tables with direct test registrations and still requires each exact TAP
 result to pass. It does not execute source or infer success for unrun cases.
 
@@ -149,6 +170,9 @@ These cannot be closed just by adding a reference:
   implemented gzip/deflate support. Supported compression, unsupported encoding
   and malformed flags now have distinct results. Keep the original case visible
   until its historical expectation is explicitly superseded.
+- `LIFE-015`: invalid Date returns adapter `INTERNAL`, whereas the catalog asks
+  for `INVALID_ARGUMENT`. Pinned native throws `RangeError` synchronously before
+  returning a call. This is an API error-policy decision, not missing execution.
 - `DS-021`: pinned native Datastore and the adapter both continue paging after
   `runQueryStream().destroy()`; `end()` stops later pages but does not cancel a
   pending unary page. The original no-extra-page expectation is unmet.

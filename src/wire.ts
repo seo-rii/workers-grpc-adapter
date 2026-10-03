@@ -13,6 +13,12 @@ export interface Frame {
     trailer: boolean;
     payload: Buffer;
 }
+/** Internal framing ownership, separate from codec scratch and delivered data. */
+export interface FrameParserDiagnostics {
+    parserAssemblies: number;
+    parserAssemblyBytes: number;
+    runtimeChunkBytes: number;
+}
 const owned = new Set(['content-type', 'content-length', 'connection', 'transfer-encoding', 'host', 'te', 'grpc-timeout', 'grpc-encoding', 'grpc-accept-encoding', 'x-grpc-web', 'accept', 'grpc-previous-rpc-attempts']);
 const responseControl = new Set(['content-type', 'content-length', 'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'transfer-encoding', 'connection', 'date']);
 function wireError(code: status, id: string): never {
@@ -52,8 +58,9 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
+    const diagnostics = compression.diagnostics;
     const chunkScope = compression.budget?.scope();
     const chunkLease = chunkScope?.reserve(0);
     let frameScope: ResourceScope | undefined;
@@ -66,6 +73,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
     async function readExact(count: number, allowEOF = false): Promise<Buffer | null> {
         frameScope?.reserve(count);
         const out = Buffer.allocUnsafe(count);
+        if (diagnostics) diagnostics.parserAssemblyBytes += count;
         let filled = 0;
         while (filled < count) {
             if (signal?.aborted) {
@@ -73,6 +81,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
             }
             if (offset === chunk.byteLength) {
                 chunk = new Uint8Array(0);
+                if (diagnostics) diagnostics.runtimeChunkBytes = 0;
                 chunkLease?.resize(0);
                 const item = await reader.read();
                 if (signal?.aborted) {
@@ -91,6 +100,7 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 compression.onChunk?.(item.value.byteLength);
                 chunkLease?.resize(item.value.byteLength);
                 chunk = item.value;
+                if (diagnostics) diagnostics.runtimeChunkBytes = chunk.byteLength;
                 offset = 0;
                 if (chunk.byteLength === 0) {
                     continue;
@@ -107,6 +117,10 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
     try {
         for (;;) {
             frameScope = compression.budget?.scope();
+            if (diagnostics) {
+                diagnostics.parserAssemblies = 1;
+                diagnostics.parserAssemblyBytes = 0;
+            }
             try {
                 const header = await readExact(5, true);
                 if (header === null) {
@@ -138,12 +152,19 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                 hadTrailer = trailer;
                 yield { trailer, payload: flag === 1 && (encoding === 'gzip' || encoding === 'deflate')
                     ? await transformMessage(payload!, encoding, true, maxMessageBytes, signal, frameScope) : payload! };
-            } finally { frameScope?.close(); frameScope = undefined; }
+            } finally {
+                frameScope?.close(); frameScope = undefined;
+                if (diagnostics) {
+                    diagnostics.parserAssemblies = 0;
+                    diagnostics.parserAssemblyBytes = 0;
+                }
+            }
         }
     }
     finally {
         signal?.removeEventListener('abort', abort);
         chunk = new Uint8Array(0);
+        if (diagnostics) diagnostics.runtimeChunkBytes = 0;
         chunkScope?.close();
         if (!ended) {
             // Source cleanup can be asynchronous or never settle. Local frame
