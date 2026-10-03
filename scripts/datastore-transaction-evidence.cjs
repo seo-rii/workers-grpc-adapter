@@ -26,7 +26,8 @@ function expected(scenario) {
     : disconnected ? 14 : deadline ? 4 : null;
   function call(method, identity, transactionId, extra = {}) {
     return { method, identity, transactionId, readOnly: false, deadlineBounded: true, query: null,
-      keys: [], mutationValues: [], appliedMutations: 0, statusCode: 0, disconnect: false, ...extra };
+      keys: [], mutationValues: [], appliedMutations: 0, statusCode: 0, disconnect: false,
+      credentialIdentity: null, quotaIdentity: null, targetIdentity: null, ...extra };
   }
   const calls = [call('BeginTransaction', 'a', first, { readOnly: readonly })];
   if (crossed) {
@@ -51,6 +52,10 @@ function expected(scenario) {
     }
     calls.push(call('Lookup', 'recovery', null, { keys: ['a'] }));
   }
+  if (crossed) for (const request of calls) {
+    const identity = request.identity === 'recovery' ? request.keys[0] : request.identity;
+    request.credentialIdentity = identity; request.quotaIdentity = identity; request.targetIdentity = identity;
+  }
   const commit = { mutationCount: 1, versions: ['2'], indexUpdates: 1 };
   const result = { scenario, surface: deadline ? 'generated-v1' : 'high-level',
     transactionIds: crossed ? [first, second] : [first], readCounts: crossed ? [1, 1] : deadline ? [] : [1],
@@ -59,7 +64,11 @@ function expected(scenario) {
     errorCode, persistedCounts: crossed ? [2, 3] : ['commit-success', 'query-commit', 'disconnect-after-apply', 'v1-deadline-commit'].includes(scenario) ? [2] : [1],
     cancelHandleAvailable: scenario === 'rollback-queued' ? null : false,
     resolved: errorCode === null ? crossed ? 2 : 1 : 0, rejected: errorCode === null ? 0 : 1,
-    sameClientRecovery: true, noLateEvents: true };
+    sameClientRecovery: true, noLateEvents: true,
+    credentialIsolation: crossed ? { sdkClients: 2, authProviders: 2, distinctClients: true, distinctProviders: true, distinctTargets: true,
+      authEvents: ['a', 'b', 'b', 'a', 'b', 'a', 'a', 'b'],
+      providers: ['a', 'b'].map(identity => ({ identity, metadataCalls: 4, targets: [identity], authorizationGenerated: true, quotaGenerated: true })),
+      externalAuthRequests: 0 } : null };
   return { calls, result, controlRequests: deadline ? 1 : 0 };
 }
 
@@ -80,9 +89,11 @@ function validateDatastoreTransactionReport(report) {
     && typeof report.workerd === 'string' && report.workerd.length > 0
     && typeof report.miniflare === 'string' && report.miniflare.length > 0
     && report.compatibilityDate === '2026-09-21', 'runtime identity');
-  need(isDeepStrictEqual(report.testInstrumentation, { syntheticIdentityHeaders: true, oauthCredentialIsolation: false,
-    privateSdkHooks: false, privateSdkCleanup: true, controlDataRpcSeparated: true, realHttp2Reset: true }),
-  'explicit synthetic metadata, public request behavior, private cleanup and actual reset boundaries');
+  need(isDeepStrictEqual(report.testInstrumentation, { syntheticIdentityHeaders: true, oauthCredentialIsolation: true, syntheticCachedOAuthTokens: true, nativeLoopbackTls: true,
+    targetObservation: 'auth-service-url-and-fetch-origin-or-native-authority', privateSdkHooks: false, privateSdkCleanup: true, controlDataRpcSeparated: true, realHttp2Reset: true }),
+  'explicit synthetic OAuth tokens, real credential isolation, public request behavior, private cleanup and actual reset boundaries');
+  need(isDeepStrictEqual(report.nativeTls, { calls: 16, temporaryCredentials: true, activeStreams: 0, faults: [], disposed: true }),
+    'native credential TLS bridge was exercised and disposed');
   need(sources.every(file => digest(report.evidence?.[file])), 'complete source evidence');
   need(digest(report.sharedSha256) && report.sharedSha256 === report.evidence['fixtures/google/shared/datastore-transactions.mjs'], 'shared source identity');
   const sourceKeys = profiles.flatMap(profile => runtimes.map(runtime => `${profile.id}/${runtime}`));
@@ -103,7 +114,7 @@ function validateDatastoreTransactionReport(report) {
         '@google-cloud/datastore/build/src/request.js',
         profile.id === 'google-modern-v1' ? '@google-cloud/datastore-api/build/src/v1/datastore_client.js' : '@google-cloud/datastore/build/src/v1/datastore_client.js',
         profile.id === 'google-modern-v1' ? '@google-cloud/datastore-api/build/protos/protos.json' : '@google-cloud/datastore/build/protos/protos.json',
-        'google-gax/package.json', 'google-auth-library/package.json'];
+        'google-gax/package.json', 'google-auth-library/package.json', 'google-auth-library/build/src/auth/oauth2client.js'];
       need(inputs && required.every(file => digest(inputs[`fixtures/${fixture}/node_modules/${file}`])), `${mapName} ${profile.id} installed identity`);
     }
   }

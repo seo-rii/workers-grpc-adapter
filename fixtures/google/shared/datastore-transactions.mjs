@@ -1,5 +1,5 @@
 import { Datastore, v1 } from '@google-cloud/datastore';
-import { PassThroughClient } from 'google-auth-library';
+import { OAuth2Client, PassThroughClient } from 'google-auth-library';
 
 export const transactionScenarios = ['commit-success', 'query-commit', 'rollback-queued', 'readonly-read',
   'readonly-write-rejected', 'commit-aborted', 'disconnect-before-apply', 'disconnect-after-apply',
@@ -34,12 +34,14 @@ export async function observeTransactionCalls(events, transport) {
 // The peer owns synthetic transaction state; this does not assert Google IAM or
 // production conflict semantics. Both public commit Promise surfaces omit a
 // cancel handle; the generated-v1 case bounds its accepted write by deadline.
-export async function runDatastoreTransactions({ options, scenario, caseId, control, beforeClose }) {
+export async function runDatastoreTransactions({ options, crossedOptions, scenario, caseId, control, beforeClose }) {
   transactionCheck(transactionScenarios.includes(scenario), 'TX_KNOWN_SCENARIO');
   const config = { ...options, authClient: new PassThroughClient(), databaseId: 'tx-db',
     clientConfig: { interfaces: { 'google.datastore.v1.Datastore': { methods: Object.fromEntries(
       ['BeginTransaction', 'Lookup', 'RunQuery', 'Commit', 'Rollback'].map(name => [name, { timeout_millis: 2000, retry_codes: [] }])) } } } };
-  const datastore = new Datastore({ ...config, namespace: 'tx-fixture' });
+  const clients = [];
+  const makeClient = overrides => { const client = new Datastore({ ...config, namespace: 'tx-fixture', ...overrides }); clients.push(client); return client; };
+  const datastore = scenario === 'crossed-transactions' ? null : makeClient({});
   let generated;
   const key = id => datastore.key(['TransactionValue', id]);
   const gax = identity => ({ timeout: 2000, retry: null, otherArgs: { headers: {
@@ -47,7 +49,7 @@ export async function runDatastoreTransactions({ options, scenario, caseId, cont
   const read = identity => ({ gaxOptions: gax(identity) });
   const result = { scenario, surface: scenario === 'v1-deadline-commit' ? 'generated-v1' : 'high-level',
     transactionIds: [], readCounts: [], commitResponses: [], errorCode: null, persistedCounts: [], cancelHandleAvailable: null,
-    resolved: 0, rejected: 0, sameClientRecovery: false, noLateEvents: false };
+    resolved: 0, rejected: 0, sameClientRecovery: false, noLateEvents: false, credentialIsolation: null };
   const remember = transaction => { const id = transaction.id.toString('hex'); result.transactionIds.push(id); return id; };
   const commitSummary = response => ({ mutationCount: response.mutationResults.length,
     versions: response.mutationResults.map(item => String(item.version)), indexUpdates: response.indexUpdates });
@@ -81,14 +83,51 @@ export async function runDatastoreTransactions({ options, scenario, caseId, cont
       result.persistedCounts.push(Number(recovery.found[0].entity.properties.count.integerValue));
       result.sameClientRecovery = true;
     } else if (scenario === 'crossed-transactions') {
-      const first = datastore.transaction(), second = datastore.transaction();
+      const providers = [], authEvents = [];
+      let externalAuthRequests = 0;
+      const pair = ['a', 'b'].map(identity => {
+        // Real OAuth2Client metadata generation with intentionally invalid,
+        // cached fixture tokens. No refresh token or external auth I/O exists.
+        const receipt = { identity, metadataCalls: 0, targets: [], authorizationGenerated: true, quotaGenerated: true };
+        class RecordedOAuthClient extends OAuth2Client {
+          async getRequestHeaders(url) {
+            const target = new URL(url);
+            // Native grpc-js omits the channel port from its service URL.
+            transactionCheck(target.protocol === 'https:' && target.hostname === new URL(`https://${endpoint}`).hostname
+              && target.pathname === '/google.datastore.v1.Datastore', 'TX_AUTH_LOGICAL_TARGET');
+            const headers = await super.getRequestHeaders(url);
+            transactionCheck(headers.get('authorization') === `Bearer tx-fixture-${identity}`
+              && headers.get('x-goog-user-project') === `tx-quota-${identity}`, 'TX_AUTH_GENERATED_HEADERS');
+            receipt.metadataCalls++;
+            if (!receipt.targets.includes(identity)) receipt.targets.push(identity);
+            authEvents.push(identity);
+            return headers;
+          }
+        }
+        const authClient = new RecordedOAuthClient({ quotaProjectId: `tx-quota-${identity}`, transporterOptions: {
+          adapter: async () => { externalAuthRequests++; transactionCheck(false, 'TX_UNEXPECTED_AUTH_NETWORK'); },
+        } });
+        authClient.setCredentials({ access_token: `tx-fixture-${identity}`, expiry_date: Date.now() + 3600000 });
+        const overrides = crossedOptions?.(identity, authClient) ?? { apiEndpoint: `datastore-${identity}.googleapis.com` };
+        const endpoint = overrides.apiEndpoint;
+        transactionCheck(typeof endpoint === 'string', 'TX_DISTINCT_ENDPOINT');
+        const client = makeClient({ ...overrides, authClient }); providers.push(authClient);
+        return { client, key: client.key(['TransactionValue', identity]), receipt, endpoint };
+      });
+      transactionCheck(pair[0].client !== pair[1].client && providers[0] !== providers[1]
+        && pair[0].endpoint !== pair[1].endpoint, 'TX_DISTINCT_CLIENT_CREDENTIAL_TARGET');
+      const first = pair[0].client.transaction(), second = pair[1].client.transaction();
       await first.run({ gaxOptions: gax('a') }); remember(first);
       await second.run({ gaxOptions: gax('b') }); remember(second);
-      result.readCounts.push((await second.get(key('b'), read('b')))[0].count);
-      result.readCounts.push((await first.get(key('a'), read('a')))[0].count);
-      first.save({ key: key('a'), data: { count: 2 } }); second.save({ key: key('b'), data: { count: 3 } });
+      result.readCounts.push((await second.get(pair[1].key, read('b')))[0].count);
+      result.readCounts.push((await first.get(pair[0].key, read('a')))[0].count);
+      first.save({ key: pair[0].key, data: { count: 2 } }); second.save({ key: pair[1].key, data: { count: 3 } });
       await commit(second, 'b'); await commit(first, 'a');
-      for (const id of ['a', 'b']) result.persistedCounts.push((await datastore.get(key(id), read('recovery')))[0].count);
+      for (const item of pair) result.persistedCounts.push((await item.client.get(item.key, read('recovery')))[0].count);
+      transactionCheck(pair.every(item => item.receipt.metadataCalls === 4), 'TX_PROVIDER_CALL_COUNT');
+      result.credentialIsolation = { sdkClients: clients.length, authProviders: providers.length,
+        distinctClients: true, distinctProviders: true, distinctTargets: true, authEvents,
+        providers: pair.map(item => item.receipt), externalAuthRequests };
       result.sameClientRecovery = true;
     } else {
       const readonly = scenario.startsWith('readonly');
@@ -125,7 +164,7 @@ export async function runDatastoreTransactions({ options, scenario, caseId, cont
       await generated?.close();
       // Datastore exposes no public close; only close already-created generated
       // clients after resource accounting, never mutate their request behavior.
-      await Promise.all([...datastore.clients_.values()].map(client => client.close()));
+      await Promise.all(clients.flatMap(client => [...client.clients_.values()].map(generatedClient => generatedClient.close())));
     }
   }
 }

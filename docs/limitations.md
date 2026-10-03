@@ -57,9 +57,11 @@ promises expose no cancellation handle in the pinned SDKs. The generated-v1
 case verifies deadline expiry after mutation application; it does not establish
 explicit caller cancellation. Its peer enforces `grpc-timeout`; local deadline
 completion through a workerd service binding does not prove immediate backend
-cancellation. The crossed-transaction case uses synthetic
-identity headers with distinct transaction IDs; it does not establish isolation
-between different authentication providers or real Google credentials. See
+cancellation. The crossed-transaction case now checks distinct OAuth2Client
+providers, SDK clients and logical targets, with actual authorization/quota
+metadata matched to transaction IDs and keys. Tokens are synthetic and cached;
+this establishes local credential-provider isolation, not real Google IAM,
+quota enforcement or token renewal. See
 [transaction tests](testing.md#datastore-transactions-and-interrupted-commit-responses)
 for these coverage boundaries.
 

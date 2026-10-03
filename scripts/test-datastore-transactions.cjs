@@ -7,7 +7,7 @@ const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
 const { pathToFileURL } = require('node:url');
 const { execFileSync } = require('node:child_process');
-const { createDatastoreTransactionServer } = require('./datastore-transaction-server.cjs');
+const { createDatastoreTransactionServer, createTransactionTlsProxy } = require('./datastore-transaction-server.cjs');
 const { startEmulatorEnvoy } = require('./emulator-envoy.cjs');
 const root = path.resolve(__dirname, '..');
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
@@ -25,12 +25,12 @@ const nativeOnly = process.argv.includes('--native-only');
 const report = { status: 'running', startedAt: new Date().toISOString(), sourceBuild: false, nativeOnly,
   liveGoogle: false, cloudflareAutomaticConversion: false, officialEmulator: false, realEnvoy: true,
   controlledNativeGrpcServer: true, restFallback: false, adapterRetryEnabled: false,
-  testInstrumentation: { syntheticIdentityHeaders: true, oauthCredentialIsolation: false, privateSdkHooks: false, privateSdkCleanup: true, controlDataRpcSeparated: true, realHttp2Reset: true },
+  testInstrumentation: { syntheticIdentityHeaders: true, oauthCredentialIsolation: true, syntheticCachedOAuthTokens: true, nativeLoopbackTls: true, targetObservation: 'auth-service-url-and-fetch-origin-or-native-authority', privateSdkHooks: false, privateSdkCleanup: true, controlDataRpcSeparated: true, realHttp2Reset: true },
   resourcesCheckedBeforeClose: false, sharedSha256: hash(sharedBytes), sources: {}, profiles: [], results: [],
   evidence: {}, installedInputs: {}, nativeInputs: {}, node: process.version,
   workerd: workerRequire('workerd/package.json').version, miniflare: workerRequire('miniflare/package.json').version,
   compatibilityDate: '2026-09-21' };
-let stage = 'startup', controlled, envoy, worker, currentCase;
+let stage = 'startup', controlled, envoy, worker, currentCase, nativeTls;
 const boundaryErrors = [], asyncErrors = [];
 process.on('unhandledRejection', () => { asyncErrors.push('TX_UNHANDLED_REJECTION'); process.exitCode = 1; });
 for (const name of ['FIRESTORE_EMULATOR_HOST', 'DATASTORE_EMULATOR_HOST', 'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_CLOUD_PROJECT', 'GCLOUD_PROJECT']) delete process.env[name];
@@ -47,10 +47,18 @@ async function untilIdle() {
 }
 function inspectRequest(input, init, mode) {
   const url = new URL(input), headers = new Headers(init.headers);
-  check(url.origin === (mode === 'cloudflare' ? 'https://datastore.googleapis.com' : 'https://datastore-transaction-gateway.invalid'), 'TX_EXACT_OUTBOUND_ORIGIN');
+  const crossed = currentCase.endsWith('/crossed-transactions');
+  const targets = mode === 'cloudflare' ? ['https://datastore-a.googleapis.com', 'https://datastore-b.googleapis.com']
+    : ['https://datastore-transaction-gateway-a.invalid', 'https://datastore-transaction-gateway-b.invalid'];
+  check(crossed ? targets.includes(url.origin) : url.origin === (mode === 'cloudflare' ? 'https://datastore.googleapis.com' : 'https://datastore-transaction-gateway.invalid'), 'TX_EXACT_OUTBOUND_ORIGIN');
   check(['BeginTransaction', 'Lookup', 'RunQuery', 'Commit', 'Rollback'].map(method => '/google.datastore.v1.Datastore/' + method).includes(url.pathname), 'TX_EXACT_OUTBOUND_METHOD');
   check(init.method === 'POST' && headers.get('content-type') === (mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto'), 'TX_GRPC_WEB_WIRE');
-  check(headers.get('authorization') === null, 'TX_EXPLICIT_ANONYMOUS_AUTH');
+  if (crossed) {
+    const identity = targets.indexOf(url.origin) === 0 ? 'a' : 'b';
+    check(headers.get('authorization') === `Bearer tx-fixture-${identity}`
+      && headers.get('x-goog-user-project') === `tx-quota-${identity}`, 'TX_CREDENTIAL_ROUTING');
+    controlled.observeFetchTarget(identity);
+  } else check(headers.get('authorization') === null, 'TX_EXPLICIT_ANONYMOUS_AUTH');
   headers.set('x-wga-invocation', currentCase);
   return { url, headers };
 }
@@ -84,7 +92,9 @@ async function runNode(profile, runtime) {
       const mode = runtime.slice('adapter-'.length);
       const transport = runtime === 'native' ? null : req('@grpc/grpc-js/adapter').createWorkersGrpcTransport({
         observer: event => events.push(event),
-        ...(mode === 'cloudflare' ? { mode } : { mode, endpoints: { 'datastore.googleapis.com': 'https://datastore-transaction-gateway.invalid' } }),
+        ...(mode === 'cloudflare' ? { mode } : { mode, endpoints: { 'datastore.googleapis.com': 'https://datastore-transaction-gateway.invalid',
+          'datastore-a.googleapis.com': 'https://datastore-transaction-gateway-a.invalid',
+          'datastore-b.googleapis.com': 'https://datastore-transaction-gateway-b.invalid' } }),
         fetcher: { async fetch(input, init) {
           const { url, headers } = inspectRequest(input, init, mode); fetchCount++;
           return fetch(`http://127.0.0.1:${envoy.ports.replacement}${url.pathname}`, { ...init, headers, cf: undefined });
@@ -93,6 +103,11 @@ async function runNode(profile, runtime) {
       const options = transport ? transport.gaxOptions({ projectId: 'demo-wga-transactions' })
         : { projectId: 'demo-wga-transactions', apiEndpoint: `127.0.0.1:${envoy.ports.native}`, sslCreds: grpc.credentials.createInsecure() };
       const result = await bounded(runDatastoreTransactions({ options, scenario, caseId: currentCase,
+        crossedOptions: runtime !== 'native' ? undefined : (identity, authClient) => ({
+          apiEndpoint: `${identity === 'a' ? 'localhost' : '127.0.0.1'}:${nativeTls.port}`,
+          sslCreds: grpc.credentials.combineChannelCredentials(grpc.credentials.createSsl(nativeTls.cert),
+            grpc.credentials.createFromGoogleCredential({ getRequestHeaders: async url => Object.fromEntries(await authClient.getRequestHeaders(url)) })),
+        }),
         control: async operation => { controlRequests++; await controlled.control(operation, currentCase); },
         beforeClose: transport ? async () => { observer = await observeTransactionCalls(events, transport); } : undefined }));
       await untilIdle(); addResult(profile.id, runtime, scenario, result, observer, fetchCount, controlRequests);
@@ -171,6 +186,7 @@ async function main() {
   report.evidence = Object.fromEntries(sources.map(file => [file, hash(fs.readFileSync(path.join(root, file)))]));
   controlled = await createDatastoreTransactionServer();
   envoy = await startEmulatorEnvoy({ firestore: { port: controlled.port }, datastore: { port: controlled.port } });
+  nativeTls = await createTransactionTlsProxy({ upstreamPort: envoy.ports.native, scratch });
   for (const profile of profiles) {
     const req = createRequire(path.join(root, 'fixtures', profile.fixture, 'package.json'));
     const native = createRequire(path.join(root, 'fixtures', profile.native, 'package.json'));
@@ -198,6 +214,9 @@ async function main() {
     check(JSON.stringify(row.result) === JSON.stringify(baseline.result)
       && JSON.stringify(businessRequests(row.requests)) === JSON.stringify(businessRequests(baseline.requests)), 'TX_NATIVE_PARITY');
   }
+  check(nativeTls.active.size === 0 && nativeTls.faults.length === 0, 'TX_NATIVE_TLS_IDLE');
+  report.nativeTls = { calls: nativeTls.calls,
+    temporaryCredentials: true, activeStreams: nativeTls.active.size, faults: [...nativeTls.faults], disposed: false };
   report.nativeBusinessEquivalent = !nativeOnly; report.resourcesCheckedBeforeClose = !nativeOnly;
   report.controlRequests = report.results.reduce((sum, row) => sum + row.controlRequests, 0);
   report.caseCount = report.results.length;
@@ -209,6 +228,7 @@ async function main() {
 main().catch(error => { report.status = 'failed'; report.diagnostic = safe(error); report.failureStage = stage; process.exitCode = 1; }).finally(async () => {
   const cleanupFailures = [];
   for (const cleanup of [async () => { await worker?.dispose(); },
+    async () => { await nativeTls?.close(); if (report.nativeTls) report.nativeTls.disposed = true; },
     async () => { if (envoy) { report.envoy = await envoy.stop(); report.wire = envoy.readAccess(); } },
     async () => { await controlled?.close(); }]) {
     try { await bounded(cleanup(), 5000); } catch { cleanupFailures.push('TX_CLEANUP_FAILURE'); }

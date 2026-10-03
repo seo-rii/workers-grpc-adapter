@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http2 = require('node:http2');
+const { execFileSync } = require('node:child_process');
 const { createRequire } = require('node:module');
 const req = createRequire(path.resolve(__dirname, '../fixtures/native/package.json'));
 const grpc = req('@grpc/grpc-js'), loader = req('@grpc/proto-loader');
@@ -36,6 +37,21 @@ async function createDatastoreTransactionServer() {
         const record = { caseId: context.id, method, identity: headers['x-wga-identity'] ?? null, transactionId: null,
           readOnly: false, deadlineBounded: true, query: null, keys: [], mutationValues: [], appliedMutations: 0, statusCode: 0,
           disconnect: false, cancelled: false, http2ResetCode: null, responseSent: false, termination: 'server-response' };
+        record.credentialIdentity = null; record.quotaIdentity = null; record.targetIdentity = null;
+        if (context.scenario === 'crossed-transactions') {
+          const authorization = headers.authorization;
+          const identity = authorization === 'Bearer tx-fixture-a' ? 'a' : authorization === 'Bearer tx-fixture-b' ? 'b' : null;
+          check(identity !== null, 'TX_PEER_REAL_AUTHORIZATION');
+          check(headers['x-goog-user-project'] === `tx-quota-${identity}`, 'TX_PEER_CREDENTIAL_QUOTA');
+          const authority = String(headers[':authority']).split(':')[0];
+          // Native TLS preserves :authority. Fetch's local forwarding hop
+          // changes Host; its independently observed origin is queued by the
+          // boundary before forwarding this request, never supplied by the SDK.
+          const target = context.id.includes('/native/') ? authority === 'localhost' ? 'a' : authority === '127.0.0.1' ? 'b' : null
+            : context.fetchTargets.shift();
+          check(target === identity, 'TX_PEER_CREDENTIAL_TARGET');
+          record.credentialIdentity = identity; record.quotaIdentity = identity; record.targetIdentity = target;
+        } else check(headers.authorization === undefined, 'TX_PEER_ANONYMOUS_BOUNDARY');
         arrivals.push(record);
         stream.once('close', () => { record.http2ResetCode = stream.rstCode; record.responseSent = stream.headersSent; });
         const txId = request.transaction?.length ? Buffer.from(request.transaction).toString('hex')
@@ -43,11 +59,12 @@ async function createDatastoreTransactionServer() {
         record.transactionId = txId;
         const tx = txId ? context.transactions.get(txId) : null;
         if (txId) check(tx, 'TX_KNOWN_TRANSACTION');
-        if (tx && method !== 'Rollback') check(record.identity === tx.identity, 'TX_TRANSACTION_IDENTITY');
+        if (tx && method !== 'Rollback') check(record.identity === tx.identity
+          && record.credentialIdentity === tx.credentialIdentity && record.targetIdentity === tx.targetIdentity, 'TX_TRANSACTION_IDENTITY');
         if (method === 'BeginTransaction') {
           const id = Buffer.from([0, 255, ++context.sequence, 128]); record.transactionId = id.toString('hex');
           record.readOnly = !!request.transactionOptions?.readOnly;
-          context.transactions.set(record.transactionId, { readOnly: record.readOnly, identity: record.identity });
+          context.transactions.set(record.transactionId, { readOnly: record.readOnly, identity: record.identity, credentialIdentity: record.credentialIdentity, targetIdentity: record.targetIdentity });
           reply(stream, descriptor, { transaction: id });
         } else if (method === 'Lookup' || method === 'RunQuery') {
           const keys = method === 'Lookup' ? request.keys : [{ partitionId: request.partitionId, path: [{ kind: 'TransactionValue', name: 'a' }] }];
@@ -62,6 +79,7 @@ async function createDatastoreTransactionServer() {
           const results = keys.map(key => {
             check(key.partitionId.namespaceId === 'tx-fixture' && key.path[0].kind === 'TransactionValue', 'TX_KEY_SHAPE');
             const id = key.path[0].name; check(context.values.has(id), 'TX_KEY_ID'); record.keys.push(id);
+            if (context.scenario === 'crossed-transactions') check(record.credentialIdentity === id, 'TX_AUTHORIZED_KEY_ISOLATION');
             return { entity: { key, properties: { count: { integerValue: String(context.values.get(id)) } } }, version: '1' };
           });
           reply(stream, descriptor, method === 'Lookup' ? { found: results } : { batch: { entityResults: results, moreResults: 'NO_MORE_RESULTS', endCursor: Buffer.from('done') } });
@@ -115,7 +133,8 @@ async function createDatastoreTransactionServer() {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   return { port: server.address().port, active, arrivals, faults,
-    prepare(scenario, id) { check(active.size === 0, 'TX_PREVIOUS_CALL_RELEASED'); context = { scenario, id, sequence: 0, transactions: new Map(), values: new Map([['a', 1], ['b', 1]]) }; },
+    prepare(scenario, id) { check(active.size === 0, 'TX_PREVIOUS_CALL_RELEASED'); context = { scenario, id, sequence: 0, transactions: new Map(), values: new Map([['a', 1], ['b', 1]]), fetchTargets: [] }; },
+    observeFetchTarget(identity) { check(context?.scenario === 'crossed-transactions' && ['a', 'b'].includes(identity), 'TX_OBSERVED_FETCH_TARGET'); context.fetchTargets.push(identity); },
     async control(operation, id) {
       check(context?.id === id && operation === 'await-commit', 'TX_CONTROL_OPERATION');
       if (context.commitReceived) return;
@@ -127,4 +146,39 @@ async function createDatastoreTransactionServer() {
     async close() { for (const session of sessions) session.destroy(); await new Promise(resolve => server.close(resolve)); },
   };
 }
-module.exports = { createDatastoreTransactionServer };
+// Native grpc-js deliberately refuses to compose call credentials with an
+// insecure channel. A temporary loopback-only TLS bridge preserves the same
+// Envoy/native peer observation point while exercising real call credentials.
+async function createTransactionTlsProxy({ upstreamPort, scratch }) {
+  const keyPath = path.join(scratch, 'transaction-tls.key'), certPath = path.join(scratch, 'transaction-tls.pem');
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+    '-keyout', keyPath, '-out', certPath, '-subj', '/CN=localhost',
+    '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1'], { stdio: 'pipe', timeout: 15000 });
+  fs.chmodSync(keyPath, 0o600); fs.chmodSync(certPath, 0o600);
+  const cert = fs.readFileSync(certPath), sessions = new Set(), active = new Set(), faults = [];
+  let calls = 0;
+  const server = http2.createSecureServer({ key: fs.readFileSync(keyPath), cert });
+  server.on('session', session => { sessions.add(session); session.on('error', () => {}); session.once('close', () => sessions.delete(session)); });
+  server.on('stream', (stream, headers) => {
+    calls++;
+    const session = http2.connect(`http://127.0.0.1:${upstreamPort}`);
+    sessions.add(session); session.on('error', () => {}); session.once('close', () => sessions.delete(session));
+    const upstream = session.request({ ...headers, ':scheme': 'http' });
+    active.add(stream); let trailers = {};
+    upstream.on('response', response => {
+      const clean = { ...response }; delete clean[':status'];
+      stream.respond({ ':status': response[':status'], ...clean }, { waitForTrailers: true });
+    });
+    upstream.on('trailers', value => { trailers = value; });
+    stream.once('wantTrailers', () => { if (!stream.destroyed) stream.sendTrailers(trailers); });
+    for (const socket of [stream, upstream]) socket.on('error', () => { faults.push('TX_TLS_FORWARD_ERROR'); });
+    stream.once('close', () => { active.delete(stream); upstream.close(); session.close(); });
+    stream.pipe(upstream); upstream.pipe(stream);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { port: server.address().port, cert, faults, active, get calls() { return calls; },
+    async close() { for (const session of sessions) session.destroy(); await new Promise(resolve => server.close(resolve));
+      fs.rmSync(keyPath, { force: true }); fs.rmSync(certPath, { force: true }); },
+  };
+}
+module.exports = { createDatastoreTransactionServer, createTransactionTlsProxy };

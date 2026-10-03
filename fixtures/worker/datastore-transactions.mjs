@@ -4,7 +4,9 @@ export default {
   async fetch(request, env) {
     const scenario = new URL(request.url).pathname.slice(1), caseId = `${env.PROFILE}/workerd-${env.MODE}/${scenario}`;
     const events = [], transport = createWorkersGrpcTransport({ observer: event => events.push(event),
-      ...(env.MODE === 'cloudflare' ? { mode: 'cloudflare' } : { mode: 'grpc-web', endpoints: { 'datastore.googleapis.com': 'https://datastore-transaction-gateway.invalid' } }) });
+      ...(env.MODE === 'cloudflare' ? { mode: 'cloudflare' } : { mode: 'grpc-web', endpoints: { 'datastore.googleapis.com': 'https://datastore-transaction-gateway.invalid',
+        'datastore-a.googleapis.com': 'https://datastore-transaction-gateway-a.invalid',
+        'datastore-b.googleapis.com': 'https://datastore-transaction-gateway-b.invalid' } }) });
     try {
       let observer;
       const result = await runDatastoreTransactions({ options: transport.gaxOptions({ projectId: 'demo-wga-transactions' }), scenario, caseId,

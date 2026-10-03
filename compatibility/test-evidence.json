@@ -53426,11 +53426,9 @@
     },
     {
       "id": "TX-009",
-      "coverage": "partial",
-      "reason": "Two crossed high-level transactions preserve distinct binary IDs, synthetic identity metadata, request ownership and independent persisted values in both pinned profiles across native and both Node/workerd modes.",
-      "gaps": [
-        "Exercise crossed transactions with distinct authentication providers or Google credentials. Synthetic identity headers prove request-label isolation only."
-      ],
+      "coverage": "covered",
+      "reason": "Crossed transactions use distinct OAuth2Client providers, SDK clients and logical service targets in both pinned profiles across native and both Node/workerd modes. Actual peer authorization/quota values agree with each transaction ID and key; provider service URLs and Fetch origins or native TLS authorities are independently checked. Synthetic cached tokens perform no external auth I/O.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -53486,6 +53484,143 @@
             {
               "pointer": "/backendIdleBeforeNextCase",
               "equals": true
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53551,6 +53686,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53616,6 +53888,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53681,6 +54090,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53746,6 +54292,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53803,6 +54486,143 @@
             {
               "pointer": "/backendIdleBeforeNextCase",
               "equals": true
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53868,6 +54688,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53933,6 +54890,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -53998,6 +55092,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         },
@@ -54063,6 +55294,143 @@
                 "queuedCalls": 0,
                 "bufferedBytes": 0
               }
+            },
+            {
+              "pointer": "/result/credentialIsolation",
+              "equals": {
+                "sdkClients": 2,
+                "authProviders": 2,
+                "distinctClients": true,
+                "distinctProviders": true,
+                "distinctTargets": true,
+                "authEvents": [
+                  "a",
+                  "b",
+                  "b",
+                  "a",
+                  "b",
+                  "a",
+                  "a",
+                  "b"
+                ],
+                "providers": [
+                  {
+                    "identity": "a",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "a"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  },
+                  {
+                    "identity": "b",
+                    "metadataCalls": 4,
+                    "targets": [
+                      "b"
+                    ],
+                    "authorizationGenerated": true,
+                    "quotaGenerated": true
+                  }
+                ],
+                "externalAuthRequests": 0
+              }
+            },
+            {
+              "pointer": "/requests/0/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/0/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/1/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/1/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/2/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/3/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/3/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/4/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/4/targetIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/5/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/5/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/credentialIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/quotaIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/6/targetIdentity",
+              "equals": "a"
+            },
+            {
+              "pointer": "/requests/7/credentialIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/quotaIdentity",
+              "equals": "b"
+            },
+            {
+              "pointer": "/requests/7/targetIdentity",
+              "equals": "b"
             }
           ]
         }

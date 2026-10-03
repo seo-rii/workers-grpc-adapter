@@ -1,6 +1,6 @@
 # Testing and evidence
 
-The full local gate runs real SDK packages, native grpc-js comparisons, workerd, Envoy and official database emulators. It requires Linux x64 for the pinned Envoy and Java distributions, plus Node.js 22 or later and npm. Dependency and toolchain downloads require network access; the verification scenarios do not call live Google services.
+The full local gate runs real SDK packages, native grpc-js comparisons, workerd, Envoy and official database emulators. It requires Linux x64 for the pinned Envoy and Java distributions, plus Node.js 22 or later, npm and OpenSSL for temporary loopback TLS certificates. Dependency and toolchain downloads require network access; the verification scenarios do not call live Google services.
 
 ## Run the local gate
 
@@ -275,11 +275,21 @@ When report validation fails, `TX_REPORT_INVALID` now includes the validator's
 fixed contract description in `validationFailure`; arbitrary exception text and
 request contents are not emitted.
 
-Two transactions also run in crossed order with distinct IDs and synthetic
-identity metadata. The test checks that their requests and results stay separate.
-These headers are fixture labels, not distinct authentication providers or Google
-credentials; concurrent credential isolation remains outside this transaction
-case. The original TX catalog retains that distinction.
+Two transactions also run in crossed order with distinct IDs, SDK clients,
+OAuth2Client instances and logical service targets. Each provider generates real
+authorization and quota metadata from its own synthetic cached token. Across
+both profiles and five runtimes, ten crossed cases observe 80 credential-provider
+calls and service RPCs. The peer checks the actual received authorization/quota
+pair against each transaction ID, key and target. The Fetch harness observes the
+outbound origin before forwarding; native grpc-js preserves the TLS authority.
+The auth provider separately checks its logical service URL.
+
+Native call credentials use a temporary loopback TLS proxy with a locally
+generated certificate. Its 16 native requests, idle streams, fault count and
+disposal are checked; the certificate and private key are removed during cleanup.
+No real Google tokens or refresh requests are used, and reports contain identity
+labels rather than credential values. This satisfies `TX-009` provider isolation
+without establishing production IAM, quota enforcement or token renewal.
 
 The gate checks one adapter attempt and Fetch per SDK RPC and zero active calls,
 queued calls and retained adapter bytes before closing the SDK clients. The

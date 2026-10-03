@@ -11,17 +11,17 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK reads | Meaning |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 122 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 57 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
 work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
-accounting satisfies ten. The remaining 67
+accounting and credential isolation satisfy eleven. The remaining 66
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -172,6 +172,14 @@ controlled error evidence but still requires separate production index testing.
 Bare `destroy()` continues paging in both pinned native and adapter SDK clients,
 so `DS-021` retains that original expectation as an explicit unmet condition.
 
+`TX-009` now uses distinct OAuth2Client providers, SDK clients and logical targets.
+Ten crossed cases across both pinned profiles and five runtimes check 80 actual
+provider invocations and peer authorization/quota receipts against transaction
+IDs and keys. Native TLS authority and observed Fetch origins establish the
+respective target boundaries. Temporary TLS credentials are disposed. Synthetic
+cached tokens do not establish Google IAM, quota enforcement or token renewal.
+The full transaction matrix remains 100 cases, 470 RPCs and 376 adapter Fetches.
+
 Actual SDK workerd benchmarks already run, but do not separately time every
 initialization phase or measure every owned buffer category. Those are narrower
 remaining conditions than “not tested.”
@@ -190,7 +198,7 @@ remaining conditions than “not tested.”
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
 | Datastore | 10 | 13 | 1 |
-| Transactions | 7 | 2 | 0 |
+| Transactions | 8 | 1 | 0 |
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
@@ -208,8 +216,7 @@ The next local work units, in order, are:
 1. **Remaining SDK mutation and emulator combinations.** Extend per-call
    accounting to mutation and emulator reports; cover incomplete-key allocation,
    full batch/error semantics, explicit undefined values, query tie-breaking and
-   empty aggregation results. Crossed transaction IDs still need distinct
-   credential providers (`TX-009`). Keep the Commit cancellation limitation below
+   empty aggregation results. Keep the Commit cancellation limitation below
    visible (`TX-008`).
 2. **Performance and executable documentation checks.** Refresh the separate
    transport-only benchmark within the evidence pipeline; measure import,
