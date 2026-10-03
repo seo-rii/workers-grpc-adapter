@@ -62,7 +62,7 @@ async function startEmulatorEnvoy(emulators) {
                         ] }] },
                         access_log: [{ name: 'envoy.access_loggers.file', typed_config: {
                             '@type': 'type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog', path: accessLog,
-                            log_format: { json_format: { runtime, invocation: '%REQ(X-WGA-INVOCATION)%', method: '%REQ(:PATH)%', grpcStatus: '%GRPC_STATUS(NUMBER)%', httpStatus: '%RESPONSE_CODE%', upstream: '%UPSTREAM_CLUSTER%', flags: '%RESPONSE_FLAGS%' } },
+                            log_format: { json_format: { runtime, invocation: '%REQ(X-WGA-INVOCATION)%', method: '%REQ(:PATH)%', logicalCallId: '%REQ(X-WGA-SDK-CALL-ID)%', suite: '%REQ(X-WGA-SUITE)%', grpcStatus: '%GRPC_STATUS(NUMBER)%', httpStatus: '%RESPONSE_CODE%', upstream: '%UPSTREAM_CLUSTER%', flags: '%RESPONSE_FLAGS%' } },
                         } }],
                         http_filters: [
                             { name: 'envoy.filters.http.grpc_web', typed_config: { '@type': 'type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb' } },

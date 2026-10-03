@@ -10,6 +10,7 @@ const { pathToFileURL } = require('node:url');
 const { execFileSync } = require('node:child_process');
 const { startEmulators } = require('../fixtures/emulators/launcher.cjs');
 const { startEmulatorEnvoy } = require('./emulator-envoy.cjs');
+const { validateDatastoreEmulatorReport } = require('./datastore-emulator-evidence.cjs');
 const root = path.resolve(__dirname, '..');
 const googleRequire = createRequire(path.join(root, 'fixtures/google/package.json'));
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
@@ -72,7 +73,8 @@ async function forward(url, init, runtime, suite, invocation, port) {
     // real Fetch client must compute framing from the exact forwarded bytes.
     for (const name of ['content-length', 'host', 'connection', 'transfer-encoding']) headers.delete(name);
     if (invocation) headers.set('x-wga-invocation', invocation);
-    const record = { runtime, suite, invocation: invocation || null, method: target.pathname, requestContentType: headers.get('content-type'), requestBytes: init.body.byteLength, responseContentType: null };
+    if (target.pathname.startsWith('/google.datastore.')) headers.set('x-wga-suite', suite);
+    const record = { runtime, suite, invocation: invocation || null, method: target.pathname, logicalCallId: headers.get('x-wga-sdk-call-id'), requestContentType: headers.get('content-type'), requestBytes: init.body.byteLength, responseContentType: null };
     report.requests.push(record);
     let response;
     try { response = await savedFetch(url, { ...init, headers, redirect: 'error' }); }
@@ -98,19 +100,57 @@ async function nodeSuites(runtime, port, sourceFiles, sourceContents) {
             report.sourceHashes[runtime][file] = hash(fs.readFileSync(path.join(consumer, file)));
         }
         const { emulatorSuites } = await import(pathToFileURL(path.join(consumer, 'emulator-suites.mjs')).href);
+        const { startSdkCallAccounting } = await import(pathToFileURL(path.join(consumer, 'sdk-call-accounting.mjs')).href);
         for (const { sdk, suite, run } of emulatorSuites) {
-            const options = { projectId, sslCreds: grpc.credentials.createInsecure() };
+            let options = { projectId, sslCreds: grpc.credentials.createInsecure() };
+            const isDatastore = sdk === '@google-cloud/datastore';
+            const clients = [], tracker = isDatastore && runtime !== 'native' ? startSdkCallAccounting(grpc) : null;
+            let accounting = null, transport, dataFetches = 0, authMetadataRequests = 0, authNetworkRequests = 0;
+            if (isDatastore) {
+                const authClient = new (req('google-auth-library').OAuth2Client)();
+                authClient.getRequestHeaders = async () => { authMetadataRequests++; throw new Error('emulator-auth-disabled'); };
+                authClient.transporter.request = async () => { authNetworkRequests++; throw new Error('emulator-auth-network-disabled'); };
+                options.authClient = authClient;
+            }
             if (sdk === '@google-cloud/datastore') options.apiEndpoint = endpoint;
             else options.host = endpoint;
             globalThis.fetch = (url, init) => forward(url, init, runtime, suite, null, port);
+            if (tracker) {
+                transport = req('@grpc/grpc-js/adapter').createWorkersGrpcTransport({ mode: 'grpc-web',
+                    allowInsecureLocalhost: true, defaultTimeoutMs: 30000, endpoints: { [endpoint]: `http://${endpoint}` },
+                    observer: tracker.observer, fetcher: { fetch: tracker.wrapFetcher((url, init) => {
+                        dataFetches++; return forward(url, init, runtime, suite, null, port);
+                    }) } });
+                const { sslCreds, ...gaxOptions } = options;
+                // Explicit anonymous loopback credentials are applied only to
+                // this emulator fixture after obtaining the transport token.
+                options = { ...transport.gaxOptions(gaxOptions), sslCreds };
+            }
             const start = report.requests.length;
             try {
-                const checks = await run({ options, allowedProjectId: projectId, allowWrites: true, runId });
-                report.results.push({ runtime, sdk, suite, status: 'passed', checks, grpcWebRequests: report.requests.length - start });
+                const checks = await run({ options, allowedProjectId: projectId, allowWrites: true, runId,
+                    registerDatastoreClient: client => clients.push(client) });
+                if (tracker) accounting = await tracker.snapshot(transport);
+                if (isDatastore) {
+                    assert.equal(authMetadataRequests, 0); assert.equal(authNetworkRequests, 0);
+                    assert.ok(clients.length > 0, 'Every Datastore suite must register its clients');
+                }
+                report.results.push({ runtime, sdk, suite, status: 'passed', checks, grpcWebRequests: report.requests.length - start,
+                    ...(isDatastore ? { accounting, dataFetches, authFetches: 0, authMetadataRequests, authNetworkRequests,
+                        controlRequests: 0, authMode: 'disabled-insecure-loopback', registeredClients: clients.length } : {}) });
             } catch (error) {
                 report.results.push({ runtime, sdk, suite, status: 'failed', error: errorDetails(error) });
                 throw error;
-            } finally { globalThis.fetch = savedFetch; }
+            } finally {
+                try {
+                    const generated = [...new Set(clients.flatMap(client => typeof client.close === 'function' ? [client] : [...client.clients_.values()]))];
+                    const closed = await Promise.allSettled(generated.map(client => client.close()));
+                    const failures = closed.filter(item => item.status === 'rejected').map(item => item.reason);
+                    if (failures.length) throw new AggregateError(failures, 'emulator-sdk-close-failed');
+                    const row = report.results.at(-1);
+                    if (isDatastore && row?.suite === suite) row.clientsClosed = clients.length;
+                } finally { tracker?.restore(); globalThis.fetch = savedFetch; }
+            }
         }
         return emulatorSuites.map(({ sdk, suite }) => ({ sdk, suite }));
     } finally { fs.rmSync(consumer, { recursive: true, force: true }); }
@@ -130,7 +170,16 @@ function summarizeWire(entries) {
 }
 async function main() {
     const { script, sourceFiles, sourceContents } = await compileWorker();
-    report.evidence = Object.fromEntries(['scripts/google-emulator-test.cjs', 'scripts/emulator-envoy.cjs', 'fixtures/google/emulator-worker.mjs', 'fixtures/emulators/toolchain.json', 'fixtures/emulators/launcher.cjs', 'fixtures/emulators/download.cjs', 'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json'].map(file => [file, hash(fs.readFileSync(path.join(root, file)))]));
+    report.evidence = Object.fromEntries(['scripts/google-emulator-test.cjs', 'scripts/emulator-envoy.cjs', 'scripts/datastore-emulator-evidence.cjs', 'fixtures/google/emulator-worker.mjs', 'fixtures/emulators/toolchain.json', 'fixtures/emulators/launcher.cjs', 'fixtures/emulators/download.cjs', 'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json'].map(file => [file, hash(fs.readFileSync(path.join(root, file)))]));
+    for (const [name, fixture, entry] of [['installedInputs', 'google', 'dist/index.js'], ['nativeInputs', 'native', 'build/src/index.js']]) {
+        report[name] = Object.fromEntries(['@grpc/grpc-js/package.json', `@grpc/grpc-js/${entry}`, '@google-cloud/datastore/package.json',
+            '@google-cloud/datastore/build/src/index.js', '@google-cloud/datastore/build/src/request.js',
+            '@google-cloud/datastore/build/src/v1/datastore_client.js', '@google-cloud/datastore/build/protos/protos.json',
+            'google-gax/package.json', 'google-auth-library/package.json'].map(file => {
+                const location = `fixtures/${fixture}/node_modules/${file}`;
+                return [location, hash(fs.readFileSync(path.join(root, location)))];
+            }));
+    }
     let emulators, envoy, worker, startingEmulators, startingEnvoy;
     let cleaning, primary;
     const cleanup = () => cleaning ||= (async () => {
@@ -191,7 +240,7 @@ async function main() {
         }
         assert.deepEqual(report.sourceHashes.native, report.sourceHashes.replacement);
         assert.deepEqual(report.sourceHashes.native, report.sourceHashes.workerd);
-        const business = runtime => report.results.filter(item => item.runtime === runtime).map(({ runtime, grpcWebRequests, ...item }) => item);
+        const business = runtime => report.results.filter(item => item.runtime === runtime).map(({ sdk, suite, status, checks }) => ({ sdk, suite, status, checks }));
         for (const runtime of ['replacement', 'workerd-first', 'workerd-second']) assert.deepEqual(business(runtime), business('native'), `Business mismatch: ${runtime}`);
         report.sameSharedFiles = true;
         report.businessEquivalent = true;
@@ -212,6 +261,13 @@ async function main() {
     }
     report.wireEquivalent = true;
     report.status = 'passed';
+    report.datastoreAccounting = { status: 'passed', scope: 'anonymous-grpc-web-official-emulator', mode: 'grpc-web',
+        adapterRetryEnabled: false, resourcesCheckedBeforeClose: true, physicalEnvoyReceiptsJoined: true,
+        authMode: 'disabled-insecure-loopback', authFetches: 0, authNetworkRequests: 0, authMetadataRequests: 0,
+        controlRequests: 0, controlScope: 'no-suite-control-requests; emulator and Envoy readiness are harness setup',
+        logicalCalls: report.results.filter(row => row.sdk === '@google-cloud/datastore').reduce((sum, row) => sum + (row.accounting?.calls.length || 0), 0),
+        dataFetches: report.results.filter(row => row.sdk === '@google-cloud/datastore').reduce((sum, row) => sum + row.dataFetches, 0) };
+    validateDatastoreEmulatorReport(report);
     report.checks = ['official-firestore-native-emulator', 'official-firestore-datastore-mode-emulator', 'real-envoy-grpc-web-filter', 'no-mocked-rpc-responses', 'all-network-loopback', 'no-adc-or-real-credentials', 'identical-shared-module-sha256', 'native-node-adapter-and-workerd', 'same-business-assertions', 'same-emulator-rpc-and-status-counts', 'two-workerd-invocations-per-suite', 'created-data-cleaned-before-client-close', 'child-processes-stopped'];
 }
 main().catch(error => {

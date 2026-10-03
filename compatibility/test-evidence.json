@@ -12266,6 +12266,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -12284,6 +12337,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -12302,6 +12424,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -12320,6 +12511,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -12383,6 +12643,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -12401,6 +12714,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -12419,6 +12801,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -12437,6 +12888,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -13852,6 +14372,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -13870,6 +14438,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -13888,6 +14520,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -13906,6 +14602,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -16055,8 +16815,48 @@
                 "failed-writes-preserve-state",
                 "transaction-valid-update-and-insert-with-invalid-update",
                 "atomic-commit-failure-existing-unchanged-new-absent",
-                "verified-delete-cleanup"
+                "verified-delete-cleanup",
+                "insert-missing-creates-entity",
+                "upsert-missing-creates-and-existing-replaces",
+                "update-existing-replaces-entity",
+                "public-mutation-methods-state-verified"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -16085,8 +16885,64 @@
                 "failed-writes-preserve-state",
                 "transaction-valid-update-and-insert-with-invalid-update",
                 "atomic-commit-failure-existing-unchanged-new-absent",
-                "verified-delete-cleanup"
+                "verified-delete-cleanup",
+                "insert-missing-creates-entity",
+                "upsert-missing-creates-and-existing-replaces",
+                "update-existing-replaces-entity",
+                "public-mutation-methods-state-verified"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 20
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 20
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -16115,8 +16971,64 @@
                 "failed-writes-preserve-state",
                 "transaction-valid-update-and-insert-with-invalid-update",
                 "atomic-commit-failure-existing-unchanged-new-absent",
-                "verified-delete-cleanup"
+                "verified-delete-cleanup",
+                "insert-missing-creates-entity",
+                "upsert-missing-creates-and-existing-replaces",
+                "update-existing-replaces-entity",
+                "public-mutation-methods-state-verified"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 20
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 20
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -16145,8 +17057,64 @@
                 "failed-writes-preserve-state",
                 "transaction-valid-update-and-insert-with-invalid-update",
                 "atomic-commit-failure-existing-unchanged-new-absent",
-                "verified-delete-cleanup"
+                "verified-delete-cleanup",
+                "insert-missing-creates-entity",
+                "upsert-missing-creates-and-existing-replaces",
+                "update-existing-replaces-entity",
+                "public-mutation-methods-state-verified"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 20
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 20
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -20731,6 +21699,322 @@
               }
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/google-emulators.json",
+          "source": "fixtures/google/shared/emulator-datastore.mjs",
+          "command": "google-emulators",
+          "array": "/results",
+          "where": {
+            "runtime": "native",
+            "suite": "datastore-emulator-ids"
+          },
+          "anchor": "datastore-emulator-ids",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/google-emulators.json",
+          "source": "fixtures/google/shared/emulator-datastore.mjs",
+          "command": "google-emulators",
+          "array": "/results",
+          "where": {
+            "runtime": "replacement",
+            "suite": "datastore-emulator-ids"
+          },
+          "anchor": "datastore-emulator-ids",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/google-emulators.json",
+          "source": "fixtures/google/shared/emulator-datastore.mjs",
+          "command": "google-emulators",
+          "array": "/results",
+          "where": {
+            "runtime": "workerd-first",
+            "suite": "datastore-emulator-ids"
+          },
+          "anchor": "datastore-emulator-ids",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/google-emulators.json",
+          "source": "fixtures/google/shared/emulator-datastore.mjs",
+          "command": "google-emulators",
+          "array": "/results",
+          "where": {
+            "runtime": "workerd-second",
+            "suite": "datastore-emulator-ids"
+          },
+          "anchor": "datastore-emulator-ids",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c8558e73fdd168f54bbac2564b1f2536d3fcc6f397c6501cfdd6f9145c6c2bc9"
@@ -20792,6 +22076,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -20810,6 +22142,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -20828,6 +22224,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -20846,6 +22306,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -22655,6 +24179,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -22673,6 +24245,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -22691,6 +24327,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -22709,6 +24409,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -26630,6 +28394,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -26648,6 +28460,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -26666,6 +28542,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -26684,6 +28624,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -29641,6 +31645,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
             }
           ]
         },
@@ -29659,6 +31712,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -29677,6 +31795,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -29695,6 +31878,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30827,6 +33075,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -30845,6 +33146,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30863,6 +33233,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30881,6 +33320,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30899,6 +33407,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -30917,6 +33474,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30935,6 +33557,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -30953,6 +33640,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32444,11 +35196,9 @@
     },
     {
       "id": "DS-012",
-      "coverage": "partial",
-      "reason": "Byte-exact Buffer contents and Date millisecond epoch/type survive the official emulator in native, replacement and workerd.",
-      "gaps": [
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Actual Buffer type and byte contents plus Date instance and epoch survive official Datastore-mode storage across native, Node replacement and two workerd invocations. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -32465,6 +35215,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -32483,6 +35286,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32501,6 +35373,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32519,6 +35460,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -32527,11 +35537,9 @@
     },
     {
       "id": "DS-013",
-      "coverage": "partial",
-      "reason": "Positive/negative unsafe int64 values retain SDK integer wrappers and exact decimal strings; allocated/reserved numeric keys preserve identity.",
-      "gaps": [
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Positive and negative unsafe int64 values retain actual SDK integer wrappers and exact decimal strings after official emulator storage; key IDs retain their exact string identity. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -32548,6 +35556,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -32566,6 +35627,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32584,6 +35714,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32602,6 +35801,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32620,6 +35888,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
             }
           ]
         },
@@ -32638,6 +35955,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32656,6 +36038,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32674,6 +36121,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "allocate-three-unique-ids",
+                "generated-v1-reserve-ids",
+                "reserved-int64-id-precision",
+                "allocation-creates-no-entity",
+                "allocated-reserved-key-round-trip",
+                "save-incomplete-key-assigns-caller-key-id",
+                "assigned-key-get-round-trip",
+                "high-level-allocateIds-no-reserveIds-generated-v1-reserveIds"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 2
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 2
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -32682,12 +36194,9 @@
     },
     {
       "id": "DS-014",
-      "coverage": "partial",
-      "reason": "Nested Unicode, arrays, null, empty string/list and an absent property survive actual Datastore serialization and decoding.",
-      "gaps": [
-        "An explicitly supplied undefined property and its SDK serialization policy are not exercised.",
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Official emulator round trips distinguish top-level and nested omitted undefined object properties, explicit own null values and truly absent properties, while preserving caller input and nested/array values in every runtime. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -32704,6 +36213,59 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -32722,6 +36284,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32740,6 +36371,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32758,6 +36458,75 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "positive-negative-int64-wrappers",
+                "buffer-bytes",
+                "date-milliseconds",
+                "geopoint",
+                "key-property",
+                "nested-null-empty-values",
+                "key-symbol-and-int64-id",
+                "ancestor-path",
+                "namespace-isolation",
+                "explicit-undefined-object-properties-omitted",
+                "explicit-null-and-missing-distinguished",
+                "input-undefined-properties-not-mutated"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -32766,12 +36535,9 @@
     },
     {
       "id": "DS-015",
-      "coverage": "partial",
-      "reason": "An ancestor query applies an inequality filter and explicit rank/key ordering; all runtimes assert the exact result sequence.",
-      "gaps": [
-        "Ranks are unique, so equal-rank tie-breaking is configured but not exercised.",
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Official emulator queries verify filters, ancestor isolation and exact ordering; equal-rank rows inserted out of key order span a page boundary and retain the explicit key tie-breaker without missing or duplicated rows. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -32824,6 +36590,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -32842,6 +36657,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32860,6 +36740,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32878,6 +36823,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -32905,6 +36915,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -32923,6 +36982,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32941,6 +37065,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -32959,6 +37148,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -34517,11 +38771,9 @@
     },
     {
       "id": "DS-017",
-      "coverage": "partial",
-      "reason": "Ancestor isolation and projection retain the selected property and KEY symbol while excluding an unselected field.",
-      "gaps": [
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Official emulator ancestor queries and projections preserve the selected property and KEY symbol while excluding the unselected field in every runtime. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -34538,6 +38790,55 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -34556,6 +38857,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -34574,6 +38940,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -34592,6 +39023,71 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "ancestor-isolation",
+                "inequality-filter",
+                "explicit-rank-key-order",
+                "cursor-page-size-two",
+                "no-missing-or-duplicate-rows",
+                "projection-and-key-symbol",
+                "out-of-order-insertion-with-equal-ranks",
+                "equal-rank-key-tiebreaker-across-page-boundary"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 8
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 8
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -34600,11 +39096,9 @@
     },
     {
       "id": "DS-018",
-      "coverage": "partial",
-      "reason": "The pinned SDK count/sum/average operations and empty-result zero/zero/null semantics execute against the official emulator in all runtimes.",
-      "gaps": [
-        "The report compares per-suite fetch counts and aggregate native RPC/status counts, not individual Call IDs and their data-fetch-attempt invariant."
-      ],
+      "coverage": "covered",
+      "reason": "Pinned count/sum/average operations preserve aggregation values and aliases; empty responses have the native tuple shape, numeric positive zero count/sum and an own null average across all runtime groups. Each adapter call, including cleanup RPCs, joins one physical Fetch to one Envoy receipt, with ownership checked before all registered SDK clients close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -34621,6 +39115,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "count",
+                "sum",
+                "average",
+                "explicit-aliases",
+                "empty-count-zero-sum-zero-average-null",
+                "empty-promise-tuple-and-exact-aliases",
+                "empty-count-and-sum-number-positive-zero-average-own-null"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -34639,6 +39181,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "count",
+                "sum",
+                "average",
+                "explicit-aliases",
+                "empty-count-zero-sum-zero-average-null",
+                "empty-promise-tuple-and-exact-aliases",
+                "empty-count-and-sum-number-positive-zero-average-own-null"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -34657,6 +39263,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "count",
+                "sum",
+                "average",
+                "explicit-aliases",
+                "empty-count-zero-sum-zero-average-null",
+                "empty-promise-tuple-and-exact-aliases",
+                "empty-count-and-sum-number-positive-zero-average-own-null"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -34675,6 +39345,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "count",
+                "sum",
+                "average",
+                "explicit-aliases",
+                "empty-count-zero-sum-zero-average-null",
+                "empty-promise-tuple-and-exact-aliases",
+                "empty-count-and-sum-number-positive-zero-average-own-null"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 4
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 4
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         }
@@ -38562,6 +43296,42 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -38594,6 +43364,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -38626,6 +43448,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -38658,6 +43532,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -41656,6 +46582,42 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -41688,6 +46650,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -41720,6 +46734,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -41752,6 +46818,58 @@
                 "verified-delete-cleanup",
                 "generated-clients-closed"
               ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 7
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 7
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -50211,6 +55329,54 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
             }
           ]
         },
@@ -50229,6 +55395,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -50247,6 +55477,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },
@@ -50265,6 +55559,70 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            },
+            {
+              "pointer": "/checks",
+              "equals": [
+                "batch-save",
+                "found-missing-key-map",
+                "scalar-array-shapes",
+                "promise-tuple",
+                "callback-promise-equivalence",
+                "missing-is-undefined",
+                "batch-delete-including-missing"
+              ]
+            },
+            {
+              "pointer": "/grpcWebRequests",
+              "equals": 9
+            },
+            {
+              "pointer": "/dataFetches",
+              "equals": 9
+            },
+            {
+              "pointer": "/authFetches",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMetadataRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authNetworkRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/controlRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/authMode",
+              "equals": "disabled-insecure-loopback"
+            },
+            {
+              "pointer": "/registeredClients",
+              "equals": 1
+            },
+            {
+              "pointer": "/clientsClosed",
+              "equals": 1
+            },
+            {
+              "pointer": "/accounting/beforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/accounting/activeChannels",
+              "equals": 0
+            },
+            {
+              "pointer": "/accounting/resources",
+              "equals": {
+                "activeCalls": 0,
+                "queuedCalls": 0,
+                "bufferedBytes": 0
+              }
             }
           ]
         },

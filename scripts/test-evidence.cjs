@@ -17,6 +17,7 @@ const { validateDatastoreTransactionReport } = require('./datastore-transaction-
 const { validateDatastoreLookupReport } = require('./datastore-lookup-evidence.cjs');
 const { validateDatastorePaginationReport } = require('./datastore-pagination-evidence.cjs');
 const { validateDatastoreMutationReport } = require('./datastore-mutation-evidence.cjs');
+const { validateDatastoreEmulatorReport } = require('./datastore-emulator-evidence.cjs');
 const { validateCallLifecycleReport } = require('./call-lifecycle-evidence.cjs');
 const { validateFlowControlReport } = require('./flow-control-evidence.cjs');
 const { validateWireCatalogReport } = require('./wire-catalog-evidence.cjs');
@@ -329,6 +330,10 @@ function validateEmulatorReport(report, { toolchain, envoyPin, suites }) {
 function validateEmulatorArtifacts(root, report) {
     const toolchain = read(root, 'fixtures/emulators/toolchain.json'), envoyPin = read(root, 'fixtures/envoy/binary.json');
     validateEmulatorReport(report, { toolchain, envoyPin, suites: emulatorSuites(root) });
+    validateDatastoreEmulatorReport(report);
+    for (const [file, expected] of Object.entries({ ...report.installedInputs, ...report.nativeInputs })) {
+        need(hash(root, file) === expected, `${file}: emulator installed input hash drift`);
+    }
     validateProfileManifest(read(root, 'src/build/profiles/google-static-v1.json'), report.build);
     for (const [file, expected] of Object.entries(report.evidence)) need(hash(root, file) === expected, `${file}: emulator input hash drift`);
     for (const [file, expected] of Object.entries(report.sourceHashes.native)) need(hash(root, `fixtures/google/shared/${file}`) === expected, `${file}: emulator business source hash drift`);

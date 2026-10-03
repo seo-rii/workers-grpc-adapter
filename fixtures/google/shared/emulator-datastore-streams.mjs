@@ -22,6 +22,7 @@ function collect(stream) {
 async function run(context) {
     requireWrites(context);
     const datastore = new Datastore({ ...context.options, namespace: `wga-emu-${context.runId}-streams` });
+    context.registerDatastoreClient?.(datastore);
     const keys = [0, 1, 2, 3].map(rank => datastore.key(['WgaEmulatorStreams', `row-${rank}`]));
     const missing = datastore.key(['WgaEmulatorStreams', 'missing']);
     const streams = [];
@@ -82,6 +83,8 @@ async function run(context) {
         const [remaining] = await datastore.get([...keys, missing]);
         check(remaining.length === 0, 'emulator-datastore-streams-cleanup');
     }, async () => {
+        // The accounting harness snapshots completed calls before SDK close.
+        if (context.registerDatastoreClient) return;
         // The pinned high-level SDK has no close(); its cached generated clients do.
         const outcomes = await Promise.allSettled([...datastore.clients_.values()].map(client => client.close()));
         const failures = outcomes.filter(outcome => outcome.status === 'rejected').map(outcome => outcome.reason);

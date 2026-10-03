@@ -357,11 +357,36 @@ per-call counters or cleanup receipts.
 
 The harness starts pinned Firestore 1.22.0/Java 21 processes in Native and Datastore modes on independent loopback ports. Real Envoy 1.39.1 translates each gRPC-Web request. Every registered suite runs under native grpc-js, the Node adapter and two workerd invocations, using the same shared files.
 
-The report compares business assertions, source SHA-256 values and method/status counts. Each adapter Fetch must have a corresponding upstream arrival. Envoy's router **upstream access log** records status because the downstream gRPC-Web filter consumes trailers. Logs record RPC paths and status, not document or token payloads.
+The report compares business assertions, source SHA-256 values and method/status counts. Each adapter Fetch must have a corresponding upstream arrival. Envoy's router **upstream access log** records status because the downstream gRPC-Web filter consumes trailers. Logs record RPC paths, status and test identity labels, not document or token payloads.
+
+Every Datastore suite additionally joins actual logical call IDs to observer
+events, physical Fetches and Envoy receipts. Its independent method/status
+contract includes data deletion and other cleanup RPCs. The harness snapshots
+timers, retained bytes, parser ownership, pumps, pending callbacks and channel
+registrations after data cleanup and before closing all registered SDK clients.
+It checks client closure separately, so cleanup cannot conceal an active call.
+Anonymous emulator channels have guarded credential and auth-network methods;
+their counters must remain zero. Data Fetch and suite control counts are
+separate from emulator/Envoy readiness requests made during harness setup.
+
+This accounting uses explicit `grpc-web` routing in the Node replacement and two
+invocations of the same workerd isolate. It does not claim Cloudflare conversion
+coverage; both transport modes are exercised by the separate controlled suites.
+Firestore retains the existing per-suite request and upstream status accounting.
 
 Firestore's emulator BatchWrite path needs emulator owner authorization. Local Envoy injects synthetic `Bearer owner` only toward Firestore. Clients use neither real credentials nor ADC and do not send credentials over plaintext. The workerd host bridge adjusts HTTP framing headers while forwarding protobuf bytes and the streaming response.
 
 Datastore scenarios cover data types, namespace/ancestor keys, batch/missing lookup, callback/Promise shapes, query cursors/projection, aggregation, ID allocation/reservation, rollback, read streams and early destruction. Firestore scenarios cover data types, getAll/field masks, query cursors, aggregation, transforms, rollback and BulkWriter. Both exercise `ALREADY_EXISTS`, `NOT_FOUND` and failed-write atomicity; Firestore also checks stale-precondition `FAILED_PRECONDITION`.
+
+The Datastore data cases distinguish omitted top-level/nested `undefined` object
+properties from explicit `null` and genuinely absent properties, while preserving
+the caller's input. Equal-rank rows are inserted out of key order and paginated
+across a tie to exercise the explicit key tie-breaker. Empty aggregation checks
+the tuple shape, exact aliases, numeric positive zero for count/sum and an own
+`null` average. Incomplete-key save verifies assignment on the original Key and
+subsequent retrieval. Existing/missing insert/upsert/update checks both successful
+state changes and the original failure statuses. These assertions compare the
+pinned SDK's behavior with native grpc-js; they do not define new SDK semantics.
 
 The emulator's stream-destruction case fits in one unary query page. A separate controlled pagination gate compares identical business code under native grpc-js, the Node adapter and both workerd modes. It observes exact request cursors, remaining limits, page counts and reuse. In the pinned Datastore SDK, `end()` suppresses subsequent pages; `destroy()` alone suppresses delivered entities but still requests later pages. Neither operation cancels an already pending unary query. The gate holds that query at the backend to verify this boundary before releasing it. See [limitations](limitations.md#datastore-query-streams).
 

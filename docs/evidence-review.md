@@ -11,19 +11,18 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations | Meaning |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 129 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 51 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
 work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
-accounting and credential isolation satisfy eleven. Mutation contracts satisfy
-six more. The remaining 60
-unsatisfied cases cannot be translated into a percentage of implementation work:
+accounting and credential isolation satisfy eleven. Mutation contracts and
+emulator accounting satisfy twelve more. The remaining 54 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
 
@@ -191,6 +190,23 @@ are covered. High-level `reserveIds` is absent in the pinned SDK; the catalog's
 available high-level API requirement is satisfied by `allocateIds`, while the
 public generated-v1 reservation test stays a separate emulator observation.
 
+Official emulators now verify every Datastore call, including cleanup RPCs.
+Ten suites in native, Node replacement and two workerd invocations produce
+308 Datastore RPCs. The 231 adapter calls each join one physical Fetch and one
+Envoy receipt, with timers, buffers, parser ownership, pumps, callbacks and active
+channel registrations checked before SDK close. All registered clients then
+close. Anonymous credential/network guards remain at zero; readiness traffic is
+harness setup, not a suite control request. The full Firestore/Datastore emulator
+matrix passes 80 cases, with 429 Fetches and 572 upstream arrivals.
+
+The data cases explicitly test omitted undefined object properties versus null
+and missing fields, caller input preservation, equal-rank ordering across a page
+boundary, empty aggregation tuple/types, incomplete-key assignment and the public
+mutation success/failure matrix. `DS-012/013/014/015/017/018` are covered. This
+emulator accounting uses grpc-web; controlled gates separately test both modes.
+All Datastore catalog cases except production index requirements (`DS-019`) and
+the native SDK destroy behavior (`DS-021`) now have complete local evidence.
+
 Actual SDK workerd benchmarks already run, but do not separately time every
 initialization phase or measure every owned buffer category. Those are narrower
 remaining conditions than “not tested.”
@@ -208,7 +224,7 @@ remaining conditions than “not tested.”
 | Call lifecycle | 17 | 1 | 0 |
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
-| Datastore | 16 | 8 | 0 |
+| Datastore | 22 | 2 | 0 |
 | Transactions | 8 | 1 | 0 |
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
@@ -224,16 +240,15 @@ retained rather than treated as transport equivalence.
 
 The next local work units, in order, are:
 
-1. **Remaining emulator accounting and combinations.** Extend per-call
-   accounting to official emulator reports; cover explicit undefined values,
-   query tie-breaking and exact empty aggregation types. Keep the Commit
-   cancellation limitation below visible (`TX-008`).
-2. **Performance and executable documentation checks.** Refresh the separate
+1. **Performance measurement.** Refresh the separate
    transport-only benchmark within the evidence pipeline; measure import,
    construction, initialization and first-message timing independently. Sample
-   heap trends in the same failure/cancel workload. Connect documentation
-   examples, support tables, diagnostic IDs and release provenance checks to
-   executed fixtures instead of relying on source hashes alone (`PERF-*`, `DOC-*`).
+   heap trends in the same failure/cancel workload (`PERF-*`).
+2. **Executable documentation checks.** Connect documentation examples, support
+   tables, diagnostic IDs and release provenance checks to executed fixtures
+   instead of relying on source hashes alone (`DOC-*`). Keep production index
+   requirements (`DS-019`), native stream destruction (`DS-021`) and public Commit
+   cancellation (`TX-008`) as explicit boundaries.
 
 The nine cases without an accepted current reference are
 `CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.

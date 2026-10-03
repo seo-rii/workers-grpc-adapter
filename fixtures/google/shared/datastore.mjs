@@ -5,6 +5,7 @@ import { check, requireWrites, withCleanup } from './assert.mjs';
 export async function datastoreCrud(context) {
     requireWrites(context);
     const datastore = new Datastore({ ...context.options, namespace: `wga-${context.runId}` });
+    context.registerDatastoreClient?.(datastore);
     const key = datastore.key(['WgaAdapterSmoke', context.runId]);
     return withCleanup(async () => {
         await datastore.save({ key, data: { marker: context.runId, count: 1 } });
@@ -19,6 +20,7 @@ export async function datastoreCrud(context) {
 export async function datastoreTransaction(context) {
     requireWrites(context);
     const datastore = new Datastore({ ...context.options, namespace: `wga-${context.runId}` });
+    context.registerDatastoreClient?.(datastore);
     const key = datastore.key(['WgaAdapterTransaction', context.runId]);
     return withCleanup(async () => {
         await datastore.save({ key, data: { count: 1 } });
