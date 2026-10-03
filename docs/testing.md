@@ -24,6 +24,13 @@ Other platforms can run applicable core/type/SDK commands, but those results do 
 
 The unit and regression suite still needs the installed SDK fixtures: evidence tests exercise the actual pinned build profile. It does not require the Envoy or emulator downloads.
 
+The local Envoy harness reserves its four loopback listener/admin ports together
+and holds their sockets until configuration is ready. It releases them immediately
+before starting Envoy. This prevents the operating system from reusing a port
+inside the same configuration; an unrelated process can still race the final
+socket handoff. Deterministic allocation and real-loopback tests check distinct
+ports, reservation ownership, release and cleanup after a failed allocation.
+
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund
 npm run fixtures:install
