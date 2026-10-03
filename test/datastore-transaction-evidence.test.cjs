@@ -139,6 +139,9 @@ test('EVIDENCE Datastore transactions accepts measured deadline response/reset r
     ['peer-deadline', 2, true, null, false],
     ['peer-deadline', 8, true, null, false],
     ['peer-deadline', 2, true, 4, false],
+    // CI observed initial HTTP headers, then INTERNAL_ERROR before trailers.
+    ['peer-deadline', 2, true, 2, false],
+    ['peer-deadline', 2, true, 2, true],
   ]) {
     const report = fixture(), result = row(report, 'v1-deadline-commit', runtime, profile);
     Object.assign(result.requests[1], { termination, http2ResetCode: resetCode, responseSent, cancelled: resetCode === 8 });
@@ -146,6 +149,43 @@ test('EVIDENCE Datastore transactions accepts measured deadline response/reset r
     Object.assign(report.wire[index], { grpcStatus: receivedStatus, httpStatus: receivedStatus === null ? 0 : 200 });
     if (reversed) [report.wire[index], report.wire[index + 1]] = [report.wire[index + 1], report.wire[index]];
     validateDatastoreTransactionReport(report);
+  }
+});
+
+test('EVIDENCE Datastore transactions constrains the captured headers-before-reset UNKNOWN receipt', () => {
+  const baseline = fixture();
+  const selected = report => row(report, 'v1-deadline-commit', 'native', 'google-modern-v1');
+  const receipt = report => report.wire.find(value => value.invocation === 'google-modern-v1/native/v1-deadline-commit'
+    && value.method.endsWith('/Commit'));
+  // Captured from the failed CI receipt, not a fabricated application status:
+  // the caller already expired with code 4 and the accepted write persisted.
+  Object.assign(selected(baseline).requests[1], { termination: 'peer-deadline', http2ResetCode: 2, responseSent: true, cancelled: false });
+  Object.assign(receipt(baseline), { httpStatus: 200, grpcStatus: 2, flags: '-' });
+  assert.equal(selected(baseline).result.errorCode, 4);
+  assert.deepEqual(selected(baseline).result.persistedCounts, [2]);
+  assert.equal(selected(baseline).requests[1].appliedMutations, 1);
+  validateDatastoreTransactionReport(baseline);
+  for (const [reason, mutate] of [
+    ['clean close is not the observed reset', report => { selected(report).requests[1].http2ResetCode = 0; }],
+    ['CANCEL is not the observed INTERNAL_ERROR', report => { Object.assign(selected(report).requests[1], { http2ResetCode: 8, cancelled: true }); }],
+    ['headers were not sent', report => { selected(report).requests[1].responseSent = false; }],
+    ['client reset is not a peer deadline response', report => { Object.assign(selected(report).requests[1], { termination: 'client-reset', responseSent: false }); }],
+    ['no proxy HTTP response', report => { receipt(report).httpStatus = 0; }],
+    ['upstream reset flag substituted', report => { receipt(report).flags = 'UR'; }],
+    ['caller UNKNOWN substituted for deadline', report => { selected(report).result.errorCode = 2; }],
+    ['peer deadline status changed', report => { selected(report).requests[1].statusCode = 2; }],
+    ['accepted write not applied', report => { selected(report).requests[1].appliedMutations = 0; }],
+    ['accepted write not recovered', report => { selected(report).result.persistedCounts = [1]; }],
+    ['extra Fetch', report => { selected(report).fetchCount++; }],
+    ['deadline control barrier missing', report => { selected(report).controlRequests = 0; }],
+    ['backend remains active', report => { selected(report).backendIdleBeforeNextCase = false; }],
+    ['adapter resource remains active', report => { row(report, 'v1-deadline-commit').observer.resources.activeCalls = 1; }],
+    ['ordinary response cannot report UNKNOWN', report => {
+      report.wire.find(value => value.invocation === 'google-modern-v1/native/commit-success' && value.method.endsWith('/Commit')).grpcStatus = 2;
+    }],
+  ]) {
+    const report = structuredClone(baseline); mutate(report);
+    assert.throws(() => validateDatastoreTransactionReport(report), /WGA_EVIDENCE_INVALID/, reason);
   }
 });
 

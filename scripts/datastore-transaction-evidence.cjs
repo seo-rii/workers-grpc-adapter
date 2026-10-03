@@ -188,7 +188,13 @@ function validateDatastoreTransactionReport(report) {
       // cancellation can leave Envoy with no response. Validate each receipt
       // at its own observation point; the peer's 0/2/8 close codes and response
       // attempt are checked above, and the application must still report code 4.
+      // Envoy 1.39.1 infers UNKNOWN (2) from HTTP 200 when no grpc-status
+      // arrived in headers/trailers (grpc/common.cc and grpc/status.cc). CI
+      // captured this after the peer sent headers and then closed with
+      // INTERNAL_ERROR (2). Accept only that measured reset pair; a clean
+      // close, CANCEL reset or ordinary response must not hide a lost status.
       if (call.termination === 'peer-deadline') need(receipt.flags === '-' && (receipt.httpStatus === 200 && receipt.grpcStatus === 4
+        || receipt.httpStatus === 200 && receipt.grpcStatus === 2 && call.http2ResetCode === 2
         || receipt.httpStatus === 0 && receipt.grpcStatus === null), 'peer deadline response or response/reset race');
       else if (call.termination === 'server-response') need(receipt.httpStatus === 200 && receipt.grpcStatus === call.statusCode && receipt.flags === '-', 'upstream response status');
       else need(receipt.httpStatus === 0 && receipt.grpcStatus === null && receipt.flags === (call.disconnect ? 'UR' : '-'), 'actual upstream reset without grpc-status');

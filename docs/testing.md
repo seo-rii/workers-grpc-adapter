@@ -291,9 +291,13 @@ reset and peer deadline cleanup are recorded separately.
 The peer's local HTTP/2 close and Envoy's upstream access record are separate
 observations. In the deadline race, the peer can send its response and close
 with reset code 0 while Envoy records HTTP 0 with no gRPC status because the
-downstream call has already ended. The validator accepts that observed pair,
-as well as an observed HTTP 200/status 4 response, without inferring delivery
-from the peer's close code. It still requires the caller's status 4, the applied
+downstream call has already ended. Another captured CI receipt pairs attempted
+response headers and peer reset code 2 with Envoy HTTP 200/status 2 (`UNKNOWN`).
+The peer's `responseSent` records `headersSent`; it does not establish trailer
+delivery. Without a received gRPC status, the pinned Envoy derives `UNKNOWN`
+from HTTP 200. The validator accepts this partial-response pair only with the
+matching peer reset code 2, as well as an observed HTTP 200/status 4 response
+or HTTP 0/no-status receipt. It still requires the caller's status 4, the applied
 mutation, exact RPC/Fetch counts and complete cleanup. Deterministic validator
 tests cover both Commit/recovery completion orders across both profiles and all
 five runtimes; invalid status pairs, response flags and peer receipts still fail.
