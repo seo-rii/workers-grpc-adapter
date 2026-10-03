@@ -6,13 +6,33 @@ export const lookupScenarios = [
   'mixed-promise', 'mixed-callback', 'mixed-stream', 'single-deferred',
   'single-missing', 'all-missing', 'denied-promise', 'denied-callback',
   'unavailable-no-retry', 'unavailable-retry', 'partial-stream-error',
-  'partial-get-error', 'deferred-deadline', 'end-first', 'end-held', 'invalid-options',
+  'partial-get-error', 'deferred-deadline', 'end-first', 'end-held', 'invalid-options', 'partition-variants',
 ];
 
-export function createLookupAuth() {
+export function createLookupAuth(onAuthRequest = () => {}) {
   const authClient = new OAuth2Client();
   authClient.setCredentials({ access_token: 'lookup-local-fixture' });
+  // This fixture deliberately uses a cached token. Observe the auth library's
+  // network boundary separately from adapter credential-plugin invocations.
+  authClient.transporter.request = async () => {
+    onAuthRequest();
+    throw new Error('lookup-unexpected-auth-network');
+  };
   return authClient;
+}
+
+// Positive control for the guarded authentication-network counter. Expiry is
+// forced on a separate client and the request is stopped before any I/O.
+export async function calibrateLookupAuth() {
+  let requests = 0;
+  const auth = createLookupAuth(() => { requests++; });
+  const headers = await auth.getRequestHeaders('https://datastore.googleapis.com');
+  check(headers.get('authorization') === 'Bearer lookup-local-fixture' && requests === 0, 'lookup-cached-auth-no-network');
+  auth.setCredentials({ access_token: 'expired-fixture', refresh_token: 'fixture-not-a-secret', expiry_date: Date.now() - 1 });
+  let caught;
+  try { await auth.getRequestHeaders('https://datastore.googleapis.com'); } catch (error) { caught = error; }
+  check(caught?.message === 'lookup-unexpected-auth-network' && requests === 1, 'lookup-auth-network-positive-control');
+  return { cachedNetworkRequests: 0, expiredNetworkRequests: requests, blockedBeforeNetwork: true };
 }
 
 function bounded(promise) {
@@ -22,10 +42,10 @@ function bounded(promise) {
   })]).finally(() => clearTimeout(timer));
 }
 
-function normalized(entity, namespace) {
+function normalized(entity, namespace, ancestor = 'ancestor') {
   const key = entity[Datastore.KEY];
   check(key.namespace === namespace, 'lookup-key-namespace');
-  check(key.parent?.kind === 'LookupRoot' && key.parent.name === 'ancestor', 'lookup-key-ancestor');
+  check(key.parent?.kind === 'LookupRoot' && key.parent.name === ancestor, 'lookup-key-ancestor');
   check(key.kind === 'LookupValue', 'lookup-key-kind');
   const rank = entity.rank;
   const numeric = rank === 0;
@@ -60,10 +80,11 @@ function observe(stream, namespace, endFirst = false, finishAtEnd = false) {
 // This exact business module runs with native grpc-js, the packed replacement,
 // and both local workerd routing modes. The control channel only observes or
 // releases a real pending server RPC; it never implements an SDK operation.
-export async function runDatastoreLookup({ options, scenario, namespace, control }) {
+export async function runDatastoreLookup({ options, scenario, namespace, control, beforeClose }) {
   check(lookupScenarios.includes(scenario), 'lookup-known-scenario');
   const datastore = new Datastore({ ...options, namespace, databaseId: 'lookup-db' });
   const streams = [];
+  const clients = [datastore];
   const key = value => datastore.key(['LookupRoot', 'ancestor', 'LookupValue', value]);
   const keys = [key(datastore.int('9007199254740993')), key('missing'), key('name-1'), key('name-2')];
   const readOptions = { consistency: 'strong', wrapNumbers: true,
@@ -80,7 +101,19 @@ export async function runDatastoreLookup({ options, scenario, namespace, control
   };
   return withCleanup(async () => {
     const result = { scenario, rows: [], callbacks: 0 };
-    if (scenario === 'invalid-options') {
+    if (scenario === 'partition-variants') {
+      const alternate = new Datastore({ ...options, projectId: 'wga-lookup-alt', namespace: `${namespace}-alt`, databaseId: 'lookup-alt-db' });
+      clients.push(alternate);
+      result.variants = [];
+      for (const [client, projectId, keyNamespace, ancestor, databaseId] of [
+        [datastore, 'wga-lookup', namespace, 'ancestor', 'lookup-db'],
+        [alternate, 'wga-lookup-alt', `${namespace}-alt`, 'other-ancestor', 'lookup-alt-db'],
+      ]) {
+        const [value] = await bounded(client.get(client.key(['LookupRoot', ancestor, 'LookupValue', 'name-2']), readOptions));
+        result.variants.push({ projectId, databaseId, namespaceSuffix: keyNamespace === namespace ? '' : '-alt',
+          row: normalized(value, keyNamespace, ancestor) });
+      }
+    } else if (scenario === 'invalid-options') {
       let emptyError, optionsError;
       try { await datastore.get([]); } catch (error) { emptyError = error; }
       try { await datastore.get(keys, { ...readOptions, readTime: new Date() }); } catch (error) { optionsError = error; }
@@ -155,10 +188,12 @@ export async function runDatastoreLookup({ options, scenario, namespace, control
     if (result.stream && scenario === 'end-held') check(result.stream.rows.length === 1, 'lookup-no-late-rows-after-end');
     // Cleanup below may emit close on a successfully ended SDK Transform.
     // Snapshot public operation events before intentional fixture destruction.
-    return structuredClone(result);
+    const output = structuredClone(result);
+    if (beforeClose) await beforeClose();
+    return output;
   }, async () => {
     for (const stream of streams) if (!stream.destroyed) stream.destroy();
-    const outcomes = await Promise.allSettled([...datastore.clients_.values()].map(client => client.close()));
+    const outcomes = await Promise.allSettled(clients.flatMap(owner => [...owner.clients_.values()]).map(client => client.close()));
     const failures = outcomes.filter(outcome => outcome.status === 'rejected').map(outcome => outcome.reason);
     if (failures.length) throw new AggregateError(failures, 'lookup-client-cleanup-failed');
   });

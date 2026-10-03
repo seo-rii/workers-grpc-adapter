@@ -13,11 +13,26 @@ npm run fixtures:install
 node scripts/test-datastore-lookup.cjs
 ```
 
-The result is written to `verification/datastore-lookup.json`. Sixteen scenarios
-run in four execution groups, with 176 observed native RPCs in total. The report
-records source hashes, exact key batches, statuses, callback and stream events,
-and the request count for each scenario. The controlled native service enforces
-finite rounds and rejects unexpected calls; all transports remain on loopback.
+The result is written to `verification/datastore-lookup.json`. Seventeen scenarios
+run under native grpc-js and both adapter modes in Node/workerd: 85 cases,
+235 service RPCs, 188 actual data Fetches and 20 separate control requests.
+The report records source hashes, exact key batches, statuses, callback and stream
+events. The controlled native service enforces finite rounds and rejects
+unexpected calls; all transports remain on loopback.
+
+Test-only hooks join each actual adapter call ID to its observer events, physical
+Fetch and native peer receipt. Each call has one attempt, one Fetch and one
+terminal event, including each separate call created by SDK retry. Before SDK
+close, the gate checks timers, buffers, parser ownership, pending callbacks,
+pumps and channel registrations. These internal hooks are fixture instrumentation,
+not a supported consumer API or a measurement of total JavaScript heap.
+
+Cached OAuth credentials make zero authentication network requests. A separate
+expired-token control must attempt exactly one request through the guarded auth
+transporter, which blocks it before network I/O. Authentication counters are
+separate from data Fetch and control traffic; this gate does not exercise token
+renewal or production IAM. A strict validator checks the entire execution matrix,
+and mutation tests reject missing, duplicated or inconsistent receipts.
 
 ## Verified behavior
 
@@ -27,6 +42,8 @@ finite rounds and rejects unexpected calls; all transports remain on loopback.
 - Promise, callback and stream batch APIs; a deferred single lookup; missing
   single and batch results. Callbacks execute once.
 - Binary values, timestamps, nulls, booleans and wrapped 64-bit integers.
+- Two project/database/namespace/ancestor combinations in one shared business
+  execution, with exact project and database components of routing metadata.
 - Permanent permission errors, `UNAVAILABLE` with retry disabled, and an
   explicitly bounded SDK retry that succeeds on its third attempt. The
   adapter's own retry remains disabled.

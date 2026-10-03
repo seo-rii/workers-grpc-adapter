@@ -11,16 +11,16 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | Meaning |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After Lookup | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 119 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 59 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 11 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
-work satisfies six additional cases, and wire checks satisfy eighteen. The remaining 77
+work satisfies six additional cases, wire checks satisfy eighteen, and Lookup accounting satisfies seven. The remaining 70
 unsatisfied cases cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -148,11 +148,24 @@ before closing its client. All 27 wire cases now have exact local observations;
 - `RETRY-003`, `SEC-005`: partial-stream resume without duplicate delivery and
   rejection of an unmapped authority before authentication or Fetch.
 
-Other newly connected evidence is deliberately partial. Deferred Datastore
-Lookup and named-database routing already execute, but the older report lacks
-per-logical-call Fetch accounting. Actual SDK workerd benchmarks already run,
-but do not separately time every initialization phase or measure every owned
-buffer category. Those are narrower remaining conditions than “not tested.”
+## SDK accounting work executed
+
+Lookup executes 17 shared scenarios across native grpc-js and both Node/workerd
+modes: 85 cases, 235 service RPCs and 188 actual data Fetches. Actual logical call
+IDs join observer events, physical Fetches and native peer receipts. Each SDK
+retry creates a distinct call with one Fetch. Timers, parser ownership, pumps,
+buffers and channel registrations are idle before SDK close. Cached OAuth network
+traffic is guarded separately, with an expired-token positive control blocked
+before network I/O. Two project/database/namespace/ancestor combinations and both
+project/database routing fields are checked in one shared execution.
+
+`DS-006/007/008/011/022/024` and `RETRY-002` now satisfy their full cases.
+This controlled Datastore 10.1.0 gate does not establish actual token renewal,
+production storage behavior or deployed Cloudflare conversion.
+
+Actual SDK workerd benchmarks already run, but do not separately time every
+initialization phase or measure every owned buffer category. Those are narrower
+remaining conditions than “not tested.”
 
 ## Coverage by area
 
@@ -167,9 +180,9 @@ buffer category. Those are narrower remaining conditions than “not tested.”
 | Call lifecycle | 17 | 1 | 0 |
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 4 | 7 | 0 |
-| Datastore | 1 | 21 | 2 |
+| Datastore | 7 | 15 | 2 |
 | Transactions | 7 | 2 | 0 |
-| Retry | 1 | 3 | 0 |
+| Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 0 | 5 | 0 |
@@ -184,7 +197,7 @@ retained rather than treated as transport equivalence.
 The next local work units, in order, are:
 
 1. **SDK call accounting and combinations.** Add logical call IDs and separate
-   data/auth Fetch counters to the older Datastore Lookup/pagination reports;
+   data/auth Fetch counters to the older Datastore pagination reports;
    cover remaining batches, overloads, query stream failures and routing fields.
    Crossed transaction IDs still need distinct credential providers (`TX-009`).
    Keep the explicit Commit cancellation limitation below visible (`TX-008`).

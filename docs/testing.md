@@ -56,7 +56,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:auth` | Real OAuth2Client and JWT logic over injected token/RPC transports | `verification/google-auth.json` |
 | `npm run test:firestore-watch-errors` | Both pinned SDKs: raw permission-error baseline, corrected Worker error delivery, transient/EOF resume and client reuse | `verification/firestore-watch-errors.json` |
 | `npm run test:modern-firestore-recovery` | Firestore 9.2.0 resume tokens, disconnects, resets, filters, removals and target denial | `verification/modern-firestore-recovery.json` |
-| `npm run test:datastore-lookup` | Native/adapter/workerd deferred Lookup, get overloads, partial errors, retries and per-RPC deadlines | `verification/datastore-lookup.json` |
+| `npm run test:datastore-lookup` | 85 native/Node/workerd Lookup cases: overloads, errors, routing, retries, physical per-call Fetch accounting and pre-close cleanup | `verification/datastore-lookup.json` |
 | `npm run test:contract` | Root/deep CJS/ESM identity and transport import boundaries | `compatibility/exports-contract.json` |
 | `npm run test:pack` | Actual tarball, real SDK alias/override graphs, fresh npm ci, packed assets and standalone types | `verification/packaging.json` |
 | `npm run test:workers` | Unary and server-streaming RPCs in both transport modes in workerd | `verification/workers.json` |

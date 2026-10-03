@@ -14,6 +14,7 @@ const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
 const { validateSecretManagerReport } = require('./secret-manager-evidence.cjs');
 const { validateFirestoreReadReport } = require('./firestore-read-evidence.cjs');
 const { validateDatastoreTransactionReport } = require('./datastore-transaction-evidence.cjs');
+const { validateDatastoreLookupReport } = require('./datastore-lookup-evidence.cjs');
 const { validateCallLifecycleReport } = require('./call-lifecycle-evidence.cjs');
 const { validateFlowControlReport } = require('./flow-control-evidence.cjs');
 const { validateWireCatalogReport } = require('./wire-catalog-evidence.cjs');
@@ -613,13 +614,15 @@ function validateProvenance(root, report) {
     validateSecretManagerReport(report.secretManagerExtended);
     validateFirestoreReadReport(report.firestoreReadErrors);
     validateDatastoreTransactionReport(report.datastoreTransactions);
+    validateDatastoreLookupReport(report.datastoreLookup);
     validateCallLifecycleReport(report.callLifecycle);
     validateFlowControlReport(report.flowControl);
     validateWireCatalogReport(report.wireCatalog);
     for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
-        ['datastore-transactions', report.datastoreTransactions], ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
+        ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
+        ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {
