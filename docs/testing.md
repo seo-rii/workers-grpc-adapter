@@ -71,6 +71,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:secret-manager` | Native/adapter/workerd Secret Manager pagination, method errors, metadata, recovery and payload checksum handling | `verification/secret-manager-extended.json` |
 | `npm run test:firestore-read-errors` | Both pinned Firestore profiles: intermediate read failures, SDK retry requests, events and cleanup in native/Node/workerd | `verification/firestore-read-errors.json` |
 | `npm run test:datastore-transactions` | Both pinned Datastore profiles: transaction requests, rollback, failures, interrupted Commit outcomes and cleanup in native/Node/workerd | `verification/datastore-transactions.json` |
+| `npm run test:datastore-mutations` | Native/Node/workerd mutation payloads and order, save/delete contracts, incomplete keys, allocation and per-call Fetch accounting | `verification/datastore-mutations.json` |
 | `node scripts/test-datastore-pagination.cjs` | 50 native/Node/workerd query cases: pagination, overloads, stream errors, `end()` versus `destroy()`, per-call accounting and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
@@ -226,6 +227,31 @@ attempts and 70 separate fixture control acknowledgements. Envoy receipts identi
 each case, RPC method and terminal status. The independent evidence validator
 rejects missing combinations, changed retry requests, incorrect event sequences,
 unreleased resources and stale source/dependency identities.
+
+## Datastore mutation contracts
+
+`npm run test:datastore-mutations` executes the same Datastore 10.1.0 business
+module with native grpc-js and both adapter modes in Node/workerd: 18 scenarios,
+90 cases, 275 service RPCs and 220 actual adapter Fetches. A controlled stateful
+native service records the actual decoded Commit, Lookup and AllocateIds
+requests. An independent validator checks mutation kind, payload, order and count,
+SDK response tuples, callbacks and preserved error metadata.
+
+The matrix covers complete-key typed save, ordered batch save, existing/missing
+insert/upsert/update, incomplete-key assignment, scalar/batch deletion and
+high-level ID allocation. Assigned IDs exceed JavaScript's safe integer range;
+subsequent reads must use the exact returned key. Batch and delete failures
+preserve the whole-RPC status, details and binary/text metadata and allow reuse
+of the same SDK client. A failed batch is a single RPC error; this fixture does
+not invent a public per-mutation error array or certify production atomicity.
+
+Actual call IDs join observer events, physical Fetches and native peer receipts.
+Every adapter call has one attempt and one data Fetch with SDK and adapter retry
+disabled. Buffers, timers, pumps, pending callbacks, parser ownership and channel
+registrations are checked before SDK close. The anonymous PassThroughClient
+fixture performs no token renewal and does not establish authentication or IAM.
+The high-level SDK exposes `allocateIds`; `reserveIds` belongs to the public
+generated-v1 client and is exercised separately by the official emulator gate.
 
 ## Datastore transactions and interrupted Commit responses
 

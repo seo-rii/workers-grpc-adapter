@@ -16,6 +16,7 @@ const { validateFirestoreReadReport } = require('./firestore-read-evidence.cjs')
 const { validateDatastoreTransactionReport } = require('./datastore-transaction-evidence.cjs');
 const { validateDatastoreLookupReport } = require('./datastore-lookup-evidence.cjs');
 const { validateDatastorePaginationReport } = require('./datastore-pagination-evidence.cjs');
+const { validateDatastoreMutationReport } = require('./datastore-mutation-evidence.cjs');
 const { validateCallLifecycleReport } = require('./call-lifecycle-evidence.cjs');
 const { validateFlowControlReport } = require('./flow-control-evidence.cjs');
 const { validateWireCatalogReport } = require('./wire-catalog-evidence.cjs');
@@ -25,6 +26,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/api-contracts.json',
     'verification/firestore-read-errors.json',
     'verification/datastore-transactions.json',
+    'verification/datastore-mutations.json',
     'verification/call-lifecycle.json',
     'verification/flow-control.json',
     'verification/wire-catalog.json',
@@ -584,6 +586,7 @@ function validateProvenance(root, report) {
         ['workersFetcher', 'verification/workers-fetcher.json'],
         ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'], ['requestStreaming', 'verification/request-streaming.json'], ['streamingFeasibility', 'verification/streaming-feasibility.json'], ['firestoreWatch', 'verification/firestore-watch.json'], ['modernFirestoreWatch', 'verification/modern-firestore-watch.json'], ['firestoreRecovery', 'verification/firestore-recovery.json'], ['parentCalls', 'verification/parent-calls.json'],
         ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['firestoreReadErrors', 'verification/firestore-read-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'], ['datastoreTransactions', 'verification/datastore-transactions.json'],
+        ['datastoreMutations', 'verification/datastore-mutations.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     const campaign = report.fuzzCampaign;
@@ -615,6 +618,7 @@ function validateProvenance(root, report) {
     validateSecretManagerReport(report.secretManagerExtended);
     validateFirestoreReadReport(report.firestoreReadErrors);
     validateDatastoreTransactionReport(report.datastoreTransactions);
+    validateDatastoreMutationReport(report.datastoreMutations);
     validateDatastoreLookupReport(report.datastoreLookup);
     validateDatastorePaginationReport(report.datastorePagination);
     validateCallLifecycleReport(report.callLifecycle);
@@ -624,6 +628,7 @@ function validateProvenance(root, report) {
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
         ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
+        ['datastore-mutations', report.datastoreMutations],
         ['datastore-pagination', report.datastorePagination],
         ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
