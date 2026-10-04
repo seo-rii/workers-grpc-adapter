@@ -8,6 +8,7 @@ const { isDeepStrictEqual } = require('node:util');
 const ts = require('typescript');
 const { validateWorkerdServerStreamingReport } = require('./server-streaming-evidence.cjs');
 const { validateSdkBenchmarkReport } = require('./sdk-benchmark-evidence.cjs');
+const { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts } = require('./transport-benchmark-evidence.cjs');
 const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
 const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
 const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
@@ -31,6 +32,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/call-lifecycle.json',
     'verification/flow-control.json',
     'verification/wire-catalog.json',
+    'verification/benchmark.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
     'verification/packaging.json', 'verification/packaging-fixture.lock.json',
@@ -583,7 +585,7 @@ function validateProvenance(root, report) {
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['wireCatalog', 'verification/wire-catalog.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
-        ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
+        ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['transportBenchmark', 'verification/benchmark.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['apiContracts', 'verification/api-contracts.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
         ['workersAuth', 'verification/workers-auth.json'], ['datastorePagination', 'verification/datastore-pagination.json'], ['workersResilience', 'verification/workers-resilience.json'],
@@ -618,6 +620,8 @@ function validateProvenance(root, report) {
     }
     validateWorkerdServerStreamingReport(report.workerdServerStreaming);
     validateSdkBenchmarkReport(report.sdkBenchmark);
+    validateTransportBenchmarkReport(report.transportBenchmark);
+    validateTransportBenchmarkArtifacts(report.transportBenchmark, root);
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
     validateApiContractsReport(report.apiContracts);
     validateSecretManagerReport(report.secretManagerExtended);
@@ -630,7 +634,7 @@ function validateProvenance(root, report) {
     validateFlowControlReport(report.flowControl);
     validateWireCatalogReport(report.wireCatalog);
     for (const [id, result] of [['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
-        ['workerd-transport-extensions', report.workerdTransportExtensions], ['sdk-benchmark', report.sdkBenchmark],
+        ['workerd-transport-extensions', report.workerdTransportExtensions], ['transport-benchmark', report.transportBenchmark], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
         ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
         ['datastore-mutations', report.datastoreMutations],
@@ -745,6 +749,7 @@ function assemble(root = ROOT) {
     const lifecycleArtifacts = validateLifecycleArtifacts(root, report.emulatorLifecycle);
     const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)),
         ...Object.keys(report.googleSdk.declarations.generatedArtifacts || {}), ...Object.keys(report.apiContracts.generatedArtifacts || {}),
+        ...Object.keys(report.transportBenchmark.generatedArtifacts),
         ...report.commands.map(command => `verification/${command.log}`),
         ...report.fuzzCampaign.runs.flatMap(run => [run.report, run.log, ...(run.kind === 'node' ? [run.result.log] : [])])];
     return { schemaVersion: 1, status: 'passed', scope: 'offline provenance and reviewed case evidence; not full release certification',

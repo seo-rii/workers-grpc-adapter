@@ -86,10 +86,10 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
 | `npm run test:emulators:lifecycle` | Startup/running signal handling and repeated stop cleanup | `verification/emulator-lifecycle.json` |
 | `npm run test:evidence` | Current source, lock, artifact, process receipt and case-evidence consistency | `verification/evidence.json` |
-| `npm run test:benchmark` | Optional local Node latency, buffering and concurrency measurements | `verification/benchmark.json` |
+| `npm run test:benchmark` | Required installed transport-only Node benchmark: bundle provenance, raw latency, buffering, concurrency and per-call cleanup | `verification/benchmark.json` |
 | `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
 
-`node vendor/verify.cjs` validates upstream and patched source hashes and reproduces the patches. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. The benchmark and live runner are not required live executions in the local gate.
+`node vendor/verify.cjs` validates upstream and patched source hashes and reproduces the patches. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. Both benchmarks are required local executions; the live runner remains separate.
 
 The [temporary Cloudflare probe](cloud-probe.md) is a separate explicit deployment command. It is never invoked by `verify` or CI, and records deployed evidence in `verification/cloud-probe.json` without changing the local report's cloud-certification flags.
 
@@ -533,7 +533,21 @@ workerd or campaign command; these commands deliberately test the packaged code.
 
 Save a confirmed failure as a focused regression test before fixing it. A passing campaign establishes only the tested properties and generated inputs; it does not certify all protocol behavior or Cloudflare's beta translator.
 
-Benchmarks report local p50/p95 latency, cold require, bundle size, observed buffering and process memory for large/small/slow/concurrent cases. They do not establish ownership of Fetch allocator bytes or deployed Worker performance. Production budgets remain unset.
+The transport-only benchmark measures the installed packed adapter in Node for
+large unary, many small messages, slow consumers and concurrent unary calls.
+Its four workloads execute 154 logical calls and 154 controlled Fetches. Raw
+samples distinguish two warmups from twelve measured iterations per workload;
+seven fresh-process samples separately measure Node `require()` time. Each call
+checks payloads, terminal delivery, response reader release and zero transport
+owners before client close. Sampled process memory includes fixtures and GC.
+
+The separate minified client-root ESM bundle is measured, not executed. Its input
+and output manifests, build configuration, bundle/gzip hashes, esbuild binary,
+installed source hashes and lock-identified tarball are validated. CI preserves
+the generated bundle, gzip and metafile alongside the report. This complements
+the SDK-inclusive workerd bundle baseline without claiming deployed performance
+or that Node `require()` measures workerd cold start. Production budgets remain
+unset.
 
 `npm run test:flow:control` also measures five distinct byte categories during
 the same slow-consumer workload: retained serialized request, pending response,

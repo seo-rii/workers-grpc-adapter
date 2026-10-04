@@ -13,8 +13,8 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 138 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 42 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 139 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 41 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
@@ -219,6 +219,12 @@ tested for pass, failure and incomplete thresholds. Its default null thresholds
 block performance certification. This covers the measurement/policy contracts
 of `PERF-002/005`, without certifying deployed latency.
 
+The separate installed transport-only Node benchmark is now required. Its
+minified/gzip bundle, esbuild input/output manifest and tool, package, lock and
+tarball provenance accompany raw cold/iteration timings and 154 actual
+call/Fetch/cleanup receipts. This completes the paired transport-only and
+SDK-inclusive bundle baseline in `PERF-001`; their runtime scopes remain distinct.
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -237,7 +243,7 @@ of `PERF-002/005`, without certifying deployed latency.
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
-| Performance | 3 | 2 | 0 |
+| Performance | 4 | 1 | 0 |
 | Documentation | 0 | 3 | 2 |
 
 Flow control now includes the native comparisons and specific
@@ -248,10 +254,9 @@ retained rather than treated as transport equivalence.
 
 The next local work units, in order, are:
 
-1. **Performance measurement.** Refresh the separate transport-only benchmark
-   within the evidence pipeline and sample heap trends in the same failure/cancel
-   workload (`PERF-001/004`). Separate SDK setup, first-message timing and buffer
-   ownership now have execution evidence.
+1. **Performance measurement.** Sample heap trends in the same failure/cancel
+   workload (`PERF-004`). Separate transport/SDK bundles, SDK setup, first-message
+   timing and buffer ownership now have execution evidence.
 2. **Executable documentation checks.** Connect documentation examples, support
    tables, diagnostic IDs and release provenance checks to executed fixtures
    instead of relying on source hashes alone (`DOC-*`). Keep production index

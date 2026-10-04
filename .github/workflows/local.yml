@@ -172,8 +172,10 @@ jobs:
               if reports.is_dir():
                   for file in sorted(reports.rglob('*')):
                       generated_contract = file.relative_to(reports).parts[0] in {'api-contracts', 'type-contracts'}
+                      generated_benchmark = file.relative_to(reports).parts[0] == 'transport-benchmark'
                       if file.is_file() and not file.is_symlink() and (file.suffix in {'.json', '.log', '.tap'}
-                              or generated_contract and file.suffix in {'.ts', '.mjs', '.cjs'}):
+                              or generated_contract and file.suffix in {'.ts', '.mjs', '.cjs'}
+                              or generated_benchmark and file.suffix in {'.mjs', '.gz'}):
                           output.add(file, arcname=str(file.relative_to(root)), recursive=False)
               for name in generated:
                   file = root / 'compatibility' / name

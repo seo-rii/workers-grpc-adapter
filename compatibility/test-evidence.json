@@ -75444,11 +75444,9 @@
     },
     {
       "id": "PERF-001",
-      "coverage": "partial",
-      "reason": "Current CI builds eight actual SDK Worker graphs across both pinned profiles, records bundle/gzip sizes and provenance, and enforces per-profile ceilings. The separate transport-only Node benchmark exists, but its 2026-09-23 report is historical and that command is absent from current verification.",
-      "gaps": [
-        "Add current execution and source/dependency provenance for the separate transport-only bundle baseline; the eight SDK graphs do not replace the required pair of baselines."
-      ],
+      "coverage": "covered",
+      "reason": "Current verification requires both the installed transport-only client-root bundle and eight actual SDK-inclusive workerd graphs. The controlled Node transport baseline retains exact build configuration, input/output manifests, dependency/lock/tarball/tool hashes, bundle/gzip artifacts and raw runtime samples. It executes 154 calls with strict payload/Fetch/cleanup accounting, while explicitly distinguishing its unexecuted size-only ESM bundle and Node require samples from SDK workerd startup or deployed latency.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -75759,6 +75757,178 @@
           "source": "test/sdk-benchmark-evidence.test.cjs",
           "command": "tests",
           "name": "EVIDENCE SDK workerd benchmark requires measured graphs, OAuth refresh, slow streams and heap samples"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/benchmark.json",
+          "source": "scripts/benchmark.cjs",
+          "command": "transport-benchmark",
+          "array": "/scenarios",
+          "where": {
+            "name": "large-unary"
+          },
+          "anchor": "const cases =",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/warmups",
+              "equals": 2
+            },
+            {
+              "pointer": "/repetitions",
+              "equals": 12
+            },
+            {
+              "pointer": "/fetches",
+              "equals": 14
+            },
+            {
+              "pointer": "/latencyMs/samples",
+              "equals": 12
+            },
+            {
+              "pointer": "/cleanAfterEveryIteration",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/benchmark.json",
+          "source": "scripts/benchmark.cjs",
+          "command": "transport-benchmark",
+          "array": "/scenarios",
+          "where": {
+            "name": "many-small"
+          },
+          "anchor": "const cases =",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/warmups",
+              "equals": 2
+            },
+            {
+              "pointer": "/repetitions",
+              "equals": 12
+            },
+            {
+              "pointer": "/fetches",
+              "equals": 14
+            },
+            {
+              "pointer": "/latencyMs/samples",
+              "equals": 12
+            },
+            {
+              "pointer": "/cleanAfterEveryIteration",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/benchmark.json",
+          "source": "scripts/benchmark.cjs",
+          "command": "transport-benchmark",
+          "array": "/scenarios",
+          "where": {
+            "name": "slow-consumer"
+          },
+          "anchor": "const cases =",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/warmups",
+              "equals": 2
+            },
+            {
+              "pointer": "/repetitions",
+              "equals": 12
+            },
+            {
+              "pointer": "/fetches",
+              "equals": 14
+            },
+            {
+              "pointer": "/latencyMs/samples",
+              "equals": 12
+            },
+            {
+              "pointer": "/cleanAfterEveryIteration",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/benchmark.json",
+          "source": "scripts/benchmark.cjs",
+          "command": "transport-benchmark",
+          "array": "/scenarios",
+          "where": {
+            "name": "concurrent-unary"
+          },
+          "anchor": "const cases =",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/warmups",
+              "equals": 2
+            },
+            {
+              "pointer": "/repetitions",
+              "equals": 12
+            },
+            {
+              "pointer": "/fetches",
+              "equals": 112
+            },
+            {
+              "pointer": "/latencyMs/samples",
+              "equals": 12
+            },
+            {
+              "pointer": "/cleanAfterEveryIteration",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/transport-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE transport benchmark requires installed Node provenance and exact bundle graph"
+        },
+        {
+          "kind": "tap",
+          "source": "test/transport-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE transport benchmark recomputes cold and iteration summaries without counting warmups"
+        },
+        {
+          "kind": "tap",
+          "source": "test/transport-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE transport benchmark preserves four workloads, actual payload receipts and pre-close cleanup"
+        },
+        {
+          "kind": "tap",
+          "source": "test/transport-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE transport benchmark checks real artifact bytes and detects self-consistent installed-package tampering"
         }
       ],
       "catalogCaseSha256": "cdb52914f8e0c1d2a5303c417c30e2991a036c4d5b051bdef75d4b801ad239ed"
