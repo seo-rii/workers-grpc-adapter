@@ -34,7 +34,7 @@ native grpc-js and then in both deployed Worker modes.
 Catalog mode creates a second isolated secret and one synthetic secret version.
 Only that generated payload is accessed; it is compared inside the test and never
 returned in reports. The runner attempts a short-lived token for its newly created
-new service account using existing IAM permissions. By default it records a
+service account using existing IAM permissions. By default it records a
 per-case blocker if impersonation is unavailable and adds no IAM grants.
 
 The optional `--grant-owned-token-creator` flag requires `--catalog` and separate
@@ -48,6 +48,14 @@ change project IAM or create a key. Deleting the owned service account removes
 this temporary policy. The restricted-account RPC must still actually return
 `PERMISSION_DENIED`; lack of direct grants is not proof of that behavior.
 
+After an explicitly requested and verified grant, the runner allows at most five
+minutes for IAM propagation, retrying only HTTP 403 token-mint reads at ten-second
+intervals. It never retries the policy write. Other errors fail that mint attempt;
+without the grant flag, it attempts minting only once. The public receipt includes
+attempt counts and fixed reason codes, while credentials remain private.
+[IAM propagation can exceed this finite window](https://docs.cloud.google.com/iam/docs/access-change-propagation),
+so a timeout is a failed or blocked probe, not proof of an invalid policy.
+
 Failure injection deliberately preserves `INTENTIONAL_CATALOG_E2E_FAILURE` as the
 primary error and exits nonzero after cleanup. Inspect
 `verification/gcp-cloud-catalog.json` for all ten case outcomes and
@@ -58,6 +66,58 @@ when that is true; an isolated namespace in an existing project records successf
 behavior separately from that unmet environment condition. Negative environment
 gate controls are local evidence. The public native echo image cannot expose
 backend generator cleanup after caller cancellation.
+
+## Optional credential renewal
+
+Add `--catalog --verify-auth-renewal` to verify an impersonated credential's
+natural expiry and renewal in native grpc-js and both deployed Worker modes.
+This flag creates no permission grant by itself. Minting must already be allowed
+on the new owned account, or the separately authorized
+`--grant-owned-token-creator` flag must be supplied. Missing permission aborts
+this requested check before deploying services; cleanup still removes the account.
+
+```sh
+# Use the IAM flag only with authorization for the temporary account policy.
+node scripts/gcp-cloud-probe.cjs --deploy-temporary --catalog \
+  --verify-auth-renewal --grant-owned-token-creator \
+  --project=YOUR_PROJECT --region=asia-northeast3
+```
+
+Each mode creates one Secret Manager SDK client and one `Impersonated` auth
+client. The fixture requests a 60-second credential through
+[IAM Credentials](https://docs.cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateAccessToken),
+using the new service account's immutable UID. It issues an initial `GetSecret`,
+a cached call, waits until the returned expiration plus 250 milliseconds, then
+issues a renewed and another cached call. It never edits the clock or overwrites
+the SDK's credentials to force expiry. A one-second eager-refresh threshold makes
+cache reuse observable; the normal library default is unsuitable for this short
+test token. Unexpected lifetime, extra mints or automatic request retries fail
+the check.
+
+All four RPCs must return `PERMISSION_DENIED`, because this account receives no
+data-service grants. In each Worker, the fixture compares the bearer in the
+actual adapter Fetch with the latest minted credential. The native control
+observes auth-client request headers; its receipt labels this narrower boundary.
+The required sequence is two mints and four RPC authorizations with generations
+`[1, 1, 2, 2]`. Each mode is bounded to two minutes; all three run concurrently.
+
+`authRenewal` and `authRenewalSourceHashes` in the main receipt record this
+separate result. Strict validation checks the complete timing sequence, expected
+status and counts, real expiration wait and SDK close. Unknown fields or invalid
+remote bodies are rejected without being copied into the report. Tokens, token
+hashes, headers, payloads and target identifiers are excluded from renewal receipts.
+The source is a short-lived user access token; no refresh token or service-account
+key is uploaded. This check does not prove source-credential renewal, federation,
+successful data access after renewal, or long-term reliability.
+
+The ordinary local `test-gcp-probe.cjs` gate runs the exact deployable bundle in
+workerd with real SDK/auth code and a controlled IAM/data peer. Both modes wait
+through actual 60-second expiry. Initial mint failures, invalid lifetimes,
+incorrect gRPC status, renewal denial and reused tokens are negative controls.
+Route, opt-in and target guards must make no outbound requests. Synthetic peer
+tokens are checked for leaks in returned receipts. CI runs this local gate without
+Google credentials or external calls; it does not establish that a real IAM
+service accepted the requested lifetime, nor prove request-disconnect propagation.
 
 ## Bounded deployed repetition and client recovery
 
@@ -115,6 +175,14 @@ or a specific network layer. The campaign correctly failed with
 resources were deleted and the existing inventory was unchanged. Schema version
 2 adds the diagnostics needed to investigate subsequent failures without exposing
 credentials or treating this first run as a pass.
+
+The next run, `wga-probe-20261004-dc290208` at source `a24fe55`, passed all
+600 requests: each mode completed 250 recovery batches and 50 SDK reads. No
+slots were skipped. The intentional failure injection then exited `1`; all nine
+owned resources were deleted, both database deletion operations completed, and
+the existing inventory was unchanged. This is a successful finite campaign at
+that recorded source, not an explanation or correction of the three earlier
+HTTP failures. Neither historical run exercised the optional renewal check.
 
 ## Isolation
 

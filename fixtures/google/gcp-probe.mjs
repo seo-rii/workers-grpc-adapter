@@ -7,6 +7,7 @@ import { suites } from './suites.mjs';
 import { datastoreCrud, datastoreTransaction } from './shared/datastore.mjs';
 import { firestoreCrud, firestoreTransaction } from './shared/firestore.mjs';
 import { secretManagerRead } from './shared/secret-manager.mjs';
+import { runGcpAuthRenewal } from './gcp-auth-renewal.mjs';
 import { cloudDatastoreTyped, cloudDatastoreAggregation, cloudDatastoreRollback,
   cloudDatastoreErrors, cloudSecretManager, cloudPermissionDenied } from './shared/cloud-catalog.mjs';
 
@@ -118,6 +119,15 @@ export default {
     // This confirms deployment availability only. It neither validates Google
     // bindings nor enables or executes any test-suite network requests.
     if (route[2] === 'ready') return Response.json({ status: 'ready', mode: route[1] });
+    if (route[2] === 'auth-renewal') {
+      if (env.WGA_RUN_GOOGLE_TESTS !== '1' || env.WGA_AUTH_RENEWAL_ENABLED !== '1') {
+        return new Response('Disabled', { status: 403 });
+      }
+      try { return Response.json(await runGcpAuthRenewal(env, route[1], request.signal)); }
+      catch (error) {
+        return Response.json({ suite: 'auth-renewal', mode: route[1], status: 'failed', ...publicError(error) }, { status: 500 });
+      }
+    }
     if (!Object.hasOwn(runners, route[2])) return new Response('Not found', { status: 404 });
     if (env.WGA_RUN_GOOGLE_TESTS !== '1' || (writes(route[2]) && env.WGA_ALLOW_TEST_WRITES !== '1')) {
       return new Response('Disabled', { status: 403 });

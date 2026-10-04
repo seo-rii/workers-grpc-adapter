@@ -174,8 +174,9 @@ async function main() {
     } } finally { await worker.dispose(); }
   }
   const recovery = await checkRecovery(script);
+  const credentialRenewal = await require('./test-gcp-auth-renewal.cjs').runLocalCredentialRenewal({ script });
   console.log(JSON.stringify({ status: 'passed', guardedRequests, readinessRequests, suitesChecked, outboundRequests: requests.length,
-    recovery,
+    recovery, credentialRenewal,
     networkRequests: 0, googleAuthorizationChecked: true, gatewayTokenModeIsolationChecked: true,
     namedDatabaseTargetsChecked: true, projectIdAndNumberSeparated: true, modeContentTypesChecked: true,
     readinessWithoutGoogleCredentialsChecked: true, errorsRedacted: true }));

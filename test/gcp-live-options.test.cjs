@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { parseSoakSeconds } = require('../scripts/gcp-soak.cjs');
+const { parseAuthRenewalArgs } = require('../scripts/gcp-auth-renewal.cjs');
 const source = fs.readFileSync(path.join(__dirname, '../scripts/gcp-cloud-probe.cjs'), 'utf8');
 const start = source.indexOf('async function main() {');
 const end = source.indexOf('\nasync function cleanup()', start);
@@ -15,7 +16,7 @@ async function rejectBeforeCredentials(args, expected) {
   let credentialReads = 0;
   const run = vm.runInNewContext(`(${main})`, {
     process: { argv: ['node', 'gcp-cloud-probe.cjs', ...args], env: {} },
-    report: {}, root: '/fixture', parseSoakSeconds,
+    report: {}, root: '/fixture', parseSoakSeconds, parseAuthRenewalArgs,
     catalog: { sourceHashes: () => ({}) },
     secret() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
   });
@@ -41,5 +42,15 @@ test('temporary-account token grant requires catalog mode and exactly one explic
 
 test('valid owned-account grant cannot bypass an explicit target project', async () => {
   await rejectBeforeCredentials(['--deploy-temporary', '--catalog', '--grant-owned-token-creator', '--soak-seconds=600'],
+    /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+});
+
+test('credential renewal requires exact opt-in and catalog before credential discovery', async () => {
+  await rejectBeforeCredentials(['--deploy-temporary', '--verify-auth-renewal'], /CATALOG_REQUIRED_FOR_AUTH_RENEWAL/);
+  for (const args of [['--verify-auth-renewal=true'], ['--verify-auth-renewal=false'],
+    ['--verify-auth-renewal', '--verify-auth-renewal']]) {
+    await rejectBeforeCredentials(['--deploy-temporary', '--catalog', ...args], /INVALID_AUTH_RENEWAL_OPTION/);
+  }
+  await rejectBeforeCredentials(['--deploy-temporary', '--catalog', '--verify-auth-renewal'],
     /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
 });

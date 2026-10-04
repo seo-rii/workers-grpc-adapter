@@ -138,6 +138,45 @@ async function runNativeSuites(env, { catalog = false } = {}) {
     };
 }
 
+async function runNativeCredentialRenewal(env, { signal } = {}) {
+    validateSuiteBindings(env);
+    requireBinding(env.WGA_AUTH_RENEWAL_ENABLED === '1');
+    requireBinding(typeof env.WGA_OWNED_SERVICE_ACCOUNT_UID === 'string' &&
+        /^[1-9][0-9]{9,29}$/.test(env.WGA_OWNED_SERVICE_ACCOUNT_UID) && !/\s/.test(env.WGA_OWNED_SERVICE_ACCOUNT_UID));
+    requireBinding(env.WGA_GOOGLE_ACCESS_TOKEN.length <= 8192 && !/\s/.test(env.WGA_GOOGLE_ACCESS_TOKEN));
+    requireBinding(signal === undefined || signal instanceof AbortSignal);
+    const directory = await fs.mkdtemp(path.join(NATIVE_ROOT, '.gcp-renewal-'));
+    try {
+        const filename = path.join(directory, 'credential-renewal.mjs');
+        await fs.copyFile(path.join(ROOT, 'fixtures/google/shared/credential-renewal.mjs'), filename);
+        const { runCredentialRenewal } = await import(pathToFileURL(filename).href);
+        return await runCredentialRenewal({
+            mode: 'native', projectNumber: env.WGA_GCP_PROJECT_NUMBER,
+            secretName: env.WGA_SECRET_NAME, sourceToken: env.WGA_GOOGLE_ACCESS_TOKEN,
+            targetPrincipal: env.WGA_OWNED_SERVICE_ACCOUNT_UID, signal,
+            optionsForAuth(auth, observeAuthorization) {
+                // This observes the actual auth-client result, not native HTTP/2
+                // wire metadata. The shared receipt names that narrower boundary.
+                const getRequestHeaders = auth.getRequestHeaders.bind(auth);
+                auth.getRequestHeaders = async (...args) => {
+                    const headers = await getRequestHeaders(...args);
+                    observeAuthorization(headers.get('authorization'));
+                    return headers;
+                };
+                return {
+                    projectId: env.WGA_GCP_PROJECT_NUMBER, authClient: auth, clientConfig: probeClientConfig,
+                    preferRest: false, fallback: false,
+                    'grpc.max_receive_message_length': MAX_BYTES,
+                    'grpc.max_send_message_length': MAX_BYTES,
+                    'grpc.enable_retries': 0,
+                };
+            },
+        });
+    } finally {
+        await fs.rm(directory, { recursive: true, force: true });
+    }
+}
+
 function varint(value) {
     const bytes = [];
     do {
@@ -311,4 +350,4 @@ async function runEchoControls({ origin, idToken } = {}) {
     };
 }
 
-module.exports = { runNativeSuites, runEchoControls };
+module.exports = { runNativeSuites, runNativeCredentialRenewal, runEchoControls };

@@ -14,11 +14,14 @@ const report = { startedAt: new Date().toISOString(), status: 'running', release
 const catalog = require('./gcp-catalog.cjs');
 const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('./gcp-soak.cjs');
 const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
+const { awaitOwnedRestrictedToken } = require('./gcp-restricted-token.cjs');
+const { parseAuthRenewalArgs, validateCredentialRenewal } = require('./gcp-auth-renewal.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
 let interrupted = false;
 let soakController;
-const onSignal = () => { interrupted = true; soakController?.abort(); };
+let credentialController;
+const onSignal = () => { interrupted = true; soakController?.abort(); credentialController?.abort(); };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const redact = value => {
   let result = String(value);
@@ -42,8 +45,9 @@ function command(program, args, { env = process.env, timeout = 120000, cwd = roo
 }
 function gcloud(args, options) { return command('gcloud', [...args, '--project', project, '--quiet'], options); }
 function secret(value) { if (!value) throw new Error('EMPTY_CREDENTIAL'); secrets.add(value); return value; }
-async function api(url, method = 'GET', body) {
-  const response = await fetch(url, { method, redirect: 'error', signal: AbortSignal.timeout(45000),
+async function api(url, method = 'GET', body, signal) {
+  const timeoutSignal = AbortSignal.timeout(45000);
+  const response = await fetch(url, { method, redirect: 'error', signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
     headers: { authorization: `Bearer ${url.startsWith('https://api.cloudflare.com/') ? cfToken : accessToken}`, ...(body ? { 'content-type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -292,6 +296,8 @@ async function waitWorkerReady(mode, targetKey = mode) {
 async function main() {
   if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
   const soakSeconds = parseSoakSeconds(process.argv.slice(2));
+  report.authRenewalRequested = parseAuthRenewalArgs(process.argv.slice(2));
+  if (report.authRenewalRequested) report.authRenewalSourceHashes = catalog.sourceHashes(root);
   report.soakRequested = soakSeconds !== undefined;
   if (report.soakRequested) report.soakSourceHashes = catalog.sourceHashes(root);
   report.catalogRequested = process.argv.includes('--catalog');
@@ -341,6 +347,30 @@ async function main() {
       api: (...args) => { if (interrupted) throw new Error('INTERRUPTED'); return api(...args); } });
     save();
   }
+  const ownedAccount = report.resources.find(item => item.kind === 'service-account' && item.name === serviceAccount);
+  let restrictedToken;
+  if (report.catalogRequested) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    if (!ownedAccount?.created || !/^[1-9][0-9]{9,29}$/.test(ownedAccount.uid)) throw new Error('OWNED_SERVICE_ACCOUNT_UID_REQUIRED');
+    phase('owned-service-account-token');
+    credentialController = new AbortController();
+    try {
+      // Retry only token reads after an explicitly requested, verified grant.
+      // Both the helper's wait and the underlying HTTP request are bounded.
+      const signal = AbortSignal.any([credentialController.signal, AbortSignal.timeout(300000)]);
+      const restricted = await awaitOwnedRestrictedToken({
+        url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${ownedAccount.uid}:generateAccessToken`,
+        api: (url, method, body) => api(url, method, body, signal),
+        signal: credentialController.signal, allowPropagationWait: Boolean(report.ownedIamGrant),
+      });
+      report.restrictedPrincipal = { ...restricted.receipt, newlyCreated: true, rolesGranted: 0, keysCreated: 0,
+        callerMintPermissionGranted: Boolean(report.ownedIamGrant) };
+      if (restricted.credentials) restrictedToken = secret(restricted.credentials.accessToken);
+      save();
+      if (interrupted) throw new Error('INTERRUPTED');
+      if (report.authRenewalRequested && !restrictedToken) throw new Error('AUTH_RENEWAL_REQUIRES_OWNED_TOKEN_PERMISSION');
+    } finally { credentialController = undefined; }
+  }
   for (const [kind, type] of [['datastore', 'DATASTORE_MODE'], ['firestore', 'FIRESTORE_NATIVE']]) {
     const url = `https://firestore.googleapis.com/v1/projects/${project}/databases/${ids[kind]}`;
     await createResource({ kind: 'database', name: ids[kind], url, databaseType: type }, `https://firestore.googleapis.com/v1/projects/${project}/databases?databaseId=${ids[kind]}`, { locationId: region, type, deleteProtectionState: 'DELETE_PROTECTION_DISABLED', pointInTimeRecoveryEnablement: 'POINT_IN_TIME_RECOVERY_DISABLED' }, 'https://firestore.googleapis.com/v1');
@@ -358,14 +388,7 @@ async function main() {
     if (!version.name?.startsWith(secretName + '/versions/')) throw new Error('SECRET_VERSION_IDENTITY_MISMATCH');
     catalogBindings = { WGA_SECRET_VERSION: version.name, WGA_SECRET_PAYLOAD: payload,
       WGA_SECRET_NAMES: JSON.stringify([secretName, secondName]), WGA_RESOURCE_LABEL: report.run };
-    // Existing permissions, or an explicit grant on this new account only,
-    // must allow token minting. Never change project IAM or enable APIs.
-    const restricted = await api(`https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
-      'POST', { scope: ['https://www.googleapis.com/auth/cloud-platform'], lifetime: '1800s' });
-    report.restrictedPrincipal = { status: restricted.status === 200 && restricted.data.accessToken ? 'ready' : 'blocked',
-      httpStatus: restricted.status, newlyCreated: true, rolesGranted: 0, keysCreated: 0,
-      callerMintPermissionGranted: Boolean(report.ownedIamGrant) };
-    if (report.restrictedPrincipal.status === 'ready') catalogBindings.WGA_RESTRICTED_ACCESS_TOKEN = secret(restricted.data.accessToken);
+    if (restrictedToken) catalogBindings.WGA_RESTRICTED_ACCESS_TOKEN = restrictedToken;
   }
   const images = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/cloud-run-probe/images.json')));
   phase('deploy-native-origin');
@@ -379,6 +402,7 @@ async function main() {
   accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true }));
   identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
   const env = { ...catalogBindings, WGA_GCP_PROJECT: project, WGA_GCP_PROJECT_NUMBER: number, WGA_DATASTORE_DATABASE: ids.datastore, WGA_FIRESTORE_DATABASE: ids.firestore,
+    ...(report.authRenewalRequested ? { WGA_AUTH_RENEWAL_ENABLED: '1', WGA_OWNED_SERVICE_ACCOUNT_UID: ownedAccount.uid } : {}),
     WGA_SECRET_NAME: secretName, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken,
     WGA_RUN_GOOGLE_TESTS: '1', WGA_ALLOW_TEST_WRITES: '1', WGA_NATIVE_ORIGIN: native.uri, WGA_GATEWAY_ORIGIN: gateway.uri,
     WGA_ENDPOINTS_JSON: JSON.stringify(Object.fromEntries(['datastore', 'firestore', 'secretmanager'].map(service => [`${service}.googleapis.com:443`, gateway.uri]))) };
@@ -456,6 +480,35 @@ async function main() {
     report.flagonGooglePassed = googleResults.length === 5 && googleResults.every(item => item.body?.status === 'passed');
     report.flagonEchoPassed = echoResults.length === 3 && echoResults.every(item => item.body?.passed === true);
     report.status = 'completed-auto-conversion-comparison';
+  }
+  if (report.authRenewalRequested) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    phase('real-credential-renewal');
+    credentialController = new AbortController();
+    try {
+      const signal = AbortSignal.any([credentialController.signal, AbortSignal.timeout(150000)]);
+      const modes = ['native', 'grpc-web', 'cloudflare'];
+      const settled = await Promise.allSettled(modes.map(async mode => {
+        let value, httpStatus = null;
+        if (mode === 'native') value = await controls.runNativeCredentialRenewal(env, { signal });
+        else {
+          const response = await workerRequest(`/gcp/${mode}/auth-renewal`, true, mode, 150000, signal);
+          httpStatus = response.httpStatus;
+          if (httpStatus !== 200) return { mode, status: 'failed', httpStatus, code: 'AUTH_RENEWAL_HTTP_FAILED' };
+          value = response.body;
+        }
+        const checked = validateCredentialRenewal(value, { mode });
+        // An invalid remote body is never copied into the public receipt.
+        return checked.valid ? { mode, status: 'passed', httpStatus, receipt: value }
+          : { mode, status: 'failed', httpStatus, code: 'AUTH_RENEWAL_INVALID_RECEIPT', errors: checked.errors };
+      }));
+      const results = settled.map((item, index) => item.status === 'fulfilled' ? item.value
+        : { mode: modes[index], status: 'failed', code: 'AUTH_RENEWAL_REQUEST_FAILED' });
+      report.authRenewal = { status: results.every(item => item.status === 'passed') ? 'passed' : 'failed', results };
+      save();
+      if (interrupted) throw new Error('INTERRUPTED');
+      if (report.authRenewal.status !== 'passed') throw new Error('AUTH_RENEWAL_FAILED');
+    } finally { credentialController = undefined; }
   }
   if (report.soakRequested) {
     if (interrupted) throw new Error('INTERRUPTED');
