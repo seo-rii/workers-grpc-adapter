@@ -77,7 +77,7 @@
     "fixtures:install": "node scripts/install-fixtures.cjs",
     "verify": "node scripts/verify.cjs",
     "doctor": "node scripts/doctor.cjs",
-    "prepack": "npm run build"
+    "prepack": "npm run build && node vendor/verify.cjs"
   },
   "devDependencies": { "typescript": "5.8.3", "@types/node": "22.15.30", "fast-check": "4.10.2" },
   "peerDependencies": { "esbuild": ">=0.25.0 <1", "typescript": ">=5.8.0 <6" },

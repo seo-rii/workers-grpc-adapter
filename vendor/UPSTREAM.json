@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "package": "@grpc/grpc-js",
   "version": "1.14.0",
   "tarball": "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.14.0.tgz",
@@ -7,7 +8,10 @@
   "repository": "https://github.com/grpc/grpc-node",
   "license": "Apache-2.0",
   "licenseSha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
-  "upstreamNotice": null,
+  "upstreamNotice": {
+    "status": "absent",
+    "files": []
+  },
   "files": [
     {
       "upstreamPath": "src/client.ts",
@@ -125,5 +129,15 @@
     "P-04": "HTTPS credentials implemented by src/credentials.ts, not copied from native TLS source",
     "P-05": "Client-only root exports and module closure",
     "P-06": "Type-only http2/tls imports; use structural ParentCall deadline/cancellation subset instead of native server types; use node: builtins"
+  },
+  "archive": {
+    "path": ".cache/vendor/grpc-js-1.14.0.tgz",
+    "bytes": 434487,
+    "sha256": "fc30fc45d9f785af24f7153451b7e755f080ed258eca8fc956f3e9b39b075d12"
+  },
+  "registryMetadata": {
+    "url": "https://registry.npmjs.org/@grpc%2fgrpc-js/1.14.0",
+    "path": ".cache/vendor/grpc-js-1.14.0.registry.json",
+    "sha256": "6d0645f0545e0c0e4fc12e70cb6f6260d6f2aa090685f2b70a01ebe85245b5ba"
   }
 }

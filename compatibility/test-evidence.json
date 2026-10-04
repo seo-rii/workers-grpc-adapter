@@ -80664,11 +80664,9 @@
     },
     {
       "id": "DOC-004",
-      "coverage": "partial",
-      "reason": "Vendor verification checks the upstream LICENSE hash and reconstructs every listed source from exact pristine and patch hashes; packaging executes an actual replacement tarball and records its SHA-256. It does not verify all original upstream tarball/NOTICE provenance fields or prove every required release pin fails closed.",
-      "gaps": [
-        "Validate the upstream tarball/integrity and NOTICE presence-or-absence policy, including explicit missing/null required-pin negative controls that fail the release gate. vendor/verify.cjs currently verifies license and listed source/patch hashes but not those manifest metadata fields."
-      ],
+      "coverage": "covered",
+      "reason": "Offline verification checks the exact upstream archive SHA-512/SHA-256, canonical registry provenance and git pin, archive package identity, LICENSE bytes, explicit NOTICE absence/presence and adapter attribution. Every pristine source is compared with the archive and all patches are reconstructed before any --apply write. Required missing/null pins and archive/notice drift are rejected by independent negative controls. Prepack invokes this verifier, so invalid release provenance prevents tarball creation.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -80690,6 +80688,179 @@
             {
               "pointer": "/status",
               "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor release verifies the actual pinned archive, license, notices and all twelve patches offline"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor required provenance pins fail closed when missing, null or malformed"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor CLI rejects missing archives and provenance or NOTICE drift without downloading or leaving a passing receipt"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC release prepack invokes the required vendor verifier and refuses missing provenance"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor archive controls independently enforce package, LICENSE, source and explicit NOTICE policies"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor tar parser rejects unsafe paths, links, duplicates, truncation and oversized decompression"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor apply validates every patch before changing source and safely reconstructs approved targets"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE vendor provenance rejects incomplete receipts and rechecks actual artifact bytes"
+        },
+        {
+          "kind": "tap",
+          "source": "test/vendor-provenance.test.cjs",
+          "command": "tests",
+          "name": "DOC vendor setup reuses only verified cache and bounds explicit registry downloads before writing"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "required-upstream-pins"
+          },
+          "anchor": "required-upstream-pins",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "required-upstream-pins"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "registry-version-provenance"
+          },
+          "anchor": "registry-version-provenance",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "registry-version-provenance"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "archive-sha512-and-sha256"
+          },
+          "anchor": "archive-sha512-and-sha256",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "archive-sha512-and-sha256"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "archive-license-bytes"
+          },
+          "anchor": "archive-license-bytes",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "archive-license-bytes"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "explicit-archive-notice-policy"
+          },
+          "anchor": "explicit-archive-notice-policy",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "explicit-archive-notice-policy"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "pristine-files-match-archive"
+          },
+          "anchor": "pristine-files-match-archive",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "pristine-files-match-archive"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/vendor-provenance.json",
+          "source": "vendor/provenance.cjs",
+          "command": "vendor",
+          "array": "/checks",
+          "where": {
+            "$value": "patch-output-hashes"
+          },
+          "anchor": "patch-output-hashes",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "patch-output-hashes"
             }
           ]
         }

@@ -59,7 +59,9 @@ jobs:
             fixtures/envoy/.cache/envoy-*
             fixtures/emulators/.cache/*.jar
             fixtures/emulators/.cache/*.tar.gz
-          key: local-services-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('fixtures/envoy/binary.json', 'fixtures/emulators/toolchain.json') }}
+            .cache/vendor/*.tgz
+            .cache/vendor/*.registry.json
+          key: local-services-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('fixtures/envoy/binary.json', 'fixtures/emulators/toolchain.json', 'vendor/UPSTREAM.json') }}
 
       - name: Install fixtures and run all local gates
         shell: bash
@@ -181,6 +183,10 @@ jobs:
                   file = root / 'compatibility' / name
                   if file.is_file() and not file.is_symlink():
                       output.add(file, arcname=str(file.relative_to(root)), recursive=False)
+              for pattern in ('*.tgz', '*.registry.json'):
+                  for file in sorted((root / '.cache' / 'vendor').glob(pattern)):
+                      if file.is_file() and not file.is_symlink():
+                          output.add(file, arcname=str(file.relative_to(root)), recursive=False)
               logs = Path.home() / 'logs'
               if logs.is_dir():
                   for file in sorted(logs.glob('wga-*')):

@@ -11,11 +11,11 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | Meaning |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 141 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 39 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
@@ -233,6 +233,11 @@ slopes must fit explicit local envelopes; a separate isolate retaining 16 MiB
 must trigger the same checks. This covers the finite observation required by
 `PERF-004`, without claiming total isolate memory or general leak freedom.
 
+Vendor release provenance now validates the actual pinned upstream archive and
+registry receipt, LICENSE bytes, explicit NOTICE policy, pristine files and all
+patch outputs. Missing/null pins and tampered inputs fail both offline
+verification and the prepack gate. This completes `DOC-004`.
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -252,7 +257,7 @@ must trigger the same checks. This covers the finite observation required by
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
-| Documentation | 0 | 3 | 2 |
+| Documentation | 1 | 2 | 2 |
 
 Flow control now includes the native comparisons and specific
 large-stream/pause/ownership scenarios. The remaining unary discrepancy is
@@ -261,7 +266,7 @@ retained rather than treated as transport equivalence.
 ## Remaining work
 
 The next local work is executable documentation checks: connect documentation
-examples, support tables, diagnostic IDs and release provenance checks to
+examples, support tables and diagnostic IDs to
 executed fixtures instead of relying on source hashes alone (`DOC-*`). Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five

@@ -89,7 +89,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:benchmark` | Required installed transport-only Node benchmark: bundle provenance, raw latency, buffering, concurrency and per-call cleanup | `verification/benchmark.json` |
 | `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
 
-`node vendor/verify.cjs` validates upstream and patched source hashes and reproduces the patches. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. Both benchmarks are required local executions; the live runner remains separate.
+`fixtures:install` fetches the pinned upstream archive and canonical registry receipt into `.cache/vendor`. `node vendor/verify.cjs` then checks them offline, including SHA-512/SHA-256 pins, git provenance, LICENSE/NOTICE policy, pristine sources and every patch output. Missing or null required pins fail. `npm pack` runs this check through `prepack`, and CI retains the verified archive and registry receipt with `verification/vendor-provenance.json`. `test:evidence` checks an existing completed verification run; `verify` creates the evidence file. Both benchmarks are required local executions; the live runner remains separate.
 
 The [temporary Cloudflare probe](cloud-probe.md) is a separate explicit deployment command. It is never invoked by `verify` or CI, and records deployed evidence in `verification/cloud-probe.json` without changing the local report's cloud-certification flags.
 

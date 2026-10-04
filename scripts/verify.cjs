@@ -155,7 +155,7 @@ function main() {
         generatedAt: new Date().toISOString(), package: require('../package.json').name, version: require('../package.json').version,
         status: sdkTypes.status === 'passed' ? 'local-gates-passed-cloud-certification-blocked' : 'local-runtime-gates-passed-upstream-types-and-cloud-blocked', releaseEligible: false,
         environment: { node: process.version, platform: process.platform, arch: process.arch, npm: cp.execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim() },
-        build: read('build.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
+        build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
         declarations: read('types.json'), packaging: read('packaging.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),

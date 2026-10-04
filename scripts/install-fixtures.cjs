@@ -10,6 +10,7 @@ function npm(args, cwd = root) {
     cp.execFileSync('npm', args, { cwd, stdio: 'inherit' });
 }
 fs.mkdirSync(path.join(root, 'artifacts'), { recursive: true });
+cp.execFileSync(process.execPath, ['vendor/fetch-upstream.cjs'], { cwd: root, stdio: 'inherit' });
 npm(['pack', '--pack-destination', 'artifacts']);
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
 const tarball = path.join(root, 'artifacts', `${manifest.name}-${manifest.version}.tgz`);

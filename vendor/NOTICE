@@ -1,6 +1,8 @@
 This package includes modified client-side source files from @grpc/grpc-js 1.14.0.
 Copyright gRPC authors. Licensed under the Apache License, Version 2.0.
-The npm distribution contains LICENSE but no NOTICE file. This attribution notice
-is supplied by workers-grpc-adapter and is not an upstream NOTICE.
+Upstream archive: https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.14.0.tgz
+Upstream integrity: sha512-N8Jx6PaYzcTRNzirReJCtADVoq4z7+1KQ4E70jTg/koQiMoUSN1kbNjPOqpPbhMFhfU1/l7ixspPl8dNY+FoUg==
+The verified npm archive contains LICENSE and no NOTICE or NOTICE.* file.
+This attribution is supplied by workers-grpc-adapter, not the upstream project.
 Pristine files, source hashes, modifications, and reproduction instructions are
 preserved in this directory. See UPSTREAM.json and README.md.
