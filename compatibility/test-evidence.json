@@ -80584,12 +80584,145 @@
     },
     {
       "id": "DOC-001",
-      "coverage": "unimplemented",
-      "reason": "Consumer fixtures and documentation examples exist, but current verification does not extract Markdown code blocks and compare them with executed consumer sources. Source hashing does not establish example equivalence.",
-      "gaps": [
-        "Implement and execute a documentation-to-consumer comparison and identify every unexecuted example as expected rather than verified behavior."
+      "coverage": "covered",
+      "reason": "Every maintained Markdown fence is inventoried with exact language/content hashes and an explicit execution or expected/unexecuted classification. The two README configuration alternatives match consumer fixtures byte for byte and execute actual RPCs in separate workerd isolates using the installed alias. Both modes verify route, conversion intent, bytes, single completion and resource cleanup. Missing/new/stale/overclaimed fences and changed consumers fail; the generated per-block table never presents expected examples as executed.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/doc-examples.json",
+          "source": "scripts/test-doc-examples.cjs",
+          "command": "doc-examples",
+          "array": "/runs",
+          "where": {
+            "mode": "cloudflare"
+          },
+          "anchor": "sourceMatchesConsumer",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/sourceMatchesConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/freshIsolate",
+              "equals": true
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/externalRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/channelActiveCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/runtimeDisposed",
+              "equals": true
+            },
+            {
+              "pointer": "/clientClosed",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-examples.json",
+          "source": "scripts/test-doc-examples.cjs",
+          "command": "doc-examples",
+          "array": "/runs",
+          "where": {
+            "mode": "grpc-web"
+          },
+          "anchor": "sourceMatchesConsumer",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/sourceMatchesConsumer",
+              "equals": true
+            },
+            {
+              "pointer": "/freshIsolate",
+              "equals": true
+            },
+            {
+              "pointer": "/rpcCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/fetchCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/externalRequests",
+              "equals": 0
+            },
+            {
+              "pointer": "/channelActiveCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/runtimeDisposed",
+              "equals": true
+            },
+            {
+              "pointer": "/clientClosed",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples fence extraction preserves exact source and rejects unfinished fences"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples discover all maintained roots and exclude generated dependencies and bookkeeping"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples inventory keeps two exact consumers and explicitly classifies every unexecuted fence"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples reject missing, new, stale and overclaimed fences or changed consumers"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples report rejects fabricated runtime counts, drifted receipts and status overclaims"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-examples.test.cjs",
+          "command": "tests",
+          "name": "DOC examples generated inventory visibly distinguishes execution from expectations and binds current source"
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "623ea721472e5c4a87cd0888d65dcebfa1b43ba288be01ea1893539a83b29413"
     },
     {

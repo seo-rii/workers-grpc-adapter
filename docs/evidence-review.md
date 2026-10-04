@@ -13,9 +13,9 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 141 | Execution satisfies the original case. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 142 | Execution satisfies the original case. |
 | Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 39 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 8 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
@@ -238,6 +238,11 @@ registry receipt, LICENSE bytes, explicit NOTICE policy, pristine files and all
 patch outputs. Missing/null pins and tampered inputs fail both offline
 verification and the prepack gate. This completes `DOC-004`.
 
+Documentation examples now have an exhaustive fenced-block inventory. Two exact
+README consumers run separately in workerd; every other block is explicitly an
+expected, unexecuted example. Missing, changed and overclaimed examples fail the
+gate, and the visible generated inventory preserves those labels (`DOC-001`).
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -257,7 +262,7 @@ verification and the prepack gate. This completes `DOC-004`.
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
-| Documentation | 1 | 2 | 2 |
+| Documentation | 2 | 2 | 1 |
 
 Flow control now includes the native comparisons and specific
 large-stream/pause/ownership scenarios. The remaining unary discrepancy is
@@ -266,15 +271,15 @@ retained rather than treated as transport equivalence.
 ## Remaining work
 
 The next local work is executable documentation checks: connect documentation
-examples, support tables and diagnostic IDs to
+support tables, compatibility statements and diagnostic IDs to
 executed fixtures instead of relying on source hashes alone (`DOC-*`). Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five
 performance measurement/policy contracts have local execution evidence;
 production performance thresholds remain unset and cannot certify a release.
 
-The nine cases without an accepted current reference are
-`CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
+The eight cases without an accepted current reference are
+`CLOUD-001`–`CLOUD-007` and `DOC-005`.
 Their individual procedures and remaining conditions are in the mapping.
 For `WIRE-018`, all nine HTTP fallback tests have individual source and TAP
 references, alongside the shared Node/workerd matrix. The checker expands only bounded literal

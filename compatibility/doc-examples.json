@@ -1,0 +1,698 @@
+{
+  "schemaVersion": 1,
+  "policy": "Every fenced block is explicitly classified. Only listed installed workerd consumers execute; expected blocks are never passed evidence. Changes require an intentional manifest update.",
+  "examples": [
+    {
+      "id": "CONTRIBUTING.md#fence-1",
+      "file": "CONTRIBUTING.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "3e80afe66c695b54b9dc6bbc2d696cb60f8dc48ecbe2a947a1c7b87c5a44270e",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "CONTRIBUTING.md#fence-2",
+      "file": "CONTRIBUTING.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "4b488c13c19afa3974bb2ec87ab5dedfb0e36aa27b0bf9f96cb84f3d81f331d5",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "README.md#fence-1",
+      "file": "README.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "36cdfcc4f2880df7aaf59669835d1f3273d8bd65bdfc237d2b56bec32c722ec4",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "README.md#fence-2",
+      "file": "README.md",
+      "ordinal": 2,
+      "language": "text",
+      "sha256": "0eeb1898d26f676e8a9d533b9541e629e78fb6855781f5aff50e585e92a54e50",
+      "classification": "expected",
+      "category": "diagram",
+      "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "README.md#fence-3",
+      "file": "README.md",
+      "ordinal": 3,
+      "language": "json",
+      "sha256": "7f8f36331325e0e7e640001db523644b2371d813060b9c59def87062620785e5",
+      "classification": "expected",
+      "category": "configuration-fragment",
+      "reason": "Illustrative configuration fragment requiring a surrounding consumer setup; this block is not executed."
+    },
+    {
+      "id": "README.md#fence-4",
+      "file": "README.md",
+      "ordinal": 4,
+      "language": "jsonc",
+      "sha256": "1e77b9064dfb7f29f839304baf9a96629296305f66a951b2f185c00a9b31f08f",
+      "classification": "expected",
+      "category": "configuration-fragment",
+      "reason": "Illustrative configuration fragment requiring a surrounding consumer setup; this block is not executed."
+    },
+    {
+      "id": "README.md#fence-5",
+      "file": "README.md",
+      "ordinal": 5,
+      "language": "js",
+      "sha256": "4132ad0bb18fa7934e82992deb9faa9575f64a3c2bceb9d55c0834419b098073",
+      "classification": "execute",
+      "category": "installed-workerd-consumer",
+      "reason": "Exact README setup consumed in a fresh workerd isolate; harness adds a controlled RPC and cleanup assertions.",
+      "consumer": "fixtures/docs/cloudflare.mjs"
+    },
+    {
+      "id": "README.md#fence-6",
+      "file": "README.md",
+      "ordinal": 6,
+      "language": "js",
+      "sha256": "cb2f7f832febd89c7e3587cec206b8844a8cb655d7da53fe5e562abf46a240b2",
+      "classification": "execute",
+      "category": "installed-workerd-consumer",
+      "reason": "Exact README setup consumed in a fresh workerd isolate; harness adds a controlled RPC and cleanup assertions.",
+      "consumer": "fixtures/docs/grpc-web.mjs"
+    },
+    {
+      "id": "docs/api.md#fence-1",
+      "file": "docs/api.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "a69f0fe79459474e67d647f25c09cd3740eb2a5c53382fa5c9155d70f60f27f7",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/api.md#fence-2",
+      "file": "docs/api.md",
+      "ordinal": 2,
+      "language": "jsonc",
+      "sha256": "1e77b9064dfb7f29f839304baf9a96629296305f66a951b2f185c00a9b31f08f",
+      "classification": "expected",
+      "category": "configuration-fragment",
+      "reason": "Illustrative configuration fragment requiring a surrounding consumer setup; this block is not executed."
+    },
+    {
+      "id": "docs/api.md#fence-3",
+      "file": "docs/api.md",
+      "ordinal": 3,
+      "language": "ts",
+      "sha256": "5c15eca34108bfeb52ab66ffa6493626efe883f2666272768a6c823ee23c41cd",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/architecture.md#fence-1",
+      "file": "docs/architecture.md",
+      "ordinal": 1,
+      "language": "mermaid",
+      "sha256": "13d9c9ddc672afa9bad7e5ce91107e559d7b9739b5ca386bb3f9996f865ecfc6",
+      "classification": "expected",
+      "category": "diagram",
+      "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "docs/cloud-probe.md#fence-1",
+      "file": "docs/cloud-probe.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "f10009f14c8aedd05e782dd8b155e31100f7d00d354f9f31659156450b6073d8",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/cloudflare-conversion.md#fence-1",
+      "file": "docs/cloudflare-conversion.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "d7d86a23420b3949bf632accecacbb23de0a26485e7feafd7337b529d5223da2",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/compression.md#fence-1",
+      "file": "docs/compression.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "ecc6ad97237fe02d722662931ad7351adf61828d306d966bf421cdad9d3c84f3",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/datastore-lookup.md#fence-1",
+      "file": "docs/datastore-lookup.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "46e5d6751b27bc9faca0a8d63ce90ab8247ab71894638e650fdc5ff287ee680b",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/exports.md#fence-1",
+      "file": "docs/exports.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "44f5cc62cf6fdeb81977b813b73784a94b86a32bcb7c15a53145879825c3b3a5",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/fetcher.md#fence-1",
+      "file": "docs/fetcher.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "a920d3a957c75d4d8a9a8cfa119e2a60441745d238308b8700064986d0075546",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/firestore-watch.md#fence-1",
+      "file": "docs/firestore-watch.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "dc6ed1ad26c0f23b5926ba896ae2abb695cf14b32a1df0c199865f11ee894595",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/gcp-cloud-probe.md#fence-1",
+      "file": "docs/gcp-cloud-probe.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "0fe670955cdbd0f6765558ddcfde2e4b0e3524c325deac781577e9f629a60673",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/google-tests.md#fence-1",
+      "file": "docs/google-tests.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "258ca099f20f895a3300b26e89f9595a09840eae5b9c0903395ed91815415ec1",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/google-tests.md#fence-2",
+      "file": "docs/google-tests.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "bf3c540710e35680009890b4546defd27ff1af4ac23137970e0aec12198cabbf",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/health.md#fence-1",
+      "file": "docs/health.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "e8f87982b25a98762c07dcebc5c53f3990970b1bbb1b6f4211c3026b7f37a0d5",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/interceptors.md#fence-1",
+      "file": "docs/interceptors.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "bce40b347a3c3859d0f90ccb3b3cf5c501841735028c6b708b3eddc30b1fdcb0",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/interceptors.md#fence-2",
+      "file": "docs/interceptors.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "ebbfb7f074952f53c2ad2f07f9a821da90ba375334d608582cb5b85c092adc4c",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/limitations.md#fence-1",
+      "file": "docs/limitations.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "89e266bc0cddd70cfdd4f022cc102324c63a38369d0adb192d6db61d3c786040",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/modern-sdk.md#fence-1",
+      "file": "docs/modern-sdk.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "0755279e7a779b1449a155f3450b818a1c2b9798313fb8186efb1ddba8603c72",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/observability.md#fence-1",
+      "file": "docs/observability.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "467167bee8c5becd26bc2452e8bbca16a02e9fd24377fb9078e04ed70be68a03",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/parent-calls.md#fence-1",
+      "file": "docs/parent-calls.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "ca99c35ce44ea69ef372e61f45f983802b8b9b3417b2df9a33e729ca242a3403",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/parent-calls.md#fence-2",
+      "file": "docs/parent-calls.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "a84698a2aa5b7a82ce8e2cd1c3985cd870a67ab547840b37bf2195441536066d",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/parent-calls.md#fence-3",
+      "file": "docs/parent-calls.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "74c3bf598cf28f4255d33cca02d4054a7b25dae2c118c9d5082e4f8b093f0de8",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/profiles.md#fence-1",
+      "file": "docs/profiles.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "c42bcc79e4f9ab2c7b50a37faede0b1919292b3d9f0397e7273790d0d4702361",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/profiles.md#fence-2",
+      "file": "docs/profiles.md",
+      "ordinal": 2,
+      "language": "js",
+      "sha256": "fe0aa3e92fed6060fe1dea5123316930b131f12b51c29fe55acdd315fd9a9d78",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/request-streaming.md#fence-1",
+      "file": "docs/request-streaming.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "e5088de8fec4d2ab5c44659ca529fef224f89e49e3604d0df852b2de09755440",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/resources.md#fence-1",
+      "file": "docs/resources.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "8312ea3141b819a1ee310dca7f009379453d37cbeac906273584e394b7f2a93b",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/retries.md#fence-1",
+      "file": "docs/retries.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "3580122fd94cbdb32c68556259a7e383b9a70c3ca237909819eb94d31a005ccc",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/retries.md#fence-2",
+      "file": "docs/retries.md",
+      "ordinal": 2,
+      "language": "js",
+      "sha256": "439ecd5a510444b03f5e293090fe71a329f9a2132d1ce5521566bcb8e4e7b0f3",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/server.md#fence-1",
+      "file": "docs/server.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "60d9bb188dc2024994b81fadefb3efafc7e9bd146992a2efe15ecfb0ed2d7288",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/server.md#fence-2",
+      "file": "docs/server.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "f512bf6e1d7d832e3380666cd4a6f2b30b2f097ebd83b60f72f990776e064cf3",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-1",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 1,
+      "language": "json",
+      "sha256": "4076ab03532ae8f27e49e8cffec15e49c2384a384e2771f02b52af2f48db7454",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-2",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 2,
+      "language": "json",
+      "sha256": "e7a8660a1139d35eaff25ed284dde89ffc836c1d3c4d68ebbccabc68960f619b",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-3",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 3,
+      "language": "ts",
+      "sha256": "e3c37a48351979a942e9ba3247d0b2f0a21f16bf596c4052f8f68812c0aeca3a",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-4",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 4,
+      "language": "ts",
+      "sha256": "7352bfa61bf16f74015021ed1a1eb39478d89ffb063594c8d5b3254ef5930503",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-5",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 5,
+      "language": "text",
+      "sha256": "bb27cbc70dad11b9055b79913372f9d36aa7b75d6e32d2d0560ceeb149a39d71",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-6",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 6,
+      "language": "text",
+      "sha256": "27ac26bed21fa41eb082523c8616277fcd4eefa1b30d2d51274f8de1885924c5",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-7",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 7,
+      "language": "ts",
+      "sha256": "6bafaf2806a627b3b22dea2f71a1d10c162685bb668cb28ff6834eaf1d9c5d8f",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-8",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 8,
+      "language": "text",
+      "sha256": "abd874f86b03b22509c08b964338b7f8dc61259267904a9e4584aac3d6037d25",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-9",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 9,
+      "language": "text",
+      "sha256": "83f5c7928bfa8d9f846070e576bfca48357dbc1b7343d5ff2a006fb07571a019",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-10",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 10,
+      "language": "text",
+      "sha256": "0dbec722abddcca8487b9a0c58b16626acf682a5a156c811f1fe9dbf761063b3",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-11",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 11,
+      "language": "text",
+      "sha256": "d8b98bed2b79ecb417385746a4da89fb83ba1b089e104224f867e9e9b2175c5c",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-12",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 12,
+      "language": "ts",
+      "sha256": "25985b158de9a3dd3495a261a39046ecc31236b75f39a282aa103454fffa7ae4",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-13",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 13,
+      "language": "text",
+      "sha256": "6f2cfcdc33272fbb1e10c72759519c4397e6d91230ffc0c36a3aed84868254f6",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-14",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 14,
+      "language": "text",
+      "sha256": "6f9031114237a93d59cdb969411e18b2944a3e926a34abe6bb5dd1465254f2c8",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-15",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 15,
+      "language": "text",
+      "sha256": "e37557f0cfba595a13c0398402c435c43b27c7186b4c78e131df58fda4fecec9",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/spec/v0.3.md#fence-16",
+      "file": "docs/spec/v0.3.md",
+      "ordinal": 16,
+      "language": "json",
+      "sha256": "ccbc4e580ebd1eb896620b16bef2f6c8e274ca26e91734736392c7c446060359",
+      "classification": "expected",
+      "category": "historical-specification",
+      "reason": "Historical design specification retained for context; this block is expected documentation and is not executed."
+    },
+    {
+      "id": "docs/status-details.md#fence-1",
+      "file": "docs/status-details.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "4dbcbefd51f627e08359dbf1e24bfba443921dba5c3f8edae1dadb4f45b22e73",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/streaming-feasibility.md#fence-1",
+      "file": "docs/streaming-feasibility.md",
+      "ordinal": 1,
+      "language": "text",
+      "sha256": "aa1c7ca86ac00fe66a3d4d9ddc15affba3cae625318e3727dda8e9519f2cfb16",
+      "classification": "expected",
+      "category": "diagram",
+      "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "docs/testing.md#fence-1",
+      "file": "docs/testing.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "36cdfcc4f2880df7aaf59669835d1f3273d8bd65bdfc237d2b56bec32c722ec4",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/testing.md#fence-2",
+      "file": "docs/testing.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "3e80afe66c695b54b9dc6bbc2d696cb60f8dc48ecbe2a947a1c7b87c5a44270e",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/testing.md#fence-3",
+      "file": "docs/testing.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "2d90abc7cc14c511fd81cfcf3760447e6d883cbe26c3cf706ca2368384c105d6",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/testing.md#fence-4",
+      "file": "docs/testing.md",
+      "ordinal": 4,
+      "language": "sh",
+      "sha256": "a195baf2fd62cc335e3012dceed96e0b82edeed667b00f94719e5410bfecb02b",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/testing.md#fence-5",
+      "file": "docs/testing.md",
+      "ordinal": 5,
+      "language": "sh",
+      "sha256": "bf0180fcf67a8a9e0cc09a25ef15f8a80c741d5d0d3a15e7d5e08e3c0933f36e",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "fixtures/cloud-run-probe/README.md#fence-1",
+      "file": "fixtures/cloud-run-probe/README.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "a49c98a9172236c38bc443d96669004c6e353c01333890d3ebdd613c80499e78",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "fixtures/emulators/README.md#fence-1",
+      "file": "fixtures/emulators/README.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "6d5d23d94dca788246f3713e330a26b0debca986f564e107eaa663b3e9be1722",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "fixtures/emulators/README.md#fence-2",
+      "file": "fixtures/emulators/README.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "6ac36b72a51e7a9844b52536e2cf3c36e7d31f4d84f90490736ebc024803ef00",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "fixtures/emulators/README.md#fence-3",
+      "file": "fixtures/emulators/README.md",
+      "ordinal": 3,
+      "language": "js",
+      "sha256": "f7765158e27865f0b1f26282c35a1918e184dd6bd7378fb2dda22e1c0d45a0e7",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "fixtures/envoy/README.md#fence-1",
+      "file": "fixtures/envoy/README.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "62a04510438864426d90ccf630ec671c3ddc91db5a4306d18dfc3dde75f8197d",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "vendor/README.md#fence-1",
+      "file": "vendor/README.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "7dffa35cb6599d3af0f204959282c1d34bd983b4818557d8f99379c5e8d84474",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "vendor/README.md#fence-2",
+      "file": "vendor/README.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "3a7ebd52897fb2b39232c2f6e3a795339df57554269f4d91a4837ef3a1c7b7fa",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    }
+  ]
+}
