@@ -236,7 +236,7 @@ export class WorkersCall {
         const d = c.options.deadline;
         this.deadline = d === undefined ? (c.config.defaultTimeoutMs === undefined ? Infinity : Date.now() + c.config.defaultTimeoutMs) : (d instanceof Date ? d.getTime() : d);
         if (typeof this.deadline !== 'number' || Number.isNaN(this.deadline) || this.deadline === -Infinity) {
-            this.finish(status.INTERNAL, 'WGA_INVALID_DEADLINE');
+            this.finish(status.INVALID_ARGUMENT, 'WGA_INVALID_DEADLINE');
             return;
         }
         if (!c.lifetime && !this.attachParent(flags)) return;

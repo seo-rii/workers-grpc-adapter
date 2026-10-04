@@ -15,4 +15,8 @@ A final gRPC status is delivered once. The client-streaming callback also remain
 
 Explicit destruction closes the local stream promptly. It does not prove that a remote server has already released its application handler. In particular, HTTP service bindings can delay remote cancellation observation until the forwarded deadline; see [limitations](limitations.md). Set finite deadlines when remote resource lifetime must be bounded.
 
+Invalid deadlines (`new Date(NaN)`, `NaN`, negative infinity, or a value other than a number or `Date`) complete asynchronously with `INVALID_ARGUMENT / WGA_INVALID_DEADLINE` before authentication or Fetch. A finite deadline in the past completes with `DEADLINE_EXCEEDED`. An explicit positive `Infinity` means no deadline and overrides the configured default timeout. These checks apply to the logical call before admission and outgoing interceptor startup, and to direct transport calls. The final call options supplied by synchronous interceptor constructors determine the deadline.
+
+This invalid-input policy intentionally differs from pinned native grpc-js 1.14.0, which throws `RangeError` synchronously for an invalid `Date`. The lifecycle verification records that native result separately while checking the adapter's asynchronous error, zero authentication/Fetch, and resource cleanup in Node and workerd.
+
 `test/stream-destroy.test.cjs` covers Readable, Writable and Duplex destruction, iterator early return, normal EOF, upload half-close, pending writes, and destruction while credentials or outgoing interceptors are waiting. Tests also assert adapter timer/buffer cleanup and a subsequent successful call on the same client.

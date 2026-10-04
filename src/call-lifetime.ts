@@ -53,7 +53,7 @@ export class CallLifetime implements InterceptingCallInterface {
         this.listener = listener;
         if (this.terminal) { this.deliver(); return; }
         if (typeof this.deadline !== 'number' || Number.isNaN(this.deadline) || this.deadline === -Infinity) {
-            this.cancelWithStatus(status.INTERNAL, 'WGA_INVALID_DEADLINE'); return;
+            this.cancelWithStatus(status.INVALID_ARGUMENT, 'WGA_INVALID_DEADLINE'); return;
         }
         const flags = this.options.propagate_flags ?? propagate.DEFAULTS;
         if (!Number.isInteger(flags) || flags < 0 || flags > propagate.DEFAULTS) {

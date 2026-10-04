@@ -163,7 +163,7 @@ test('PARENT detaches on success, server failure, auth failure and invalid child
             await withFetch(async () => response(kind === 'server' ? [] : undefined, { code: kind === 'server' ? 7 : 0 }), async () => {
                 const result = unary(c, undefined, options);
                 if (kind === 'success') await result.promise;
-                else await assert.rejects(result.promise, { code: { server: 7, auth: 2, deadline: 13 }[kind] });
+                else await assert.rejects(result.promise, { code: { server: 7, auth: 2, deadline: 3 }[kind] });
                 clean(c, parent, result.call); parent.cancel(); clean(c, parent);
             });
         }

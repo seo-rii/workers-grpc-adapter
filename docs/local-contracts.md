@@ -88,12 +88,13 @@ underlying-source rejection from a deliberately wrapped reader whose exposed
 read promise rejects after cancellation. These are controlled lifecycle tests,
 not evidence for deployed cancellation propagation.
 
-`LIFE-015` remains partial: an invalid `Date` produces asynchronous
-`INTERNAL / WGA_INVALID_DEADLINE` before authentication or Fetch, while the
-original catalog asks for `INVALID_ARGUMENT`. Pinned native grpc-js 1.14.0
-instead throws `RangeError` synchronously while formatting that Date. The
-catalog expectation is therefore not native-parity behavior; no error policy
-was changed to conceal this mismatch.
+`LIFE-015` now satisfies the original catalog: an invalid `Date`, `NaN` or
+negative infinity produces asynchronous `INVALID_ARGUMENT / WGA_INVALID_DEADLINE`
+before authentication or Fetch. Finite past deadlines remain `DEADLINE_EXCEEDED`;
+positive infinity remains the explicit no-deadline sentinel. The native control
+still records pinned grpc-js 1.14.0 throwing `RangeError` synchronously for an
+invalid Date. Satisfying the adapter's input-error contract does not claim native
+exception parity.
 
 ## Flow control and public queues
 

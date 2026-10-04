@@ -49,8 +49,8 @@ test('complete campaign accounts for every one of the original 44 gaps', () => {
     const result = summarize(fixture());
     assert.equal(new Set(campaignIds).size, 44);
     assert.equal(result.cases.length, 44);
-    assert.equal(result.localGapsVerified, 27);
-    assert.equal(result.verifiedDifferences, 7);
+    assert.equal(result.localGapsVerified, 28);
+    assert.equal(result.verifiedDifferences, 6);
     assert.equal(result.cloudCases, 10);
     assert.equal(result.liveReceiptIncluded, false);
     assert.equal(result.releaseEligible, false);
@@ -71,7 +71,7 @@ test('live execution does not rewrite local coverage or imply catalog compliance
     live.cases.pop();
     assert.throws(() => summarize(fixture(), live), /live case missing/);
 });
-test('campaign keeps all seven executed compatibility differences partial', () => {
+test('campaign keeps all six executed compatibility differences partial', () => {
     for (const id of Object.keys(differences)) {
         const evidence = fixture();
         const row = evidence.cases.find(row => row.id === id); row.coverage = 'covered'; row.satisfiesPlannedCase = true;

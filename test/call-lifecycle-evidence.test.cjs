@@ -33,7 +33,8 @@ function deadlineRows(mode) {
     ['LIFE-014', 'omitted-deadline-with-default', 4, '200m', [200]],
     ['LIFE-014', 'omitted-deadline-without-default', 0, null, []],
     ['LIFE-015', 'past-numeric-deadline', 4, null, []], ['LIFE-015', 'past-date-deadline', 4, null, []],
-    ['LIFE-015', 'invalid-date-policy-gap', 13, null, []],
+    ['LIFE-015', 'invalid-date', 3, null, []], ['LIFE-015', 'nan-deadline', 3, null, []],
+    ['LIFE-015', 'negative-infinity-deadline', 3, null, []],
     ...[[1, '1m'], [99999999, '99999999m'], [100000000, '100000S'], [99999999000, '99999999S'],
       [99999999001, '1666667M'], [5999999940000, '99999999M'], [5999999940001, '1666667H'], [359999996400000, '99999999H']]
       .map(([duration, header]) => ['LIFE-016', `timeout-${header}-${duration}`, 0, header, [Math.min(duration, 2147483647)]]),
@@ -42,9 +43,10 @@ function deadlineRows(mode) {
   return specs.map(([id, variant, code, timeoutHeader, timerDelays]) => {
     const fetches = Number(id !== 'LIFE-015');
     return { id, variant, mode, status: 'passed', authCalls: fetches, fetches, metadata: Number(code === 0), messages: Number(code === 0),
-      messagesAfterTerminal: 0, writes: 1, writeErrors: 1 - fetches, statuses: [{ code, details: '' }], fetchAborts: Number(fetches && code === 4),
-      timers: 0, timeoutHeader, timerDelays, catalogMatch: variant !== 'invalid-date-policy-gap',
-      ...(variant === 'invalid-date-policy-gap' ? { catalogExpectedCode: 3, actualCode: 13 } : {}), ...idle(fetches) };
+      messagesAfterTerminal: 0, writes: 1, writeErrors: 1 - fetches, synchronousStatuses: 0,
+      statuses: [{ code, details: code === 3 ? 'WGA_INVALID_DEADLINE' : '' }], fetchAborts: Number(fetches && code === 4),
+      timers: 0, timeoutHeader, timerDelays, catalogMatch: true,
+      ...(code === 3 ? { catalogExpectedCode: 3, actualCode: 3 } : {}), ...idle(fetches) };
   });
 }
 function terminalRows(mode) {
@@ -107,18 +109,26 @@ function fixture() {
     compatibilityDate: '2026-09-21', miniflare: 'synthetic', workerd: 'synthetic', bundleSha256: 'a'.repeat(64),
     evidence: Object.fromEntries(['scripts/test-call-lifecycle.cjs', 'scripts/call-lifecycle-evidence.cjs',
       'fixtures/shared/call-lifecycle.mjs', 'fixtures/shared/lifecycle-deadlines.mjs', 'fixtures/shared/lifecycle-terminals.mjs',
-      'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json'].map(file => [file, 'b'.repeat(64)])),
+      'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json',
+      'fixtures/native/package.json', 'fixtures/native/package-lock.json'].map(file => [file, 'b'.repeat(64)])),
     installedInputs: Object.fromEntries(['index.js', 'index.mjs', 'adapter.js', 'adapter.mjs', 'call.js', 'wire.js']
       .map(file => [`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`, 'c'.repeat(64)])),
-    runs, caseCount: 180, catalogCases: catalogCases(runs) };
+    nativeDeadline: { grpc: '1.14.0', variant: 'invalid-date', threwSynchronously: true,
+      errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
+      adapterPolicy: 'asynchronous-invalid-argument' },
+    nativeInputs: Object.fromEntries(['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js']
+      .map(file => [`fixtures/native/node_modules/@grpc/grpc-js/${file}`, 'd'.repeat(64)])),
+    runs, caseCount: 188, catalogCases: catalogCases(runs) };
 }
 const row = (report, variant, runtime = 0, mode = 'cloudflare') => report.runs[runtime].rows.find(value => value.variant === variant && value.mode === mode);
 const reject = mutate => { const report = fixture(); mutate(report); assert.throws(() => validateCallLifecycleReport(report), /WGA_EVIDENCE_INVALID/); };
 
-test('EVIDENCE call lifecycle accepts the complete matrix and preserves the invalid-date catalog gap', () => {
+test('EVIDENCE call lifecycle accepts invalid-deadline policy and separately preserves the pinned native difference', () => {
   const report = fixture(); validateCallLifecycleReport(report);
   assert.equal(report.catalogCases.length, 19);
-  assert.deepEqual(report.catalogCases.filter(value => !value.catalogMatch).map(value => value.id), ['LIFE-015']);
+  assert.deepEqual(report.catalogCases.filter(value => !value.catalogMatch), []);
+  assert.equal(report.catalogCases.find(value => value.id === 'LIFE-015').scenarioCount, 20);
+  assert.equal(report.nativeDeadline.nativeParity, false);
   assert.equal(report.catalogCases.find(value => value.id === 'LIFE-017').callCount, 1200);
   assert.equal(report.catalogCases.find(value => value.id === 'WIRE-018').scenarioCount, 36);
   const copy = structuredClone(report.runs); catalogCases(report.runs); assert.deepEqual(report.runs, copy);
@@ -137,7 +147,13 @@ test('EVIDENCE call lifecycle rejects missing duplicate relabelled or stale prov
     r => { r.runs[0].rejectionSensorCount = 2; }, r => { r.runs[1].unhandledRejections = 1; }, r => { r.runs[0].rows.pop(); },
     r => { r.runs[0].rows[1] = structuredClone(r.runs[0].rows[0]); }, r => { r.runs[0].rows[0].mode = 'native'; },
     r => { r.runs[0].rows[0].id = 'LIFE-001'; }, r => { r.runs[0].rows[0].status = 'failed'; }, r => { r.caseCount--; },
-    r => { r.catalogCases[0].scenarioCount--; }, r => { r.catalogCases.find(value => value.id === 'LIFE-015').catalogMatch = true; },
+    r => { r.catalogCases[0].scenarioCount--; }, r => { r.catalogCases.find(value => value.id === 'LIFE-015').catalogMatch = false; },
+    r => { delete r.evidence['fixtures/native/package-lock.json']; }, r => { r.nativeInputs = {}; },
+    r => { r.nativeInputs['fixtures/native/node_modules/@grpc/grpc-js/../other.js'] = 'a'.repeat(64); },
+    r => { r.nativeDeadline.nativeParity = true; }, r => { r.nativeDeadline.errorName = 'TypeError'; },
+    r => { r.nativeDeadline.threwSynchronously = false; }, r => { r.nativeDeadline.grpc = '1.14.1'; },
+    r => { r.nativeDeadline.authCalls = 1; }, r => { r.nativeDeadline.callbacks = 1; },
+    r => { r.nativeDeadline.callReturned = true; },
   ]) reject(mutate);
 });
 
@@ -171,8 +187,13 @@ test('EVIDENCE call lifecycle validates timer units and the exact calibrated 100
     r => { row(r, 'omitted-deadline-without-default').timerDelays = [200]; },
     r => { row(r, 'timeout-100000S-100000000').timeoutHeader = '100000000m'; },
     r => { row(r, 'long-timer-rearms-without-overflow').timerDelays = [2147495992]; },
-    r => { row(r, 'invalid-date-policy-gap').catalogMatch = true; },
-    r => { row(r, 'invalid-date-policy-gap').actualCode = 3; },
+    r => { row(r, 'invalid-date').catalogMatch = false; },
+    r => { row(r, 'invalid-date').actualCode = 13; },
+    r => { row(r, 'invalid-date').synchronousStatuses = 1; },
+    r => { row(r, 'invalid-date').statuses[0].details = 'WGA_FETCH_FAILED'; },
+    r => { row(r, 'nan-deadline').statuses[0].code = 13; },
+    r => { row(r, 'negative-infinity-deadline').catalogExpectedCode = 4; },
+    r => { row(r, 'nan-deadline').authCalls = 1; },
     r => { row(r, 'past-date-deadline').fetches = 1; },
     r => { row(r, 'one-hundred-of-each-terminal-outcome').counts.cancel = 99; },
     r => { row(r, 'one-hundred-of-each-terminal-outcome').calls.pop(); },

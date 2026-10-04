@@ -8,7 +8,8 @@ const executionKeys = ['activePumps', 'pendingMessages', 'pendingMessageBytes', 
 const resourceKeys = ['activeCalls', 'queuedCalls', 'bufferedBytes'];
 const sources = ['scripts/test-call-lifecycle.cjs', 'scripts/call-lifecycle-evidence.cjs',
   'fixtures/shared/call-lifecycle.mjs', 'fixtures/shared/lifecycle-deadlines.mjs',
-  'fixtures/shared/lifecycle-terminals.mjs', 'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json'];
+  'fixtures/shared/lifecycle-terminals.mjs', 'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json',
+  'fixtures/native/package.json', 'fixtures/native/package-lock.json'];
 const digest = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const integer = (value, maximum = Number.MAX_SAFE_INTEGER) => Number.isSafeInteger(value) && value >= 0 && value <= maximum;
 const catalogIds = ['WIRE-018', ...Array.from({ length: 18 }, (_, index) => `LIFE-${String(index + 1).padStart(3, '0')}`)];
@@ -24,7 +25,8 @@ const deadlines = [
   ['omitted-deadline-with-default', 'LIFE-014', 4, '200m', [200]],
   ['omitted-deadline-without-default', 'LIFE-014', 0, null, []],
   ['past-numeric-deadline', 'LIFE-015', 4, null, []], ['past-date-deadline', 'LIFE-015', 4, null, []],
-  ['invalid-date-policy-gap', 'LIFE-015', 13, null, []],
+  ['invalid-date', 'LIFE-015', 3, null, []], ['nan-deadline', 'LIFE-015', 3, null, []],
+  ['negative-infinity-deadline', 'LIFE-015', 3, null, []],
   ...[[1, '1m'], [99999999, '99999999m'], [100000000, '100000S'], [99999999000, '99999999S'],
     [99999999001, '1666667M'], [5999999940000, '99999999M'], [5999999940001, '1666667H'], [359999996400000, '99999999H']]
     .map(([duration, header]) => [`timeout-${header}-${duration}`, 'LIFE-016', 0, header, [Math.min(duration, 2147483647)]]),
@@ -94,10 +96,13 @@ function checkDeadline(row, spec) {
   need(row.metadata === Number(code === 0) && row.messages === Number(code === 0), `${label} response count`);
   need(row.fetchAborts === Number(!preflight && code === 4), `${label} abort`);
   need(Array.isArray(row.statuses) && row.statuses.length === 1 && row.statuses[0].code === code && typeof row.statuses[0].details === 'string', `${label} terminal`);
+  need(row.synchronousStatuses === 0, `${label} asynchronous delivery`);
   same(row.timeoutHeader, header, `${label} timeout header`); same(row.timerDelays, timers, `${label} timer timeline`);
-  if (label === 'invalid-date-policy-gap') {
-    need(row.catalogMatch === false && row.catalogExpectedCode === 3 && row.actualCode === 13, 'invalid-date recorded catalog mismatch');
-  } else need(row.catalogMatch === true, `${label} catalog match`);
+  if (code === 3) {
+    need(row.statuses[0].details === 'WGA_INVALID_DEADLINE' && row.catalogExpectedCode === 3 && row.actualCode === 3,
+      `${label} invalid deadline policy`);
+  }
+  need(row.catalogMatch === true, `${label} catalog match`);
 }
 function checkTerminal(row, spec) {
   const [label, , codes, fetches, readerCount] = spec;
@@ -187,6 +192,15 @@ function validateCallLifecycleReport(report, { allowSourceBuild = false } = {}) 
     && typeof report.miniflare === 'string' && report.miniflare.length > 0, 'runtime identity');
   need(digest(report.bundleSha256), 'bundle hash');
   need(sources.every(file => digest(report.evidence?.[file])), 'source evidence');
+  same(report.nativeDeadline, { grpc: '1.14.0', variant: 'invalid-date', threwSynchronously: true,
+    errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
+    adapterPolicy: 'asynchronous-invalid-argument' }, 'pinned native invalid-Date boundary');
+  need(report.nativeInputs && typeof report.nativeInputs === 'object' && !Array.isArray(report.nativeInputs), 'native inputs');
+  for (const [file, hash] of Object.entries(report.nativeInputs)) need(file.startsWith('fixtures/native/node_modules/@grpc/grpc-js/')
+    && !file.split('/').includes('..') && digest(hash), 'native input provenance');
+  for (const file of ['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js']) {
+    need(digest(report.nativeInputs[`fixtures/native/node_modules/@grpc/grpc-js/${file}`]), `native ${file}`);
+  }
   need(report.installedInputs && typeof report.installedInputs === 'object' && !Array.isArray(report.installedInputs), 'installed inputs');
   for (const [file, hash] of Object.entries(report.installedInputs)) need(file.startsWith('fixtures/worker/node_modules/@grpc/grpc-js/') && !file.split('/').includes('..') && digest(hash), 'installed input provenance');
   if (!report.sourceBuild) for (const file of ['index.js', 'index.mjs', 'adapter.js', 'adapter.mjs', 'call.js', 'wire.js']) {
@@ -196,7 +210,7 @@ function validateCallLifecycleReport(report, { allowSourceBuild = false } = {}) 
   same(report.runs.map(run => run.runtime).sort(), [...runtimes].sort(), 'distinct runtimes');
   for (const run of report.runs) {
     need(run.status === 'passed' && run.unhandledRejections === 0 && run.rejectionSensorCount === 1, `${run.runtime} calibrated rejection monitor`);
-    need(Array.isArray(run.rows) && run.rows.length === 90, `${run.runtime} scenario count`);
+    need(Array.isArray(run.rows) && run.rows.length === 94, `${run.runtime} scenario count`);
     const seen = new Set();
     for (const row of run.rows) {
       need(modes.includes(row.mode) && variants.get(row.variant) === row.id && row.status === 'passed', `${run.runtime} scenario identity`);
@@ -209,9 +223,9 @@ function validateCallLifecycleReport(report, { allowSourceBuild = false } = {}) 
     }
     for (const mode of modes) for (const variant of variants.keys()) need(seen.has(`${mode}/${variant}`), `${run.runtime} missing scenario`);
   }
-  need(report.caseCount === 180, 'aggregate scenario count');
+  need(report.caseCount === 188, 'aggregate scenario count');
   same(report.catalogCases, catalogCases(report.runs), 'catalog aggregation');
   need(report.catalogCases.length === 19 && report.catalogCases.every(row => row.status === 'passed'
-    && row.catalogMatch === (row.id !== 'LIFE-015')), 'catalog mismatch preservation');
+    && row.catalogMatch === true), 'catalog requirements satisfied');
 }
 module.exports = { catalogCases, validateCallLifecycleReport };

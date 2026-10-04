@@ -10,7 +10,6 @@ const differences = {
     'API-011': ['verified-difference', 'Duplicate unary messages: native deadlines with code 4; adapter rejects with code 12.'],
     'WIRE-013': ['historical-expectation', 'The original blanket compression rejection predates implemented gzip/deflate support.'],
     'WIRE-016': ['verified-difference', 'The implemented missing-status diagnostic differs from the original catalog name.'],
-    'LIFE-015': ['verified-difference', 'Invalid Date: adapter asynchronously returns INTERNAL; native synchronously throws RangeError.'],
     'FLOW-006': ['verified-difference', 'Counted read-demand controls reproduce the duplicate-unary native/adapter difference.'],
     'DS-021': ['upstream-sdk-boundary', 'Both pinned native and adapter Datastore streams continue paging after destroy().'],
     'TX-008': ['upstream-sdk-boundary', 'Pinned public Commit promises expose no cancellation handle; deadlines do not undo writes.'],
@@ -19,7 +18,7 @@ const local = [
     ...[1, 3, 6, 7, 8, 9, 11, 12, 13, 14, 15].map(n => `AUTH-${String(n).padStart(3, '0')}`),
     ...[2, 5, 6, 7, 8, 9, 11].map(n => `BOOT-${String(n).padStart(3, '0')}`),
     ...[1, 2, 3, 4, 6, 7].map(n => `SEC-${String(n).padStart(3, '0')}`),
-    'RETRY-001', 'RETRY-004', 'WIRE-023',
+    'RETRY-001', 'RETRY-004', 'WIRE-023', 'LIFE-015',
 ];
 const cloud = catalog.ids;
 const campaignIds = [...local, ...Object.keys(differences), ...cloud].sort();

@@ -10875,11 +10875,9 @@
     },
     {
       "id": "LIFE-015",
-      "coverage": "partial",
-      "reason": "Past numeric and Date deadlines terminate before authentication/Fetch in Node and workerd. Invalid Date also terminates and releases resources, but reports INTERNAL rather than the original INVALID_ARGUMENT expectation.",
-      "gaps": [
-        "An explicit API error-policy decision is required for invalid Date: adapter reports asynchronous INTERNAL/WGA_INVALID_DEADLINE; the catalog asks for INVALID_ARGUMENT, and pinned native grpc-js instead throws RangeError synchronously."
-      ],
+      "coverage": "covered",
+      "reason": "Controlled Node/workerd calls in both modes reject finite past numeric/Date deadlines with DEADLINE_EXCEEDED and invalid Date/NaN/negative infinity asynchronously with INVALID_ARGUMENT/WGA_INVALID_DEADLINE before auth or Fetch, exactly once with released resources. A separately recorded pinned native synchronous RangeError is not claimed as adapter behavior.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -10904,7 +10902,7 @@
             },
             {
               "pointer": "/catalogMatch",
-              "equals": false
+              "equals": true
             },
             {
               "pointer": "/runtimes",
@@ -10922,11 +10920,11 @@
             },
             {
               "pointer": "/scenarioCount",
-              "equals": 12
+              "equals": 20
             },
             {
               "pointer": "/callCount",
-              "equals": 12
+              "equals": 20
             }
           ]
         }

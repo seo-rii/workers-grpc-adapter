@@ -73,9 +73,11 @@ export async function runDeadlineSchedules({ grpc, createWorkersGrpcTransport, d
     { id: 'LIFE-014', variant: 'omitted-deadline-without-default', timeout: null, elapsed: 1000 },
     { id: 'LIFE-015', variant: 'past-numeric-deadline', deadline: epoch - 1, code: grpc.status.DEADLINE_EXCEEDED },
     { id: 'LIFE-015', variant: 'past-date-deadline', deadline: new Date(epoch - 1), code: grpc.status.DEADLINE_EXCEEDED },
-    // Preserve the current policy honestly: the catalog requires INVALID_ARGUMENT,
-    // but both direct and managed adapter calls currently report INTERNAL here.
-    { id: 'LIFE-015', variant: 'invalid-date-policy-gap', deadline: new Date(NaN), code: grpc.status.INTERNAL, catalogCode: grpc.status.INVALID_ARGUMENT },
+    // Infinity remains the explicit no-deadline sentinel. Invalid Date, NaN,
+    // and negative infinity fail locally before credentials or Fetch can run.
+    { id: 'LIFE-015', variant: 'invalid-date', deadline: new Date(NaN), code: grpc.status.INVALID_ARGUMENT, catalogCode: grpc.status.INVALID_ARGUMENT },
+    { id: 'LIFE-015', variant: 'nan-deadline', deadline: NaN, code: grpc.status.INVALID_ARGUMENT, catalogCode: grpc.status.INVALID_ARGUMENT },
+    { id: 'LIFE-015', variant: 'negative-infinity-deadline', deadline: -Infinity, code: grpc.status.INVALID_ARGUMENT, catalogCode: grpc.status.INVALID_ARGUMENT },
     ...[
       [1, '1m'],
       [99999999, '99999999m'],
@@ -91,7 +93,7 @@ export async function runDeadlineSchedules({ grpc, createWorkersGrpcTransport, d
   ];
   for (const scenario of cases) {
     const clock = installClock();
-    const counts = { authCalls: 0, fetches: 0, metadata: 0, messages: 0, messagesAfterTerminal: 0, writes: 0, writeErrors: 0, statuses: [], fetchAborts: 0 };
+    const counts = { authCalls: 0, fetches: 0, metadata: 0, messages: 0, messagesAfterTerminal: 0, writes: 0, writeErrors: 0, statuses: [], synchronousStatuses: 0, fetchAborts: 0 };
     let channel, call, release, timeout;
     const fetcher = { fetch(_url, init) {
       counts.fetches++;
@@ -117,6 +119,7 @@ export async function runDeadlineSchedules({ grpc, createWorkersGrpcTransport, d
       });
       call = channel.createCallForMethod(path, false, false, { credentials,
         ...(Object.hasOwn(scenario, 'deadline') ? { deadline: scenario.deadline } : {}) });
+      let startReturned = false;
       call.start(new grpc.Metadata(), {
         onReceiveMetadata() { counts.metadata++; },
         onReceiveMessage() {
@@ -124,8 +127,12 @@ export async function runDeadlineSchedules({ grpc, createWorkersGrpcTransport, d
           if (counts.statuses.length) counts.messagesAfterTerminal++;
           call.startRead();
         },
-        onReceiveStatus(value) { counts.statuses.push({ code: value.code, details: value.details }); },
+        onReceiveStatus(value) {
+          if (!startReturned) counts.synchronousStatuses++;
+          counts.statuses.push({ code: value.code, details: value.details });
+        },
       });
+      startReturned = true;
       call.startRead();
       call.sendMessageWithContext({ callback(error) { counts.writes++; if (error) counts.writeErrors++; } }, Buffer.from([8, 1]));
       call.halfClose();
@@ -166,6 +173,8 @@ export async function runDeadlineSchedules({ grpc, createWorkersGrpcTransport, d
       }
       const expectedCode = scenario.code ?? (scenario.expires ? grpc.status.DEADLINE_EXCEEDED : grpc.status.OK);
       assert.deepEqual(counts.statuses.map(value => value.code), [expectedCode]);
+      assert.equal(counts.synchronousStatuses, 0, 'local errors preserve asynchronous status delivery');
+      if (expectedCode === grpc.status.INVALID_ARGUMENT) assert.equal(counts.statuses[0].details, 'WGA_INVALID_DEADLINE');
       assert.equal(counts.messages, expectedCode === grpc.status.OK ? 1 : 0);
       assert.equal(counts.metadata, expectedCode === grpc.status.OK ? 1 : 0);
       assert.equal(counts.fetchAborts, scenario.expires ? 1 : 0);

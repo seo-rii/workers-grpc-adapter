@@ -13,7 +13,8 @@ const sourceBuild = process.argv.includes('--source-build');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const sources = ['scripts/test-call-lifecycle.cjs', 'scripts/call-lifecycle-evidence.cjs',
   'fixtures/shared/call-lifecycle.mjs', 'fixtures/shared/lifecycle-deadlines.mjs',
-  'fixtures/shared/lifecycle-terminals.mjs', 'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json'];
+  'fixtures/shared/lifecycle-terminals.mjs', 'fixtures/worker/call-lifecycle.mjs', 'fixtures/worker/package-lock.json',
+  'fixtures/native/package.json', 'fixtures/native/package-lock.json'];
 const report = { status: 'running', sourceBuild, startedAt: new Date().toISOString(),
   liveCloud: false, incomingCloudflareTranslation: false, nativeHttp2: false, controlledPeer: true,
   compatibilityDate: '2026-09-21', externalRequests: 0, runs: [],
@@ -29,6 +30,33 @@ async function withNodeWatchdog(run, timeoutMs = 60000) {
   } finally { realClearTimeout(timer); }
 }
 async function main() {
+  // Record the actual pinned native boundary separately from the adapter's
+  // INVALID_ARGUMENT policy. This preflight never starts an HTTP/2 request.
+  const nativeRequire = createRequire(path.join(root, 'fixtures/native/package.json'));
+  const native = nativeRequire('@grpc/grpc-js');
+  const nativeVersion = nativeRequire('@grpc/grpc-js/package.json').version;
+  assert.equal(nativeVersion, '1.14.0');
+  let authCalls = 0, callbacks = 0, callReturned = false, caught;
+  const credentials = native.credentials.createFromMetadataGenerator((_options, done) => {
+    authCalls++; done(null, new native.Metadata());
+  });
+  const nativeClient = new native.Client('127.0.0.1:1', native.credentials.createSsl());
+  try {
+    try {
+      nativeClient.makeUnaryRequest('/catalog.lifecycle.Echo/Unary', value => value, value => value,
+        Buffer.from([8, 1]), { deadline: new Date(NaN), credentials }, () => { callbacks++; });
+      callReturned = true;
+    } catch (error) { caught = error; }
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(caught instanceof RangeError, 'pinned native invalid Date throws synchronously');
+    assert.equal(callReturned, false); assert.equal(callbacks, 0); assert.equal(authCalls, 0);
+    report.nativeDeadline = { grpc: nativeVersion, variant: 'invalid-date', threwSynchronously: true,
+      errorName: caught.name, callReturned, callbacks, authCalls, nativeParity: false,
+      adapterPolicy: 'asynchronous-invalid-argument' };
+  } finally { nativeClient.close(); }
+  report.nativeInputs = Object.fromEntries(Object.keys(require.cache)
+    .filter(file => file.startsWith(path.join(root, 'fixtures/native/node_modules/@grpc/grpc-js/')))
+    .map(file => [path.relative(root, file), digest(fs.readFileSync(file))]));
   const { runLifecycleSuite } = await import(pathToFileURL(path.join(root, 'fixtures/shared/call-lifecycle.mjs')).href);
   const grpc = require('../dist/index.js'), { createWorkersGrpcTransport } = require('../dist/adapter.js');
   const expected = new Error('LIFECYCLE_REJECTION_SENSOR'); let unexpected = 0, sensor = 0;
