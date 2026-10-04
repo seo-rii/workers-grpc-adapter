@@ -27,9 +27,9 @@ const suites = [
 // Keep these diagnostic limits aligned with fixtures/google/gcp-probe.mjs.
 // Importing that Worker entry would load the adapter into the native baseline.
 const configurations = {
-    'google.datastore.v1.Datastore': ['Lookup', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
+    'google.datastore.v1.Datastore': ['Lookup', 'RunQuery', 'RunAggregationQuery', 'BeginTransaction', 'Commit', 'Rollback'],
     'google.firestore.v1.Firestore': ['BatchGetDocuments', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
-    'google.cloud.secretmanager.v1.SecretManagerService': ['GetSecret'],
+    'google.cloud.secretmanager.v1.SecretManagerService': ['GetSecret', 'AccessSecretVersion', 'ListSecrets'],
 };
 const probeClientConfig = { interfaces: Object.fromEntries(Object.entries(configurations).map(([service, methods]) => [service, {
     retry_codes: { probe_no_retry: [] },
@@ -71,7 +71,7 @@ function validateSuiteBindings(env) {
     }
 }
 
-async function runNativeSuites(env) {
+async function runNativeSuites(env, { catalog = false } = {}) {
     validateSuiteBindings(env);
     const startedAt = new Date().toISOString();
     const { OAuth2Client } = nativeRequire('google-auth-library');
@@ -82,17 +82,31 @@ async function runNativeSuites(env) {
     try {
         // Identical source modules resolve the native fixture's pinned SDK graph
         // because these copies live beneath fixtures/native, not fixtures/google.
-        for (const file of ['assert.mjs', 'datastore.mjs', 'firestore.mjs', 'secret-manager.mjs']) {
+        for (const file of ['assert.mjs', 'datastore.mjs', 'firestore.mjs', 'secret-manager.mjs', ...(catalog ? ['cloud-catalog.mjs'] : [])]) {
             await fs.copyFile(path.join(ROOT, 'fixtures/google/shared', file), path.join(directory, file));
         }
-        for (const [suite, file, exported] of suites) {
+        const selected = catalog ? [
+            ['datastore-typed', 'cloud-catalog.mjs', 'cloudDatastoreTyped'],
+            ['datastore-aggregation', 'cloud-catalog.mjs', 'cloudDatastoreAggregation'],
+            ['datastore-rollback', 'cloud-catalog.mjs', 'cloudDatastoreRollback'],
+            ['datastore-errors', 'cloud-catalog.mjs', 'cloudDatastoreErrors'],
+            ['secret-manager-catalog', 'cloud-catalog.mjs', 'cloudSecretManager'],
+            ['permission-denied', 'cloud-catalog.mjs', 'cloudPermissionDenied'],
+        ] : suites;
+        for (const [suite, file, exported] of selected) {
             const started = Date.now();
             try {
                 // Database resource paths require the project ID; Secret Manager
                 // returns its canonical resource name with the project number.
-                const projectId = suite === 'secret-manager-read' ? env.WGA_GCP_PROJECT_NUMBER : env.WGA_GCP_PROJECT;
+                const projectId = suite.startsWith('secret-manager-') || suite === 'permission-denied' ? env.WGA_GCP_PROJECT_NUMBER : env.WGA_GCP_PROJECT;
+                if (suite === 'permission-denied' && !env.WGA_RESTRICTED_ACCESS_TOKEN) {
+                    results.push({ suite, status: 'blocked', reason: 'restricted-principal-token-unavailable' });
+                    continue;
+                }
+                const selectedAuth = suite === 'permission-denied' ? new OAuth2Client() : authClient;
+                if (suite === 'permission-denied') selectedAuth.setCredentials({ access_token: env.WGA_RESTRICTED_ACCESS_TOKEN });
                 const options = {
-                    projectId, authClient, clientConfig: probeClientConfig,
+                    projectId, authClient: selectedAuth, clientConfig: probeClientConfig,
                     preferRest: false, fallback: false,
                     'grpc.max_receive_message_length': MAX_BYTES,
                     'grpc.max_send_message_length': MAX_BYTES,
@@ -102,7 +116,9 @@ async function runNativeSuites(env) {
                 if (suite.startsWith('datastore')) options.databaseId = env.WGA_DATASTORE_DATABASE;
                 const run = (await import(pathToFileURL(path.join(directory, file)).href))[exported];
                 const checks = await run({ options, allowedProjectId: projectId, runId: randomUUID(),
-                    allowWrites: true, secretName: env.WGA_SECRET_NAME });
+                    allowWrites: true, secretName: env.WGA_SECRET_NAME,
+                    secretVersion: env.WGA_SECRET_VERSION, secretPayload: env.WGA_SECRET_PAYLOAD,
+                    secretNames: JSON.parse(env.WGA_SECRET_NAMES || '[]'), resourceLabel: env.WGA_RESOURCE_LABEL });
                 requireBinding(Array.isArray(checks) && checks.every(check => typeof check === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(check)));
                 results.push({ suite, status: 'passed', checks, elapsedMs: Date.now() - started });
             } catch (error) {
@@ -116,7 +132,8 @@ async function runNativeSuites(env) {
         status: results.every(result => result.status === 'passed') ? 'passed' : 'failed',
         startedAt, completedAt: new Date().toISOString(),
         nativeGrpcVersion: nativeRequire('@grpc/grpc-js/package.json').version,
-        scope: 'The five unchanged Google fixtures using native grpc-js and explicit short-lived OAuth credentials',
+        scope: catalog ? 'Live catalog shared fixtures using native grpc-js and short-lived OAuth credentials'
+            : 'The five unchanged Google fixtures using native grpc-js and explicit short-lived OAuth credentials',
         suites: results,
     };
 }

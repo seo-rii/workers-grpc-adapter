@@ -11,6 +11,7 @@ const wrangler = path.join(path.dirname(workerRequire.resolve('wrangler/package.
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const reportFile = path.join(root, 'verification/gcp-cloud-probe.json');
 const report = { startedAt: new Date().toISOString(), status: 'running', releaseEligible: false, resources: [], results: [], cleanup: [] };
+const catalog = require('./gcp-catalog.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
 let interrupted = false;
@@ -220,6 +221,7 @@ async function deployWorker(build, env, mode, { targetKey = mode, compatibilityF
     ownershipTag: report.run, absentBefore: true, attempted: false, owned: false };
   report.resources.push(record); save();
   const secretBindings = { WGA_TEST_KEY: workerKey, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken };
+  for (const key of ['WGA_SECRET_PAYLOAD', 'WGA_RESTRICTED_ACCESS_TOKEN']) if (env[key]) secretBindings[key] = env[key];
   const vars = { ...env, WGA_PROBE_MODE: mode }; for (const name of Object.keys(secretBindings)) delete vars[name];
   fs.writeFileSync(build.configFile, JSON.stringify({ name, account_id: cfAccount, main: build.main, no_bundle: true,
     compatibility_date: '2026-09-21', compatibility_flags: compatibilityFlags, workers_dev: true, preview_urls: false, send_metrics: false, vars }));
@@ -278,6 +280,10 @@ async function waitWorkerReady(mode, targetKey = mode) {
 }
 async function main() {
   if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
+  report.catalogRequested = process.argv.includes('--catalog');
+  report.dedicatedProject = process.argv.includes('--dedicated-project');
+  if (process.argv.includes('--inject-catalog-failure') && !report.catalogRequested) throw new Error('CATALOG_REQUIRED_FOR_FAILURE_INJECTION');
+  if (report.catalogRequested) report.catalogSourceHashes = catalog.sourceHashes(root);
   const compareAutoGrpcConvert = process.argv.includes('--compare-auto-grpc-convert');
   if (compareAutoGrpcConvert) { report.compareAutoGrpcConvert = true; report.flaggedResults = []; }
   project = process.argv.find(arg => arg.startsWith('--project='))?.slice(10);
@@ -310,6 +316,25 @@ async function main() {
   }
   const secretName = `projects/${number}/secrets/${ids.secret}`;
   await createResource({ kind: 'secret', name: ids.secret, url: `https://secretmanager.googleapis.com/v1/${secretName}` }, `https://secretmanager.googleapis.com/v1/projects/${project}/secrets?secretId=${ids.secret}`, { replication: { automatic: {} }, labels: { 'wga-probe': report.run } });
+  let catalogBindings = {};
+  if (report.catalogRequested) {
+    const secondId = `${report.run}-secret-page`, secondName = `projects/${number}/secrets/${secondId}`;
+    await createResource({ kind: 'secret', name: secondId, url: `https://secretmanager.googleapis.com/v1/${secondName}` },
+      `https://secretmanager.googleapis.com/v1/projects/${project}/secrets?secretId=${secondId}`,
+      { replication: { automatic: {} }, labels: { 'wga-probe': report.run } });
+    const payload = secret(randomBytes(48).toString('base64'));
+    const version = ok(await api(`https://secretmanager.googleapis.com/v1/${secretName}:addVersion`, 'POST', { payload: { data: payload } }), 'create owned secret version');
+    if (!version.name?.startsWith(secretName + '/versions/')) throw new Error('SECRET_VERSION_IDENTITY_MISMATCH');
+    catalogBindings = { WGA_SECRET_VERSION: version.name, WGA_SECRET_PAYLOAD: payload,
+      WGA_SECRET_NAMES: JSON.stringify([secretName, secondName]), WGA_RESOURCE_LABEL: report.run };
+    // No IAM grants or API enablement. If existing permissions cannot mint this
+    // new unprivileged account's token, persist a blocker for CLOUD-006 only.
+    const restricted = await api(`https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
+      'POST', { scope: ['https://www.googleapis.com/auth/cloud-platform'], lifetime: '1800s' });
+    report.restrictedPrincipal = { status: restricted.status === 200 && restricted.data.accessToken ? 'ready' : 'blocked',
+      httpStatus: restricted.status, newlyCreated: true, rolesGranted: 0, keysCreated: 0 };
+    if (report.restrictedPrincipal.status === 'ready') catalogBindings.WGA_RESTRICTED_ACCESS_TOKEN = secret(restricted.data.accessToken);
+  }
   const images = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/cloud-run-probe/images.json')));
   phase('deploy-native-origin');
   const native = await deployService(`${report.run}-native`, `docker.io/${images.native.repository}@${images.native.digest}`, 9000, serviceAccount);
@@ -321,7 +346,7 @@ async function main() {
   // Refresh short-lived user tokens immediately before they enter the test Worker.
   accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true }));
   identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
-  const env = { WGA_GCP_PROJECT: project, WGA_GCP_PROJECT_NUMBER: number, WGA_DATASTORE_DATABASE: ids.datastore, WGA_FIRESTORE_DATABASE: ids.firestore,
+  const env = { ...catalogBindings, WGA_GCP_PROJECT: project, WGA_GCP_PROJECT_NUMBER: number, WGA_DATASTORE_DATABASE: ids.datastore, WGA_FIRESTORE_DATABASE: ids.firestore,
     WGA_SECRET_NAME: secretName, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken,
     WGA_RUN_GOOGLE_TESTS: '1', WGA_ALLOW_TEST_WRITES: '1', WGA_NATIVE_ORIGIN: native.uri, WGA_GATEWAY_ORIGIN: gateway.uri,
     WGA_ENDPOINTS_JSON: JSON.stringify(Object.fromEntries(['datastore', 'firestore', 'secretmanager'].map(service => [`${service}.googleapis.com:443`, gateway.uri]))) };
@@ -329,6 +354,7 @@ async function main() {
   const controls = require('./gcp-native-probe.cjs');
   report.echoControls = await controls.runEchoControls({ origin: native.uri, idToken: identityToken }); save();
   report.nativeGoogle = await controls.runNativeSuites(env); save();
+  if (report.catalogRequested) { report.nativeCatalog = await controls.runNativeSuites(env, { catalog: true }); save(); }
   if (!report.echoControls.nativeGrpcPassed || report.nativeGoogle.status !== 'passed') throw new Error('NATIVE_BASELINE_FAILED');
   phase('deploy-cloudflare-worker');
   for (const mode of ['grpc-web', 'cloudflare']) await deployWorker(build, env, mode);
@@ -345,7 +371,7 @@ async function main() {
   }
   report.unauthorizedGuard = { passed: guard?.httpStatus === 404, httpStatus: guard?.httpStatus }; save();
   phase('deployed-echo-probes');
-  const echoTests = ['unary', 'stream', 'error', 'raw', ...(compareAutoGrpcConvert ? ['raw-convert', 'raw-passthrough'] : [])];
+  const echoTests = ['unary', 'stream', 'error', 'raw', ...(report.catalogRequested ? ['cancel'] : []), ...(compareAutoGrpcConvert ? ['raw-convert', 'raw-passthrough'] : [])];
   for (const mode of ['grpc-web', 'cloudflare']) for (const test of echoTests) {
     if (interrupted) throw new Error('INTERRUPTED');
     try { report.results.push(await workerRequest(`/echo/${mode}/${test}`)); }
@@ -362,6 +388,21 @@ async function main() {
   report.fallbackGooglePassed = report.results.filter(item => item.route.startsWith('/gcp/grpc-web/')).every(item => item.body?.status === 'passed');
   report.cloudflareGooglePassed = report.results.filter(item => item.route.startsWith('/gcp/cloudflare/')).every(item => item.body?.status === 'passed');
   report.status = report.fallbackGooglePassed ? report.cloudflareGooglePassed ? 'passed' : 'completed-with-cloudflare-mode-failure' : 'completed-with-failures';
+  if (report.catalogRequested) {
+    phase('deployed-catalog-suites');
+    for (const mode of ['grpc-web', 'cloudflare']) for (const suite of catalog.extraSuites) {
+      if (interrupted) throw new Error('INTERRUPTED');
+      const route = `/gcp/${mode}/${suite}`;
+      if (suite === 'permission-denied' && !env.WGA_RESTRICTED_ACCESS_TOKEN) {
+        report.results.push({ route, body: { status: 'blocked', reason: 'restricted-principal-token-unavailable' } });
+      } else {
+        try { report.results.push(await workerRequest(route)); }
+        catch (error) { report.results.push({ route, code: error.name }); }
+      }
+      save();
+    }
+    if (process.argv.includes('--inject-catalog-failure')) throw new Error('INTENTIONAL_CATALOG_E2E_FAILURE');
+  }
   if (compareAutoGrpcConvert) {
     phase('deployed-flagged-echo-probes');
     for (const test of echoTests) {
@@ -487,4 +528,11 @@ async function cleanup() {
 }
 if (require.main === module) main().catch(error => {
   report.status = 'failed'; report.error = redact(error.message).slice(0, 1800); process.exitCode = 1; save();
-}).finally(cleanup).catch(error => { console.error(redact(error.message).slice(0, 1000)); process.exitCode = 1; });
+}).finally(async () => {
+  await cleanup();
+  if (report.catalogRequested) {
+    const result = catalog.summarize(report);
+    fs.writeFileSync(path.join(root, 'verification/gcp-cloud-catalog.json'), JSON.stringify(result, null, 2) + '\n', { mode: 0o600 });
+    if (!result.certificationPassed) process.exitCode = 1;
+  }
+}).catch(error => { console.error(redact(error.message).slice(0, 1000)); process.exitCode = 1; });

@@ -24,6 +24,30 @@ node scripts/gcp-cloud-probe.cjs --deploy-temporary \
 
 Run the deployment command in the background with stdout/stderr directed to a restricted log. It takes several minutes. Avoid terminating it during cleanup. `SIGINT` and `SIGTERM` stop subsequent test work and retain cleanup; an uncatchable termination or provider outage requires checking the saved receipt.
 
+Add `--catalog --inject-catalog-failure` to execute the remaining live catalog
+matrix in the same run. This adds typed Datastore entities and ordered cursor
+pages, count/sum/average, explicit rollback, actual missing-index and invalid-query
+errors, Secret Manager payload comparison and filtered pagination, a restricted
+principal, and caller cancellation. The same business modules run first with
+native grpc-js and then in both deployed Worker modes.
+
+Catalog mode creates a second isolated secret and one synthetic secret version.
+Only that generated payload is accessed; it is compared inside the test and never
+returned in reports. The runner attempts a short-lived token for its newly created
+role-free service account using existing IAM permissions. It records a per-case
+blocker if impersonation is unavailable and adds no IAM grants.
+
+Failure injection deliberately preserves `INTENTIONAL_CATALOG_E2E_FAILURE` as the
+primary error and exits nonzero after cleanup. Inspect
+`verification/gcp-cloud-catalog.json` for all ten case outcomes and
+`verification/gcp-cloud-probe.json` for the deletion receipts. A nonzero exit is
+expected for this negative test; it is not a successful release gate. The original
+catalog also requires a dedicated test project. Supply `--dedicated-project` only
+when that is true; an isolated namespace in an existing project records successful
+behavior separately from that unmet environment condition. Negative environment
+gate controls are local evidence. The public native echo image cannot expose
+backend generator cleanup after caller cancellation.
+
 ## Isolation
 
 Every run generates a random `wga-probe-*` prefix and records inventory before creating resources:
@@ -32,7 +56,7 @@ Every run generates a random `wga-probe-*` prefix and records inventory before c
 |---|---|
 | Datastore-mode database | Named temporary database; never `(default)` |
 | Firestore-native database | Separate named temporary database |
-| Secret Manager secret | New metadata-only secret with no secret versions |
+| Secret Manager secret | New metadata-only secret; catalog mode adds a second secret and one synthetic version |
 | Service account | New runtime identity with no roles or keys created |
 | Native Cloud Run service | Private native gRPC echo/status server |
 | Envoy Cloud Run service | Private gRPC-Web gateway to fixed Google APIs and the new native service |
@@ -54,7 +78,7 @@ The runner captures short-lived `gcloud auth print-access-token` and `gcloud aut
 
 Google SDK calls preserve OAuth `Authorization`. Gateway calls additionally carry a Cloud Run ID token in `X-Serverless-Authorization`; Envoy removes that header before sending the RPC to Google. This follows [Cloud Run's separate-header authentication](https://docs.cloud.google.com/run/docs/authenticating/service-to-service#acquire_and_configure_the_id_token). Direct Cloudflare mode does not attach the gateway token to Google APIs.
 
-SDK fixtures require explicit live/write flags, the project binding, named database bindings and the exact temporary secret name. Request bodies cannot select targets or credentials. CRUD and transaction suites reuse the existing shared source files; a native grpc-js consumer runs the same files. The Secret Manager test reads metadata only.
+SDK fixtures require explicit live/write flags, the project binding, named database bindings and the exact temporary secret name. Request bodies cannot select targets or credentials. CRUD and transaction suites reuse the existing shared source files; a native grpc-js consumer runs the same files. The default Secret Manager test reads metadata only; catalog mode accesses only its synthetic version.
 
 Database SDKs receive the project ID in `WGA_GCP_PROJECT`. Secret Manager uses the separate numeric `WGA_GCP_PROJECT_NUMBER` for its canonical resource name. These identifiers are not interchangeable for database data-plane calls. All five native Google suites must pass before dependent Workers are deployed.
 
@@ -68,7 +92,28 @@ Before running RPCs, every Worker must return an authenticated, mode-matching JS
 
 Successful fallback calls establish Worker → private Envoy → real Google API behavior. Automatic conversion additionally requires successful calls to the controlled native gRPC origin, with matching native positive and direct gRPC-Web negative controls. An existing gRPC-Web service cannot prove Cloudflare translation. Public-service success, SDK initialization and local emulator results remain separate evidence categories. Load, failure recovery and full grpc-js API compatibility are outside this finite smoke test; `releaseEligible` remains `false`.
 
-## Latest regression: 2026-09-30
+## Complete catalog campaign: 2026-10-04
+
+Run `wga-probe-20261004-28c804b3` executed the expanded shared business modules
+with native grpc-js and both deployed Worker modes. CRUD, typed int64/bytes/date
+entities, ordered cursor pages, aggregation, explicit rollback, missing-index
+and invalid-query errors, and Secret Manager payload/list checks passed. Unary,
+server streaming, non-OK status and caller cancellation also passed in both
+Worker modes.
+
+The separate role-free principal could not obtain a token: IAM Credentials
+returned HTTP 403. That case was recorded as blocked, with no new permission
+grants. This existing-project run also does not meet the original dedicated
+project invariant or expose native backend generator cleanup.
+
+The injected primary failure was retained and the runner exited `1`, as intended
+for this negative test. All nine owned resources were verified absent, both
+asynchronous database deletions completed, and the existing inventory was
+unchanged. The per-run receipt is retained independently from subsequent runs;
+current results are in the two verification receipts described above. Ordinary
+CI still performs no cloud deployment.
+
+## Earlier regression: 2026-09-30
 
 Run `wga-probe-20260930-cf08e0d1` tested source commit
 [`5e6f87c`](https://github.com/seo-rii/workers-grpc-adapter/commit/5e6f87c2cad3d477d79fa4d7b48c50bfe00de421)

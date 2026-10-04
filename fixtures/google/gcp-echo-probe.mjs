@@ -12,6 +12,7 @@ const reason = 'wga probe % / 한글';
 const cases = {
   unary: { method: 'DummyUnary', body: echo, count: 1 },
   stream: { method: 'DummyServerStream', body: echo, count: 10, stream: true },
+  cancel: { method: 'DummyServerStream', body: echo, count: 1, stream: true, cancel: true, code: 1 },
   error: { method: 'SpecificError', body: Buffer.concat([Buffer.from([8, 3]), field(reason, 18)]), code: 3 },
 };
 function origin(value) {
@@ -25,7 +26,7 @@ export default {
     const actual = Buffer.from(request.headers.get('authorization') ?? '');
     const expected = Buffer.from(`Bearer ${key}`);
     if (typeof key !== 'string' || key.length < 32 || request.method !== 'POST' || actual.length !== expected.length || !timingSafeEqual(actual, expected)) return new Response('Not found', { status: 404 });
-    const route = /^\/echo\/(cloudflare|grpc-web)\/(unary|stream|error|raw|raw-convert|raw-passthrough)$/.exec(new URL(request.url).pathname);
+    const route = /^\/echo\/(cloudflare|grpc-web)\/(unary|stream|error|cancel|raw|raw-convert|raw-passthrough)$/.exec(new URL(request.url).pathname);
     if (!route) return new Response('Not found', { status: 404 });
     const [, mode, name] = route;
     let client;
@@ -86,13 +87,13 @@ export default {
       const terminal = await new Promise(resolve => {
         const args = [`/grpcbin.GRPCBin/${test.method}`, value => value, value => value, test.body, metadata, { deadline: Date.now() + 25000 }];
         const call = test.stream ? client.makeServerStreamRequest(...args) : client.makeUnaryRequest(...args, (error, value) => { callbackCode = error?.code ?? 0; if (value) messages.push(value); });
-        if (test.stream) call.on('data', value => { messages.push(value); if (messages.length > 10) call.cancel(); });
+        if (test.stream) call.on('data', value => { messages.push(value); if (test.cancel || messages.length > 10) call.cancel(); });
         call.on('error', error => { callbackCode = error.code; });
         call.on('status', resolve);
       });
       await Promise.resolve();
       const passed = terminal.code === (test.code ?? 0) && callbackCode === (test.code ?? 0) &&
-        (test.code ? terminal.details === reason && messages.length === 0 : messages.length === test.count && messages.every(value => Buffer.from(value).equals(echo)));
+        (test.code && !test.cancel ? terminal.details === reason && messages.length === 0 : messages.length === test.count && messages.every(value => Buffer.from(value).equals(echo)));
       return Response.json({ mode, name, passed, grpcStatus: terminal.code, callbackCode, messageCount: messages.length,
         diagnostic: /^WGA_[A-Z_]+$/.test(terminal.details) ? terminal.details : undefined, elapsedMs: Date.now() - started });
     } catch { return Response.json({ mode, name, passed: false, code: 'ECHO_PROBE_ERROR' }, { status: 500 }); }
