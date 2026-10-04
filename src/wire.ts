@@ -176,7 +176,10 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
     }
 }
 function decodeBase64(value: string): Buffer {
-    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value) || value.replace(/=+$/, '').length % 4 === 1) {
+    // gRPC accepts RFC 4648 padded and unpadded values. If padding is present,
+    // it must complete a four-character quantum, not add an extra quantum.
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value) || value.replace(/=+$/, '').length % 4 === 1
+        || (value.includes('=') && value.length % 4 !== 0)) {
         return wireError(status.INTERNAL, 'WGA_BINARY_METADATA');
     }
     const out = Buffer.from(value, 'base64');

@@ -96,21 +96,12 @@ export function* metadataCases(mode) {
 
   for (const location of ['headers', 'trailers']) {
     for (const [name, encoded] of [['alphabet', 'A@I='], ['excess-padding', 'AQI==='],
-      ['embedded-padding', 'A=QI'], ['noncanonical-trailing-bits', 'AQJ=']]) {
+      ['embedded-padding', 'A=QI'], ['noncanonical-trailing-bits', 'AQJ='], ['extra-padding', 'AQI==']]) {
       yield { id: 'WIRE-023', variant: `${location}-${name}`, kind: 'stream',
         ...metadataFields(location, [['trace-bin', encoded]]),
         expected: { code: 13, details: 'WGA_BINARY_METADATA', messages: [] },
         expectInitial: location === 'headers' ? [] : [{}], expectTrailing: {} };
     }
-  }
-
-  // Current decoder strips optional padding before its canonicality check.
-  // AQI== therefore decodes despite an extra '='; record the policy gap rather
-  // than counting this malformed-padding requirement as completely covered.
-  for (const location of ['headers', 'trailers']) {
-    yield { id: 'WIRE-023', variant: `${location}-accepted-extra-padding`, kind: 'stream',
-      ...metadataFields(location, [['trace-bin', 'AQI==']], { binary: ['0102'] }),
-      expected: { code: 7, details: '', messages: [] }, catalogMatch: false };
   }
 
   for (const location of ['headers', 'trailers']) {

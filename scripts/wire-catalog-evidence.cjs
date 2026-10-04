@@ -100,12 +100,9 @@ function expectedPublic(mode) {
       const metadata = { 'trace-bin': hexes.map(hex => ({ hex })) };
       add(21, `${location}-${name}`, 7, '', [], { ...stream, metadata, initial: location === 'headers' ? [metadata] : [{}] });
     }
-    for (const name of ['alphabet', 'excess-padding', 'embedded-padding', 'noncanonical-trailing-bits']) {
+    for (const name of ['alphabet', 'excess-padding', 'embedded-padding', 'noncanonical-trailing-bits', 'extra-padding']) {
       add(23, `${location}-${name}`, 13, 'WGA_BINARY_METADATA', [], { ...stream, initial });
     }
-    const extraPadding = { 'trace-bin': [{ hex: '0102' }] };
-    add(23, `${location}-accepted-extra-padding`, 7, '', [], { ...stream, catalogMatch: false,
-      initial: location === 'headers' ? [extraPadding] : [{}], metadata: extraPadding });
     for (const [name, details] of [['korean', '권한 거부'], ['malformed-percent', 'bad%XX%2'], ['incomplete-utf8', '%ED%95']]) {
       add(24, `${location}-${name}`, 7, details, [], stream);
     }
@@ -162,7 +159,7 @@ function expectedPublic(mode) {
       const suffix = variant.slice(9), lengths = {
         20: { alphabet: 24, negative: 22, 'out-of-range': 22, duplicate: 37, conflicting: 37 },
         21: { padded: 54, unpadded: 53, 'comma-combined': 65 },
-        23: { alphabet: 54, 'excess-padding': 56, 'embedded-padding': 54, 'noncanonical-trailing-bits': 54, 'accepted-extra-padding': 55 },
+        23: { alphabet: 54, 'excess-padding': 56, 'embedded-padding': 54, 'noncanonical-trailing-bits': 54, 'extra-padding': 55 },
         24: { korean: 76, 'malformed-percent': 45, 'incomplete-utf8': 43 }, 25: { 'google-status-details': 98 },
         26: { 'budget-limit': 65429, 'budget-limit-plus-one': 65430 },
       };
@@ -330,6 +327,6 @@ function validateWireCatalogReport(report, { allowSourceBuild = false } = {}) {
   }
   same(report.catalogCases, catalogCases(report.runs, report.allocation), 'catalog aggregation');
   need(report.catalogCases.length === 27 && report.catalogCases.every(row => row.status === 'passed'
-    && row.catalogMatch === !['WIRE-013', 'WIRE-016', 'WIRE-023'].includes(row.id)), 'preserved policy differences');
+    && row.catalogMatch === !['WIRE-013', 'WIRE-016'].includes(row.id)), 'preserved policy differences');
 }
 module.exports = { catalogCases, validateWireCatalogReport };

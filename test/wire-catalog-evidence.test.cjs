@@ -110,8 +110,8 @@ const publicReceipts = [
   [23,"trailers-excess-padding","stream",true,13,"WGA_BINARY_METADATA",[],[{}],{},[1,1,56,1],[0,0],118,[null,null,null]],
   [23,"trailers-embedded-padding","stream",true,13,"WGA_BINARY_METADATA",[],[{}],{},[1,1,54,1],[0,0],114,[null,null,null]],
   [23,"trailers-noncanonical-trailing-bits","stream",true,13,"WGA_BINARY_METADATA",[],[{}],{},[1,1,54,1],[0,0],114,[null,null,null]],
-  [23,"headers-accepted-extra-padding","stream",false,7,"",[],[{"trace-bin":[{"hex":"0102"}]}],{"trace-bin":[{"hex":"0102"}]},[1,0,0,0],[0,0],11,[null,null,null]],
-  [23,"trailers-accepted-extra-padding","stream",false,7,"",[],[{}],{"trace-bin":[{"hex":"0102"}]},[2,1,55,0],[0,0],116,[null,null,null]],
+  [23,"headers-extra-padding","stream",true,13,"WGA_BINARY_METADATA",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
+  [23,"trailers-extra-padding","stream",true,13,"WGA_BINARY_METADATA",[],[{}],{},[1,1,55,1],[0,0],116,[null,null,null]],
   [24,"headers-korean","stream",true,7,"권한 거부",[],[{}],{},[1,0,0,0],[0,0],11,[null,null,null]],
   [24,"headers-malformed-percent","stream",true,7,"bad%XX%2",[],[{}],{},[1,0,0,0],[0,0],11,[null,null,null]],
   [24,"headers-incomplete-utf8","stream",true,7,"%ED%95",[],[{}],{},[1,0,0,0],[0,0],11,[null,null,null]],
@@ -246,10 +246,10 @@ function reject(mutate, label = 'receipt mutation') {
   assert.throws(() => validateWireCatalogReport(report), /WGA_EVIDENCE_INVALID/, label);
 }
 
-test('EVIDENCE wire accepts the complete 1476 public and 286 parser receipts with three recorded policy differences', () => {
+test('EVIDENCE wire accepts the complete 1476 public and 286 parser receipts with two recorded policy differences', () => {
   const report = fixture(); validateWireCatalogReport(report);
   assert.equal(report.catalogCases.length, 27);
-  assert.deepEqual(report.catalogCases.filter(value => !value.catalogMatch).map(value => value.id), ['WIRE-013', 'WIRE-016', 'WIRE-023']);
+  assert.deepEqual(report.catalogCases.filter(value => !value.catalogMatch).map(value => value.id), ['WIRE-013', 'WIRE-016']);
   assert.deepEqual(report.catalogCases.find(value => value.id === 'WIRE-008'), { id: 'WIRE-008', status: 'passed', catalogMatch: true,
     runtimes: ['node', 'workerd'], modes: ['cloudflare', 'grpc-web'], scenarioCount: 96, allocationScenarioCount: 7 });
 });
@@ -262,9 +262,9 @@ test('EVIDENCE wire rejects incomplete, relabelled or duplicate execution matric
     r => { r.runs[0].rows[0].variant = 'unreviewed'; }, r => { r.runs[0].rows[0].status = 'failed'; },
     r => { r.caseCount--; }, r => { r.catalogCases[0].scenarioCount++; }, r => { r.catalogCases[0].allocationScenarioCount++; },
     r => { r.catalogCases[12].catalogMatch = true; }, r => { r.catalogCases[15].catalogMatch = true; },
-    r => { r.catalogCases[22].catalogMatch = true; }, r => { r.catalogCases.pop(); },
+    r => { r.catalogCases[22].catalogMatch = false; }, r => { r.catalogCases.pop(); },
     r => { row(r, 'supported-gzip').catalogMatch = true; }, r => { row(r, 'data-without-status').catalogMatch = true; },
-    r => { row(r, 'headers-accepted-extra-padding').catalogMatch = true; },
+    r => { row(r, 'headers-extra-padding').catalogMatch = false; },
   ]) reject(mutate);
 });
 
@@ -306,7 +306,7 @@ test('EVIDENCE wire rejects metadata, encoded budget and request ownership mutat
     r => { row(r, 'request-budget-limit-plus-one').fetchCount = 1; },
     r => { row(r, 'request-repeated-text').requestHeaders['x-repeat'] = 'first'; },
     r => { row(r, 'request-repeated-text-and-binary').requestHeaders['trace-bin'] = 'AwQ=, AQI='; },
-    r => { row(r, 'headers-accepted-extra-padding').statuses[0].code = 13; },
+    r => { row(r, 'headers-extra-padding').statuses[0].code = 7; },
   ]) reject(mutate);
 });
 

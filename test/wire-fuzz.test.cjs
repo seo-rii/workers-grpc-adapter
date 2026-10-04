@@ -111,8 +111,26 @@ test('FUZZ binary metadata round-trips padding variants and rejects invalid alph
             assert.deepEqual(parseTrailers(Buffer.from(`grpc-status: 0\r\ntrace-bin: ${encoded}\r\n`)).metadata.get('trace-bin'), [value]);
         }
     }
-    for (const invalid of ['A', 'AAAAA', 'AB==', 'AAB=', 'AA===', '=AAA', 'AA=A', 'A_A=', 'A-A=', '!!', 'AA BB', 'AA\tBB']) {
+    for (const invalid of ['A', 'AAAAA', 'AB==', 'AAB=', 'AA===', '=AAA', 'AA=A', 'A_A=', 'A-A=', '!!', 'AA BB', 'AA\tBB', 'AQI==', 'AQ=', 'AAAA=', '=', '==']) {
         assert.throws(() => metadataFromHeaders(new Headers({ 'trace-bin': invalid })), { code: 13, diagnostic: 'WGA_BINARY_METADATA' }, invalid);
+        assert.throws(() => parseTrailers(Buffer.from(`grpc-status: 0\r\ntrace-bin: ${invalid}\r\n`)), { code: 13, diagnostic: 'WGA_BINARY_METADATA' }, invalid);
+    }
+});
+
+test('FUZZ binary metadata rejects every noncanonical padding count in headers and trailers', () => {
+    const next = random(SEED ^ 0x504144);
+    for (let length = 0; length < 192; length++) {
+        const value = Buffer.from(Array.from({ length }, () => next(256)));
+        const canonical = value.toString('base64');
+        const bare = canonical.replace(/=+$/, '');
+        for (let padding = 1; padding <= 5; padding++) {
+            const encoded = bare + '='.repeat(padding);
+            if (encoded === canonical) continue;
+            for (const joined of [encoded, `AQI=, ${encoded}`, `${encoded}, AQI`]) {
+                assert.throws(() => metadataFromHeaders(new Headers({ 'trace-bin': joined })), { code: 13, diagnostic: 'WGA_BINARY_METADATA' });
+                assert.throws(() => parseTrailers(Buffer.from(`grpc-status: 0\r\ntrace-bin: ${joined}\r\n`)), { code: 13, diagnostic: 'WGA_BINARY_METADATA' });
+            }
+        }
     }
 });
 

@@ -173,11 +173,11 @@ request has no Fetch attempt. Headers-only errors preserve custom metadata in
 the initial event and terminal status; this is the adapter's observed event
 classification, without claiming native event parity.
 
-Three original requirements remain partial: `WIRE-013` predates supported
+Two original requirements remain partial: `WIRE-013` predates supported
 gzip/deflate compression; `WIRE-016` requests a different missing-status
-diagnostic name; `WIRE-023` expects rejection of malformed padding, but `AQI==`
-currently remains accepted. Explicit controls preserve these differences in
-the evidence instead of treating a passing suite as complete catalog parity.
+diagnostic name. `WIRE-023` now rejects malformed padding, including `AQI==`,
+in both headers and trailers while retaining valid padded and unpadded values.
+The pinned native decoder's more permissive result remains recorded separately.
 
 ## Configuration
 
