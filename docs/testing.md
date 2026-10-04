@@ -88,6 +88,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-doc-examples.cjs` | Exhaustive fenced-example inventory and two exact README consumers in installed workerd | `verification/doc-examples.json`, `verification/doc-examples.md` |
 | `node scripts/documentation-policy.cjs` | Reviewed documentation claims, complete export policy and fresh installed-package boundary checks in both modes | `verification/documentation-policy.json` |
 | `node scripts/doc-references.cjs` | Offline documentation-wide links, commands, paths, diagnostic definitions and identity checks | `verification/doc-references.json` |
+| `node scripts/documentation-support.cjs` | Generate exact SDK/profile, export-grade and runtime-case tables from completed command receipts | `verification/documentation-support.json`, `verification/documentation-support.md` |
 | `npm run test:evidence` | Current source, lock, artifact, process receipt and case-evidence consistency | `verification/evidence.json` |
 | `npm run test:benchmark` | Required installed transport-only Node benchmark: bundle provenance, raw latency, buffering, concurrency and per-call cleanup | `verification/benchmark.json` |
 | `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
@@ -700,3 +701,12 @@ environment definitions, and catalog/requirement/decision identities. Historical
 and planned references require exact contextual exceptions; stale exceptions
 fail. External links are inventoried without fetching them. This gate checks
 consistency and does not count documented commands as runtime executions.
+
+The support table generator runs last, using an immutable projection of the
+completed commands and the original source snapshot. Aggregate validation
+requires those inputs to match the final run, including a single successful
+generator receipt. The generated Markdown retains separate coverage and
+execution columns for all 184 runtime cases, the two exact SDK profiles and all
+123 export grades. Partial, planned, blocked, skipped and not-run entries remain
+visible. CI includes this table in its verification artifact; the five
+documentation cases are excluded from the table to avoid self-certification.

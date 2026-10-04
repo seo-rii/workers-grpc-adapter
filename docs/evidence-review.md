@@ -13,8 +13,8 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 144 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 38 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 145 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 37 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 7 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
@@ -253,6 +253,12 @@ and Node commands, example paths, actual diagnostic/environment definitions and
 all referenced catalog identities. Historical and planned exceptions require
 exact context; orphaned, stale and unsafe references fail (`DOC-005`).
 
+Generated support tables now preserve exact SDK profile versions, all export
+grades and separate coverage/execution states for the 184 runtime cases. The
+input command projection must match the completed verification run; partial,
+planned, blocked and skipped results cannot be promoted to full support. CI
+retains the generated table and its reproducible receipt (`DOC-002`).
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -272,7 +278,7 @@ exact context; orphaned, stale and unsafe references fail (`DOC-005`).
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
-| Documentation | 4 | 1 | 0 |
+| Documentation | 5 | 0 | 0 |
 
 Flow control now includes the native comparisons and specific
 large-stream/pause/ownership scenarios. The remaining unary discrepancy is
@@ -280,8 +286,8 @@ retained rather than treated as transport equivalence.
 
 ## Remaining work
 
-The remaining documentation work is generating support tables from exact
-profiles and executed outcomes (`DOC-002`). Keep
+All five documentation cases now have current execution evidence. The remaining
+37 partial runtime cases retain their individual gaps in the mapping. Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five
 performance measurement/policy contracts have local execution evidence;

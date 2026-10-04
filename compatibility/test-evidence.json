@@ -80727,11 +80727,9 @@
     },
     {
       "id": "DOC-002",
-      "coverage": "partial",
-      "reason": "The evidence assembler produces a machine-readable 189-case execution/coverage report tied to exact inputs, profiles and concrete results; negative tests reject skipped/todo references, stale provenance and release overclaims. Human-facing support tables are not generated from that evidence.",
-      "gaps": [
-        "Generate the documented support tables from exact profile manifests and execution results; verify that planned, partial, blocked and skipped entries retain those labels in the published table."
-      ],
+      "coverage": "covered",
+      "reason": "Generated Markdown and JSON support tables join the exact two SDK manifests, all 123 export classifications and 184 runtime-case selectors to actual command/TAP/JSON outcomes. A checked immutable command/snapshot projection avoids aggregate cycles. Independent negative tests retain partial/planned/blocked/skipped/not-run labels and reject stale receipts, altered tables, profile drift and overclaims; the five documentation cases cannot certify themselves.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -80756,6 +80754,148 @@
           "source": "test/evidence.test.cjs",
           "command": "tests",
           "name": "EVIDENCE skipped and todo TAP cases cannot count as passed"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-support.json",
+          "source": "scripts/documentation-support.cjs",
+          "command": "documentation-support",
+          "array": "/checks",
+          "where": {
+            "id": "runtime-catalog"
+          },
+          "anchor": "runtime-catalog",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/cases",
+              "equals": 184
+            },
+            {
+              "pointer": "/documentationCasesExcluded",
+              "equals": 5
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-support.json",
+          "source": "scripts/documentation-support.cjs",
+          "command": "documentation-support",
+          "array": "/checks",
+          "where": {
+            "id": "exact-profile-manifests"
+          },
+          "anchor": "exact-profile-manifests",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/profiles",
+              "equals": 2
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-support.json",
+          "source": "scripts/documentation-support.cjs",
+          "command": "documentation-support",
+          "array": "/checks",
+          "where": {
+            "id": "complete-export-policy"
+          },
+          "anchor": "complete-export-policy",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/exports",
+              "equals": 123
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-support.json",
+          "source": "scripts/documentation-support.cjs",
+          "command": "documentation-support",
+          "array": "/checks",
+          "where": {
+            "id": "nonpassing-status-preservation"
+          },
+          "anchor": "nonpassing-status-preservation",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/releaseEligible",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support preserves coverage, execution, export grade and unset performance policy separately"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support TAP parsing retains failed, skipped, TODO and missing outcomes"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support blocked, skipped, failed and missing commands or report cases cannot become passed"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support rejects raw proof, selector, requirement and execution status drift"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support rejects stale exact profiles, required checks and export policy classifications"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support aggregate command proofs use immutable receipts without reading the final aggregate"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support pre-generation projection exactly joins final receipts and the original source snapshot"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support artifact validation rejects generated table and raw input tampering"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-support.test.cjs",
+          "command": "tests",
+          "name": "DOC support report cannot promote partial, planned, blocked or unexecuted cases"
         }
       ],
       "catalogCaseSha256": "94cc7a3816f584051a565baa0a54294ac3174ac3172a3b86cd0218892a402049"

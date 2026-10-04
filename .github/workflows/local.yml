@@ -180,7 +180,7 @@ jobs:
                               or generated_contract and file.suffix in {'.ts', '.mjs', '.cjs'}
                               or generated_benchmark and file.suffix in {'.mjs', '.gz'}
                               or generated_documentation and file.suffix == '.mjs'
-                              or file.relative_to(reports).as_posix() == 'doc-examples.md'):
+                              or file.relative_to(reports).as_posix() in {'doc-examples.md', 'documentation-support.md'}):
                           output.add(file, arcname=str(file.relative_to(root)), recursive=False)
               for name in generated:
                   file = root / 'compatibility' / name
