@@ -50,6 +50,9 @@
     "test:call:lifecycle": "node scripts/test-call-lifecycle.cjs",
     "test:flow:control": "node scripts/test-flow-control.cjs",
     "test:wire:catalog": "node scripts/test-wire-catalog.cjs",
+    "test:auth:catalog": "node scripts/test-auth-catalog.cjs",
+    "test:bootstrap:catalog": "node scripts/test-bootstrap-catalog.cjs",
+    "test:security:catalog": "node scripts/test-security-catalog.cjs",
     "test:workerd:observer": "node scripts/test-workerd-observer.cjs",
     "test:workerd:server-streaming": "node scripts/test-workerd-server-streaming.cjs",
     "test:workerd:transport-extensions": "node scripts/test-workerd-transport-extensions.cjs",
@@ -76,6 +79,7 @@
     "test:benchmark:sdk": "node scripts/benchmark-sdk.cjs",
     "fixtures:install": "node scripts/install-fixtures.cjs",
     "verify": "node scripts/verify.cjs",
+    "verification:status": "node scripts/verification-status.cjs",
     "doctor": "node scripts/doctor.cjs",
     "prepack": "npm run build && node vendor/verify.cjs"
   },

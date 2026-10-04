@@ -710,3 +710,22 @@ execution columns for all 184 runtime cases, the two exact SDK profiles and all
 123 export grades. Partial, planned, blocked, skipped and not-run entries remain
 visible. CI includes this table in its verification artifact; the five
 documentation cases are excluded from the table to avoid self-certification.
+
+
+## Complete remaining-case campaign
+
+`npm run verify` includes the authentication, bootstrap and security catalog
+matrices together with all existing unit, workerd, native, gateway, emulator and
+fuzz gates. Individual `test:auth:catalog`, `test:bootstrap:catalog` and
+`test:security:catalog` scripts are available for debugging; the aggregate run
+requires all three. Their independent evidence validators check the scenario
+matrix and actual runtime receipts, including credential order, expiry, native
+retry counters, malformed metadata, SDK initialization and code-generation
+restrictions.
+
+The aggregate writes `verification/remaining-campaign.json` for all 44 cases
+remaining at the start of this campaign. Verified native differences and public
+SDK limits remain distinct from missing execution. The explicit
+[cloud catalog runner](gcp-cloud-probe.md) adds real deployment evidence; it does
+not alter the local CI receipt or claim that local fuzzing establishes IAM,
+indexes, production contention or Cloudflare account enablement.

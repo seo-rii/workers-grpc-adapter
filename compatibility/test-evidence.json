@@ -6559,11 +6559,9 @@
     },
     {
       "id": "AUTH-001",
-      "coverage": "partial",
-      "reason": "Actual workerd Secret Manager calls let GAX construct SSL and Google call credentials from the supplied authClient; refreshed bearer and quota metadata reach the RPC boundary.",
-      "gaps": [
-        "Add the same default GAX composition assertion in the Node unit fixture; the existing Node OAuth tests manually combine channel and call credentials."
-      ],
+      "coverage": "covered",
+      "reason": "Actual pinned Secret Manager/GAX creates its default SSL and Google call credentials in Node and workerd for both transport modes and both Google auth versions. Three same-client RPCs verify cached and refreshed bearer plus quota metadata at the controlled Fetch boundary, without manual channel credentials.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -6738,6 +6736,39 @@
               "equals": 2
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-001"
+          },
+          "anchor": "AUTH-001",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "8fd4e664398bcb32878def21547f98e20121290ae9a6dd3cd76db75c69d1cdc2"
@@ -6899,11 +6930,9 @@
     },
     {
       "id": "AUTH-003",
-      "coverage": "partial",
-      "reason": "Parallel completion retains generator order and per-call credentials compose.",
-      "gaps": [
-        "Compare all merged key semantics against a pinned-native credential fixture."
-      ],
+      "coverage": "covered",
+      "reason": "Pinned grpc-js 1.14.0 LoadBalancingCall supplies the credential-order oracle. Node and workerd public CallOptions and direct setCredentials calls match caller/per-call/channel ordering, repeated text and binary keys, case normalization and set replacement despite reversed generator completion.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -6916,6 +6945,39 @@
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "AUTH per-call credentials combine and duplicate authorization fails"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-003"
+          },
+          "anchor": "AUTH-003",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "f2621bfe819d8ea850dd1ba363b3d681693e5941d34e5297e30790c25f00eecd"
@@ -7255,68 +7317,192 @@
     },
     {
       "id": "AUTH-006",
-      "coverage": "partial",
-      "reason": "Code-less auth errors map to UNKNOWN.",
-      "gaps": [
-        "Run the code-less failure through a call and assert zero anonymous fetches."
-      ],
+      "coverage": "covered",
+      "reason": "A code-less generator failure reaches the complete unary callback/status boundary as UNKNOWN in Node and workerd, with safe details, exactly one terminal delivery and zero anonymous data fetches in both modes.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "AUTH control-plane error codes are sanitized"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-006"
+          },
+          "anchor": "AUTH-006",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "904864eca9c0f15908f71ecc829aef172da3a965368406df2cbdc341adb3c2aa"
     },
     {
       "id": "AUTH-007",
-      "coverage": "partial",
-      "reason": "UNAUTHENTICATED survives with redacted details and zero data fetches.",
-      "gaps": [
-        "Add a numeric UNAVAILABLE generator error through the call boundary."
-      ],
+      "coverage": "covered",
+      "reason": "Numeric UNAUTHENTICATED and UNAVAILABLE generator failures preserve their codes through complete Node/workerd unary calls in both modes; details are redacted, terminal delivery occurs once and no data fetch occurs.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "AUTH errors retain code, redact message, do not anonymously retry"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-007"
+          },
+          "anchor": "AUTH-007",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "7ed0df7db1fad5a9fc4d236ebf9e91a6d984a81c81ce3d53864fec847baf9f2a"
     },
     {
       "id": "AUTH-008",
-      "coverage": "partial",
-      "reason": "Forbidden control-plane codes map to INTERNAL.",
-      "gaps": [
-        "Assert the mapping through a full call and compare the upstream restriction table."
-      ],
+      "coverage": "covered",
+      "reason": "All eight forbidden control-plane codes are checked against the pinned native restriction function and executed through complete Node/workerd calls in both modes. Every case yields INTERNAL with safe details, one terminal delivery and zero data fetches.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "AUTH control-plane error codes are sanitized"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-008"
+          },
+          "anchor": "AUTH-008",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 32
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 16
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 16
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "847a099f26462ad286016ca16b32f00f3c259ff9a6869338764793ad77cc8c9d"
     },
     {
       "id": "AUTH-009",
-      "coverage": "partial",
-      "reason": "Conflicting channel and per-call bearer generators fail INTERNAL before fetching.",
-      "gaps": [
-        "Also combine a caller-supplied Metadata authorization with a generator."
-      ],
+      "coverage": "covered",
+      "reason": "Caller-supplied Metadata authorization and a different generator bearer fail INTERNAL before any fetch in Node and workerd, for both modes. The caller metadata remains unchanged and neither marker enters the error.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "AUTH per-call credentials combine and duplicate authorization fails"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-009"
+          },
+          "anchor": "AUTH-009",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "6ce466802244a337f52eddd700d9914753c807cefe19a35dfa1c324ef68b6b95"
@@ -7489,28 +7675,57 @@
     },
     {
       "id": "AUTH-011",
-      "coverage": "partial",
-      "reason": "An expired auth wait produces DEADLINE_EXCEEDED and suppresses late fetch.",
-      "gaps": [
-        "Use a controlled fake clock and explicitly count all terminal events."
-      ],
+      "coverage": "covered",
+      "reason": "A controlled clock advances to just before and exactly at expiry while authentication is pending. Node/workerd calls emit one DEADLINE_EXCEEDED callback and status, then ignore late auth completion with no metadata, data fetch, extra terminal event or retained deadline timer.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "LIFE deadline during auth; late completion cannot start fetch"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-011"
+          },
+          "anchor": "AUTH-011",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "dea5d475d8ae3eade4475f7669897947d0c0b81d537fa06692651b9a61091101"
     },
     {
       "id": "AUTH-012",
-      "coverage": "partial",
-      "reason": "The workerd SDK benchmark first sends a valid cached bearer and later forces expiry on the same auth/client transport, verifying a fresh OAuth exchange and refreshed bearer; the older Node auth fixture begins expired.",
-      "gaps": [
-        "Repeat the valid-token-to-expiry-to-refresh transition on the same adapter in the Node unit fixture required by this catalog case."
-      ],
+      "coverage": "covered",
+      "reason": "The same real SDK and auth client first send a valid cached token, then cross expiry under a controlled clock and perform exactly one OAuth exchange, then reuse the fresh token. Independent RPC/token receipts verify all three phases in Node/workerd and both modes for auth 10.9.1 and 11.1.0.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -7561,17 +7776,48 @@
               "equals": true
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-012"
+          },
+          "anchor": "AUTH-012",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "27682415452ec001bc98fd9b043608ca7165103b57b0b9d2750b5a509d72a4f7"
     },
     {
       "id": "AUTH-013",
-      "coverage": "partial",
-      "reason": "Parallel independent OAuth2 credentials retain distinct bearer metadata.",
-      "gaps": [
-        "Add service-account project/client_email identity variants specified by the catalog."
-      ],
+      "coverage": "covered",
+      "reason": "Two concurrent SDK-created service-account credentials carry different project IDs, client_email values, private keys and quota projects. Node/workerd peers verify both JWT signatures and identity claims, return completions in reverse order, and confirm each SDK result retains its own resource identity.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -7589,40 +7835,135 @@
               "equals": "passed"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-013"
+          },
+          "anchor": "AUTH-013",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "e4bcd13e781724b426c1a3311c1ea73206038717777fb0703416acadebdfb145"
     },
     {
       "id": "AUTH-014",
-      "coverage": "partial",
-      "reason": "Custom CA and verification options fail WGA_UNSUPPORTED_TLS.",
-      "gaps": [
-        "Exercise key/certificate variants and instrument native connector non-use."
-      ],
+      "coverage": "covered",
+      "reason": "Seven CA/key/certificate/mTLS/verification variants synchronously fail WGA_UNSUPPORTED_TLS in Node and workerd. Calibrated net, TLS and HTTP/2 connector hooks observe zero calls, and no Fetch begins.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "AUTH TLS configuration rejects unsupported input rather than ignoring it"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-014"
+          },
+          "anchor": "AUTH-014",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 28
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 14
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 14
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "ccf7f8f8f137c4f28c44916264509e4a0d6122b4bd58c04d67d0837b0a7b6c10"
     },
     {
       "id": "AUTH-015",
-      "coverage": "partial",
-      "reason": "An auth error containing a private marker is redacted in the caller error.",
-      "gaps": [
-        "Scan emitted logs, reports and HTTP error artifacts for a unique marker."
-      ],
+      "coverage": "covered",
+      "reason": "Unique runtime markers are injected into full-call auth failures and scanned across captured console/runtime logs, caller and HTTP error artifacts, observer events, Worker HTTP responses and the final report. Positive log sensors execute and marker occurrence counts remain zero in Node/workerd and both modes.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/lifecycle-stream.test.cjs",
           "command": "tests",
           "name": "AUTH errors retain code, redact message, do not anonymously retry"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/auth-catalog.json",
+          "source": "fixtures/google/shared/auth-catalog.mjs",
+          "command": "auth-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "AUTH-015"
+          },
+          "anchor": "AUTH-015",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            },
+            {
+              "pointer": "/nodeCount",
+              "equals": 2
+            },
+            {
+              "pointer": "/workerdCount",
+              "equals": 2
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "db6d1455bb0e7394b62bbcf0b6a1b6f09ceea8e5980921207ca9f68808fb7ed6"
@@ -9261,11 +9602,9 @@
     },
     {
       "id": "WIRE-023",
-      "coverage": "partial",
-      "reason": "Invalid alphabet, excessive/embedded padding and noncanonical trailing bits reject before deserialization. Two acceptance controls also expose the remaining extra-padding policy gap. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
-      "gaps": [
-        "AQI== contains one extra padding character but is currently accepted as bytes 0102 in both response headers and trailers. The original malformed-padding rejection expectation is not fully met."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node/workerd calls in both transports reject invalid alphabet, excessive or embedded padding, noncanonical trailing bits and the formerly accepted AQI== extra-padding vector before deserialization. Canonical padded and unpadded controls decode correctly; all 40 scenarios have one terminal and zero retained call ownership before client close. The native oracle separately records grpc-js permissive-padding behavior.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -9285,8 +9624,12 @@
           "anchor": "catalogCases",
           "assertions": [
             {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
               "pointer": "/catalogMatch",
-              "equals": false
+              "equals": true
             },
             {
               "pointer": "/runtimes",
@@ -11392,11 +11735,9 @@
     },
     {
       "id": "BOOT-002",
-      "coverage": "partial",
-      "reason": "Actual SDK constructors and first RPC initialization execute in workerd.",
-      "gaps": [
-        "Exercise all common-types and operations initialization paths in the planned closure."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed static and modern profiles execute real SDK constructors and lazy initialization in workerd, including the pinned common-types, operations, IAM and location closure. Independent binary RPC peer receipts and request-owned auth/Call accounting verify the generated SDK path without REST fallback.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -11446,6 +11787,34 @@
             {
               "pointer": "",
               "equals": "secret-manager-constructor"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-002"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
             }
           ]
         }
@@ -11905,11 +12274,9 @@
     },
     {
       "id": "BOOT-005",
-      "coverage": "partial",
-      "reason": "Static codec/reflection methods execute with workerd codegen restrictions.",
-      "gaps": [
-        "Explicitly audit all cold/first fromObject/toObject/encode/decode entrypoints in the profile."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed profiles exercise fresh-root first fromObject, toObject, encode and decode for every pinned message type: 891 static and 1069 modern types across all 33 schemas. Workerd Function/eval rejection is calibrated, and all profiled cold codec paths complete without runtime code generation.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -11925,6 +12292,34 @@
             {
               "pointer": "",
               "equals": "static-protobuf-constructor-codecs-reflection"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-005"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
             }
           ]
         }
@@ -11933,11 +12328,9 @@
     },
     {
       "id": "BOOT-006",
-      "coverage": "partial",
-      "reason": "A profile codec constructor and reflection path executes in workerd.",
-      "gaps": [
-        "Exercise every codec/reflection method in the catalog ordering."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed profiles set each pinned message constructor and execute the full ordered codec/reflection method inventory, including delimited methods, type/enum/service lookup, field/oneof access, resolution and JSON reflection. All types and enum/service namespaces match the independent native inventory without lazy codegen reentry.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -11953,6 +12346,34 @@
             {
               "pointer": "",
               "equals": "static-protobuf-constructor-codecs-reflection"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-006"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
             }
           ]
         }
@@ -11961,11 +12382,9 @@
     },
     {
       "id": "BOOT-007",
-      "coverage": "partial",
-      "reason": "The workerd static Entity codec already round-trips maximum int64, bytes and Korean strings through fromObject/encode/decode/toObject.",
-      "gaps": [
-        "A side-by-side pinned-loader-options versus static-registry matrix for enums, defaults and oneofs is still absent; the executed Entity subset is partial evidence only."
-      ],
+      "coverage": "covered",
+      "reason": "Independent native fixtures use the exact pinned packages, schemas and loader options to generate default/populated, enum and oneof matrices for every message type. Installed workerd static registries match native wire and object hashes for both profiles, preserving longs, bytes, enums, defaults and oneofs.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -11983,17 +12402,43 @@
               "equals": "static-protobuf-constructor-codecs-reflection"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-007"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "117579a881f7f5612badf14a46cf93b18f4ee49123a789fbdad5b87dce520e18"
     },
     {
       "id": "BOOT-008",
-      "coverage": "partial",
-      "reason": "Actual SDK schema hash tampering is rejected; build-profile tests additionally reject synthetic source/package/codegen hash drift and recheck transformed source at bundle-load time.",
-      "gaps": [
-        "The source mutation fixture is synthetic; a pinned real SDK source-file mutation remains unexecuted."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed profiles mutate every real pinned source and schema file in isolated copies. Each build fails with WGA_SCHEMA_MISMATCH before output creation; original installed files remain unchanged and no runtime fallback is used.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -12057,17 +12502,43 @@
           "source": "test/build-profiles.test.cjs",
           "command": "tests",
           "name": "BUILD transformed source is checked again when the bundler loads it"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-008"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "a44ea4053934c8b51c0ce81ebdf79be77f6bc2a1cc6a717742d983280ed8ce23"
     },
     {
       "id": "BOOT-009",
-      "coverage": "partial",
-      "reason": "Transform scope stays within the selected dependency profile.",
-      "gaps": [
-        "Bundle an independent application protobuf copy and assert unchanged behavior."
-      ],
+      "coverage": "covered",
+      "reason": "Each installed profile bundles a physically independent application protobuf copy and compares it with a preset-free workerd baseline. Application reflection, primitive codecs and existing codegen restrictions remain identical, with unchanged prototypes/source-tree hashes and zero application-copy transforms.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -12100,6 +12571,34 @@
             {
               "pointer": "",
               "equals": "no-node-modules-patch"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-009"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
             }
           ]
         }
@@ -12185,11 +12684,9 @@
     },
     {
       "id": "BOOT-011",
-      "coverage": "partial",
-      "reason": "Sequential isolate requests use different credentials.",
-      "gaps": [
-        "Exercise concurrent Worker requests in the same isolate."
-      ],
+      "coverage": "covered",
+      "reason": "Both installed profiles run sequential and overlapping Worker requests in the same isolate. Independent peer receipts prove distinct auth, binary RPC IO and logical Call identities, including simultaneous arrivals; each request releases all Call and buffer ownership before SDK close.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -12222,6 +12719,34 @@
             {
               "pointer": "",
               "equals": "two-credentials"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/bootstrap-catalog.json",
+          "source": "scripts/test-bootstrap-catalog.cjs",
+          "command": "bootstrap-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "BOOT-011"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
             }
           ]
         }
@@ -72852,17 +73377,44 @@
     },
     {
       "id": "RETRY-001",
-      "coverage": "partial",
-      "reason": "Transport failure performs exactly one fetch.",
-      "gaps": [
-        "Use an explicit server UNAVAILABLE response and count server arrivals."
-      ],
+      "coverage": "covered",
+      "reason": "A real native grpc-js HTTP/2 server returns UNAVAILABLE; the adapter makes exactly one data Fetch, bridge arrival and server arrival, emits one terminal, and performs no token request or transport retry.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT network failure has safe details and no automatic retry"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "RETRY-001"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/nativeHttp2",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 1
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "3c5eb121b070a9243bd8dad3b988c68a3c89bf20f3115b83bd4d00940dc1fbf0"
@@ -75134,11 +75686,9 @@
     },
     {
       "id": "RETRY-004",
-      "coverage": "partial",
-      "reason": "Real auth fixture counts token endpoint requests separately from data RPC fetches.",
-      "gaps": [
-        "The catalog requires native-server interop attempt counters separated from auth and new GAX calls; the cited fixture uses mocked fetch only."
-      ],
+      "coverage": "covered",
+      "reason": "Real pinned Google auth and GAX calls against a native grpc-js HTTP/2 server independently count one OAuth refresh, four data Fetch/server arrivals and two new gRPC calls for one GAX retrying operation. Every adapter call has one attempt and one Fetch, separating auth exchanges from application retries.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -75156,74 +75706,250 @@
               "equals": "passed"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "RETRY-004"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/nativeHttp2",
+              "equals": true
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 3
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "22fde7d6a0d32f56536d551b6bce51c9be489188775986b2733abbebd54835eb"
     },
     {
       "id": "SEC-001",
-      "coverage": "partial",
-      "reason": "A 307 redirect is refused before a second fetch.",
-      "gaps": [
-        "Add 301/302/308 and explicit bearer marker/attacker-origin arrival assertions."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node/workerd calls in both transports refuse 301/302/307/308 with one manual gateway fetch, exactly one authenticated gateway arrival, and zero attacker-origin arrivals or bearer transmissions.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT redirect rejected, no second fetch"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-001"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 16
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "9622fcce490d7fd317006290ab5175f73ea14a066d9175a9163e0bd160764f47"
     },
     {
       "id": "SEC-002",
-      "coverage": "partial",
-      "reason": "Named configuration tests already reject gateway URL userinfo, path and query components before configuration succeeds.",
-      "gaps": [
-        "Logical target encoded-slash/query/userinfo negatives have dynamically named TAP titles that are not currently referenceable; RPC method dot-segment/encoded-slash vectors and explicit zero-network/bearer assertions remain missing."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node/workerd calls in both transports reject ten RPC-method and nine logical-target injection vectors, including dot segments, encoded slashes, queries, fragments and userinfo, before authentication, Fetch or outgoing headers.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "CONFIG canonical authority and localhost gateway rule"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-002"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 76
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "71590d1223e6d50302e812c0a35ef672006179c1067219037560e0025e0a2818"
     },
     {
       "id": "SEC-003",
-      "coverage": "partial",
-      "reason": "CRLF metadata values and illegal names are rejected.",
-      "gaps": [
-        "Exercise CRLF in the key and assert no outgoing headers are produced."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node/workerd calls in both transports exercise CRLF in metadata keys and values through direct Metadata and auth generators, with zero Fetch calls or outgoing headers and one sanitized terminal.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "META rejects type mismatch, CRLF and illegal names"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-003"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "abdb7ddd25a88c03467f15577f39b2a9de71c29e2d97a4904d4a25c4ed102975"
     },
     {
       "id": "SEC-004",
-      "coverage": "partial",
-      "reason": "Call credentials cannot compose with insecure channel credentials.",
-      "gaps": [
-        "Exercise a real Google credential with an HTTP loopback mapping and assert zero token transmission."
-      ],
+      "coverage": "covered",
+      "reason": "Real pinned Google credentials with cached and expired tokens fail closed for insecure composition and HTTP loopback mapping in Node/workerd; token requests, credential evaluation, Fetch and token transmissions all remain zero.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "AUTH TLS configuration rejects unsupported input rather than ignoring it"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-004"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 4
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "f8fe9004f912b6060e1b135bdb849e8179aee28f1cfaa45f0482534c979904c0"
@@ -75245,11 +75971,9 @@
     },
     {
       "id": "SEC-006",
-      "coverage": "partial",
-      "reason": "Caller-visible auth/network failures redact private marker text.",
-      "gaps": [
-        "Search all log/report/source-map artifacts for a unique auth and payload marker."
-      ],
+      "coverage": "covered",
+      "reason": "Runtime-random auth and payload markers reach controlled failures in Node/workerd and both transports. Caller, observer and log surfaces are sanitized; a complete generated log/report/source-map artifact inventory has zero marker hits, with positive scanner controls and separately hashed suite artifacts.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -75262,23 +75986,103 @@
           "source": "test/client.test.cjs",
           "command": "tests",
           "name": "CLIENT network failure has safe details and no automatic retry"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-006"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 8
+            },
+            {
+              "pointer": "/artifactMarkerHits",
+              "equals": 0
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "191a6223473bcbf3ca8c3af8306be94fc36e44e51d304dc62d2c2a9703b389be"
     },
     {
       "id": "SEC-007",
-      "coverage": "partial",
-      "reason": "Explicit TLS material/options are rejected.",
-      "gaps": [
-        "Set mTLS environment and credential variants and verify no ignored security requirement."
-      ],
+      "coverage": "covered",
+      "reason": "Installed Node/workerd calls in both transports reject explicit client-certificate and mTLS-endpoint requirements plus custom TLS material/options. Real Google credentials are not evaluated, no token or data request occurs, and default, disabled and auto-without-certificate controls remain accepted.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
           "source": "test/config-auth.test.cjs",
           "command": "tests",
           "name": "AUTH TLS configuration rejects unsupported input rather than ignoring it"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/security-catalog.json",
+          "source": "scripts/test-security-catalog.cjs",
+          "command": "security-catalog",
+          "array": "/catalogCases",
+          "where": {
+            "id": "SEC-007"
+          },
+          "anchor": "report.catalogCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/catalogMatch",
+              "equals": true
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "cloudflare",
+                "grpc-web"
+              ]
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 36
+            }
+          ]
         }
       ],
       "catalogCaseSha256": "c27dcd8d18cc06a00ae818e573b9db7635bb5f86c4e8059f1b48b15ec3b4dc63"

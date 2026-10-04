@@ -11,11 +11,11 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 145 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 37 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 7 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | After complete local matrix | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 145 | 172 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 37 | 10 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 7 | 7 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
@@ -23,10 +23,27 @@ seventeen completed call cases and the full HTTP fallback matrix. Flow-control
 work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
 accounting and credential isolation satisfy eleven. Mutation contracts and
 emulator accounting satisfy twelve more. Performance and documentation work each
-satisfy five more cases. The remaining 44 unsatisfied cases cannot be translated
-into a percentage of implementation work:
+satisfy five more cases. The complete authentication, bootstrap, security and
+retry matrix satisfies another 27 cases. The remaining 17 original requirements
+cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
+
+## One complete verification campaign
+
+`npm run verify` executes every local gate, including the three catalog matrices,
+and emits `verification/remaining-campaign.json`. This completion view accounts
+for all 44 cases that remained after documentation work: 27 newly verified local
+requirements, seven reproduced compatibility or upstream SDK boundaries, and ten
+live-cloud requirements. It never relabels a reproduced difference as parity.
+
+After an explicit cloud run, `npm run verification:status --
+--cloud=verification/gcp-cloud-catalog.json` joins the current local evidence with
+the separate live receipt. It checks the live source hashes and preserves the
+original local coverage and dedicated-project conditions. Omitting a local case,
+using stale evidence, or treating an unexecuted difference as verified fails the
+completion check. Cloud deployment remains an explicit action; ordinary CI
+cannot consume ambient credentials and silently deploy.
 
 ## Packaging work executed
 
@@ -269,15 +286,15 @@ retains the generated table and its reproducible receipt (`DOC-002`).
 | Types | 7 | 0 | 0 |
 | Public API | 15 | 1 | 0 |
 | Configuration | 11 | 0 | 0 |
-| Authentication | 4 | 11 | 0 |
-| Wire protocol | 24 | 3 | 0 |
+| Authentication | 15 | 0 | 0 |
+| Wire protocol | 25 | 2 | 0 |
 | Call lifecycle | 17 | 1 | 0 |
 | Flow control | 6 | 1 | 0 |
-| SDK bootstrap | 4 | 7 | 0 |
+| SDK bootstrap | 11 | 0 | 0 |
 | Datastore | 22 | 2 | 0 |
 | Transactions | 8 | 1 | 0 |
-| Retry | 2 | 2 | 0 |
-| Security | 1 | 6 | 0 |
+| Retry | 4 | 0 | 0 |
+| Security | 7 | 0 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
 | Documentation | 5 | 0 | 0 |
@@ -288,8 +305,9 @@ retained rather than treated as transport equivalence.
 
 ## Remaining work
 
-All five documentation cases now have current execution evidence. The remaining
-37 partial runtime cases retain their individual gaps in the mapping. Keep
+The complete local campaign validates all 27 former authentication, bootstrap,
+security and retry gaps together. Ten partial cases retain their original gaps
+in the mapping. Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five
 performance measurement/policy contracts have local execution evidence;
@@ -297,7 +315,10 @@ production performance thresholds remain unset and cannot certify a release.
 
 The seven cases without an accepted current reference are
 `CLOUD-001`–`CLOUD-007`.
-Their individual procedures and remaining conditions are in the mapping.
+Their individual procedures and remaining conditions are in the mapping. The
+explicit `--catalog` cloud runner now exercises every implemented live scenario
+and records missing prerequisites per case; those receipts stay separate from
+network-disabled CI.
 For `WIRE-018`, all nine HTTP fallback tests have individual source and TAP
 references, alongside the shared Node/workerd matrix. The checker expands only bounded literal
 `const` tables with direct test registrations and still requires each exact TAP
@@ -316,10 +337,6 @@ These cannot be closed just by adding a reference:
 - `WIRE-016`: missing status returns `UNKNOWN / WGA_MISSING_GRPC_STATUS`;
   the original catalog names `WGA_STATUS_MISSING`. The precise diagnostic is now
   exercised without claiming that the names match.
-- `WIRE-023`: `AQI==` has an extra padding character but currently decodes to
-  bytes `0102` in both headers and trailers. Other malformed alphabet, padding
-  and trailing-bit cases reject. Complete malformed-padding rejection still
-  needs a compatibility change; these two acceptance controls remain visible.
 - `LIFE-015`: invalid Date returns adapter `INTERNAL`, whereas the catalog asks
   for `INVALID_ARGUMENT`. Pinned native throws `RangeError` synchronously before
   returning a call. This is an API error-policy decision, not missing execution.
@@ -343,13 +360,13 @@ temporary named resources inside the existing GCP project. It did not create
 the dedicated test project specified by the original cloud catalog.
 
 Normal CI does not deploy. Its evidence references require a successful command
-from the current local run, so the separate historical cloud receipt is not a
-current-CI reference. The cloud cases retain both that provenance boundary and
-their actual missing checks: deployed cancellation, typed/cursor queries,
-aggregation, explicit rollback, a denied operation under a restricted principal,
-and Secret Manager version payload/list operations. A successful cleanup run is
-also distinct from intentionally failing a live scenario and retaining both its
-primary error and cleanup outcome.
+from the current local run, so a separate live receipt is not a
+current-CI reference. The expanded cloud runner includes deployed caller
+cancellation, typed/cursor queries, aggregation, explicit rollback, a restricted
+principal when token minting is available, and Secret Manager payload/list
+operations. Its intentional-failure option retains the primary error and actual
+resource deletion receipts. Dedicated-project, backend-cleanup observability
+and missing credential/permission conditions remain explicit.
 
 Production IAM, quota, token renewal, transaction contention, prolonged traffic,
 and dependency/security/license release review remain separate gates. Local

@@ -87,6 +87,9 @@ function main() {
     run('call-lifecycle', ['scripts/test-call-lifecycle.cjs']);
     run('flow-control', ['scripts/test-flow-control.cjs']);
     run('wire-catalog', ['scripts/test-wire-catalog.cjs']);
+    run('auth-catalog', ['scripts/test-auth-catalog.cjs']);
+    run('bootstrap-catalog', ['scripts/test-bootstrap-catalog.cjs']);
+    run('security-catalog', ['scripts/test-security-catalog.cjs']);
     run('workerd-observer', ['scripts/test-workerd-observer.cjs']);
     run('workerd-server-streaming', ['scripts/test-workerd-server-streaming.cjs']);
     run('workerd-transport-extensions', ['scripts/test-workerd-transport-extensions.cjs']);
@@ -173,6 +176,7 @@ function main() {
         nativeDifferential: read('native-differential.json'),
         apiContracts: read('api-contracts.json'),
         workerdIntegration: read('workerd-integration.json'), workerdLifecycle: read('workerd-lifecycle.json'), callLifecycle: read('call-lifecycle.json'), flowControl: read('flow-control.json'), wireCatalog: read('wire-catalog.json'), workerdObserver: read('workerd-observer.json'), fuzzCampaign: read('fuzz-campaign-ci.json'),
+        authCatalog: read('auth-catalog.json'), bootstrapCatalog: read('bootstrap-catalog.json'), securityCatalog: read('security-catalog.json'),
         workerdServerStreaming: read('workerd-server-streaming.json'), workerdTransportExtensions: read('workerd-transport-extensions.json'), transportBenchmark: read('benchmark.json'), sdkBenchmark: read('sdk-benchmark.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
@@ -188,6 +192,7 @@ function main() {
     fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2) + '\n');
     writeEvidence(root);
     checkEvidence(root);
+    require('./verification-status.cjs').writeCampaign(root);
     console.log(JSON.stringify({ localTests: totals, packaging: 'passed', declarations: 'passed', syntax: 'passed', workers: report.workers.status, liveGoogleApiExecuted: false, releaseEligible: false }, null, 2));
 }
 try {

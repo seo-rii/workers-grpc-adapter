@@ -29,6 +29,9 @@ const { validateDatastoreEmulatorReport } = require('./datastore-emulator-eviden
 const { validateCallLifecycleReport } = require('./call-lifecycle-evidence.cjs');
 const { validateFlowControlReport } = require('./flow-control-evidence.cjs');
 const { validateWireCatalogReport } = require('./wire-catalog-evidence.cjs');
+const { validateAuthCatalogReport } = require('./auth-catalog-evidence.cjs');
+const { validateBootstrapCatalogReport } = require('./bootstrap-catalog-evidence.cjs');
+const { validateSecurityCatalogReport } = require('./security-catalog-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
@@ -44,6 +47,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/call-lifecycle.json',
     'verification/flow-control.json',
     'verification/wire-catalog.json',
+    'verification/auth-catalog.json', 'verification/bootstrap-catalog.json', 'verification/security-catalog.json',
     'verification/benchmark.json',
     'verification/workerd-integration.json', 'verification/workerd-lifecycle.json', 'verification/workerd-observer.json', 'verification/fuzz-campaign-ci.json',
     'verification/workerd-server-streaming.json', 'verification/workerd-transport-extensions.json', 'verification/sdk-benchmark.json',
@@ -597,6 +601,7 @@ function validateProvenance(root, report) {
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     const embedded = [['build', 'verification/build.json'], ['vendorProvenance', 'verification/vendor-provenance.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'], ['docExamples', 'verification/doc-examples.json'], ['documentationPolicy', 'verification/documentation-policy.json'], ['docReferences', 'verification/doc-references.json'], ['documentationSupport', 'verification/documentation-support.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['wireCatalog', 'verification/wire-catalog.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
+        ['authCatalog', 'verification/auth-catalog.json'], ['bootstrapCatalog', 'verification/bootstrap-catalog.json'], ['securityCatalog', 'verification/security-catalog.json'],
         ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['transportBenchmark', 'verification/benchmark.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['apiContracts', 'verification/api-contracts.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
         ['workersSdk', 'verification/workers-sdk.json'], ['workersGaxModes', 'verification/workers-gax-modes.json'], ['workersLazySdk', 'verification/workers-lazy-sdk.json'],
@@ -652,6 +657,11 @@ function validateProvenance(root, report) {
     validateCallLifecycleReport(report.callLifecycle);
     validateFlowControlReport(report.flowControl);
     validateWireCatalogReport(report.wireCatalog);
+    validateAuthCatalogReport(report.authCatalog);
+    need(report.authCatalog.profileSha256 === digest(JSON.stringify(read(root, 'src/build/profiles/google-static-v1.json'))),
+        'auth catalog profile hash drift');
+    validateBootstrapCatalogReport(report.bootstrapCatalog);
+    validateSecurityCatalogReport(report.securityCatalog);
     for (const [id, result] of [['vendor', report.vendorProvenance], ['doc-examples', report.docExamples], ['documentation-policy', report.documentationPolicy], ['doc-references', report.docReferences], ['documentation-support', report.documentationSupport], ['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['transport-benchmark', report.transportBenchmark], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
@@ -659,11 +669,25 @@ function validateProvenance(root, report) {
         ['datastore-mutations', report.datastoreMutations],
         ['datastore-pagination', report.datastorePagination],
         ['workers-resilience', report.workersResilience],
-        ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
+        ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog],
+        ['auth-catalog', report.authCatalog], ['bootstrap-catalog', report.bootstrapCatalog], ['security-catalog', report.securityCatalog]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs, ...result.resultInputs, ...result.artifactInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {
             need(hash(root, file) === expected, `${file}: ${id} execution input drift`);
+        }
+    }
+    for (const [file, expected] of Object.entries(report.authCatalog.native.inputs)) {
+        need(hash(root, file) === expected, `${file}: auth catalog native oracle drift`);
+    }
+    for (const profile of report.bootstrapCatalog.profiles) {
+        validateProfileManifest(read(root, `src/build/profiles/${profile.id}.json`), profile.build);
+        for (const [fixture, hashes] of [[profile.fixture, profile.installedInputs], [profile.nativeFixture, profile.nativeInputs]]) {
+            for (const [relative, expected] of Object.entries(hashes)) {
+                need(relative.startsWith('node_modules/'), `${relative}: bootstrap input is outside its installed fixture`);
+                const file = `fixtures/${fixture}/${relative}`;
+                need(hash(root, file) === expected, `${file}: bootstrap catalog installed/native input drift`);
+            }
         }
     }
     for (const graph of report.sdkBenchmark.graphs) {
@@ -770,6 +794,7 @@ function assemble(root = ROOT) {
     const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)),
         ...Object.keys(report.googleSdk.declarations.generatedArtifacts || {}), ...Object.keys(report.apiContracts.generatedArtifacts || {}),
         ...Object.keys(report.transportBenchmark.generatedArtifacts),
+        ...Object.keys(report.securityCatalog.artifactInputs),
         ...Object.keys(report.vendorProvenance.artifacts),
         ...Object.keys(report.docExamples.generatedArtifacts),
         ...Object.keys(report.documentationSupport.generatedArtifacts),
