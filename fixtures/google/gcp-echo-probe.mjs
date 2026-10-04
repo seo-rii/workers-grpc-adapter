@@ -20,15 +20,109 @@ function origin(value) {
   if (url.protocol !== 'https:' || !url.hostname.endsWith('.run.app') || url.port || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('Invalid origin');
   return url;
 }
+
+// Probe-only, per-channel observation. These counters describe adapter-owned
+// work and buffers, not the Worker heap or the native backend's cancellation.
+async function recovery(client, transport, metadata, mode) {
+  const channel = client.getChannel(), captured = [];
+  const original = channel.createCallForMethod;
+  channel.createCallForMethod = function(...args) {
+    const call = original.apply(this, args);
+    captured.push(call);
+    return call;
+  };
+  const started = Date.now(), deadline = started + 20000, steps = [];
+  const definitions = [['initial-unary', 'unary'], ['expected-error', 'error'],
+    ['cancel-stream', 'cancel'], ['recovered-unary', 'unary']];
+  try {
+    for (const [id, name] of definitions) {
+      const test = cases[name], start = Date.now();
+      const step = { id, passed: false, statusCode: null, callbackCode: null,
+        callbackCount: 0, errorCount: 0, statusCount: 0, messageCount: 0,
+        messagesMatch: true, detailsMatch: true, fetchCount: 0, elapsedMs: 0 };
+      const prior = captured.length;
+      await new Promise(resolve => {
+        const args = [`/grpcbin.GRPCBin/${test.method}`, value => value, value => value,
+          test.body, metadata, { deadline }];
+        const message = value => {
+          step.messageCount++;
+          step.messagesMatch &&= Buffer.from(value).equals(echo);
+        };
+        const call = test.stream ? client.makeServerStreamRequest(...args)
+          : client.makeUnaryRequest(...args, (error, value) => {
+            step.callbackCount++;
+            step.callbackCode = error?.code ?? 0;
+            if (value !== undefined) message(value);
+          });
+        if (test.stream) call.on('data', value => { message(value); call.cancel(); });
+        call.on('error', error => {
+          step.errorCount++;
+          if (error.code !== 1 || !test.cancel) step.detailsMatch = false;
+        });
+        call.on('status', status => {
+          step.statusCount++;
+          step.statusCode = status.code;
+          if (name === 'error') step.detailsMatch &&= status.details === reason;
+          resolve();
+        });
+      });
+      // Stream errors and cancellation unwinding can follow the status event.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      step.fetchCount = captured.slice(prior).reduce((sum, call) => sum + call.diagnostics().fetchCount, 0);
+      step.elapsedMs = Date.now() - start;
+      steps.push(step);
+    }
+    const snapshot = () => {
+      const usage = transport.resourceUsage();
+      const cleanup = { beforeClose: true, channelOpen: channel.closed === false,
+        channelActiveCalls: channel.activeCallCount(), activeCalls: usage.activeCalls,
+        queuedCalls: usage.queuedCalls, bufferedBytes: usage.bufferedBytes,
+        activePumps: 0, pendingMessages: 0, pendingMessageBytes: 0, pendingWriteCallbacks: 0,
+        parserAssemblies: 0, parserAssemblyBytes: 0, runtimeChunkBytes: 0,
+        requestBytes: 0, responseBytes: 0, timers: 0, nonterminalCalls: 0, capturedCalls: captured.length };
+      for (const call of captured) {
+        const state = call.diagnostics(), execution = call.executionDiagnostics();
+        for (const key of ['activePumps', 'pendingMessages', 'pendingMessageBytes', 'pendingWriteCallbacks',
+          'parserAssemblies', 'parserAssemblyBytes', 'runtimeChunkBytes']) cleanup[key] += execution[key];
+        cleanup.requestBytes += state.requestBytes;
+        cleanup.responseBytes += state.responseBytes;
+        cleanup.timers += Number(state.timerActive);
+        cleanup.nonterminalCalls += Number(!state.terminal);
+      }
+      return cleanup;
+    };
+    const idle = cleanup => cleanup.channelOpen && Object.entries(cleanup)
+      .filter(([key]) => !['beforeClose', 'channelOpen', 'capturedCalls'].includes(key))
+      .every(([, value]) => value === 0);
+    let cleanup = snapshot();
+    for (let turn = 0; !idle(cleanup) && turn < 100; turn++) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+      cleanup = snapshot();
+    }
+    for (let index = 0; index < steps.length; index++) {
+      const step = steps[index], stream = index === 2;
+      step.passed = step.statusCode === [0, 3, 1, 0][index] && step.statusCount === 1 &&
+        step.callbackCode === [0, 3, null, 0][index] && step.callbackCount === (stream ? 0 : 1) &&
+        step.errorCount === (stream ? 1 : 0) && step.messageCount === [1, 0, 1, 1][index] &&
+        step.messagesMatch && step.detailsMatch && step.fetchCount === 1;
+    }
+    return { schemaVersion: 1, name: 'recovery', mode,
+      passed: steps.every(step => step.passed) && captured.length === 4 && idle(cleanup),
+      clientCount: 1, steps, cleanup, elapsedMs: Date.now() - started };
+  } finally {
+    delete channel.createCallForMethod;
+  }
+}
 export default {
   async fetch(request, env) {
     const key = env.WGA_TEST_KEY;
     const actual = Buffer.from(request.headers.get('authorization') ?? '');
     const expected = Buffer.from(`Bearer ${key}`);
     if (typeof key !== 'string' || key.length < 32 || request.method !== 'POST' || actual.length !== expected.length || !timingSafeEqual(actual, expected)) return new Response('Not found', { status: 404 });
-    const route = /^\/echo\/(cloudflare|grpc-web)\/(unary|stream|error|cancel|raw|raw-convert|raw-passthrough)$/.exec(new URL(request.url).pathname);
+    const route = /^\/echo\/(cloudflare|grpc-web)\/(unary|stream|error|cancel|recovery|raw|raw-convert|raw-passthrough)$/.exec(new URL(request.url).pathname);
     if (!route) return new Response('Not found', { status: 404 });
     const [, mode, name] = route;
+    if (name === 'recovery' && env.WGA_PROBE_MODE !== mode) return new Response('Not found', { status: 404 });
     let client;
     try {
       const native = origin(env.WGA_NATIVE_ORIGIN), gateway = origin(env.WGA_GATEWAY_ORIGIN);
@@ -81,6 +175,7 @@ export default {
       }
       const transport = createWorkersGrpcTransport({ ...(mode === 'cloudflare' ? { mode } : { mode, endpoints: { [`${native.hostname}:443`]: gateway.origin } }), defaultTimeoutMs: 25000, transportMaxReceiveBytes: 1024 * 1024 });
       client = new Client(`${native.hostname}:443`, transport.channelCredentials, transport.grpcOptions());
+      if (name === 'recovery') return Response.json(await recovery(client, transport, metadata, mode));
       const test = cases[name], messages = [];
       let callbackCode = 0;
       const started = Date.now();

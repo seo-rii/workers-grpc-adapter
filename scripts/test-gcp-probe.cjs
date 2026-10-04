@@ -43,7 +43,11 @@ fs.mkdirSync(temporaryBase, { recursive: true });
 const temporary = fs.mkdtempSync(path.join(temporaryBase, 'gcp-probe-local-'));
 
 async function main() {
-  const bundle = await buildGoogleWorker({ entry: path.join(root, 'fixtures/google/gcp-probe.mjs'), outdir: temporary });
+  // Match the deployed entry: one fixed router includes both real SDK suites
+  // and the native-origin recovery probe. No request can supply a target.
+  const entry = path.join(temporary, 'entry.mjs');
+  fs.writeFileSync(entry, `import gcp from ${JSON.stringify(path.join(root, 'fixtures/google/gcp-probe.mjs'))};\nimport echo from ${JSON.stringify(path.join(root, 'fixtures/google/gcp-echo-probe.mjs'))};\nexport default {fetch(r,e,c){return new URL(r.url).pathname.startsWith('/gcp/')?gcp.fetch(r,e,c):echo.fetch(r,e,c)}};\n`);
+  const bundle = await buildGoogleWorker({ entry, outdir: temporary });
   const config = path.join(temporary, 'wrangler.json');
   fs.writeFileSync(config, JSON.stringify({ name: 'wga-gcp-probe-local-only', main: bundle.main,
     compatibility_date: '2026-09-21', compatibility_flags: ['nodejs_compat'], workers_dev: false }));
@@ -169,10 +173,121 @@ async function main() {
       suitesChecked++;
     } } finally { await worker.dispose(); }
   }
+  const recovery = await checkRecovery(script);
   console.log(JSON.stringify({ status: 'passed', guardedRequests, readinessRequests, suitesChecked, outboundRequests: requests.length,
+    recovery,
     networkRequests: 0, googleAuthorizationChecked: true, gatewayTokenModeIsolationChecked: true,
     namedDatabaseTargetsChecked: true, projectIdAndNumberSeparated: true, modeContentTypesChecked: true,
     readinessWithoutGoogleCredentialsChecked: true, errorsRedacted: true }));
+}
+
+async function checkRecovery(script) {
+  const nativeOrigin = 'https://wga-local-native.run.app', gatewayOrigin = 'https://wga-local-gateway.run.app';
+  const text = 'wga deployed probe % / 한글', reason = text.replace(' deployed', '');
+  const bytes = Buffer.from(text), echo = Buffer.concat([Buffer.from([10, bytes.length]), bytes]);
+  const frame = (value, flag = 0) => {
+    const head = Buffer.alloc(5); head[0] = flag; head.writeUInt32BE(value.length, 1);
+    return Buffer.concat([head, value]);
+  };
+  const trailers = (code, details = '') => frame(Buffer.from(`grpc-status: ${code}\r\ngrpc-message: ${encodeURIComponent(details)}\r\n`), 128);
+  const zeroCleanup = { beforeClose: true, channelOpen: true, channelActiveCalls: 0,
+    activeCalls: 0, queuedCalls: 0, bufferedBytes: 0, activePumps: 0, pendingMessages: 0,
+    pendingMessageBytes: 0, pendingWriteCallbacks: 0, parserAssemblies: 0,
+    parserAssemblyBytes: 0, runtimeChunkBytes: 0, requestBytes: 0, responseBytes: 0,
+    timers: 0, nonterminalCalls: 0, capturedCalls: 4 };
+  const result = { modes: 2, passedBatches: 0, rejectedBatches: 0, guards: 0,
+    rpcRequests: 0, externalNetworkRequests: 0, cleanupBeforeClientClose: true };
+  for (const mode of ['grpc-web', 'cloudflare']) {
+    for (const fault of [null, 'payload', 'status', 'missing-trailer', 'empty-stream']) {
+      const sent = [];
+      const runtime = new Miniflare(convertV4MiniflareOptions({
+        log: new Log(LogLevel.NONE), modules: true, script,
+        compatibilityDate: '2026-09-21', compatibilityFlags: ['nodejs_compat'],
+        bindings: { ...bindings, WGA_PROBE_MODE: mode, WGA_NATIVE_ORIGIN: nativeOrigin,
+          WGA_GATEWAY_ORIGIN: gatewayOrigin },
+        outboundService: async request => {
+          const url = new URL(request.url), body = Buffer.from(await request.arrayBuffer());
+          const method = url.pathname.split('/').at(-1), index = sent.length;
+          sent.push(method); result.rpcRequests++;
+          assert.equal(url.origin, mode === 'cloudflare' ? nativeOrigin : gatewayOrigin);
+          assert.equal(url.pathname, `/grpcbin.GRPCBin/${['DummyUnary', 'SpecificError', 'DummyServerStream', 'DummyUnary'][index % 4]}`);
+          assert.equal(request.method, 'POST');
+          assert.equal(request.headers.get('x-serverless-authorization'), `Bearer ${idToken}`);
+          assert.equal(request.headers.get('x-wga-upstream-authorization'), mode === 'grpc-web' ? `Bearer ${idToken}` : null);
+          const contentType = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
+          assert.equal(request.headers.get('content-type'), contentType);
+          assert.equal(body[0], 0);
+          assert.equal(body.readUInt32BE(1), body.length - 5);
+          let response;
+          if (method === 'SpecificError') {
+            const details = Buffer.from(reason);
+            assert.deepEqual(body.subarray(5), Buffer.concat([Buffer.from([8, 3, 18, details.length]), details]));
+            response = trailers(fault === 'status' ? 14 : 3, reason);
+          } else {
+            assert.deepEqual(body.subarray(5), echo);
+            if (method === 'DummyServerStream') response = fault === 'empty-stream' ? trailers(0)
+              : Buffer.concat([...Array.from({ length: 10 }, () => frame(echo)), trailers(0)]);
+            else {
+              const first = index % 4 === 0;
+              response = Buffer.concat([frame(first && fault === 'payload' ? Buffer.from([10, 1, 120]) : echo),
+                ...(first && fault === 'missing-trailer' ? [] : [trailers(0)])]);
+            }
+          }
+          return new Response(response, { headers: { 'content-type': contentType } });
+        },
+      }));
+      try {
+        if (!fault) {
+          for (const invalid of [
+            { method: 'GET', headers }, { method: 'POST' },
+            { method: 'POST', headers: { authorization: `Bearer ${'x'.repeat(key.length)}` } },
+            { path: `/echo/${mode === 'cloudflare' ? 'grpc-web' : 'cloudflare'}/recovery` },
+            { path: `/echo/${mode}/recovery/extra` }, { path: '/echo/invalid/recovery' },
+          ]) {
+            const response = await runtime.dispatchFetch(`https://probe.test${invalid.path ?? `/echo/${mode}/recovery`}`,
+              invalid.method ? invalid : { method: 'POST', headers });
+            assert.equal(response.status, 404); assert.equal(await response.text(), 'Not found');
+            assert.equal(sent.length, 0, 'Recovery route guards must reject before Fetch');
+            result.guards++;
+          }
+        }
+        for (let repeat = 0; repeat < (fault ? 1 : 2); repeat++) {
+          const response = await runtime.dispatchFetch(`https://probe.test/echo/${mode}/recovery`, { method: 'POST', headers,
+            // Body and query cannot override the fixed mode, sequence or target.
+            body: JSON.stringify({ target: 'https://unapproved.invalid', duration: 9999999 }) });
+          assert.equal(response.status, 200);
+          const value = await response.json();
+          assert.equal(value.schemaVersion, 1); assert.equal(value.name, 'recovery');
+          assert.equal(value.mode, mode); assert.equal(value.clientCount, 1);
+          assert.equal(value.passed, !fault, `${mode}/${fault ?? 'normal'}`);
+          assert.deepEqual(value.cleanup, zeroCleanup);
+          assert.deepEqual(value.steps.map(step => step.id), ['initial-unary', 'expected-error', 'cancel-stream', 'recovered-unary']);
+          assert.ok(value.elapsedMs >= 0 && value.elapsedMs < 22000);
+          for (const step of value.steps) {
+            assert.equal(step.statusCount, 1); assert.equal(step.fetchCount, 1);
+            assert.ok(step.elapsedMs >= 0 && step.elapsedMs < 22000);
+          }
+          assert.equal(value.steps[3].passed, true, 'The same client must recover after a failed probe step');
+          if (!fault) {
+            assert.ok(value.steps.every(step => step.passed && step.messagesMatch && step.detailsMatch));
+            assert.deepEqual(value.steps.map(step => step.statusCode), [0, 3, 1, 0]);
+            assert.deepEqual(value.steps.map(step => step.callbackCode), [0, 3, null, 0]);
+            assert.deepEqual(value.steps.map(step => step.callbackCount), [1, 1, 0, 1]);
+            assert.deepEqual(value.steps.map(step => step.errorCount), [0, 0, 1, 0]);
+            assert.deepEqual(value.steps.map(step => step.messageCount), [1, 0, 1, 1]);
+            result.passedBatches++;
+          } else {
+            assert.equal(value.steps.filter(step => !step.passed).length, 1, 'Only the altered response should fail');
+            result.rejectedBatches++;
+          }
+          const report = JSON.stringify(value);
+          for (const secret of [key, accessToken, idToken, text, reason]) assert.ok(!report.includes(secret));
+          assert.equal(sent.length, (repeat + 1) * 4);
+        }
+      } finally { await runtime.dispose(); }
+    }
+  }
+  return result;
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; })
