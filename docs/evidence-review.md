@@ -13,8 +13,8 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 142 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 39 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 143 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 38 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 8 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
@@ -243,6 +243,11 @@ README consumers run separately in workerd; every other block is explicitly an
 expected, unexecuted example. Missing, changed and overclaimed examples fail the
 gate, and the visible generated inventory preserves those labels (`DOC-001`).
 
+Six reviewed compatibility claims now match named passing tests, the exhaustive
+export policy and fresh installed-package observations in both modes. This checks
+authentication failures, logical peer identity, native API boundaries and retained
+message ceilings with recovery; drift and forged receipts fail (`DOC-003`).
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -262,7 +267,7 @@ gate, and the visible generated inventory preserves those labels (`DOC-001`).
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
-| Documentation | 2 | 2 | 1 |
+| Documentation | 3 | 1 | 1 |
 
 Flow control now includes the native comparisons and specific
 large-stream/pause/ownership scenarios. The remaining unary discrepancy is
@@ -271,7 +276,7 @@ retained rather than treated as transport equivalence.
 ## Remaining work
 
 The next local work is executable documentation checks: connect documentation
-support tables, compatibility statements and diagnostic IDs to
+support tables and diagnostic IDs to
 executed fixtures instead of relying on source hashes alone (`DOC-*`). Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five

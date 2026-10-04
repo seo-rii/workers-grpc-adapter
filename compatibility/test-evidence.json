@@ -80762,11 +80762,9 @@
     },
     {
       "id": "DOC-003",
-      "coverage": "partial",
-      "reason": "Executed negative tests establish concrete unsupported TLS behavior, authentication-code sanitization and retained message ceilings, and current docs describe these differences. Those runtime tests do not themselves compare every README/support statement with policy and profile evidence.",
-      "gaps": [
-        "Add a complete documentation-to-policy/evidence check covering unsupported APIs, authentication details, logical peer behavior and caps; runtime negative tests plus prose are only partial evidence for that documentation contract."
-      ],
+      "coverage": "covered",
+      "reason": "Six reviewed compatibility statements are checked against their exact documentation excerpts, named passing tests and the complete executed export policy. Fresh installed-package observations in both modes verify absent APIs, readiness/TLS failures, authentication-code sanitization and redaction, logical peer identity, transport caps and recovery; independent negative tests reject drift and forged receipts.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -80791,6 +80789,210 @@
           "source": "test/config-catalog.test.cjs",
           "command": "tests",
           "name": "CFG-009 pinned GAX runtimes emit exact defaults and retain adapter safety caps"
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "unsupported-root"
+          },
+          "anchor": "unsupported-root",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "native-readiness"
+          },
+          "anchor": "native-readiness",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "tls-options"
+          },
+          "anchor": "tls-options",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "auth-failure"
+          },
+          "anchor": "auth-failure",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "logical-peer"
+          },
+          "anchor": "logical-peer",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/claims",
+          "where": {
+            "id": "message-caps"
+          },
+          "anchor": "message-caps",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/observed/observations",
+          "where": {
+            "mode": "cloudflare"
+          },
+          "anchor": "cloudflare",
+          "assertions": [
+            {
+              "pointer": "/fetches",
+              "equals": 2
+            },
+            {
+              "pointer": "/resourcesCheckedBeforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/bufferedBytes",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/documentation-policy.json",
+          "source": "scripts/documentation-policy.cjs",
+          "command": "documentation-policy",
+          "array": "/observed/observations",
+          "where": {
+            "mode": "grpc-web"
+          },
+          "anchor": "grpc-web",
+          "assertions": [
+            {
+              "pointer": "/fetches",
+              "equals": 2
+            },
+            {
+              "pointer": "/resourcesCheckedBeforeClose",
+              "equals": true
+            },
+            {
+              "pointer": "/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/bufferedBytes",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy links six reviewed claims to exhaustive unsupported names, grade counts and named proof tests"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy rejects missing or changed excerpts, unsupported names, grades and proof identities"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy receipt rejects authentication leaks, wrong logical peers, altered caps and incomplete cleanup"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy artifact validation requires current complete input and installed file inventories"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy artifact validation rejects skipped TAP and altered policy even when new file hashes are supplied"
+        },
+        {
+          "kind": "tap",
+          "source": "test/documentation-policy.test.cjs",
+          "command": "tests",
+          "name": "DOC policy artifact paths reject traversal and symlink substitution before reading unrelated files"
         }
       ],
       "catalogCaseSha256": "13315705cbaba9a46f9b96480eb26fe13dbce88d828270da807838c2f3f6b994"

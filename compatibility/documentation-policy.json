@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "claims": [
+    {
+      "id": "unsupported-root",
+      "documents": [
+        {
+          "path": "README.md",
+          "excerpts": [
+            "Native grpc-js Server sockets, custom certificate authorities, inline TLS client certificates, and native connection pooling remain unsupported."
+          ]
+        },
+        {
+          "path": "docs/exports.md",
+          "excerpts": [
+            "All 40 native-only names are graded `U`; an unavailable native type is not\nrelabeled `T` merely because it would disappear from emitted JavaScript."
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/export-contract.test.cjs",
+          "name": "EXPORT contract requires complete reviewed grades and actual runtime/declaration agreement"
+        }
+      ]
+    },
+    {
+      "id": "native-readiness",
+      "documents": [
+        {
+          "path": "docs/exports.md",
+          "excerpts": [
+            "`Client.waitForReady` has the same failure behavior. Neither helper reports\nsuccess or estimates remote availability from a Fetch call."
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/config-catalog.test.cjs",
+          "name": "CFG-011 waitForReady and corked metadata fail once before auth and Fetch in both modes"
+        }
+      ]
+    },
+    {
+      "id": "tls-options",
+      "documents": [
+        {
+          "path": "docs/api.md",
+          "excerpts": [
+            "`credentials.createSsl()` uses Fetch TLS. Certificate buffers, custom certificate authorities and TLS verification callbacks are unsupported."
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/config-auth.test.cjs",
+          "name": "AUTH TLS configuration rejects unsupported input rather than ignoring it"
+        }
+      ]
+    },
+    {
+      "id": "auth-failure",
+      "documents": [
+        {
+          "path": "docs/documentation.md",
+          "excerpts": [
+            "Authentication generator failures expose `WGA_AUTH_METADATA` and omit the\ngenerator's private error message. Missing or nonnumeric error codes become\n`UNKNOWN`; invalid numeric/control-plane codes become `INTERNAL`; allowed\ngRPC error codes are retained. Failure does not trigger an anonymous Fetch."
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/config-auth.test.cjs",
+          "name": "AUTH control-plane error codes are sanitized"
+        },
+        {
+          "source": "test/lifecycle-stream.test.cjs",
+          "name": "AUTH errors retain code, redact message, do not anonymously retry"
+        }
+      ]
+    },
+    {
+      "id": "logical-peer",
+      "documents": [
+        {
+          "path": "docs/limitations.md",
+          "excerpts": [
+            "`getPeer()` returns the logical URL rather than a remote IP. `getAuthContext()` returns null, and the channelz reference is an unregistered placeholder."
+          ]
+        },
+        {
+          "path": "docs/api.md",
+          "excerpts": [
+            "The client target and authentication audience remain the logical service."
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/lifecycle-stream.test.cjs",
+          "name": "AUTH logical audience stays logical when route maps to a gateway"
+        }
+      ]
+    },
+    {
+      "id": "message-caps",
+      "documents": [
+        {
+          "path": "docs/limitations.md",
+          "excerpts": [
+            "Per-message transport ceilings default to 32 MiB. A channel limit of `-1` does not remove them."
+          ]
+        },
+        {
+          "path": "docs/api.md",
+          "excerpts": [
+            "| `transportMaxSendBytes` | 32 MiB per message |",
+            "| `transportMaxReceiveBytes` | 32 MiB per message |"
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "source": "test/config-catalog.test.cjs",
+          "name": "CFG-009 pinned GAX runtimes emit exact defaults and retain adapter safety caps"
+        },
+        {
+          "source": "test/config-auth.test.cjs",
+          "name": "ADAPTER GAX token preserves the snapshot and enforces transport and channel ceilings"
+        }
+      ]
+    }
+  ]
+}

@@ -52,6 +52,7 @@ function main() {
     run('types', ['scripts/test-types.cjs']);
     run('vendor', ['vendor/verify.cjs']);
     run('exports-contract', ['scripts/test-contract.cjs']);
+    run('documentation-policy', ['scripts/documentation-policy.cjs']);
     run('native-differential', ['test/native-differential.cjs']);
     run('api-contracts', ['scripts/test-api-contracts.cjs']);
     run('sdk-types', ['scripts/test-sdk-types.cjs']);
@@ -157,7 +158,7 @@ function main() {
         status: sdkTypes.status === 'passed' ? 'local-gates-passed-cloud-certification-blocked' : 'local-runtime-gates-passed-upstream-types-and-cloud-blocked', releaseEligible: false,
         environment: { node: process.version, platform: process.platform, arch: process.arch, npm: cp.execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim() },
         build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
-        declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), syntax,
+        declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
