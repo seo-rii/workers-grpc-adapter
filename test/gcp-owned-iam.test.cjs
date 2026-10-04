@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { grantOwnedServiceAccountTokenCreator: grant } = require('../scripts/gcp-owned-iam.cjs');
 
 const role = 'roles/iam.serviceAccountTokenCreator';
+const stages = ['identity-before', 'policy-before', 'identity-before-write', 'policy-write', 'policy-after', 'identity-after'];
 function fixture() {
     const project = 'wga-test-project', run = 'wga-probe-20261004-1234abcd', uid = '123456789012345678901';
     const email = `wga-probe-123456abcdef@${project}.iam.gserviceaccount.com`;
@@ -189,16 +190,71 @@ test('resource identity must remain exact after the confirmed grant', async () =
     assert.equal(calls.filter(([url]) => url.includes(':setIamPolicy')).length, 1);
 });
 
-test('transport failures at every step expose only fixed codes and attempted-write state', async () => {
+test('HTTP failures expose only the exact fixed stage, valid status and attempted-write state', async () => {
+    for (let index = 0; index < stages.length; index++) {
+        for (const status of [403, 404, 400, 409, 429, 503]) {
+            const { args, calls, responses } = fixture();
+            responses[index] = { status, data: { error: { message: `sensitive-token-marker ${args.principal} ${args.record.url}`,
+                stage: 'forged-stage', httpStatus: 201, credential: 'secret-token-marker' } } };
+            await assert.rejects(grant(args), error => {
+                assert.deepEqual({ ...error }, { code: 'OWNED_IAM_API_FAILED', mutationAttempted: index >= 3,
+                    stage: stages[index], httpStatus: status });
+                assert.equal(error.message, 'OWNED_IAM_API_FAILED');
+                assert.equal(error.cause, undefined);
+                assert.ok(!error.stack.includes('sensitive-token-marker'));
+                assert.ok(!JSON.stringify(error).includes(args.principal));
+                assert.ok(!JSON.stringify(error).includes(args.record.url));
+                return true;
+            });
+            assert.equal(calls.length, index + 1);
+            assert.equal(calls.filter(([url]) => url.includes(':setIamPolicy')).length, index >= 3 ? 1 : 0);
+        }
+    }
+});
+
+test('malformed status values are redacted and invalid successful responses retain their HTTP status', async () => {
+    for (const status of [undefined, null, '403 secret-token-marker', 99, 600, 200.5, NaN, Infinity, {}, []]) {
+        const { args, calls, responses } = fixture(); responses[1] = { status, data: {} };
+        await assert.rejects(grant(args), error => {
+            assert.deepEqual({ ...error }, { code: 'OWNED_IAM_API_FAILED', mutationAttempted: false,
+                stage: 'policy-before', httpStatus: null });
+            assert.ok(!error.stack.includes('secret-token-marker'));
+            return true;
+        });
+        assert.equal(calls.length, 2);
+    }
+    for (const data of [null, [], 'secret-token-marker', { error: { message: 'secret-token-marker' } }]) {
+        const { args, calls, responses } = fixture(); responses[4] = { status: 200, data };
+        await assert.rejects(grant(args), { code: 'OWNED_IAM_API_FAILED', mutationAttempted: true,
+            stage: 'policy-after', httpStatus: 200 });
+        assert.equal(calls.length, 5);
+    }
+});
+
+test('successful HTTP responses with invalid identity or policy retain exact validation stages', async () => {
+    for (let index = 0; index < stages.length; index++) {
+        const { args, calls, responses } = fixture(); responses[index].data = {};
+        const code = [0, 2, 5].includes(index) ? 'OWNED_IAM_IDENTITY_CHANGED' : index === 1
+            ? 'OWNED_IAM_POLICY_NOT_EMPTY' : index === 3 ? 'OWNED_IAM_POLICY_RESULT_MISMATCH' : 'OWNED_IAM_POLICY_CONFIRMATION_MISMATCH';
+        await assert.rejects(grant(args), { code, mutationAttempted: index >= 3, stage: stages[index], httpStatus: 200 });
+        assert.equal(calls.length, index + 1);
+    }
+});
+
+test('transport failures at every step expose only fixed diagnostics, never thrown error fields', async () => {
     for (let index = 0; index < 6; index++) {
         const { args, calls } = fixture(); const api = args.api;
         args.api = (...request) => {
-            if (calls.length === index) { calls.push(request); throw new Error('secret-token-marker'); }
+            if (calls.length === index) {
+                calls.push(request);
+                throw Object.assign(new Error(`secret-token-marker ${args.principal} ${args.record.url}`),
+                    { stage: 'forged-stage', status: 403, httpStatus: 403, mutationAttempted: false });
+            }
             return api(...request);
         };
         await assert.rejects(grant(args), error => {
-            assert.equal(error.code, 'OWNED_IAM_API_FAILED');
-            assert.equal(error.mutationAttempted, index >= 3);
+            assert.deepEqual({ ...error }, { code: 'OWNED_IAM_API_FAILED', mutationAttempted: index >= 3,
+                stage: stages[index], httpStatus: null });
             assert.equal(error.cause, undefined);
             assert.ok(!error.stack.includes('secret-token-marker'));
             return true;

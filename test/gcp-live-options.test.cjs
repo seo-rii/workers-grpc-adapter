@@ -54,3 +54,30 @@ test('credential renewal requires exact opt-in and catalog before credential dis
   await rejectBeforeCredentials(['--deploy-temporary', '--catalog', '--verify-auth-renewal'],
     /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
 });
+
+test('live IAM failures retain only a fixed step, HTTP status and mutation state', async () => {
+  const start = source.indexOf('  if (grantOwnedTokenCreator) {');
+  const end = source.indexOf('  const ownedAccount =', start);
+  assert.ok(start >= 0 && end > start);
+  for (const diagnostic of [
+    { stage: 'policy-write', httpStatus: 400, mutationAttempted: true },
+    { stage: 'private-marker', httpStatus: 'private-marker', mutationAttempted: 'private-marker' },
+  ]) {
+    const report = { resources: [{ kind: 'service-account', name: 'owned@example.test' }] };
+    const error = Object.assign(new Error('private-marker'), diagnostic);
+    let saved = 0, attempts = 0;
+    const run = vm.runInNewContext(`(async () => {${source.slice(start, end)}})`, {
+      report, grantOwnedTokenCreator: true, interrupted: false, project: 'owned-project',
+      serviceAccount: 'owned@example.test', phase() {}, api() { throw new Error('UNEXPECTED_API'); },
+      save() { saved++; }, gcloud: () => JSON.stringify([{ account: 'operator@example.test' }]),
+      async grantOwnedServiceAccountTokenCreator() { attempts++; throw error; },
+    });
+    await assert.rejects(run(), value => value === error);
+    assert.equal(attempts, 1);
+    assert.equal(saved, 1);
+    assert.equal(report.ownedIamGrant, undefined);
+    assert.deepEqual(JSON.parse(JSON.stringify(report.ownedIamGrantFailure)), diagnostic.stage === 'policy-write'
+      ? diagnostic : { stage: 'validation', httpStatus: null, mutationAttempted: false });
+    assert.ok(!JSON.stringify(report).includes('private-marker'));
+  }
+});

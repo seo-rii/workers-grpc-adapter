@@ -343,8 +343,19 @@ async function main() {
     const principal = `${account.endsWith('.gserviceaccount.com') ? 'serviceAccount' : 'user'}:${account}`;
     const record = report.resources.find(item => item.kind === 'service-account' && item.name === serviceAccount);
     phase('explicit-owned-service-account-iam-grant');
-    report.ownedIamGrant = await grantOwnedServiceAccountTokenCreator({ enabled: true, project, run: report.run, record, principal,
-      api: (...args) => { if (interrupted) throw new Error('INTERRUPTED'); return api(...args); } });
+    try {
+      report.ownedIamGrant = await grantOwnedServiceAccountTokenCreator({ enabled: true, project, run: report.run, record, principal,
+        api: (...args) => { if (interrupted) throw new Error('INTERRUPTED'); return api(...args); } });
+    } catch (error) {
+      const stages = ['identity-before', 'policy-before', 'identity-before-write', 'policy-write', 'policy-after', 'identity-after'];
+      report.ownedIamGrantFailure = {
+        stage: stages.includes(error?.stage) ? error.stage : 'validation',
+        httpStatus: Number.isInteger(error?.httpStatus) && error.httpStatus >= 100 && error.httpStatus <= 599 ? error.httpStatus : null,
+        mutationAttempted: error?.mutationAttempted === true,
+      };
+      save();
+      throw error;
+    }
     save();
   }
   const ownedAccount = report.resources.find(item => item.kind === 'service-account' && item.name === serviceAccount);

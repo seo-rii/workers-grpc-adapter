@@ -4,10 +4,17 @@ const { createHash } = require('node:crypto');
 const ROLE = 'roles/iam.serviceAccountTokenCreator';
 const API = 'https://iam.googleapis.com/v1/';
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const STAGES = new Set(['identity-before', 'policy-before', 'identity-before-write', 'policy-write', 'policy-after', 'identity-after']);
 
-function fail(code, mutationAttempted = false) {
+function fail(code, mutationAttempted = false, diagnostic) {
     // Never include API response bodies, credentials, or arbitrary thrown text.
-    throw Object.assign(new Error(code), { code, mutationAttempted });
+    const fields = { code, mutationAttempted };
+    if (diagnostic && STAGES.has(diagnostic.stage)) {
+        fields.stage = diagnostic.stage;
+        fields.httpStatus = Number.isInteger(diagnostic.httpStatus) && diagnostic.httpStatus >= 100 && diagnostic.httpStatus <= 599
+            ? diagnostic.httpStatus : null;
+    }
+    throw Object.assign(new Error(code), fields);
 }
 
 function targetFor(project, run, record) {
@@ -90,40 +97,44 @@ async function grantOwnedServiceAccountTokenCreator({ enabled, project, run, rec
     // getIamPolicy is POST with no body; options is an HTTP query parameter.
     const policyUrl = `${url}:getIamPolicy?options.requestedPolicyVersion=3`;
     let mutationAttempted = false;
-    const request = async (target, method, body) => {
+    const request = async (stage, target, method, body) => {
         let response;
         try { response = await api(target, method, body); }
-        catch { fail('OWNED_IAM_API_FAILED', mutationAttempted); }
+        catch { fail('OWNED_IAM_API_FAILED', mutationAttempted, { stage, httpStatus: null }); }
         if (!isObject(response) || response.status !== 200 || !isObject(response.data) || response.data.error) {
-            fail('OWNED_IAM_API_FAILED', mutationAttempted);
+            fail('OWNED_IAM_API_FAILED', mutationAttempted, { stage, httpStatus: response?.status });
         }
         return response.data;
     };
-    const checkIdentity = async () => {
-        const value = await request(url, 'GET');
+    const checkIdentity = async stage => {
+        const value = await request(stage, url, 'GET');
         if (value.projectId !== project || value.uniqueId !== uid || value.email !== email ||
             value.description !== run || (value.disabled !== undefined && value.disabled !== false) ||
             ![`projects/${project}/serviceAccounts/${email}`, resource].includes(value.name)) {
-            fail('OWNED_IAM_IDENTITY_CHANGED', mutationAttempted);
+            fail('OWNED_IAM_IDENTITY_CHANGED', mutationAttempted, { stage, httpStatus: 200 });
         }
     };
-    await checkIdentity();
-    const before = await request(policyUrl, 'POST');
+    await checkIdentity('identity-before');
+    const before = await request('policy-before', policyUrl, 'POST');
     if (!policyShape(before) || (before.bindings?.length ?? 0) !== 0 || (before.auditConfigs?.length ?? 0) !== 0) {
-        fail('OWNED_IAM_POLICY_NOT_EMPTY');
+        fail('OWNED_IAM_POLICY_NOT_EMPTY', false, { stage: 'policy-before', httpStatus: 200 });
     }
     const etag = before.etag;
-    await checkIdentity();
+    await checkIdentity('identity-before-write');
     if (targetFor(project, run, record) !== resource || record.name !== email) fail('OWNED_IAM_IDENTITY_CHANGED');
     mutationAttempted = true;
-    const written = await request(`${url}:setIamPolicy`, 'POST', {
+    const written = await request('policy-write', `${url}:setIamPolicy`, 'POST', {
         policy: { version: 3, etag, bindings: [{ role: ROLE, members: [principal] }] },
         updateMask: 'bindings,etag,version',
     });
-    if (!exactGrant(written, principal) || written.etag === etag) fail('OWNED_IAM_POLICY_RESULT_MISMATCH', true);
-    const confirmed = await request(policyUrl, 'POST');
-    if (!exactGrant(confirmed, principal) || confirmed.etag !== written.etag) fail('OWNED_IAM_POLICY_CONFIRMATION_MISMATCH', true);
-    await checkIdentity();
+    if (!exactGrant(written, principal) || written.etag === etag) {
+        fail('OWNED_IAM_POLICY_RESULT_MISMATCH', true, { stage: 'policy-write', httpStatus: 200 });
+    }
+    const confirmed = await request('policy-after', policyUrl, 'POST');
+    if (!exactGrant(confirmed, principal) || confirmed.etag !== written.etag) {
+        fail('OWNED_IAM_POLICY_CONFIRMATION_MISMATCH', true, { stage: 'policy-after', httpStatus: 200 });
+    }
+    await checkIdentity('identity-after');
     return {
         status: 'granted', resourceUid: uid, role: ROLE, principalKind: principal.split(':')[0],
         policyVersion: confirmed.version ?? 0,
