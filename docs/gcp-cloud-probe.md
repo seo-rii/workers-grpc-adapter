@@ -119,6 +119,59 @@ tokens are checked for leaks in returned receipts. CI runs this local gate witho
 Google credentials or external calls; it does not establish that a real IAM
 service accepted the requested lifetime, nor prove request-disconnect propagation.
 
+### Live renewal and permission results: 2026-10-05 (KST)
+
+Run `wga-probe-20261004-433e2bc6` tested source
+[`c110c6c`](https://github.com/seo-rii/workers-grpc-adapter/commit/c110c6cf21498b19d7aa1af72f5634319b3b54d4)
+with the explicitly approved caller TokenCreator grant on its newly created
+service account. Policy write and readback confirmed one role and one member;
+no service-account key or project IAM change was made. The initial restricted
+token became available on the ninth mint attempt after 80.6 seconds, within the
+bounded policy-propagation wait. Only token reads were retried.
+
+Actual IAM Credentials accepted the requested 60-second lifetime. All three
+paths reused the same SDK/auth client pair through initial, cached, renewed and
+recached calls. Each issued exactly two credentials and four `GetSecret` RPCs,
+with authorization generations `[1, 1, 2, 2]`. Each second mint began after the
+first credential's real expiration plus 250 milliseconds. Native, gateway and
+automatic-mode runs completed in 60.859, 60.852 and 60.715 seconds respectively.
+
+All twelve RPCs returned the expected `PERMISSION_DENIED (7)`: the temporary
+account received no data-service role grants. Workers compared the minted bearer
+at the actual transport Fetch boundary; native Node observed auth-client request
+headers. The separate restricted-principal catalog case also passed with native
+grpc-js and both deployed modes, removing that earlier token-availability blocker.
+These results do not establish source user-token renewal, federation, service-account
+JWT exchange, successful data access after renewal, or a complete production IAM
+policy matrix.
+
+The same run passed the finite SDK/catalog suites and all 600 requests in its
+ten-minute repetition window. Each Worker mode completed 250 client-recovery
+batches and 50 SDK reads, with no failed or skipped observations. Renewal receipts,
+source hashes and the retained deployment bundle were checked independently of
+the repetition result.
+
+After those checks, the runner retained `INTENTIONAL_CATALOG_E2E_FAILURE` and
+exited `1`, as required by the cleanup negative test. All nine owned resources
+were deleted with acknowledged delete responses and final `404` lookups; both
+database deletion operations completed. The temporary secret-upload file was
+absent. Existing inventory was unchanged: 81 Cloud Run services, three databases,
+34 secrets, 31 service accounts and six artifact repositories. The service-account
+deletion also removed the temporary caller grant's target.
+
+The earlier attempt `wga-probe-20261004-c2955ef1` stopped in IAM preparation with
+`OWNED_IAM_API_FAILED`. Its sole created service account was deleted and existing
+inventory remained unchanged. That original error did not retain a request stage
+or HTTP status, so its cause is unconfirmed. The follow-up records fixed IAM
+stages, HTTP statuses and whether a write was attempted, without raw API bodies,
+principal identifiers or tokens; it does not retry policy writes.
+
+The run used an isolated namespace in an existing project, so the original
+dedicated-project requirement remains unmet. Backend generator cleanup and
+long-running reliability also remain separate checks. The receipt therefore
+keeps `releaseEligible: false` and `certificationPassed: false`, while recording
+the successful behavior and verified deletion separately.
+
 ## Bounded deployed repetition and client recovery
 
 Add `--soak-seconds=600` to the temporary deployment command to exercise both

@@ -382,6 +382,16 @@ operations. Its intentional-failure option retains the primary error and actual
 resource deletion receipts. Dedicated-project, backend-cleanup observability
 and missing credential/permission conditions remain explicit.
 
-Production IAM, quota, token renewal, transaction contention, prolonged traffic,
-and dependency/security/license release review remain separate gates. Local
-fuzz volume and passing emulators do not substitute for them.
+The [2026-10-05 live renewal probe](gcp-cloud-probe.md#live-renewal-and-permission-results-2026-10-05-kst)
+verified actual 60-second impersonated-token expiry and renewal with the same
+SDK/auth clients in native Node and both Worker modes. Each path minted twice
+across four expected permission-denied RPCs. The restricted-principal catalog
+case and all 600 repetition requests passed; all nine temporary resources were
+deleted and existing inventory was unchanged. The cleanup test deliberately
+exited nonzero after preserving its injected primary failure.
+
+Production IAM policy coverage, source-credential renewal, federation, quota,
+transaction contention, prolonged traffic, and dependency/security/license
+release review remain separate gates. The finite denied-RPC renewal probe does
+not establish successful data access after renewal or the original dedicated-project
+invariant. Local fuzz volume and passing emulators do not substitute for them.
