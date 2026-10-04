@@ -411,7 +411,28 @@ The separate GAX isolation gate runs 90 calls across the three pinned SDKs: thre
 
 The resilience gate repeats concurrent unary and streaming calls in both modes, on cold and warm Worker invocations. Each wave mixes successful calls, HTTP 503, permission/quota statuses, truncated frames, message-size violations, empty unary responses, slow consumers, cancellation, deadlines and channel closure, then reuses the client successfully. It requires one terminal event per call, zero active calls, cleared deadline timers and zero retained request/current-response payload bytes after each wave. Paused consumers must exercise buffering within the Readable high-water mark and one-message transport lookahead.
 
-This gate uses Miniflare's Node handler bridge to observe unfinished HTTP responses closing before runtime disposal. The Fetch-callback bridge does not propagate cancellation to an idle host response stream, so its `cancel()` callback is not used as evidence. The measurements cover adapter-visible state and loopback disconnects; they do not measure total Fetch/parser allocation, deployed resource limits, CPU quotas or sustained production throughput.
+This gate uses Miniflare's Node handler bridge to observe unfinished HTTP responses closing before runtime disposal. The Fetch-callback bridge does not propagate cancellation to an idle host response stream, so its `cancel()` callback is not used as evidence.
+
+The same workload now records twelve `CDP.Runtime.getHeapUsage` checkpoints:
+before work, after each of four mixed waves and after closing clients, for both
+cold and warm invocations. Both transport modes rendezvous before each sample;
+actual execution owners, buffers, timers, channel calls and peer responses must
+be released. A Worker instance ID and invocation counter establish same-isolate
+continuity. The 208 logical calls, 192 RPC Fetches and 24 checkpoint control
+requests are counted separately.
+
+Raw heap and backing-storage samples retain GC decreases and produce baseline
+deltas, peaks and slopes. Conservative checked-in envelopes reject excessive
+absolute use, growth or warm slope. A separate isolate deliberately retains four
+4 MiB buffers; its measured 16 MiB growth must trip the same envelope before
+application references are cleared and the runtime is disposed. Unit tests also
+reject altered checkpoint, ownership, summary and positive-control receipts.
+
+These are finite observations of uncollected Worker heap, adapter-visible state
+and loopback disconnects. They do not measure total isolate memory or prove
+leak freedom, allocation ownership, deployed resource limits, CPU quotas or
+sustained production throughput. No forced GC or claimed post-clear heap
+reclamation is involved.
 
 The controlled outbound responder does not emulate Cloudflare's edge translator; `verification/workers.json` keeps `cloudflareTranslation: false`. Local assertions on Fetch options establish the adapter's request contract only. Real gateway translation is exercised separately through Envoy, including the official emulator suite; deployed conversion results remain a separate check.
 

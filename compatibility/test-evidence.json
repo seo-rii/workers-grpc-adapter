@@ -10669,7 +10669,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -10686,7 +10686,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77341,7 +77341,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77838,11 +77838,9 @@
     },
     {
       "id": "PERF-004",
-      "coverage": "partial",
-      "reason": "Current workerd fault waves repeatedly mix successful calls, transport/service failures, malformed responses, limits, cancellation, deadlines and channel close, then verify same-client recovery, zero active calls and released request/response bytes and timers. SDK benchmark heap samples cover a separate successful workload.",
-      "gaps": [
-        "Measure and assess heap/backing-storage trends during the same repeated mixed success/failure/cancel workload; zero adapter counters and a separate successful SDK memory sample do not rule out unexplained runtime heap growth."
-      ],
+      "coverage": "covered",
+      "reason": "The installed workerd fixture measures uncollected heap and backing storage during the same 208-call mixed success/failure/cancel workload, with cold and warm invocation identity in one isolate. Twelve coordinated idle checkpoints join actual released call/execution owners and peer responses to CDP samples. Raw deltas, peaks and warm slopes must fit finite local envelopes; a separate-isolate 16 MiB retention positive control must exceed the same envelope. This is finite measured evidence, not total isolate memory or a proof of leak freedom.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -77859,7 +77857,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77876,7 +77874,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77893,7 +77891,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77910,7 +77908,7 @@
         {
           "kind": "json-case",
           "report": "verification/workers-resilience.json",
-          "source": "scripts/test-workers-resilience.cjs",
+          "source": "scripts/workers-resilience-evidence.cjs",
           "command": "workers-resilience",
           "array": "/checks",
           "where": {
@@ -77923,6 +77921,2090 @@
               "equals": "upstream-source-cancel-before-disposal"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "start"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 0
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "start"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "start"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "wave-0"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 1
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-0"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-0"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "wave-1"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 2
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-1"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 26
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-1"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 26
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "wave-2"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 3
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-2"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 39
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-2"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 39
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "wave-3"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 4
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-3"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-3"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "cold",
+            "label": "closed"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 5
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "closed"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": true
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "cold"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "closed"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "start"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 6
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "start"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "start"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "wave-0"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 7
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-0"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-0"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "wave-1"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 8
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-1"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 26
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-1"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 26
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "wave-2"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 9
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-2"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 39
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-2"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 39
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "wave-3"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 10
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "wave-3"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": false
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "wave-3"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 13
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0,
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": false
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/memory/checkpoints",
+          "where": {
+            "invocation": "warm",
+            "label": "closed"
+          },
+          "anchor": "CDP.Runtime.getHeapUsage",
+          "assertions": [
+            {
+              "pointer": "/sequence",
+              "equals": 11
+            },
+            {
+              "pointer": "/pendingResponseSources",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/modes/0/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/0/label",
+              "equals": "closed"
+            },
+            {
+              "pointer": "/modes/0/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/0/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/0/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/0/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/0/clientsClosed",
+              "equals": true
+            },
+            {
+              "pointer": "/modes/1/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/modes/1/invocation",
+              "equals": "warm"
+            },
+            {
+              "pointer": "/modes/1/label",
+              "equals": "closed"
+            },
+            {
+              "pointer": "/modes/1/observedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/terminalCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/completedCalls",
+              "equals": 52
+            },
+            {
+              "pointer": "/modes/1/requestBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/responseBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/activeTimers",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/ownership",
+              "equals": {
+                "activePumps": 0,
+                "pendingMessages": 0,
+                "pendingMessageBytes": 0,
+                "pendingWriteCallbacks": 0,
+                "parserAssemblies": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0
+              }
+            },
+            {
+              "pointer": "/modes/1/resources/activeCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/queuedCalls",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/resources/bufferedBytes",
+              "equals": 0
+            },
+            {
+              "pointer": "/modes/1/channelActiveCalls",
+              "equals": [
+                0
+              ]
+            },
+            {
+              "pointer": "/modes/1/clientsClosed",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/positiveControl/samples",
+          "where": {
+            "label": "retained-1"
+          },
+          "anchor": "RETENTION_CONTROL_UNEXPECTED_NETWORK",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/buffers",
+              "equals": 1
+            },
+            {
+              "pointer": "/retainedBytes",
+              "equals": 4194304
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/positiveControl/samples",
+          "where": {
+            "label": "retained-2"
+          },
+          "anchor": "RETENTION_CONTROL_UNEXPECTED_NETWORK",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/buffers",
+              "equals": 2
+            },
+            {
+              "pointer": "/retainedBytes",
+              "equals": 8388608
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/positiveControl/samples",
+          "where": {
+            "label": "retained-3"
+          },
+          "anchor": "RETENTION_CONTROL_UNEXPECTED_NETWORK",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/buffers",
+              "equals": 3
+            },
+            {
+              "pointer": "/retainedBytes",
+              "equals": 12582912
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/workers-resilience.json",
+          "source": "scripts/test-workers-resilience.cjs",
+          "command": "workers-resilience",
+          "array": "/positiveControl/samples",
+          "where": {
+            "label": "retained-4"
+          },
+          "anchor": "RETENTION_CONTROL_UNEXPECTED_NETWORK",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/buffers",
+              "equals": 4
+            },
+            {
+              "pointer": "/retainedBytes",
+              "equals": 16777216
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/workers-resilience-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE resilience preserves exact workload, source identity, owner cleanup and peer accounting"
+        },
+        {
+          "kind": "tap",
+          "source": "test/workers-resilience-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE resilience requires coordinated real Worker samples and recomputes trends and envelopes"
+        },
+        {
+          "kind": "tap",
+          "source": "test/workers-resilience-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE resilience requires measured retention sensitivity and separate-isolate cleanup"
+        },
+        {
+          "kind": "tap",
+          "source": "test/workers-resilience-evidence.test.cjs",
+          "command": "tests",
+          "name": "resilience heap summaries retain GC decreases and use all actual checkpoints for OLS slope"
         }
       ],
       "catalogCaseSha256": "a0b65e103cabb35205394ac3fc070f343c53371948f2d55f7f0c0de7458e3041"

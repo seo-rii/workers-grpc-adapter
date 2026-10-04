@@ -9,6 +9,7 @@ const ts = require('typescript');
 const { validateWorkerdServerStreamingReport } = require('./server-streaming-evidence.cjs');
 const { validateSdkBenchmarkReport } = require('./sdk-benchmark-evidence.cjs');
 const { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts } = require('./transport-benchmark-evidence.cjs');
+const { validateWorkersResilienceReport } = require('./workers-resilience-evidence.cjs');
 const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
 const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
 const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
@@ -622,6 +623,7 @@ function validateProvenance(root, report) {
     validateSdkBenchmarkReport(report.sdkBenchmark);
     validateTransportBenchmarkReport(report.transportBenchmark);
     validateTransportBenchmarkArtifacts(report.transportBenchmark, root);
+    validateWorkersResilienceReport(report.workersResilience);
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
     validateApiContractsReport(report.apiContracts);
     validateSecretManagerReport(report.secretManagerExtended);
@@ -639,6 +641,7 @@ function validateProvenance(root, report) {
         ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
         ['datastore-mutations', report.datastoreMutations],
         ['datastore-pagination', report.datastorePagination],
+        ['workers-resilience', report.workersResilience],
         ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
         for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs,

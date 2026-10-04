@@ -1,0 +1,17 @@
+{
+  "revision": 1,
+  "description": "Conservative local workerd smoke envelopes for sampled uncollected heap; not isolate total memory, a production quota, or a leak-freedom guarantee.",
+  "maxSampledHeapUsedBytes": 67108864,
+  "maxSampledBackingStorageBytes": 33554432,
+  "maxHeapGrowthBytes": 33554432,
+  "maxBackingGrowthBytes": 8388608,
+  "maxWarmHeapGrowthBytes": 16777216,
+  "maxWarmBackingGrowthBytes": 8388608,
+  "maxWarmHeapSlopeBytesPerCheckpoint": 8388608,
+  "maxWarmBackingSlopeBytesPerCheckpoint": 2097152,
+  "positiveControl": {
+    "waves": 4,
+    "bytesPerWave": 4194304,
+    "minObservedGrowthRatio": 0.9
+  }
+}

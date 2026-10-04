@@ -13,8 +13,8 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 139 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 41 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
@@ -225,6 +225,14 @@ tarball provenance accompany raw cold/iteration timings and 154 actual
 call/Fetch/cleanup receipts. This completes the paired transport-only and
 SDK-inclusive bundle baseline in `PERF-001`; their runtime scopes remain distinct.
 
+The mixed success/failure/cancellation workload now measures uncollected heap and
+backing-storage trends in the same isolate across cold and warm invocations.
+Twelve coordinated idle checkpoints verify actual execution owners and peer
+responses are released before sampling. Raw values, baseline deltas, peaks and
+slopes must fit explicit local envelopes; a separate isolate retaining 16 MiB
+must trigger the same checks. This covers the finite observation required by
+`PERF-004`, without claiming total isolate memory or general leak freedom.
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -243,7 +251,7 @@ SDK-inclusive bundle baseline in `PERF-001`; their runtime scopes remain distinc
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
-| Performance | 4 | 1 | 0 |
+| Performance | 5 | 0 | 0 |
 | Documentation | 0 | 3 | 2 |
 
 Flow control now includes the native comparisons and specific
@@ -252,16 +260,13 @@ retained rather than treated as transport equivalence.
 
 ## Remaining work
 
-The next local work units, in order, are:
-
-1. **Performance measurement.** Sample heap trends in the same failure/cancel
-   workload (`PERF-004`). Separate transport/SDK bundles, SDK setup, first-message
-   timing and buffer ownership now have execution evidence.
-2. **Executable documentation checks.** Connect documentation examples, support
-   tables, diagnostic IDs and release provenance checks to executed fixtures
-   instead of relying on source hashes alone (`DOC-*`). Keep production index
-   requirements (`DS-019`), native stream destruction (`DS-021`) and public Commit
-   cancellation (`TX-008`) as explicit boundaries.
+The next local work is executable documentation checks: connect documentation
+examples, support tables, diagnostic IDs and release provenance checks to
+executed fixtures instead of relying on source hashes alone (`DOC-*`). Keep
+production index requirements (`DS-019`), native stream destruction (`DS-021`)
+and public Commit cancellation (`TX-008`) as explicit boundaries. The five
+performance measurement/policy contracts have local execution evidence;
+production performance thresholds remain unset and cannot certify a release.
 
 The nine cases without an accepted current reference are
 `CLOUD-001`–`CLOUD-007`, `DOC-001` and `DOC-005`.
