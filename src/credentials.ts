@@ -69,6 +69,12 @@ export class ChannelCredentials {
     private constructor(private readonly secure: boolean, private readonly calls: CallCredentials) {
     }
     static createSsl(rootCerts?: Buffer | null, privateKey?: Buffer | null, certChain?: Buffer | null, verifyOptions?: unknown): ChannelCredentials {
+        // GAX uses these explicit opt-ins for client certificates and mTLS
+        // endpoint selection. Fetch cannot install native TLS credentials.
+        const env = globalThis.process?.env;
+        if (env?.GOOGLE_API_USE_CLIENT_CERTIFICATE === 'true' || env?.GOOGLE_API_USE_MTLS_ENDPOINT === 'always') {
+            throw new ConfigError('WGA_UNSUPPORTED_TLS', 'Environment requires unsupported native mTLS configuration');
+        }
         if (rootCerts != null || privateKey != null || certChain != null || verifyOptions != null) {
             throw new ConfigError('WGA_UNSUPPORTED_TLS', 'Custom CA, mTLS and TLS verification options are not supported');
         }
