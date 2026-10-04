@@ -89,7 +89,12 @@ cleanup.
 
 The main receipt records `soak`, `soakSourceHashes`, the source `gitCommit` and
 the deployed `bundle` hash. Observations contain bounded protocol counts and timing, with no metadata,
-payloads or tokens. The driver and result validator have deterministic clock
+payloads or tokens. Receipt schema version 2 also records failed HTTP requests'
+stage (`fetch`, `response-body`, or an unclassified request callback), allowlisted
+error names and transport codes. Response-body failures retain the HTTP status
+already received. Error messages, stacks, hostnames and raw causes are discarded;
+unknown codes become a fixed fallback. These diagnostics never retry or turn a
+failed request into a successful observation. The driver and result validator have deterministic clock
 tests; the exact deployable Worker also runs the recovery batch locally in
 workerd before deployment. Normal CI exercises those local checks and never
 enables the deployed repetition automatically.
@@ -99,6 +104,17 @@ same client after application errors and caller cancellation. It does not measur
 the full deployed isolate heap, prove backend cancellation, exercise real service
 outages or credential renewal, or establish multi-hour stream reliability.
 `releaseEligible` remains `false` even when this bounded test passes.
+
+The first ten-minute run, `wga-probe-20261004-6272d586` at source `edf2827`,
+completed all 600 planned requests: 597 passed and three probe requests rejected
+before returning a complete HTTP response. There were no skipped slots, request
+timeouts or scheduler concurrency violations. The original receipt did not retain
+the failure stage or cause, so these failures cannot be attributed to the adapter
+or a specific network layer. The campaign correctly failed with
+`DEPLOYED_SOAK_FAILED`; its per-run receipt is retained. All nine temporary
+resources were deleted and the existing inventory was unchanged. Schema version
+2 adds the diagnostics needed to investigate subsequent failures without exposing
+credentials or treating this first run as a pass.
 
 ## Isolation
 

@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak } = require('../scripts/gcp-soak.cjs');
+const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('../scripts/gcp-soak.cjs');
 
 // Advance a monotonic virtual clock to pending waits. Production still always
 // runs 60..600 real seconds at one fixed slot per second; tests cannot configure
@@ -98,6 +98,7 @@ test('sixty real-time slots require both modes, fixed SDK reads, complete recove
   const { receipt, requests, maximum, active, clock } = await run();
   assert.deepEqual(validateDeployedSoak(receipt), { ok: true, errors: [] });
   assert.equal(receipt.status, 'passed');
+  assert.equal(receipt.schemaVersion, 2);
   assert.equal(receipt.releaseEligible, false);
   assert.equal(receipt.count, 60); assert.equal(receipt.started, 60); assert.equal(receipt.completed, 60);
   assert.equal(maximum, 1); assert.equal(active, 0); assert.equal(clock.pending.size, 0);
@@ -111,6 +112,7 @@ test('sixty real-time slots require both modes, fixed SDK reads, complete recove
   }
   assert.deepEqual(requests.slice(10, 12).map(row => row.route), ['/gcp/grpc-web/secret-manager-read', '/gcp/cloudflare/secret-manager-read']);
   assert.ok(requests.every(row => row.timeoutMs === 30000 && !row.aborted));
+  assert.ok(receipt.observations.every(row => row.failure === null));
 });
 
 test('hard request maximum is 600 with two in-flight HTTP requests and no injected production rate option', async () => {
@@ -264,11 +266,161 @@ test('request throw and rejected bodies cannot leak arbitrary error, metadata or
   }
 });
 
+test('worker failure wrappers retain only fixed HTTP phases and allowlisted error atoms', async () => {
+  const marker = 'private-token-URL-host-header-payload-must-not-appear';
+  const cases = [
+    { phase: 'fetch', error: Object.assign(new TypeError(marker), { cause: { code: 'ECONNRESET', host: marker } }),
+      expected: { phase: 'fetch', name: 'TypeError', code: 'ECONNRESET' }, httpStatus: null },
+    { phase: 'fetch', error: new DOMException(marker, 'AbortError'),
+      expected: { phase: 'fetch', name: 'AbortError', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'response-body', error: Object.assign(new Error(marker), { code: 'UND_ERR_BODY_TIMEOUT' }),
+      expected: { phase: 'response-body', name: 'Error', code: 'UND_ERR_BODY_TIMEOUT' }, httpStatus: 503 },
+    { phase: 'response-body', error: Object.assign(new TypeError(marker), { cause: { code: 'UND_ERR_SOCKET', socket: marker } }),
+      expected: { phase: 'response-body', name: 'TypeError', code: 'UND_ERR_SOCKET' }, httpStatus: 200 },
+    { phase: 'fetch', error: Object.assign(new Error(marker), { code: marker, cause: { code: 'ENOTFOUND' } }),
+      expected: { phase: 'fetch', name: 'Error', code: 'ENOTFOUND' }, httpStatus: null },
+    { phase: 'fetch', error: Object.assign(new Error(marker), { code: 'ECONNRESET', cause: { code: 'ENOTFOUND' } }),
+      expected: { phase: 'fetch', name: 'Error', code: 'ECONNRESET' }, httpStatus: null },
+    { phase: 'fetch', error: { name: marker, code: marker, message: marker, cause: { code: marker, message: marker } },
+      expected: { phase: 'fetch', name: 'UnknownError', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'fetch', error: { get name() { throw new Error(marker); }, get code() { throw new Error(marker); },
+        get cause() { throw new Error(marker); } },
+      expected: { phase: 'fetch', name: 'UnknownError', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'fetch', error: Object.assign(new Error(marker), { cause: { cause: { code: 'ECONNRESET' } } }),
+      expected: { phase: 'fetch', name: 'Error', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'fetch', error: { name: new String('Error'), code: new String('ECONNRESET') },
+      expected: { phase: 'fetch', name: 'UnknownError', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'fetch', error: new DOMException(marker, 'TimeoutError'),
+      expected: { phase: 'fetch', name: 'TimeoutError', code: 'UNKNOWN' }, httpStatus: null },
+    { phase: 'fetch', error: marker,
+      expected: { phase: 'fetch', name: 'UnknownError', code: 'UNKNOWN' }, httpStatus: null },
+  ];
+  const { receipt, requests } = await run({ request: plan => {
+    const selected = cases[(Number(plan.id.slice(5)) - 1) % cases.length];
+    const wrapped = workerRequestFailure(selected.phase, selected.error, selected.httpStatus);
+    assert.ok(wrapped instanceof Error); assert.equal(wrapped.message, 'WGA_WORKER_REQUEST_FAILED');
+    assert.equal(wrapped.cause, undefined); assert.equal(Object.isFrozen(wrapped), true);
+    assert.equal(JSON.stringify(wrapped).includes(marker), false);
+    assert.equal(wrapped.stack.includes(marker), false);
+    throw wrapped;
+  } });
+  assert.equal(receipt.status, 'failed'); assert.equal(requests.length, 60);
+  assert.equal(receipt.started, 60); assert.equal(receipt.completed, 60);
+  for (const row of receipt.observations) {
+    const selected = cases[row.slot % cases.length];
+    assert.deepEqual(row.failure, selected.expected);
+    assert.equal(row.httpStatus, selected.httpStatus);
+    assert.equal(row.reason, 'request-failed'); assert.equal(row.timedOut, false); assert.equal(row.result, null);
+  }
+  assert.equal(JSON.stringify(receipt).includes(marker), false);
+  const verified = validateDeployedSoak(receipt);
+  assert.equal(verified.ok, false);
+  assert.ok(verified.errors.every(error => !error.endsWith(':diagnostics')), 'authentic failure diagnostics remain structurally valid');
+});
+
+test('unknown callback throws cannot forge branded HTTP diagnostics', async () => {
+  const forged = Object.assign(new Error('private callback error'), {
+    name: 'WorkerRequestError', code: 'WGA_WORKER_REQUEST_FAILED', httpStatus: 503,
+    failure: { phase: 'response-body', name: 'TypeError', code: 'UND_ERR_SOCKET' },
+    cause: { code: 'ECONNRESET' },
+  });
+  const { receipt } = await run({ request: () => { throw forged; } });
+  assert.equal(receipt.status, 'failed');
+  assert.ok(receipt.observations.every(row => row.httpStatus === null));
+  for (const row of receipt.observations) assert.deepEqual(row.failure,
+    { phase: 'request', name: 'UnknownError', code: 'UNKNOWN_REQUEST_FAILURE' });
+  assert.equal(JSON.stringify(receipt).includes('private callback error'), false);
+  for (const [phase, status] of [['request', null], ['fetch', 200], ['response-body', null],
+    ['response-body', 99], ['response-body', 600], ['response-body', '200'], ['response-body', NaN]]) {
+    assert.throws(() => workerRequestFailure(phase, forged, status), /classification/);
+  }
+});
+
+test('timeout and interruption retain safe failure diagnostics without changing termination behavior', async () => {
+  const timeout = await run({ request: async (plan, clock) => {
+    try { await clock.wait(31000, plan.signal); }
+    catch { throw workerRequestFailure('fetch', Object.assign(new Error('private timeout'), { name: 'AbortError', code: 'ABORT_ERR' })); }
+    return responseFor(plan);
+  } });
+  assert.equal(timeout.receipt.status, 'failed');
+  assert.ok(timeout.requests.every(row => row.aborted));
+  for (const row of timeout.receipt.observations.filter(row => row.completedAtMs !== null)) {
+    assert.equal(row.reason, 'request-timeout'); assert.equal(row.timedOut, true);
+    assert.deepEqual(row.failure, { phase: 'fetch', name: 'AbortError', code: 'ABORT_ERR' });
+  }
+  const controller = new AbortController();
+  const interrupted = await run({ signal: controller.signal, request: async (plan, clock) => {
+    await clock.wait(250); controller.abort();
+    try { await clock.wait(1000, plan.signal); }
+    catch { throw workerRequestFailure('response-body', new DOMException('private canceled body', 'AbortError'), 200); }
+    return responseFor(plan);
+  } });
+  assert.equal(interrupted.receipt.status, 'interrupted'); assert.equal(interrupted.requests.length, 1);
+  const row = interrupted.receipt.observations[0];
+  assert.equal(row.reason, 'interrupted'); assert.equal(row.httpStatus, 200); assert.equal(row.timedOut, false);
+  assert.deepEqual(row.failure, { phase: 'response-body', name: 'AbortError', code: 'UNKNOWN' });
+  assert.equal(validateDeployedSoak(interrupted.receipt).ok, false);
+  assert.ok(validateDeployedSoak(interrupted.receipt).errors.every(error => !error.endsWith(':diagnostics')));
+});
+
+test('generated private errors cannot introduce new diagnostic values or sensitive receipt fields', async () => {
+  let state = 0x2718ab61;
+  const next = () => { state = (Math.imul(state, 1103515245) + 12345) >>> 0; return state; };
+  const cases = Array.from({ length: 60 }, (_, index) => {
+    const privateText = `private-${index}-${next().toString(16)}-https://sensitive.invalid/token`;
+    const name = index % 3 === 0 ? 'TypeError' : privateText;
+    const directCode = index % 4 === 0 ? 'EPIPE' : privateText;
+    const causeCode = index % 5 === 0 ? 'UND_ERR_SOCKET' : privateText;
+    return { privateText, error: { name, code: directCode, message: privateText, stack: privateText,
+      url: privateText, headers: { authorization: privateText }, body: privateText,
+      cause: { name: privateText, code: causeCode, message: privateText, host: privateText, cause: { code: 'ECONNRESET' } } },
+      expected: { phase: index % 2 ? 'response-body' : 'fetch', name: name === 'TypeError' ? name : 'UnknownError',
+        code: directCode === 'EPIPE' ? directCode : causeCode === 'UND_ERR_SOCKET' ? causeCode : 'UNKNOWN' } };
+  });
+  const { receipt } = await run({ request: plan => {
+    const item = cases[Number(plan.id.slice(5)) - 1];
+    throw workerRequestFailure(item.expected.phase, item.error, item.expected.phase === 'fetch' ? null : 502);
+  } });
+  const encoded = JSON.stringify(receipt);
+  assert.equal(receipt.status, 'failed'); assert.equal(receipt.started, 60); assert.equal(receipt.completed, 60);
+  for (const [index, row] of receipt.observations.entries()) {
+    assert.deepEqual(row.failure, cases[index].expected);
+    assert.equal(encoded.includes(cases[index].privateText), false);
+  }
+  assert.ok(validateDeployedSoak(receipt).errors.every(error => !error.endsWith(':diagnostics')));
+});
+
+test('strict diagnostics reject inconsistent, arbitrary and tampered failure claims', async () => {
+  const { receipt } = await run({ request: () => {
+    throw workerRequestFailure('response-body', Object.assign(new TypeError('private'), { cause: { code: 'UND_ERR_SOCKET' } }), 503);
+  } });
+  const mutations = [
+    row => { row.failure = null; }, row => { row.failure = {}; },
+    row => { row.failure.phase = 'dns'; }, row => { row.failure.phase = 'fetch'; },
+    row => { row.failure.name = 'private-error-name'; }, row => { row.failure.code = 'private-code'; },
+    row => { row.failure.message = 'private'; }, row => { row.failure.code = 'UNKNOWN_REQUEST_FAILURE'; },
+    row => { row.httpStatus = null; }, row => { row.httpStatus = '503'; }, row => { row.httpStatus = 700; },
+    row => { row.reason = 'http-status'; }, row => { row.reason = 'response-schema'; },
+    row => { row.status = 'passed'; }, row => { row.result = { arbitrary: true }; },
+    row => { row.failure = { phase: 'request', name: 'Error', code: 'UNKNOWN_REQUEST_FAILURE' }; row.httpStatus = null; },
+    row => { row.failure = { phase: 'request', name: 'UnknownError', code: 'ECONNRESET' }; row.httpStatus = null; },
+  ];
+  for (const [index, mutate] of mutations.entries()) {
+    const forged = structuredClone(receipt); mutate(forged.observations[0]);
+    const checked = validateDeployedSoak(forged);
+    assert.equal(checked.ok, false);
+    assert.ok(checked.errors.includes('observation:soak-0001:diagnostics'), `diagnostic mutation ${index} was accepted`);
+  }
+  const legacy = structuredClone(receipt); legacy.schemaVersion = 1;
+  for (const row of legacy.observations) delete row.failure;
+  assert.equal(validateDeployedSoak(legacy).ok, false, 'old receipts are not silently upgraded');
+});
+
 test('strict deployed receipts reject forged identity, timestamps, summary, steps and cleanup', async () => {
   const { receipt } = await run({ delay: 1500 });
   assert.equal(validateDeployedSoak(receipt).ok, true);
   const mutations = [
-    row => { row.schemaVersion = 2; }, row => { row.source = 'local-workerd'; }, row => { row.releaseEligible = true; },
+    row => { row.schemaVersion = 1; }, row => { row.source = 'local-workerd'; }, row => { row.releaseEligible = true; },
     row => { row.count++; }, row => { row.started--; }, row => { row.completed--; },
     row => { row.maxInFlightObserved = 1; }, row => { row.limits.maxInFlight = 3; },
     row => { row.window.observedMs = 59000; }, row => { row.window.completed = false; },
@@ -281,6 +433,7 @@ test('strict deployed receipts reject forged identity, timestamps, summary, step
     row => { row.observations[0].startedOrder = 10; }, row => { row.observations[0].completedOrder = 0; },
     row => { row.observations[0].durationMs++; }, row => { row.observations[0].timeoutMs = 30001; },
     row => { row.observations[0].timedOut = true; }, row => { row.observations[0].httpStatus = '200'; },
+    row => { row.observations[0].failure = { phase: 'fetch', name: 'Error', code: 'ECONNRESET' }; },
     row => { row.observations[0].result.mode = 'cloudflare'; }, row => { row.observations[0].result.clientCount = 4; },
     row => { row.observations[0].result.steps.reverse(); }, row => { row.observations[0].result.steps.pop(); },
     row => { row.observations[0].result.steps[2].callbackCount = 1; },

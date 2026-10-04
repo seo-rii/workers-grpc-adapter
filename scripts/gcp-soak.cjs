@@ -20,10 +20,57 @@ const STEP_EXPECTED = [
 const STEP_COUNTS = ['statusCode', 'callbackCode', 'callbackCount', 'errorCount', 'statusCount', 'messageCount'];
 const ROW_KEYS = ['id', 'slot', 'mode', 'source', 'kind', 'route', 'plannedAtMs',
   'startedAtMs', 'completedAtMs', 'startedOrder', 'completedOrder', 'durationMs', 'timeoutMs', 'status', 'reason',
-  'timedOut', 'httpStatus', 'result'];
+  'timedOut', 'httpStatus', 'result', 'failure'];
 const STATUSES = ['passed', 'failed', 'missed', 'interrupted', 'pending'];
 const REASONS = [null, 'http-status', 'response-schema', 'request-failed',
   'request-timeout', 'capacity', 'slot-expired', 'interrupted', 'drain-timeout'];
+const FAILURE_NAMES = new Set(['Error', 'TypeError', 'AbortError', 'TimeoutError', 'AggregateError',
+  'ConnectTimeoutError', 'HeadersTimeoutError', 'BodyTimeoutError', 'SocketError',
+  'RequestAbortedError', 'ResponseStatusCodeError', 'InvalidArgumentError', 'UnknownError']);
+const FAILURE_CODES = new Set(['ABORT_ERR', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND',
+  'EAI_AGAIN', 'EPIPE', 'ENETUNREACH', 'EHOSTUNREACH', 'ERR_NETWORK', 'ERR_INVALID_URL',
+  'CERT_HAS_EXPIRED', 'CERT_NOT_YET_VALID', 'DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'ERR_TLS_CERT_ALTNAME_INVALID',
+  'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_SOCKET',
+  'UND_ERR_ABORTED', 'UND_ERR_RESPONSE_STATUS_CODE', 'UND_ERR_CONTENT_LENGTH_MISMATCH',
+  'UND_ERR_RES_CONTENT_LENGTH_MISMATCH', 'UND_ERR_REQ_CONTENT_LENGTH_MISMATCH',
+  'UND_ERR_DESTROYED', 'UND_ERR_CLOSED', 'UND_ERR_INVALID_ARG', 'UNKNOWN']);
+// Only wrappers produced here can attach HTTP-stage diagnostics. An arbitrary
+// thrown object with similar public properties is still an unknown callback
+// failure; never retain the original Error, cause, stack, URL or response.
+const workerFailures = new WeakMap();
+
+function workerRequestFailure(phase, error, httpStatus = null) {
+  if (!['fetch', 'response-body'].includes(phase)
+    || (phase === 'fetch' ? httpStatus !== null
+      : !Number.isInteger(httpStatus) || httpStatus < 100 || httpStatus > 599)) {
+    throw new TypeError('Invalid worker request failure classification');
+  }
+  const read = (value, key) => { try { return value?.[key]; } catch { return undefined; } };
+  const candidateName = read(error, 'name');
+  const directCode = read(error, 'code');
+  const candidateCode = FAILURE_CODES.has(directCode) ? directCode : read(read(error, 'cause'), 'code');
+  const failure = Object.freeze({ phase, name: FAILURE_NAMES.has(candidateName) ? candidateName : 'UnknownError',
+    code: FAILURE_CODES.has(candidateCode) ? candidateCode : 'UNKNOWN' });
+  const wrapped = Object.assign(new Error('WGA_WORKER_REQUEST_FAILED'), {
+    name: 'WorkerRequestError', code: 'WGA_WORKER_REQUEST_FAILED',
+  });
+  workerFailures.set(wrapped, Object.freeze({ failure, httpStatus }));
+  return Object.freeze(wrapped);
+}
+
+function validFailure(row) {
+  if (row.failure === null) return row.reason !== 'request-failed';
+  const failure = row.failure;
+  if (!exactKeys(failure, ['phase', 'name', 'code']) || row.status !== 'failed' || row.result !== null
+    || !['request-failed', 'request-timeout', 'interrupted'].includes(row.reason)) return false;
+  if (failure.phase === 'request') return failure.name === 'UnknownError'
+    && failure.code === 'UNKNOWN_REQUEST_FAILURE' && row.httpStatus === null;
+  if (!FAILURE_NAMES.has(failure.name) || !FAILURE_CODES.has(failure.code)) return false;
+  if (failure.phase === 'fetch') return row.httpStatus === null;
+  return failure.phase === 'response-body' && Number.isInteger(row.httpStatus)
+    && row.httpStatus >= 100 && row.httpStatus <= 599;
+}
 
 function exactKeys(value, keys) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -130,7 +177,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
   const durationMs = seconds * 1000;
   const rows = Array.from({ length: seconds }, (_, slot) => ({ ...plannedRow(slot),
     startedAtMs: null, completedAtMs: null, startedOrder: null, completedOrder: null, durationMs: null, timeoutMs: null,
-    status: 'interrupted', reason: 'interrupted', timedOut: false, httpStatus: null, result: null }));
+    status: 'interrupted', reason: 'interrupted', timedOut: false, httpStatus: null, result: null, failure: null }));
   const active = new Set();
   let lastDispatch = -Infinity, maxInFlightObserved = 0, pendingTimeouts = 0, eventOrder = 0;
   let interrupted = Boolean(signal?.aborted);
@@ -164,7 +211,13 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
       row.status = !row.timedOut && row.httpStatus === 200 && row.result !== null ? 'passed' : 'failed';
       row.reason = row.timedOut ? 'request-timeout' : row.status === 'passed' ? null
         : row.httpStatus !== 200 ? 'http-status' : 'response-schema';
-    }, () => { row.status = 'failed'; row.reason = row.timedOut ? 'request-timeout' : 'request-failed'; }).finally(async () => {
+    }, error => {
+      const known = (typeof error === 'object' && error !== null) || typeof error === 'function'
+        ? workerFailures.get(error) : undefined;
+      row.failure = known ? { ...known.failure } : { phase: 'request', name: 'UnknownError', code: 'UNKNOWN_REQUEST_FAILURE' };
+      row.httpStatus = known?.httpStatus ?? null;
+      row.status = 'failed'; row.reason = row.timedOut ? 'request-timeout' : 'request-failed';
+    }).finally(async () => {
       timerController.abort();
       await timeout;
       if (entry.interrupted) { row.status = 'failed'; row.reason = 'interrupted'; }
@@ -219,7 +272,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
     for (let turn = 0; turn < 8; turn++) await Promise.resolve();
     const finishedAtMs = elapsed();
     const summary = summarize(rows);
-    const receipt = { schemaVersion: 1, source: SOURCE, releaseEligible: false,
+    const receipt = { schemaVersion: 2, source: SOURCE, releaseEligible: false,
       status: interrupted ? 'interrupted' : summary.passed === seconds && active.size === 0 && pendingTimeouts === 0 ? 'passed' : 'failed',
       durationSeconds: seconds, window: { durationMs, observedMs, completed: !interrupted && observedMs >= durationMs,
         drainMs: Math.max(0, finishedAtMs - observedMs), interrupted }, limits: { ...LIMITS },
@@ -242,7 +295,7 @@ function validateDeployedSoak(receipt) {
     'window', 'limits', 'count', 'started', 'completed', 'maxInFlightObserved', 'observations', 'summary', 'cleanup'])) {
     return { ok: false, errors: ['receipt-schema'] };
   }
-  check(receipt.schemaVersion === 1 && receipt.source === SOURCE && receipt.releaseEligible === false, 'receipt-identity');
+  check(receipt.schemaVersion === 2 && receipt.source === SOURCE && receipt.releaseEligible === false, 'receipt-identity');
   check(validSeconds(receipt.durationSeconds), 'duration');
   check(exactKeys(receipt.limits, Object.keys(LIMITS)) && Object.keys(LIMITS).every(key => receipt.limits[key] === LIMITS[key]), 'limits');
   const window = receipt.window;
@@ -267,6 +320,7 @@ function validateDeployedSoak(receipt) {
     if (!exactKeys(row, ROW_KEYS)) { check(false, prefix + 'schema'); continue; }
     check(Object.keys(plan).every(key => row[key] === plan[key]), prefix + 'identity');
     check(STATUSES.includes(row.status) && REASONS.includes(row.reason) && typeof row.timedOut === 'boolean', prefix + 'state');
+    check(validFailure(row), prefix + 'diagnostics');
     check(row.status === 'passed' && row.reason === null && row.timedOut === false, prefix + 'not-passed');
     const timesValid = finite(row.startedAtMs) && finite(row.completedAtMs) && finite(row.durationMs)
       && row.completedAtMs >= row.startedAtMs && row.durationMs === row.completedAtMs - row.startedAtMs;
@@ -309,4 +363,4 @@ function validateDeployedSoak(receipt) {
   return { ok: errors.length === 0, errors };
 }
 
-module.exports = { parseSoakSeconds, runDeployedSoak, validateDeployedSoak };
+module.exports = { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure };

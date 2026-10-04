@@ -12,7 +12,7 @@ const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const reportFile = path.join(root, 'verification/gcp-cloud-probe.json');
 const report = { startedAt: new Date().toISOString(), status: 'running', releaseEligible: false, resources: [], results: [], cleanup: [] };
 const catalog = require('./gcp-catalog.cjs');
-const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak } = require('./gcp-soak.cjs');
+const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('./gcp-soak.cjs');
 const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
@@ -258,10 +258,15 @@ async function deployWorker(build, env, mode, { targetKey = mode, compatibilityF
 }
 async function workerRequest(route, authorized = true, targetKey = route.split('/')[2], timeoutMs = 95000, signal) {
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
-  const response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error',
-    signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
-    headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
-  const value = await response.text();
+  let response;
+  try {
+    response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error',
+      signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
+      headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
+  } catch (error) { throw workerRequestFailure('fetch', error); }
+  let value;
+  try { value = await response.text(); }
+  catch (error) { throw workerRequestFailure('response-body', error, response.status); }
   let body; try { body = JSON.parse(value); } catch { body = { code: 'NON_JSON_RESPONSE' }; }
   return { route, httpStatus: response.status, body };
 }

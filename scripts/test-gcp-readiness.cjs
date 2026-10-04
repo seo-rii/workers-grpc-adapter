@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { workerRequestFailure } = require('./gcp-soak.cjs');
 
 // Extract only the real polling/request functions; never import deployment setup.
 const source = fs.readFileSync(path.join(__dirname, 'gcp-cloud-probe.cjs'), 'utf8');
@@ -138,6 +139,7 @@ async function authenticatedRequestBoundary() {
   const context = {
     report: { workerUrls: { 'cloudflare-flag': 'https://readiness.invalid' } },
     workerKey: 'synthetic-test-key',
+    workerRequestFailure,
     AbortSignal: {
       timeout(ms) { assert.equal(ms, 5000); return timeoutSignal; },
       any(signals) {
@@ -171,6 +173,47 @@ async function authenticatedRequestBoundary() {
   assert.equal(calls.length, 2, 'Caller cancellation is composed with the request timeout');
 }
 
+async function requestFailureStages() {
+  for (const phase of ['fetch', 'response-body']) {
+    let fetchCalls = 0, bodyReads = 0;
+    const failures = [];
+    const original = new TypeError('synthetic private URL and token must not be retained', {
+      cause: Object.assign(new Error('synthetic private socket details'), {
+        code: phase === 'fetch' ? 'EAI_AGAIN' : 'UND_ERR_SOCKET',
+      }),
+    });
+    const context = {
+      report: { workerUrls: { cloudflare: 'https://readiness.invalid' } },
+      workerKey: 'synthetic-test-key',
+      AbortSignal: { timeout: () => ({}) },
+      workerRequestFailure(...args) {
+        failures.push(args);
+        return workerRequestFailure(...args);
+      },
+      async fetch() {
+        fetchCalls++;
+        if (phase === 'fetch') throw original;
+        return { status: 503, async text() { bodyReads++; throw original; } };
+      },
+    };
+    const isolated = vm.createContext(context, { codeGeneration: { strings: false, wasm: false } });
+    const request = vm.runInContext('(' + requestSource + ')', isolated);
+    await assert.rejects(request('/gcp/cloudflare/ready', true, 'cloudflare', 5000), error => {
+      assert.equal(error.message, 'WGA_WORKER_REQUEST_FAILED');
+      assert.equal(error.cause, undefined, 'The original cause is not retained');
+      assert.equal(error.stack.includes('synthetic private'), false);
+      return true;
+    });
+    assert.equal(fetchCalls, 1, 'A failed probe request is never silently retried');
+    assert.equal(bodyReads, phase === 'fetch' ? 0 : 1);
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0][0], phase);
+    assert.equal(failures[0][1], original, 'The helper receives the actual failure at the boundary');
+    assert.equal(failures[0][2], phase === 'fetch' ? undefined : 503,
+      'An HTTP status is retained only after response headers arrived');
+  }
+}
+
 async function main() {
   await invalidThenReady();
   await fetchFailureThenReady();
@@ -179,8 +222,9 @@ async function main() {
   await explicitTarget();
   await gatewayTarget();
   await authenticatedRequestBoundary();
-  console.log(JSON.stringify({ status: 'passed', cases: 8, networkRequests: 0, credentialReads: 0,
-    scope: 'authenticated Worker readiness, propagation retries, mode matching, timeout and interruption' }));
+  await requestFailureStages();
+  console.log(JSON.stringify({ status: 'passed', cases: 9, networkRequests: 0, credentialReads: 0,
+    scope: 'authenticated Worker readiness, propagation retries, mode matching, timeout, interruption and request failure stages' }));
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });
