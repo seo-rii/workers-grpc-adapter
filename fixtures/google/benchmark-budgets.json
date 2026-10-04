@@ -1,6 +1,20 @@
 {
-  "revision": 2,
+  "revision": 3,
   "description": "Local workerd smoke regression ceilings; not production latency or Cloudflare memory limits.",
+  "releaseThresholds": {
+    "sdkImportP50Ms": null,
+    "sdkImportP95Ms": null,
+    "clientConstructionP50Ms": null,
+    "clientConstructionP95Ms": null,
+    "sdkInitializationP50Ms": null,
+    "sdkInitializationP95Ms": null,
+    "firstRpcP50Ms": null,
+    "firstRpcP95Ms": null,
+    "firstMessageP50Ms": null,
+    "firstMessageP95Ms": null,
+    "warmRpcP50Ms": null,
+    "warmRpcP95Ms": null
+  },
   "coldSamples": 2,
   "warmSamples": 4,
   "concurrency": 4,

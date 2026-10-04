@@ -75765,11 +75765,9 @@
     },
     {
       "id": "PERF-002",
-      "coverage": "partial",
-      "reason": "Actual SDK workerd runs separate fresh-isolate startup/readiness, first unauthenticated RPC, first authenticated RPC in the warm isolate and warm RPC samples. They explicitly report host orchestration and SDK bootstrap scope, but constructor and initialize time remain included in first-call measurements.",
-      "gaps": [
-        "Measure import/module evaluation, constructor, SDK initialize and first RPC separately. Current startup includes orchestration, and first-call timings combine construction/initialization with the RPC."
-      ],
+      "coverage": "covered",
+      "reason": "Both supported profiles execute four installed SDK graphs in two fresh workerd isolates each. A lightweight bootstrap defers graph import; separate host-monotonic brackets measure module evaluation, fresh unauthenticated/authenticated client construction, explicit generated-client initialization, and first RPC. Setup phases make no service RPC or auth exchange; Datastore/Firestore private initialization hooks are pinned fixture instrumentation, not new public SDK APIs.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -75806,6 +75804,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -75844,6 +75974,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -75882,6 +76144,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -75920,6 +76314,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -75958,6 +76484,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -75996,6 +76654,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -76034,6 +76824,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -76072,6 +76994,138 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/timingsMs/sdkImport/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/unauthenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedConstruction/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/timingsMs/authenticatedInitialization/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/runs/0/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/0/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/0/setupPhases/5/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/bootstrap/graphLoaded",
+              "equals": false
+            },
+            {
+              "pointer": "/runs/1/bootstrap/imports",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/name",
+              "equals": "import"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/0/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/name",
+              "equals": "construct-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/1/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/name",
+              "equals": "initialize-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/2/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/name",
+              "equals": "close-unauthenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/3/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/name",
+              "equals": "construct-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/4/rpcCount",
+              "equals": 0
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/name",
+              "equals": "initialize-authenticated"
+            },
+            {
+              "pointer": "/runs/1/setupPhases/5/rpcCount",
+              "equals": 0
             }
           ]
         },
@@ -76080,6 +77134,12 @@
           "source": "test/sdk-benchmark-evidence.test.cjs",
           "command": "tests",
           "name": "EVIDENCE SDK workerd benchmark requires measured graphs, OAuth refresh, slow streams and heap samples"
+        },
+        {
+          "kind": "tap",
+          "source": "test/sdk-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE SDK import, construction and initialization require independent host brackets and fresh contexts"
         }
       ],
       "catalogCaseSha256": "bf96fd3afbe809c1d1fffc9abf9398c34e777d7924bb0df06ff3cc5fa6e19a7e"
@@ -76699,11 +77759,9 @@
     },
     {
       "id": "PERF-005",
-      "coverage": "partial",
-      "reason": "SDK workerd reports retain host-monotonic samples and nearest-rank p50/p95 summaries for cold, first, warm and scenario elapsed time, with explicit local smoke ceilings. Two cold and eight warm samples per graph are a local regression baseline, not the complete latency certification contract.",
-      "gaps": [
-        "Add first-message latency measurements and the original latency-release threshold contract, including an explicit blocked certification result for missing thresholds. Current local smoke ceilings are enforced but do not implement that complete release gate."
-      ],
+      "coverage": "covered",
+      "reason": "The same controlled workerd environment records raw per-call observer events, host-observed first-message probes joined by logicalCallId, completion samples and nearest-rank p50/p95. A validated threshold policy checks configured p50/p95 limits, reports exact exceeded metrics and blocks certification for any null threshold. Defaults remain unset; local smoke success cannot claim deployed or release performance certification. Probe and orchestration overhead are explicit.",
+      "gaps": [],
       "references": [
         {
           "kind": "json-case",
@@ -76740,6 +77798,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -76778,6 +77864,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -76816,6 +77930,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -76854,6 +77996,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 6
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 6
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 24
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 3
             }
           ]
         },
@@ -76892,6 +78062,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -76930,6 +78128,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -76968,6 +78194,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 2
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 8
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 1
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 1
             }
           ]
         },
@@ -77006,6 +78260,34 @@
             {
               "pointer": "/timingsMs/warmRpc/samples",
               "equals": 8
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstUnauthenticatedRpc/samples",
+              "equals": 6
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/firstAuthenticatedRpc/samples",
+              "equals": 6
+            },
+            {
+              "pointer": "/firstMessageTimingsMs/warmRpc/samples",
+              "equals": 24
+            },
+            {
+              "pointer": "/runs/0/phases/0/controlProbeCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/0/phases/0/firstMessageProbes",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/1/phases/0/controlProbeCount",
+              "equals": 3
+            },
+            {
+              "pointer": "/runs/1/phases/0/firstMessageProbes",
+              "equals": 3
             }
           ]
         },
@@ -77020,6 +78302,30 @@
           "source": "test/sdk-benchmark-evidence.test.cjs",
           "command": "tests",
           "name": "SDK benchmark summaries preserve host measurements and use nearest-rank percentiles"
+        },
+        {
+          "kind": "tap",
+          "source": "test/sdk-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE SDK first-message probes join actual observer IDs and preserve distinct timing sources"
+        },
+        {
+          "kind": "tap",
+          "source": "test/sdk-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE local SDK smoke success cannot certify release performance with unset thresholds"
+        },
+        {
+          "kind": "tap",
+          "source": "test/sdk-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "SDK performance policy evaluates explicit p50/p95 ceilings and blocks any unset threshold"
+        },
+        {
+          "kind": "tap",
+          "source": "test/sdk-benchmark-evidence.test.cjs",
+          "command": "tests",
+          "name": "SDK performance policy rejects malformed thresholds and incomplete measurements"
         }
       ],
       "catalogCaseSha256": "e1cf68abcee5a2639e6fbc92b1e20826f54f9a315b351b9078adc0f727428d0c"

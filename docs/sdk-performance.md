@@ -53,9 +53,13 @@ separate requirements.
 | Measurement | Actual work performed |
 | --- | --- |
 | Bundle bytes / gzip bytes | The final minified Worker bundle, including the SDK, exact protobuf build preset, adapter, and Wrangler compatibility bridge. Node compatibility builtins remain provided by workerd. |
-| Startup and readiness | Host monotonic time from constructing a fresh Miniflare runtime through a successful Worker `ready` response, including module evaluation. This includes local process/orchestration costs. |
-| First unauthenticated RPC | A fresh SDK client executes its real public API with an auth callback that emits no authorization header; the local peer verifies its absence. Includes client construction and SDK initialization. |
-| First authenticated RPC | A separate fresh SDK client in the same, already loaded isolate executes its public API using `OAuth2Client` and a cached synthetic access token. Includes client construction; module loading is already warm. |
+| Startup and bootstrap readiness | Host monotonic time from constructing a fresh Miniflare runtime through a successful lightweight `ready` response. Includes process/orchestration, parsing the bundled script, and compatibility setup. SDK module evaluation is deferred. |
+| SDK graph import | A separate host-timed request invokes bundled dynamic imports of the SDK constructors, auth library, adapter, and benchmark runtime. The graph loads once per fresh isolate; no SDK client has been constructed at the end of this phase. There is no module download. |
+| Client construction | Separate host-timed requests construct the unauthenticated and authenticated SDK clients, synthetic OAuth credentials, and adapter transport. The anonymous clients close before the authenticated clients are constructed. |
+| SDK initialization | Separate host-timed requests initialize the generated clients that the subsequent public API calls use. Pinned fixture-only internal paths are required for high-level Datastore and Firestore; see below. No service RPC or token exchange is allowed in this phase. |
+| First unauthenticated RPC | The fresh, explicitly initialized SDK client executes its real public API with an auth callback that emits no authorization header; the local peer verifies its absence. Construction and generated-client initialization were measured separately. |
+| First authenticated RPC | A separate fresh, explicitly initialized SDK client in the same, already loaded isolate executes its public API using `OAuth2Client` and a cached synthetic access token. SDK module loading is already warm. |
+| First message | For every RPC, the adapter's actual `first-message` observer event triggers a separate local control Fetch. The host measures probe arrival from that phase's dispatch, preserving the raw event and actual `logicalCallId`. This includes probe scheduling and I/O overhead. It is separate from full RPC/SDK result completion. |
 | Warm RPC | Four further requests reuse that authenticated SDK client. |
 | Compressed RPC | The peer sends gzip-compressed protobuf messages; the adapter decompresses and the SDK deserializes/verifies the result. |
 | OAuth refresh RPC | An expired access token makes the real Google auth library exchange a synthetic refresh token with the local OAuth endpoint. The peer verifies the newly issued access token. |
@@ -75,6 +79,41 @@ ordinary requests call all three. Firestore concurrency uses
 `collection().stream()` with 64 documents of 64 KiB each and a 2 ms delay between
 consumed documents. Other individual graphs issue four unary calls concurrently.
 
+The high-level Datastore SDK has no public `initialize()` method. Its initialization
+fixture calls the pinned internal `prepareGaxRequest_` path to populate the same
+generated-client cache used by `get()`, then awaits that GAPIC client's
+`initialize()`. Firestore's `initializeIfNeeded()` only freezes settings when the
+project ID is already supplied, so the fixture additionally obtains the client
+through the pinned internal `_clientPool.run()` path and awaits its GAPIC
+`initialize()`. Secret Manager uses its public `initialize()`. The fixtures check
+that generated stubs are absent before initialization and present afterwards.
+These internal hooks are benchmark instrumentation, not application APIs. The
+following RPC still uses the normal public SDK method and verifies its result.
+
+All phase timings include dispatch and response serialization between the host
+and workerd; they are not isolated CPU times and should not be added to predict a
+deployed cold start. Constructor and initialization measurements include auth
+and adapter setup where those operations naturally occur. The authenticated and
+unauthenticated contexts share the imported module graph, but never the SDK client
+objects or transport. No zero-duration placeholder stands in for unavailable SDK
+initialization.
+
+`firstMessageReceipts` retain one independently received host probe for every
+actual observer call ID. `firstMessageTimingsMs` summarizes those host samples
+separately from `timingsMs`, which measures phase completion. Combined-graph
+phases have one probe per SDK call; their first-message sample count therefore
+differs from the phase-completion count. All probes finish before the phase
+response and runtime disposal. These control requests are counted separately
+from service RPCs, OAuth token exchanges, and held-stream memory checkpoints.
+
+Raw `observerEvents` also retain the adapter's call-relative `elapsedMs`, with its
+distinct `workerd-performance.now` source. Workerd's clock can remain unchanged
+between I/O, so these raw values may be zero; they are never substituted for host
+first-message measurements. The first-message event occurs when the adapter
+observes the first decoded protocol message, before the SDK necessarily delivers
+its final public result. Both inspector attachment and the probe instrumentation
+affect the benchmark.
+
 ## Memory measurement
 
 The harness attaches to the inspector target for the **SDK Worker isolate**,
@@ -85,7 +124,7 @@ actual [Chrome DevTools Protocol `Runtime.getHeapUsage` result](https://chromede
 - `embedderHeapUsedSize`: the embedder's garbage-collected heap.
 - `backingStorageSize`: backing storage for ArrayBuffers and external strings.
 
-Samples are taken after startup and each workload, while all Firestore consumers
+Samples are taken after bootstrap readiness, deferred SDK import and each workload, while all Firestore consumers
 hold their first document, and after SDK close. The synthetic query peer holds
 its final trailers until that checkpoint so all four calls remain active during
 the sample even if the SDK prefetches documents. The reported peaks are the
@@ -107,6 +146,28 @@ for bundle size, first/warm/scenario wall time, and sampled heap/backing storage
 These are CI regression checks, not service-level objectives or production
 capacity recommendations. Review budget changes alongside their measured
 report; increasing a ceiling changes the test's acceptance criteria.
+
+The separate `releaseThresholds` fields remain explicitly `null`: no release
+latency policy has been approved. A successful local benchmark therefore records
+`performanceCertification.status: "blocked"` with reason
+`release-performance-thresholds-unset`. Strict validation rejects a report that
+turns local smoke success into release performance certification. Approving
+numeric thresholds, representative sample counts, and an appropriate execution
+environment is a separate decision; the smoke ceilings are not silently reused
+as release thresholds.
+
+The policy evaluator accepts explicit positive finite p50/p95 ceilings for SDK
+import, construction, initialization, first RPC, first message, and warm RPC.
+It evaluates every graph, both authentication contexts where applicable, and all
+six first-message workloads. A complete policy passes only when every measured
+percentile is at or below its configured ceiling; an exceeded ceiling fails the
+benchmark and records the exact graph, measurement and value. Any remaining null
+ceiling keeps certification blocked, even when configured comparisons pass.
+Unknown/missing fields, non-numeric or non-positive ceilings, and a p50 ceiling
+larger than its p95 ceiling are rejected. Policy tests use explicitly synthetic
+summaries and do not claim that those numeric test limits are approved SLOs.
+The result's `local-controlled-workerd` scope remains explicit even for a fully
+configured policy; the other release gates remain independent.
 
 For orientation, the initial two-profile local run on Linux x64, Node 24.1.0 and
 workerd 1.20260921.1 produced these bundle sizes. Regenerate the JSON report for the
@@ -131,14 +192,16 @@ the same generous timing and sampled-memory ceilings; the initial combined used
 heap samples peaked at about 33 MB and 36 MB respectively, well below the 96 MiB
 CI smoke ceiling. This is a sampled V8 heap comparison, not a total-memory limit.
 
-The report retains all timing samples, nearest-rank summaries, heap samples,
+The report retains all setup/completion/first-message timing samples, nearest-rank summaries, heap samples,
 RPC and refresh receipts, resource cleanup, SDK/runtime versions, installed raw
 SDK/adapter/build input hashes, profile input/cache hashes, bundle hashes, and
 source/lockfile hashes. Validation recomputes
 summary statistics and requires all eight graphs and their workloads. The main evidence
 check binds those hashes to the files used in verification. Focused tests reject
-missing phases, synthesized summaries, wrong inspector targets, unrefreshed
-authorization, dropped compression, incomplete cleanup, and relaxed budgets.
+missing phases, reused authentication contexts, incomplete generated-client
+initialization, unmatched or duplicate first-message probes, synthesized
+summaries, wrong inspector targets, unrefreshed authorization, dropped
+compression, incomplete cleanup, and relaxed budgets.
 
 Two cold samples and eight warm samples per graph are enough to catch gross
 local regressions, not to estimate a reliable production p95. The report keeps

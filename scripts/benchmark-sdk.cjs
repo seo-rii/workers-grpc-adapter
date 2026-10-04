@@ -9,7 +9,7 @@ const { createRequire } = require('node:module');
 const { execFileSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
 const zlib = require('node:zlib');
-const { validateSdkBenchmarkReport, summarize } = require('./sdk-benchmark-evidence.cjs');
+const { validateSdkBenchmarkReport, summarize, evaluateSdkPerformance } = require('./sdk-benchmark-evidence.cjs');
 const root = path.resolve(__dirname, '..');
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
@@ -23,6 +23,9 @@ const report = { status: 'running', startedAt: new Date().toISOString(), sourceB
   realGoogleSDK: true, runtimeExecuted: false, liveGoogle: false, liveCloud: false,
   incomingCloudflareTranslation: false, controlledPeer: true, compatibilityDate: '2026-09-21',
   timingSource: 'host-monotonic-wall-clock', heapSource: 'CDP.Runtime.getHeapUsage',
+  phaseTimingIncludesOrchestration: true,
+  firstMessageTimingSource: 'host-monotonic-since-phase-dispatch-observer-probe-arrival',
+  observerTimingSource: 'workerd-performance.now', firstMessageProbeOverheadIncluded: true,
   isolateTotalMemoryMeasured: false, budgets, graphs: [], unexpectedRequests: 0,
   versions: { node: process.version, platform: process.platform, arch: process.arch,
     miniflare: workerRequire('miniflare/package.json').version, workerd: workerRequire('workerd/package.json').version,
@@ -111,7 +114,7 @@ async function build(name, profile, fixtureRoot, fixtureRequire, entries) {
   const buildEntry = fixtureRequire.resolve('@grpc/grpc-js/build');
   installed.push(path.relative(root, buildEntry), path.relative(root, path.join(path.dirname(buildEntry), 'profiles', `${profile}.json`)),
     ...manifest.packages.map(pkg => prefix + pkg.path + '/package.json'));
-  const sourceCopies = Object.fromEntries([name, 'runtime'].map(part => {
+  const sourceCopies = Object.fromEntries([name, 'runtime', 'bootstrap'].map(part => {
     const original = `fixtures/google/benchmark-${part}.mjs`, copied = fs.readFileSync(path.join(entries, `benchmark-${part}.mjs`));
     assert.equal(digest(copied), digest(fs.readFileSync(path.join(root, original))), 'BENCHMARK_SOURCE_COPY_DRIFT');
     return [original, digest(copied)];
@@ -126,14 +129,23 @@ async function build(name, profile, fixtureRoot, fixtureRequire, entries) {
 }
 async function run(script, graph, sampleIndex, methods) {
   const limits = budgets.profiles[graph.profile];
-  const run = { sample: sampleIndex, phases: [], heapSamples: [], peerReceipts: [], oauthRefreshes: [], memoryCheckpoints: 0 };
+  const run = { sample: sampleIndex, phases: [], setupPhases: [], phaseOrder: [], firstMessageReceipts: [],
+    heapSamples: [], peerReceipts: [], oauthRefreshes: [], memoryCheckpoints: 0 };
   graph.runs.push(run);
-  let phase = 'ready', devtools, releaseCheckpoint;
+  let phase = 'ready', phaseStarted, phaseIndex, devtools, releaseCheckpoint;
   const checkpoint = new Promise(resolve => { releaseCheckpoint = resolve; });
   const bodies = [];
   const sampleHeap = async label => { const usage = await devtools.sample(); run.heapSamples.push({ label, ...usage }); };
   const outboundService = async request => {
     const url = new URL(request.url);
+    if (url.hostname === 'benchmark-control.invalid' && url.pathname === '/first-message') {
+      const elapsedMs = performance.now() - phaseStarted;
+      assert.equal(request.method, 'POST');
+      const event = await request.json();
+      assert.equal(event.type, 'first-message');
+      run.firstMessageReceipts.push({ phase, phaseIndex, elapsedMs, event });
+      return new Response('observed');
+    }
     if (url.hostname === 'benchmark-control.invalid' && url.pathname === '/held' && phase === 'concurrent') {
       run.memoryCheckpoints++; await sampleHeap('concurrent-held'); releaseCheckpoint(); return new Response('sampled');
     }
@@ -159,7 +171,7 @@ async function run(script, graph, sampleIndex, methods) {
     const decoded = method.request.decode(bytes.subarray(5));
     const query = url.pathname.endsWith('/RunQuery'), compressed = ['compressed', 'concurrent'].includes(phase);
     const count = query ? budgets.messages : 1;
-    const receipt = { phase, method: url.pathname, requestBytes: bytes.length, responseBytes: 0, messages: count,
+    const receipt = { phase, phaseIndex, method: url.pathname, requestBytes: bytes.length, responseBytes: 0, messages: count,
       compressed, authorization: expected === null ? 'absent' : run.oauthRefreshes.length ? 'refreshed' : 'cached', ended: false, cancellations: 0 };
     run.peerReceipts.push(receipt);
     let index = 0;
@@ -185,25 +197,37 @@ async function run(script, graph, sampleIndex, methods) {
   const runtime = new Miniflare(convertV4MiniflareOptions({ log: new Log(LogLevel.NONE), name: 'sdk-benchmark', modules: true,
     script, compatibilityDate: report.compatibilityDate, compatibilityFlags: ['nodejs_compat'], inspectorPort: 0, outboundService }));
   async function invoke(name, input) {
-    phase = name;
+    phase = name; phaseIndex = run.phaseOrder.length; run.phaseOrder.push(name);
     const start = performance.now(), receiptStart = run.peerReceipts.length, refreshStart = run.oauthRefreshes.length;
+    phaseStarted = start;
+    const probeStart = run.firstMessageReceipts.length;
     const response = await runtime.dispatchFetch(`https://entry.fixture.invalid/${name}`, {
       signal: AbortSignal.timeout(limits.maxScenarioMs), ...(input ? { method: 'POST', body: JSON.stringify(input) } : {}),
     });
     const result = await response.json();
     const elapsedMs = performance.now() - start;
     assert.equal(response.status, 200, JSON.stringify(result)); assert.equal(result.status, 'passed');
-    const item = { name, elapsedMs, rpcCount: run.peerReceipts.length - receiptStart,
+    const item = { name, index: phaseIndex, elapsedMs, rpcCount: run.peerReceipts.length - receiptStart,
+      controlProbeCount: run.firstMessageReceipts.length - probeStart,
       oauthRefreshes: run.oauthRefreshes.length - refreshStart, ...result };
-    if (!['ready', 'close'].includes(name)) run.phases.push(item);
+    if (name === 'import' || name.startsWith('construct-') || name.startsWith('initialize-') || name === 'close-unauthenticated') run.setupPhases.push(item);
+    else if (!['ready', 'close'].includes(name)) run.phases.push(item);
     return item;
   }
   try {
-    assert.deepEqual((await invoke('ready')).sdks, graph.sdkNames);
+    run.bootstrap = await invoke('ready');
+    assert.deepEqual(run.bootstrap.sdks, graph.sdkNames);
+    assert.equal(run.bootstrap.graphLoaded, false); assert.equal(run.bootstrap.imports, 0);
     run.startupAndReadyMs = performance.now() - started;
     devtools = await inspector(runtime); run.inspectorTarget = devtools.target;
     await sampleHeap('ready');
+    await invoke('import'); await sampleHeap('imported');
+    await invoke('construct-unauthenticated');
+    await invoke('initialize-unauthenticated');
     await invoke('unauthenticated'); await sampleHeap('unauthenticated');
+    await invoke('close-unauthenticated');
+    await invoke('construct-authenticated');
+    await invoke('initialize-authenticated');
     await invoke('authenticated'); await sampleHeap('authenticated');
     for (let index = 0; index < budgets.warmSamples; index++) await invoke('warm');
     await sampleHeap('warm');
@@ -220,6 +244,7 @@ async function run(script, graph, sampleIndex, methods) {
 }
 async function main() {
   const files = ['scripts/benchmark-sdk.cjs', 'scripts/sdk-benchmark-evidence.cjs', 'fixtures/google/benchmark-runtime.mjs',
+    'fixtures/google/benchmark-bootstrap.mjs',
     'fixtures/google/benchmark-budgets.json', 'fixtures/google/package.json', 'fixtures/google/package-lock.json',
     'fixtures/modern/package.json', 'fixtures/modern/package-lock.json', 'fixtures/worker/package-lock.json',
     ...graphNames.map(name => `fixtures/google/benchmark-${name}.mjs`)];
@@ -230,21 +255,32 @@ async function main() {
     const ignored = path.join(fixtureRoot, '.wga-build'); fs.mkdirSync(ignored, { recursive: true });
     const entries = fs.mkdtempSync(path.join(ignored, 'sdk-benchmark-'));
     try {
-      for (const name of [...graphNames, 'runtime']) fs.copyFileSync(path.join(root, `fixtures/google/benchmark-${name}.mjs`),
+      for (const name of [...graphNames, 'runtime', 'bootstrap']) fs.copyFileSync(path.join(root, `fixtures/google/benchmark-${name}.mjs`),
         path.join(entries, `benchmark-${name}.mjs`));
       for (const name of graphNames) {
         const { script, data } = await build(name, profile, fixtureRoot, fixtureRequire, entries); report.graphs.push(data);
         for (let index = 0; index < budgets.coldSamples; index++) await run(script, data, index, methods);
         const times = name => data.runs.flatMap(run => run.phases.filter(phase => phase.name === name).map(phase => phase.elapsedMs));
+        const setupTimes = name => data.runs.flatMap(run => run.setupPhases.filter(phase => phase.name === name).map(phase => phase.elapsedMs));
         data.timingsMs = { startupAndReady: summarize(data.runs.map(run => run.startupAndReadyMs)),
+          sdkImport: summarize(setupTimes('import')),
+          unauthenticatedConstruction: summarize(setupTimes('construct-unauthenticated')),
+          unauthenticatedInitialization: summarize(setupTimes('initialize-unauthenticated')),
+          authenticatedConstruction: summarize(setupTimes('construct-authenticated')),
+          authenticatedInitialization: summarize(setupTimes('initialize-authenticated')),
           firstUnauthenticatedRpc: summarize(times('unauthenticated')), firstAuthenticatedRpc: summarize(times('authenticated')),
           warmRpc: summarize(times('warm')), compressedRpc: summarize(times('compressed')),
           oauthRefreshRpc: summarize(times('refresh')), concurrent: summarize(times('concurrent')) };
+        data.firstMessageTimingsMs = Object.fromEntries(Object.entries({ firstUnauthenticatedRpc: 'unauthenticated',
+          firstAuthenticatedRpc: 'authenticated', warmRpc: 'warm', compressedRpc: 'compressed', oauthRefreshRpc: 'refresh', concurrent: 'concurrent' })
+          .map(([key, phase]) => [key, summarize(data.runs.flatMap(run => run.firstMessageReceipts
+            .filter(receipt => receipt.phase === phase).map(receipt => receipt.elapsedMs)))]));
         data.sampledPeakHeap = Object.fromEntries(['usedSize', 'totalSize', 'embedderHeapUsedSize', 'backingStorageSize'].map(key =>
           [key, Math.max(...data.runs.flatMap(run => run.heapSamples.map(sample => sample[key])))]));
       }
     } finally { fs.rmSync(entries, { recursive: true, force: true }); }
   }
+  report.performanceCertification = evaluateSdkPerformance(report.graphs, budgets.releaseThresholds);
   report.status = 'passed'; validateSdkBenchmarkReport(report);
 }
 main().catch(error => {

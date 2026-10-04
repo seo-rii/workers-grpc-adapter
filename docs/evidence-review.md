@@ -13,8 +13,8 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 136 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 44 | Related execution exists, but named conditions remain. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 138 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 42 | Related execution exists, but named conditions remain. |
 | No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
@@ -211,8 +211,13 @@ The shared flow suite now records separate request, pending-message, parser
 assembly, runtime-chunk and public Buffer queue bytes in Node and workerd, in
 both modes. It captures the retained request, actual backpressure and released
 owners, plus sampled high-water values. Shared backing storage is not added into
-a heap estimate. This covers `PERF-003`. Actual SDK workerd benchmarks already
-run; separate initialization timing and mixed-fault heap trends remain.
+a heap estimate. This covers `PERF-003`. SDK benchmarks now separately bracket
+deferred import, fresh client construction, explicit GAPIC initialization and
+first RPC in both profiles. Actual first-message observer IDs join host receipt
+timestamps; summaries retain probe overhead. The configured p50/p95 policy is
+tested for pass, failure and incomplete thresholds. Its default null thresholds
+block performance certification. This covers the measurement/policy contracts
+of `PERF-002/005`, without certifying deployed latency.
 
 ## Coverage by area
 
@@ -232,7 +237,7 @@ run; separate initialization timing and mixed-fault heap trends remain.
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
-| Performance | 1 | 4 | 0 |
+| Performance | 3 | 2 | 0 |
 | Documentation | 0 | 3 | 2 |
 
 Flow control now includes the native comparisons and specific
@@ -243,10 +248,10 @@ retained rather than treated as transport equivalence.
 
 The next local work units, in order, are:
 
-1. **Performance measurement.** Refresh the separate
-   transport-only benchmark within the evidence pipeline; measure import,
-   construction, initialization and first-message timing independently. Sample
-   heap trends in the same failure/cancel workload (`PERF-*`).
+1. **Performance measurement.** Refresh the separate transport-only benchmark
+   within the evidence pipeline and sample heap trends in the same failure/cancel
+   workload (`PERF-001/004`). Separate SDK setup, first-message timing and buffer
+   ownership now have execution evidence.
 2. **Executable documentation checks.** Connect documentation examples, support
    tables, diagnostic IDs and release provenance checks to executed fixtures
    instead of relying on source hashes alone (`DOC-*`). Keep production index

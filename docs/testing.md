@@ -546,6 +546,14 @@ heap measurement. Native rows do not invent adapter-internal counters.
 
 Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. The lazy SDK gate additionally starts with no SDK modules initialized, imports all three inside the first request, and repeats on a warm request with different credentials. It checks six RPCs, including Datastore explain metrics decoded through the separate `Struct` schema with nested objects, lists, nulls, strings, numbers and booleans. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim. Both new SDK gates are required by `verify` and CI.
 
+The [SDK performance gate](sdk-performance.md) separately measures deferred graph
+import, fresh client construction, actual GAPIC initialization and first RPC.
+First-message observer events join host probe receipts by logical call ID;
+host timings include that instrumentation and request orchestration. Its explicit
+p50/p95 threshold policy supports pass/fail comparisons and blocks certification
+whenever any threshold is null. Checked-in release thresholds remain unset;
+the existing local smoke ceilings are a separate regression check.
+
 The controlled shared workerd bridge buffers finite responses. The Worker SDK harness verifies client-visible cancellation; the resilience gate additionally observes interrupted loopback responses closing before disposal. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.
 
 ## Evidence rules
