@@ -14,6 +14,7 @@ const { validateVendorProvenanceArtifacts } = require('../vendor/provenance.cjs'
 const { discoverMarkdown } = require('./documentation-sources.cjs');
 const { validateDocExamplesArtifacts } = require('./doc-example-evidence.cjs');
 const { validateDocumentationPolicyArtifacts } = require('./documentation-policy.cjs');
+const { validateDocReferencesReport } = require('./doc-references.cjs');
 const { validateWorkerdTransportExtensionsReport } = require('./transport-extensions-evidence.cjs');
 const { validateApiContractsReport } = require('./api-contract-evidence.cjs');
 const { validateTypeContractReport } = require('./type-contract-evidence.cjs');
@@ -33,6 +34,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/vendor-provenance.json',
     'verification/doc-examples.json',
     'verification/documentation-policy.json',
+    'verification/doc-references.json',
     'verification/api-contracts.json',
     'verification/firestore-read-errors.json',
     'verification/datastore-transactions.json',
@@ -71,7 +73,7 @@ function walk(root, dir) {
     });
 }
 function captureInputs(root = ROOT) {
-    const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'PLAN.md', 'LICENSE', 'NOTICE', '.github/workflows/local.yml', ...discoverMarkdown(root),
+    const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'PLAN.md', 'LICENSE', 'NOTICE', '.github/workflows/local.yml', 'fixtures/google/.env.example', ...discoverMarkdown(root),
         ...['src', 'scripts', 'test', 'fixtures', 'docs', 'vendor'].flatMap(dir => walk(root, dir)),
         ...walk(root, 'compatibility').filter(file => !GENERATED_COMPATIBILITY.has(path.basename(file)))];
     return Object.fromEntries([...new Set(files)].sort().map(file => [file, hash(root, file)]));
@@ -591,7 +593,7 @@ function validateProvenance(root, report) {
     const pkg = read(root, 'package.json');
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
-    const embedded = [['build', 'verification/build.json'], ['vendorProvenance', 'verification/vendor-provenance.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'], ['docExamples', 'verification/doc-examples.json'], ['documentationPolicy', 'verification/documentation-policy.json'],
+    const embedded = [['build', 'verification/build.json'], ['vendorProvenance', 'verification/vendor-provenance.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'], ['docExamples', 'verification/doc-examples.json'], ['documentationPolicy', 'verification/documentation-policy.json'], ['docReferences', 'verification/doc-references.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['wireCatalog', 'verification/wire-catalog.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['workerdServerStreaming', 'verification/workerd-server-streaming.json'], ['workerdTransportExtensions', 'verification/workerd-transport-extensions.json'], ['transportBenchmark', 'verification/benchmark.json'], ['sdkBenchmark', 'verification/sdk-benchmark.json'],
         ['nativeDifferential', 'verification/native-differential.json'], ['apiContracts', 'verification/api-contracts.json'], ['googleAuth', 'verification/google-auth.json'], ['workers', 'verification/workers.json'],
@@ -634,6 +636,7 @@ function validateProvenance(root, report) {
     validateVendorProvenanceArtifacts(report.vendorProvenance, root);
     validateDocExamplesArtifacts(report.docExamples, root);
     validateDocumentationPolicyArtifacts(report.documentationPolicy, root);
+    validateDocReferencesReport(report.docReferences, root);
     validateWorkerdTransportExtensionsReport(report.workerdTransportExtensions);
     validateApiContractsReport(report.apiContracts);
     validateSecretManagerReport(report.secretManagerExtended);
@@ -645,7 +648,7 @@ function validateProvenance(root, report) {
     validateCallLifecycleReport(report.callLifecycle);
     validateFlowControlReport(report.flowControl);
     validateWireCatalogReport(report.wireCatalog);
-    for (const [id, result] of [['vendor', report.vendorProvenance], ['doc-examples', report.docExamples], ['documentation-policy', report.documentationPolicy], ['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
+    for (const [id, result] of [['vendor', report.vendorProvenance], ['doc-examples', report.docExamples], ['documentation-policy', report.documentationPolicy], ['doc-references', report.docReferences], ['api-contracts', report.apiContracts], ['workerd-server-streaming', report.workerdServerStreaming],
         ['workerd-transport-extensions', report.workerdTransportExtensions], ['transport-benchmark', report.transportBenchmark], ['sdk-benchmark', report.sdkBenchmark],
         ['secret-manager-extended', report.secretManagerExtended], ['firestore-read-errors', report.firestoreReadErrors],
         ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
@@ -654,7 +657,7 @@ function validateProvenance(root, report) {
         ['workers-resilience', report.workersResilience],
         ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog]]) {
         need(report.commands.some(command => command.id === id && command.status === 'passed' && command.exitCode === 0), `${id}: required command did not pass`);
-        for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs, ...result.resultInputs,
+        for (const [file, expected] of Object.entries({ ...result.evidence, ...result.installedInputs, ...result.resultInputs, ...result.artifactInputs,
             ...result.nativeInputs, ...result.generatedArtifacts })) {
             need(hash(root, file) === expected, `${file}: ${id} execution input drift`);
         }

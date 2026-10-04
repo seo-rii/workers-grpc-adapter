@@ -120,6 +120,7 @@ function main() {
     run('emulator-lifecycle', ['fixtures/emulators/lifecycle.cjs']);
     // Forces live flag off even if the caller's environment opted in.
     run('google-preflight', ['scripts/google-test.cjs'], [0, 2]);
+    run('doc-references', ['scripts/doc-references.cjs']);
     const sdkLocal = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-local.json')));
     const sdkTypes = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-types.json')));
     const sdkGraph = JSON.parse(fs.readFileSync(path.join(root, 'compatibility/google-graph.json')));
@@ -158,7 +159,7 @@ function main() {
         status: sdkTypes.status === 'passed' ? 'local-gates-passed-cloud-certification-blocked' : 'local-runtime-gates-passed-upstream-types-and-cloud-blocked', releaseEligible: false,
         environment: { node: process.version, platform: process.platform, arch: process.arch, npm: cp.execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim() },
         build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
-        declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), syntax,
+        declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), docReferences: read('doc-references.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),

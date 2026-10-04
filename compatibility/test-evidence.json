@@ -81204,12 +81204,213 @@
     },
     {
       "id": "DOC-005",
-      "coverage": "unimplemented",
-      "reason": "Documentation links and diagnostics are present, but no executed check cross-references every troubleshooting code, catalog/test ID, npm script and example path. The evidence mapper validates only its own selected references, not all documentation.",
-      "gaps": [
-        "Execute a documentation-wide diagnostic/test-ID, script and example-path cross-check and reject orphan codes, missing scripts and incorrect example paths."
+      "coverage": "covered",
+      "reason": "An offline documentation-wide gate requires every Markdown file to be classified and resolves local links and headings, npm/Node commands, example paths, actual diagnostic/environment definitions and catalog/requirement/decision identities. Historical/planned exceptions are exact and contextual; negative tests reject missing, orphaned, unsafe or stale references without claiming commands were executed.",
+      "gaps": [],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "classified-document-inventory"
+          },
+          "anchor": "classified-document-inventory",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "classified-document-inventory"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "local-markdown-links-and-anchors"
+          },
+          "anchor": "local-markdown-links-and-anchors",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "local-markdown-links-and-anchors"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "documented-npm-and-node-commands"
+          },
+          "anchor": "documented-npm-and-node-commands",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "documented-npm-and-node-commands"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "repository-example-paths"
+          },
+          "anchor": "repository-example-paths",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "repository-example-paths"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "implemented-diagnostics-and-environment-references"
+          },
+          "anchor": "implemented-diagnostics-and-environment-references",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "implemented-diagnostics-and-environment-references"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "catalog-requirement-and-decision-identities"
+          },
+          "anchor": "catalog-requirement-and-decision-identities",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "catalog-requirement-and-decision-identities"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "explicit-planned-and-historical-exceptions"
+          },
+          "anchor": "explicit-planned-and-historical-exceptions",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "explicit-planned-and-historical-exceptions"
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/doc-references.json",
+          "source": "scripts/doc-references.cjs",
+          "command": "doc-references",
+          "array": "/checks",
+          "where": {
+            "$value": "current-input-hashes"
+          },
+          "anchor": "current-input-hashes",
+          "assertions": [
+            {
+              "pointer": "",
+              "equals": "current-input-hashes"
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references inventory resolves local links, commands, diagnostics and explicit identity namespaces"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references reject missing links, anchors, unsafe escapes and repository traversal"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references preserve exact line positions and heading anchors across fenced examples"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references verify npm scripts, Node entry files, multiple test paths and examples"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references reject orphan diagnostics even when comments, strings or test names quote them"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references resolve actual finite registry and parameterized environment reads without importing code"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references reject unknown test identities, range holes and namespace confusion"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references require every discovered document to be deliberately classified"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references require exact contextual exceptions and reject stale or broadened claims"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references provenance rejects altered receipts and separates generated artifacts from source hashes"
+        },
+        {
+          "kind": "tap",
+          "source": "test/doc-references.test.cjs",
+          "command": "tests",
+          "name": "DOC references reject symlink escapes for both documented targets and scanned source inputs"
+        }
       ],
-      "references": [],
       "catalogCaseSha256": "b2091dd04dadbb4c0a287c7d3fb0a2963ab6d820672e6b9e0063b481581941ec"
     }
   ],

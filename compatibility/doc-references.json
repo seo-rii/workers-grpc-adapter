@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "documents": {
+    ".github/PULL_REQUEST_TEMPLATE.md": "maintained",
+    "CONTRIBUTING.md": "maintained",
+    "PLAN.md": "maintained",
+    "README.md": "maintained",
+    "SECURITY.md": "maintained",
+    "docs/README.md": "maintained",
+    "docs/api.md": "maintained",
+    "docs/architecture.md": "maintained",
+    "docs/call-lifecycle.md": "maintained",
+    "docs/cloud-probe.md": "historical",
+    "docs/cloudflare-conversion.md": "historical",
+    "docs/compression.md": "maintained",
+    "docs/datastore-lookup.md": "maintained",
+    "docs/decisions.md": "maintained",
+    "docs/documentation.md": "maintained",
+    "docs/evidence-review.md": "maintained",
+    "docs/exports.md": "maintained",
+    "docs/fetcher.md": "maintained",
+    "docs/firestore-watch.md": "maintained",
+    "docs/gcp-cloud-probe.md": "historical",
+    "docs/google-tests.md": "maintained",
+    "docs/health.md": "maintained",
+    "docs/interceptors.md": "maintained",
+    "docs/limitations.md": "maintained",
+    "docs/local-contracts.md": "maintained",
+    "docs/modern-sdk.md": "maintained",
+    "docs/observability.md": "maintained",
+    "docs/parent-calls.md": "maintained",
+    "docs/profiles.md": "maintained",
+    "docs/request-streaming.md": "maintained",
+    "docs/resources.md": "maintained",
+    "docs/retries.md": "maintained",
+    "docs/sdk-performance.md": "maintained",
+    "docs/server.md": "maintained",
+    "docs/sources.md": "maintained",
+    "docs/spec/v0.3.md": "planned",
+    "docs/status-details.md": "maintained",
+    "docs/streaming-feasibility.md": "maintained",
+    "docs/testing.md": "maintained",
+    "fixtures/cloud-run-probe/README.md": "maintained",
+    "fixtures/emulators/README.md": "maintained",
+    "fixtures/envoy/README.md": "maintained",
+    "vendor/README.md": "maintained"
+  },
+  "exceptions": [
+    {
+      "file": "docs/evidence-review.md",
+      "kind": "diagnostic",
+      "value": "WGA_STATUS_MISSING",
+      "classification": "historical",
+      "context": "  the original catalog names `WGA_STATUS_MISSING`. The precise diagnostic is now",
+      "reason": "The original catalog diagnostic is explicitly contrasted with the implemented WGA_MISSING_GRPC_STATUS policy; this is not a current diagnostic claim."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:packaging",
+      "classification": "planned",
+      "context": "npm run test:packaging     # registry/tarball/alias/npm ci/resolve",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:unit",
+      "classification": "planned",
+      "context": "npm run test:unit          # wire/config/auth/call/options",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:interop",
+      "classification": "planned",
+      "context": "npm run test:interop       # native server + Envoy differential",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:datastore",
+      "classification": "planned",
+      "context": "npm run test:datastore     # 공유 business module + 통제된 data service",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:e2e:cloud",
+      "classification": "planned",
+      "context": "npm run test:e2e:cloud     # 보호된 환경의 배포 Worker + Google",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "test:docs",
+      "classification": "planned",
+      "context": "npm run test:docs          # fixture 기반 문서 예제 compile",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "npm-script",
+      "value": "check:release",
+      "classification": "planned",
+      "context": "npm run check:release     # manifest·required case·증거·license 확인",
+      "reason": "The v0.3 proposal predates implementation and explicitly lists proposed command contracts, not existing executable npm scripts."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "fixtures/shared/datastore-business.ts",
+      "classification": "planned",
+      "context": "**동일 코드의 단위:** `fixtures/shared/datastore-business.ts`의 bytes와 SHA-256을 기준으로 한다. 인증 객체를 만드는 entrypoint는 환경별로 달라도 된다. 환경별 서로 다른 비즈니스 함수를 만들어 결과만 비교하는 것은 불합격이다.",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "src/facade/index.ts",
+      "classification": "planned",
+      "context": "| `src/facade/index.ts` | 검증된 root exports | 원본 grpc-js 런타임 import |",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "src/transport.ts",
+      "classification": "planned",
+      "context": "| `src/transport.ts` | URL/header/fetch/AbortController | HTTP2 구현 |",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "src/wire/*",
+      "classification": "planned",
+      "context": "| `src/wire/*` | incremental frame·trailer·binary metadata | SDK 객체 변환 |",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "src/doctor/*",
+      "classification": "planned",
+      "context": "| `src/doctor/*` | 설치 해석·번들·manifest 검증 | 실제 Google 요청·비밀 조회 |",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "repository-path",
+      "value": "compatibility/manifest.template.json",
+      "classification": "planned",
+      "context": "`compatibility/manifest.template.json`에 replacement version, grpc-js upstream npm version/commit/integrity, Datastore/GAX/auth/proto-loader/protobufjs의 실제 resolved version, TypeScript, Node/npm, Wrangler/workerd/Miniflare/Vitest/Envoy, compatibility_date·flags, gateway/Cloudflare 경로, 인증 방식, schema profile hash를 기록한다.",
+      "reason": "The v0.3 proposal names an intended source layout or example that differs from the implemented repository; it is not a current example path."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_STATUS_MISSING",
+      "classification": "planned",
+      "context": "| 정상 frame이지만 최종 status 없음 | UNKNOWN / WGA_STATUS_MISSING |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_STATUS_MISSING",
+      "classification": "planned",
+      "context": "| response status 누락 | HTTP fallback | WGA_STATUS_MISSING |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_MESSAGE_LIMIT",
+      "classification": "planned",
+      "context": "| 메시지/metadata 상한 | RESOURCE_EXHAUSTED | WGA_MESSAGE_LIMIT / WGA_METADATA_LIMIT |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_METADATA_LIMIT",
+      "classification": "planned",
+      "context": "| 메시지/metadata 상한 | RESOURCE_EXHAUSTED | WGA_MESSAGE_LIMIT / WGA_METADATA_LIMIT |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_PROTOCOL",
+      "classification": "planned",
+      "context": "| 잘린·잘못된 frame | INTERNAL | WGA_PROTOCOL |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_UNSUPPORTED_RPC",
+      "classification": "planned",
+      "context": "| 비지원 bidi/client stream | UNIMPLEMENTED | WGA_UNSUPPORTED_RPC |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_UNSUPPORTED_COMPRESSION",
+      "classification": "planned",
+      "context": "| 응답 메시지 압축 | UNIMPLEMENTED | WGA_UNSUPPORTED_COMPRESSION |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    },
+    {
+      "file": "docs/spec/v0.3.md",
+      "kind": "diagnostic",
+      "value": "WGA_BUILD_REQUIRED",
+      "classification": "planned",
+      "context": "| WGA_BUILD_REQUIRED/schema mismatch | profile/hash·runtime codegen trace | 정확 버전 preset 또는 새 검증; eval 허용 금지 |",
+      "reason": "The v0.3 proposal lists an intended diagnostic that is not emitted by the current implementation; it is not accepted as runtime support."
+    }
+  ]
+}

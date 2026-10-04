@@ -13,9 +13,9 @@ records an exact source/report reference and any remaining gap for every ID.
 
 | Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | After documentation | Meaning |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 143 | Execution satisfies the original case. |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 140 | 144 | Execution satisfies the original case. |
 | Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 40 | 38 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 8 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | 7 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
@@ -248,6 +248,11 @@ export policy and fresh installed-package observations in both modes. This check
 authentication failures, logical peer identity, native API boundaries and retained
 message ceilings with recovery; drift and forged receipts fail (`DOC-003`).
 
+The documentation-wide reference gate resolves local links and headings, npm
+and Node commands, example paths, actual diagnostic/environment definitions and
+all referenced catalog identities. Historical and planned exceptions require
+exact context; orphaned, stale and unsafe references fail (`DOC-005`).
+
 ## Coverage by area
 
 | Area | Covered | Partial | No current reference |
@@ -267,7 +272,7 @@ message ceilings with recovery; drift and forged receipts fail (`DOC-003`).
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
 | Performance | 5 | 0 | 0 |
-| Documentation | 3 | 1 | 1 |
+| Documentation | 4 | 1 | 0 |
 
 Flow control now includes the native comparisons and specific
 large-stream/pause/ownership scenarios. The remaining unary discrepancy is
@@ -275,16 +280,15 @@ retained rather than treated as transport equivalence.
 
 ## Remaining work
 
-The next local work is executable documentation checks: connect documentation
-support tables and diagnostic IDs to
-executed fixtures instead of relying on source hashes alone (`DOC-*`). Keep
+The remaining documentation work is generating support tables from exact
+profiles and executed outcomes (`DOC-002`). Keep
 production index requirements (`DS-019`), native stream destruction (`DS-021`)
 and public Commit cancellation (`TX-008`) as explicit boundaries. The five
 performance measurement/policy contracts have local execution evidence;
 production performance thresholds remain unset and cannot certify a release.
 
-The eight cases without an accepted current reference are
-`CLOUD-001`–`CLOUD-007` and `DOC-005`.
+The seven cases without an accepted current reference are
+`CLOUD-001`–`CLOUD-007`.
 Their individual procedures and remaining conditions are in the mapping.
 For `WIRE-018`, all nine HTTP fallback tests have individual source and TAP
 references, alongside the shared Node/workerd matrix. The checker expands only bounded literal

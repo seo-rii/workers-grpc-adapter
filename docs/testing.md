@@ -87,6 +87,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:emulators:lifecycle` | Startup/running signal handling and repeated stop cleanup | `verification/emulator-lifecycle.json` |
 | `node scripts/test-doc-examples.cjs` | Exhaustive fenced-example inventory and two exact README consumers in installed workerd | `verification/doc-examples.json`, `verification/doc-examples.md` |
 | `node scripts/documentation-policy.cjs` | Reviewed documentation claims, complete export policy and fresh installed-package boundary checks in both modes | `verification/documentation-policy.json` |
+| `node scripts/doc-references.cjs` | Offline documentation-wide links, commands, paths, diagnostic definitions and identity checks | `verification/doc-references.json` |
 | `npm run test:evidence` | Current source, lock, artifact, process receipt and case-evidence consistency | `verification/evidence.json` |
 | `npm run test:benchmark` | Required installed transport-only Node benchmark: bundle provenance, raw latency, buffering, concurrency and per-call cleanup | `verification/benchmark.json` |
 | `npm run test:google` | Separate live opt-in path; blocked by default | `verification/google-preflight.json`, then `verification/google-live.json` if executed |
@@ -692,3 +693,10 @@ contract. Fresh installed-package calls verify readiness/TLS failures, auth-code
 sanitization and redaction, logical peer identity, retained message ceilings and
 client recovery in both modes. The complete absent-export list and all export
 grade counts must match; this is an explicit manifest, not a proof of all prose.
+
+The documentation reference gate classifies every Markdown file and checks local
+links and anchors, npm/Node entry points, repository examples, diagnostic and
+environment definitions, and catalog/requirement/decision identities. Historical
+and planned references require exact contextual exceptions; stale exceptions
+fail. External links are inventoried without fetching them. This gate checks
+consistency and does not count documented commands as runtime executions.
