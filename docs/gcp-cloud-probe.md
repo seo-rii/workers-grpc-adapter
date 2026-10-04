@@ -34,8 +34,19 @@ native grpc-js and then in both deployed Worker modes.
 Catalog mode creates a second isolated secret and one synthetic secret version.
 Only that generated payload is accessed; it is compared inside the test and never
 returned in reports. The runner attempts a short-lived token for its newly created
-role-free service account using existing IAM permissions. It records a per-case
-blocker if impersonation is unavailable and adds no IAM grants.
+new service account using existing IAM permissions. By default it records a
+per-case blocker if impersonation is unavailable and adds no IAM grants.
+
+The optional `--grant-owned-token-creator` flag requires `--catalog` and separate
+authorization for its IAM change. It grants the active `gcloud` principal only
+`roles/iam.serviceAccountTokenCreator` on the service account created by this
+run, after confirming its immutable UID and ownership description. The helper
+requires an empty existing policy, writes with its original `etag`, and verifies
+the exact returned policy and readback. A conflict or unexpected policy aborts
+the run. It does not grant Google data-service permissions to the test account,
+change project IAM or create a key. Deleting the owned service account removes
+this temporary policy. The restricted-account RPC must still actually return
+`PERMISSION_DENIED`; lack of direct grants is not proof of that behavior.
 
 Failure injection deliberately preserves `INTENTIONAL_CATALOG_E2E_FAILURE` as the
 primary error and exits nonzero after cleanup. Inspect
@@ -48,6 +59,47 @@ behavior separately from that unmet environment condition. Negative environment
 gate controls are local evidence. The public native echo image cannot expose
 backend generator cleanup after caller cancellation.
 
+## Bounded deployed repetition and client recovery
+
+Add `--soak-seconds=600` to the temporary deployment command to exercise both
+Workers for a ten-minute observation window. The optional value accepts only
+whole seconds from 60 through 600; malformed or duplicate values fail before
+credentials are read or infrastructure is created. This reuses the same isolated
+services and adds no resources or IAM grants itself. With `--catalog
+--inject-catalog-failure`, the intentional cleanup test runs after this window.
+
+The scheduler starts at most one HTTP request per second, with at most two in
+flight globally and at most 600 dispatch slots. It alternates the two transport
+modes. Every sixth request for each mode runs the real Secret Manager SDK's
+`GetSecret` suite against the temporary secret. Other requests run a fixed batch
+on one gRPC client: unary success, an expected status-3 error, server-stream
+cancellation after one message, then another successful unary call. Targets and
+credentials come only from the deployment's fixed bindings.
+
+Each batch checks exact message, callback, error and status counts, and observes
+adapter resources and call execution ownership before closing its client.
+The scheduler checks the complete planned slot sequence, mode and route identity,
+HTTP and gRPC outcomes, response fields, cleanup counters, dispatch spacing and
+maximum concurrency. Skipped capacity slots, missing or duplicate results,
+unexpected errors and interrupted windows cannot become successful reports.
+Each request has a deadline of at most 30 seconds; dispatch stops at the window
+boundary and outstanding requests have at most 30 more seconds to drain. A
+signal stops new requests, aborts those in flight and retains normal resource
+cleanup.
+
+The main receipt records `soak`, `soakSourceHashes`, the source `gitCommit` and
+the deployed `bundle` hash. Observations contain bounded protocol counts and timing, with no metadata,
+payloads or tokens. The driver and result validator have deterministic clock
+tests; the exact deployable Worker also runs the recovery batch locally in
+workerd before deployment. Normal CI exercises those local checks and never
+enables the deployed repetition automatically.
+
+This provides a finite observation of repeated deployed calls and recovery on the
+same client after application errors and caller cancellation. It does not measure
+the full deployed isolate heap, prove backend cancellation, exercise real service
+outages or credential renewal, or establish multi-hour stream reliability.
+`releaseEligible` remains `false` even when this bounded test passes.
+
 ## Isolation
 
 Every run generates a random `wga-probe-*` prefix and records inventory before creating resources:
@@ -57,7 +109,7 @@ Every run generates a random `wga-probe-*` prefix and records inventory before c
 | Datastore-mode database | Named temporary database; never `(default)` |
 | Firestore-native database | Separate named temporary database |
 | Secret Manager secret | New metadata-only secret; catalog mode adds a second secret and one synthetic version |
-| Service account | New runtime identity with no roles or keys created |
+| Service account | New runtime identity with no project-role grants or keys; optional approved caller token-mint permission on this account only |
 | Native Cloud Run service | Private native gRPC echo/status server |
 | Envoy Cloud Run service | Private gRPC-Web gateway to fixed Google APIs and the new native service |
 | Two Cloudflare Workers | Separate Worker deployment for each transport mode; fixed authenticated test routes |

@@ -133,16 +133,26 @@ async function gatewayTarget() {
 async function authenticatedRequestBoundary() {
   const calls = [];
   const timeoutSignal = {};
+  const callerSignal = {}, combinedSignal = {};
+  let expectedSignal = timeoutSignal;
   const context = {
     report: { workerUrls: { 'cloudflare-flag': 'https://readiness.invalid' } },
     workerKey: 'synthetic-test-key',
-    AbortSignal: { timeout(ms) { assert.equal(ms, 5000); return timeoutSignal; } },
+    AbortSignal: {
+      timeout(ms) { assert.equal(ms, 5000); return timeoutSignal; },
+      any(signals) {
+        assert.equal(signals.length, 2);
+        assert.equal(signals[0], callerSignal);
+        assert.equal(signals[1], timeoutSignal);
+        return combinedSignal;
+      },
+    },
     async fetch(url, options) {
       calls.push({ url, options });
       assert.equal(url, 'https://readiness.invalid/gcp/cloudflare/ready');
       assert.equal(options.method, 'POST');
       assert.equal(options.redirect, 'error');
-      assert.equal(options.signal, timeoutSignal);
+      assert.equal(options.signal, expectedSignal);
       assert.deepEqual(JSON.parse(JSON.stringify(options.headers)), { authorization: 'Bearer synthetic-test-key' });
       assert.equal(options.body, undefined, 'Readiness cannot carry an SDK workload');
       return { status: 200, text: async () => JSON.stringify({ status: 'ready', mode: 'cloudflare' }) };
@@ -156,6 +166,9 @@ async function authenticatedRequestBoundary() {
   assert.equal(calls.length, 1);
   assert.equal(result.httpStatus, 200);
   assert.equal(result.body.status, 'ready');
+  expectedSignal = combinedSignal;
+  await request('/gcp/cloudflare/ready', true, 'cloudflare-flag', 5000, callerSignal);
+  assert.equal(calls.length, 2, 'Caller cancellation is composed with the request timeout');
 }
 
 async function main() {

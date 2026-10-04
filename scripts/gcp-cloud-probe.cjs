@@ -12,10 +12,13 @@ const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const reportFile = path.join(root, 'verification/gcp-cloud-probe.json');
 const report = { startedAt: new Date().toISOString(), status: 'running', releaseEligible: false, resources: [], results: [], cleanup: [] };
 const catalog = require('./gcp-catalog.cjs');
+const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak } = require('./gcp-soak.cjs');
+const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
 let interrupted = false;
-const onSignal = () => { interrupted = true; };
+let soakController;
+const onSignal = () => { interrupted = true; soakController?.abort(); };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const redact = value => {
   let result = String(value);
@@ -253,8 +256,11 @@ async function deployWorker(build, env, mode, { targetKey = mode, compatibilityF
   save();
   if (!record.settingsVerified) throw new Error('WORKER_COMPATIBILITY_FLAGS_MISMATCH');
 }
-async function workerRequest(route, authorized = true, targetKey = route.split('/')[2], timeoutMs = 95000) {
-  const response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(timeoutMs), headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
+async function workerRequest(route, authorized = true, targetKey = route.split('/')[2], timeoutMs = 95000, signal) {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error',
+    signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
+    headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
   const value = await response.text();
   let body; try { body = JSON.parse(value); } catch { body = { code: 'NON_JSON_RESPONSE' }; }
   return { route, httpStatus: response.status, body };
@@ -280,7 +286,14 @@ async function waitWorkerReady(mode, targetKey = mode) {
 }
 async function main() {
   if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
+  const soakSeconds = parseSoakSeconds(process.argv.slice(2));
+  report.soakRequested = soakSeconds !== undefined;
+  if (report.soakRequested) report.soakSourceHashes = catalog.sourceHashes(root);
   report.catalogRequested = process.argv.includes('--catalog');
+  const iamOptions = process.argv.filter(value => value.startsWith('--grant-owned-token-creator'));
+  if (iamOptions.length > 1 || iamOptions.some(value => value !== '--grant-owned-token-creator')) throw new Error('INVALID_OWNED_IAM_GRANT_OPTION');
+  const grantOwnedTokenCreator = iamOptions.length === 1;
+  if (grantOwnedTokenCreator && !report.catalogRequested) throw new Error('CATALOG_REQUIRED_FOR_OWNED_IAM_GRANT');
   report.dedicatedProject = process.argv.includes('--dedicated-project');
   if (process.argv.includes('--inject-catalog-failure') && !report.catalogRequested) throw new Error('CATALOG_REQUIRED_FOR_FAILURE_INJECTION');
   if (report.catalogRequested) report.catalogSourceHashes = catalog.sourceHashes(root);
@@ -294,6 +307,7 @@ async function main() {
   identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
   const projectInfo = JSON.parse(gcloud(['projects', 'describe', project, '--format=json(projectNumber,projectId)']));
   const number = String(projectInfo.projectNumber);
+  report.gitCommit = command('git', ['rev-parse', 'HEAD']);
   report.run = `wga-probe-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${randomBytes(4).toString('hex')}`;
   Object.assign(report, { project, projectNumber: number, region });
   directory = path.join(root, '.wga-build/gcp-cloud-probe', report.run);
@@ -310,6 +324,18 @@ async function main() {
   phase('create-isolated-resources');
   const serviceAccount = `${ids.sa}@${project}.iam.gserviceaccount.com`;
   await createResource({ kind: 'service-account', name: serviceAccount, url: `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts/${serviceAccount}` }, `https://iam.googleapis.com/v1/projects/${project}/serviceAccounts`, { accountId: ids.sa, serviceAccount: { displayName: 'Temporary WGA probe, no roles', description: report.run } });
+  if (grantOwnedTokenCreator) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    const accounts = JSON.parse(gcloud(['auth', 'list', '--filter=status:ACTIVE', '--format=json(account)']));
+    if (accounts.length !== 1 || typeof accounts[0].account !== 'string') throw new Error('ACTIVE_IAM_PRINCIPAL_REQUIRED');
+    const account = accounts[0].account;
+    const principal = `${account.endsWith('.gserviceaccount.com') ? 'serviceAccount' : 'user'}:${account}`;
+    const record = report.resources.find(item => item.kind === 'service-account' && item.name === serviceAccount);
+    phase('explicit-owned-service-account-iam-grant');
+    report.ownedIamGrant = await grantOwnedServiceAccountTokenCreator({ enabled: true, project, run: report.run, record, principal,
+      api: (...args) => { if (interrupted) throw new Error('INTERRUPTED'); return api(...args); } });
+    save();
+  }
   for (const [kind, type] of [['datastore', 'DATASTORE_MODE'], ['firestore', 'FIRESTORE_NATIVE']]) {
     const url = `https://firestore.googleapis.com/v1/projects/${project}/databases/${ids[kind]}`;
     await createResource({ kind: 'database', name: ids[kind], url, databaseType: type }, `https://firestore.googleapis.com/v1/projects/${project}/databases?databaseId=${ids[kind]}`, { locationId: region, type, deleteProtectionState: 'DELETE_PROTECTION_DISABLED', pointInTimeRecoveryEnablement: 'POINT_IN_TIME_RECOVERY_DISABLED' }, 'https://firestore.googleapis.com/v1');
@@ -327,12 +353,13 @@ async function main() {
     if (!version.name?.startsWith(secretName + '/versions/')) throw new Error('SECRET_VERSION_IDENTITY_MISMATCH');
     catalogBindings = { WGA_SECRET_VERSION: version.name, WGA_SECRET_PAYLOAD: payload,
       WGA_SECRET_NAMES: JSON.stringify([secretName, secondName]), WGA_RESOURCE_LABEL: report.run };
-    // No IAM grants or API enablement. If existing permissions cannot mint this
-    // new unprivileged account's token, persist a blocker for CLOUD-006 only.
+    // Existing permissions, or an explicit grant on this new account only,
+    // must allow token minting. Never change project IAM or enable APIs.
     const restricted = await api(`https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccount}:generateAccessToken`,
       'POST', { scope: ['https://www.googleapis.com/auth/cloud-platform'], lifetime: '1800s' });
     report.restrictedPrincipal = { status: restricted.status === 200 && restricted.data.accessToken ? 'ready' : 'blocked',
-      httpStatus: restricted.status, newlyCreated: true, rolesGranted: 0, keysCreated: 0 };
+      httpStatus: restricted.status, newlyCreated: true, rolesGranted: 0, keysCreated: 0,
+      callerMintPermissionGranted: Boolean(report.ownedIamGrant) };
     if (report.restrictedPrincipal.status === 'ready') catalogBindings.WGA_RESTRICTED_ACCESS_TOKEN = secret(restricted.data.accessToken);
   }
   const images = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/cloud-run-probe/images.json')));
@@ -401,7 +428,6 @@ async function main() {
       }
       save();
     }
-    if (process.argv.includes('--inject-catalog-failure')) throw new Error('INTENTIONAL_CATALOG_E2E_FAILURE');
   }
   if (compareAutoGrpcConvert) {
     phase('deployed-flagged-echo-probes');
@@ -426,6 +452,19 @@ async function main() {
     report.flagonEchoPassed = echoResults.length === 3 && echoResults.every(item => item.body?.passed === true);
     report.status = 'completed-auto-conversion-comparison';
   }
+  if (report.soakRequested) {
+    if (interrupted) throw new Error('INTERRUPTED');
+    phase('deployed-bounded-soak');
+    soakController = new AbortController();
+    try {
+      report.soak = await runDeployedSoak({ seconds: soakSeconds, signal: soakController.signal,
+        request: ({ route, mode, timeoutMs, signal }) => workerRequest(route, true, mode, timeoutMs, signal) });
+      save();
+      const checked = validateDeployedSoak(report.soak);
+      if (!checked.ok || report.soak.status !== 'passed') throw new Error('DEPLOYED_SOAK_FAILED');
+    } finally { soakController = undefined; }
+  }
+  if (process.argv.includes('--inject-catalog-failure')) throw new Error('INTENTIONAL_CATALOG_E2E_FAILURE');
 }
 async function cleanup() {
   if (directory) phase('cleanup');
