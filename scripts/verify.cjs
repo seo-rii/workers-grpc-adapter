@@ -103,6 +103,7 @@ function main() {
     run('datastore-pagination', ['scripts/test-datastore-pagination.cjs']);
     run('datastore-lookup', ['scripts/test-datastore-lookup.cjs']);
     run('datastore-transactions', ['scripts/test-datastore-transactions.cjs']);
+    run('sdk-cancellation', ['scripts/test-sdk-cancellation.cjs']);
     run('datastore-mutations', ['scripts/test-datastore-mutations.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
@@ -182,6 +183,7 @@ function main() {
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
         datastorePagination, datastoreLookup, datastoreTransactions, datastoreMutations, workersResilience: read('workers-resilience.json'),
+        sdkCancellation: read('sdk-cancellation.json'),
         workersShared: read('workers-shared.json'), envoy: read('envoy.json'), googlePreflight: read('google-preflight.json'),
         liveGoogleApiExecuted: false, deployedCloudflareExecuted: false, fullDropInCertified: false,
         originalSpecCatalog: { plannedCases: catalog.cases.length, allSatisfied: false, evidence: 'evidence.json' },

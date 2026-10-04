@@ -51,7 +51,7 @@ function codeReferences(root, files) {
   const asts = new Map();
   for (const file of files.filter(file => /\.[cm]?[jt]s$/.test(file))) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
-    const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS);
+    const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, /\.[cm]?ts$/.test(file) ? ts.ScriptKind.TS : ts.ScriptKind.JS);
     need(!ast.parseDiagnostics.length, `source syntax ${file}`); asts.set(file, ast);
   }
   function add(map, code, file, node, ast, kind) {

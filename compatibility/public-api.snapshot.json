@@ -11994,6 +11994,166 @@
         }
       }
     },
+    "./sdk": {
+      "compilerVersion": "5.8.3",
+      "exports": [
+        {
+          "name": "CancellableCall",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface CancellableCall<T> {\n    readonly promise: Promise<T>;\n    cancel(): void;\n}",
+          "sha256": "054fe9d8a00b89e33fa91a2cff6f4c86f1a0226d168240f52cca323a5e553b34",
+          "dependencies": [
+            "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9"
+          ]
+        },
+        {
+          "name": "SdkCancellationOptions",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n}",
+          "sha256": "aab8654fd25698254628258d8ad4e366a41f80f0529068a2aa220ad740f4e738",
+          "dependencies": [
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec"
+          ]
+        },
+        {
+          "name": "SdkGaxOptions",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkGaxOptions {\n    otherArgs?: {\n        [name: string]: unknown;\n        options?: object;\n    };\n}",
+          "sha256": "d49ec74c041545f3574f61fe313c0e267a0c6a4d31f42d9b4ae7aaac23146708",
+          "dependencies": []
+        },
+        {
+          "name": "SdkQuerySource",
+          "type": true,
+          "value": false,
+          "kind": "TypeAliasDeclaration",
+          "signature": "type SdkQuerySource = Readable & {\n    end(): unknown;\n};",
+          "sha256": "238133ea0359d14485c815604a50f85f3f6cbbcfa39032c96bceab75e36777aa",
+          "dependencies": []
+        },
+        {
+          "name": "SdkQueryStream",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkQueryStream<T> extends Readable {\n    read(size?: number): T | null;\n    [Symbol.asyncIterator](): NodeJS.AsyncIterator<T>;\n    iterator(options?: {\n        destroyOnReturn?: boolean;\n    }): NodeJS.AsyncIterator<T>;\n}",
+          "sha256": "58e6828a942875f8e0dac720b76d907c594d0532d38ce53160daf3ee396316bc",
+          "dependencies": [
+            "7f0282d14427556e094a1a635c60d765a4983ebd627ca4d8f644468ba2852798",
+            "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca"
+          ]
+        },
+        {
+          "name": "SdkQueryStreamOptions",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkQueryStreamOptions<Options extends object = object> extends SdkCancellationOptions<Options> {\n    highWaterMark?: number;\n}",
+          "sha256": "8491bb43424209cdacd274adc1d12507547a55bf507cf8d608cf93237e1c9a70",
+          "dependencies": [
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
+            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+          ]
+        },
+        {
+          "name": "cancellableCall",
+          "type": false,
+          "value": true,
+          "kind": "FunctionDeclaration",
+          "signature": "function cancellableCall<T, Options extends object = object>(start: (gaxOptions: Options & SdkGaxOptions) => PromiseLike<T>, options?: SdkCancellationOptions<Options>): CancellableCall<T>;",
+          "sha256": "7c645fcad74b2769fa6604deff3830cc2a26b91dab45272eb2fffcafad6a334e",
+          "dependencies": [
+            "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9",
+            "380447314601c822a684a306d7cf60ffb79bfd9c36048146789ff62cac04d197",
+            "3a1ec206087f9b9e420fc188e26a7d78df32cd7df53ee7893cd2cf002a42685f",
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
+            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
+            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+          ]
+        },
+        {
+          "name": "cancellableQueryStream",
+          "type": false,
+          "value": true,
+          "kind": "FunctionDeclaration",
+          "signature": "function cancellableQueryStream<T = unknown, Options extends object = object>(start: (gaxOptions: Options & SdkGaxOptions) => SdkQuerySource, options?: SdkQueryStreamOptions<Options>): SdkQueryStream<T>;",
+          "sha256": "f772fdad988f7191adea8373ca53e793fe298fd9f9038b2c1e5497bac7eac760",
+          "dependencies": [
+            "0bc65e3e01a6078f39e46fb28b24c0c9d42ec15155058b322079aa357fe25fd5",
+            "0f25890f31b2962fd9908f27cd605d182d2ceec49758e026d698b0ed4650fb34",
+            "7f0282d14427556e094a1a635c60d765a4983ebd627ca4d8f644468ba2852798",
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
+            "a3a8acb93ab41c6cb4e94f2835a6bb6a82df2024fe15600c34638ca64c080d1c",
+            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
+            "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca",
+            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+          ]
+        }
+      ],
+      "declarations": {
+        "0bc65e3e01a6078f39e46fb28b24c0c9d42ec15155058b322079aa357fe25fd5": {
+          "name": "dist/sdk.d.ts#SdkQueryStream",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkQueryStream<T> extends Readable {\n    read(size?: number): T | null;\n    [Symbol.asyncIterator](): NodeJS.AsyncIterator<T>;\n    iterator(options?: {\n        destroyOnReturn?: boolean;\n    }): NodeJS.AsyncIterator<T>;\n}"
+        },
+        "0f25890f31b2962fd9908f27cd605d182d2ceec49758e026d698b0ed4650fb34": {
+          "name": "dist/sdk.d.ts#SdkQueryStreamOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkQueryStreamOptions<Options extends object = object> extends SdkCancellationOptions<Options> {\n    highWaterMark?: number;\n}"
+        },
+        "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9": {
+          "name": "typescript/lib/lib.es5.d.ts#Promise",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es5.d.ts#Promise"
+        },
+        "380447314601c822a684a306d7cf60ffb79bfd9c36048146789ff62cac04d197": {
+          "name": "typescript/lib/lib.es5.d.ts#PromiseLike",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es5.d.ts#PromiseLike"
+        },
+        "3a1ec206087f9b9e420fc188e26a7d78df32cd7df53ee7893cd2cf002a42685f": {
+          "name": "dist/sdk.d.ts#CancellableCall",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface CancellableCall<T> {\n    readonly promise: Promise<T>;\n    cancel(): void;\n}"
+        },
+        "7f0282d14427556e094a1a635c60d765a4983ebd627ca4d8f644468ba2852798": {
+          "name": "typescript/lib/lib.es2015.iterable.d.ts#SymbolConstructor",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es2015.iterable.d.ts#SymbolConstructor"
+        },
+        "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec": {
+          "name": "typescript/lib/lib.dom.d.ts#AbortSignal",
+          "kind": "external",
+          "signature": "typescript/lib/lib.dom.d.ts#AbortSignal"
+        },
+        "a3a8acb93ab41c6cb4e94f2835a6bb6a82df2024fe15600c34638ca64c080d1c": {
+          "name": "dist/sdk.d.ts#SdkQuerySource",
+          "kind": "TypeAliasDeclaration",
+          "signature": "type SdkQuerySource = Readable & {\n    end(): unknown;\n};"
+        },
+        "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162": {
+          "name": "dist/sdk.d.ts#SdkGaxOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkGaxOptions {\n    otherArgs?: {\n        [name: string]: unknown;\n        options?: object;\n    };\n}"
+        },
+        "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca": {
+          "name": "typescript/lib/lib.es5.d.ts#Symbol",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es5.d.ts#Symbol"
+        },
+        "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996": {
+          "name": "dist/sdk.d.ts#SdkCancellationOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n}"
+        }
+      }
+    },
     "./build": {
       "compilerVersion": "5.8.3",
       "exports": [

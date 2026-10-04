@@ -177,6 +177,14 @@ stream.on('data', entity => {
 
 `end()` prevents new pages after the current one. Neither `end()` nor `destroy()` exposes cancellation of a unary page already in flight; its deadline still matters, and SDK `info` events may arrive afterward. Controlled native/Node-adapter/workerd comparisons verify complete pagination, stopping on the first entity, stopping while a second page is held, and successful reuse. Official emulator coverage remains limited to a single page for early destruction. These tests do not claim that stopping this SDK stream cancels native HTTP/2 or releases an in-flight RPC immediately.
 
+The optional [SDK cancellation helpers](sdk-cancellation.md) address this boundary
+for adapter users. `cancellableQueryStream()` stops pagination and cancels its
+scoped RPC on destruction, iterator exit or abort. `cancellableCall()` adds a
+cancel handle to a wrapped Promise operation, including Commit. Unwrapped SDK
+methods keep their original behavior. A wrapper queue limit covers only the
+wrapper's objects; SDK-owned decoded pages and prefetch buffers remain outside
+that limit. Local cancellation does not establish remote cleanup or rollback.
+
 Two-Worker service-binding integration distinguishes a local canceled call from
 backend cleanup. An idle server generator may remain pending until its RPC
 deadline, and bounded cleanup can require explicit `ctx.waitUntil()` lifetime

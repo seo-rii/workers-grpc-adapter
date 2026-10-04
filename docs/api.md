@@ -2,6 +2,12 @@
 
 This document describes the current prototype, not the complete v0.3 design. Generated `dist/*.d.ts` declarations provide the exact signatures after `npm run build`. Examples using `@grpc/grpc-js` assume that name resolves to this adapter through the consumer's dependency configuration.
 
+The optional `/sdk` entry exposes `cancellableCall()` and
+`cancellableQueryStream()` for operation-scoped SDK cancellation. See
+[SDK cancellation](sdk-cancellation.md) for Promise handles, `AbortSignal`, query
+iterator cleanup, option conflicts and the distinction between cancellation and
+rollback.
+
 ## Client exports
 
 The root exports `Client`, `Channel`, `Metadata`, `ChannelCredentials`, `CallCredentials`, `credentials`, `status`, `connectivityState`, `compressionAlgorithms`, `propagate`, `makeGenericClientConstructor`, `makeClientConstructor`, `loadPackageDefinition`, `closeClient`, `getClientChannel` and `waitForClientReady`.

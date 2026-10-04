@@ -21,12 +21,13 @@
     "./adapter": { "types": "./dist/adapter.d.ts", "import": "./dist/adapter.mjs", "require": "./dist/adapter.js" },
     "./server": { "types": "./dist/server.d.ts", "import": "./dist/server.mjs", "require": "./dist/server.js" },
     "./status-details": { "types": "./dist/status-details.d.ts", "import": "./dist/status-details.mjs", "require": "./dist/status-details.js" },
+    "./sdk": { "types": "./dist/sdk.d.ts", "import": "./dist/sdk.mjs", "require": "./dist/sdk.js" },
     "./build": { "types": "./dist/build/index.d.cts", "import": "./dist/build/index.cjs", "require": "./dist/build/index.cjs" },
     "./build/src/client": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:firestore-watch-errors": "node scripts/test-firestore-watch-errors.cjs",
@@ -71,6 +72,7 @@
     "test:emulators:lifecycle": "node fixtures/emulators/lifecycle.cjs",
     "test:sdk:types": "node scripts/test-sdk-types.cjs",
     "test:sdk:local": "node scripts/google-local-test.cjs",
+    "test:sdk:cancellation": "node scripts/test-sdk-cancellation.cjs",
     "test:auth": "node scripts/test-google-auth.cjs",
     "test:differential": "node test/native-differential.cjs",
     "test:envoy": "node scripts/envoy-test.cjs",

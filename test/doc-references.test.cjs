@@ -40,6 +40,17 @@ function repository() {
   return { root, write, read, edit, policy, dispose: () => fs.rmSync(root, { recursive: true, force: true }) };
 }
 function withRepository(callback) { const fixture = repository(); try { return callback(fixture); } finally { fixture.dispose(); } }
+test('DOC references parse CTS and MTS generic consumers as TypeScript and still reject malformed sources', () => {
+  for (const extension of ['cts', 'mts']) withRepository(fixture => {
+    const file = `src/consumer.${extension}`;
+    fixture.write(file, "function identity<T>(value: T): T { return value; }\nconst value = identity<{name: string}>(\n{name: 'fixture'},\n);\nfunction fail() { throw new Error('WGA_MODULE_SOURCE'); }\n");
+    fixture.edit('README.md', value => value + '\n`WGA_MODULE_SOURCE`\n');
+    const report = scanDocReferences(fixture.root);
+    assert.ok(report.evidence[file]);
+    fixture.write(file, 'export const value: = 1;\n');
+    assert.throws(() => scanDocReferences(fixture.root), /source syntax/);
+  });
+});
 function rejectsMutation(mutate, pattern) {
   withRepository(fixture => { mutate(fixture); assert.throws(() => scanDocReferences(fixture.root), pattern); });
 }

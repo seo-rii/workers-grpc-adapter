@@ -32,6 +32,7 @@ const { validateWireCatalogReport } = require('./wire-catalog-evidence.cjs');
 const { validateAuthCatalogReport } = require('./auth-catalog-evidence.cjs');
 const { validateBootstrapCatalogReport } = require('./bootstrap-catalog-evidence.cjs');
 const { validateSecurityCatalogReport } = require('./security-catalog-evidence.cjs');
+const { validateSdkCancellationReport } = require('./sdk-cancellation-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
@@ -43,6 +44,7 @@ const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verifica
     'verification/api-contracts.json',
     'verification/firestore-read-errors.json',
     'verification/datastore-transactions.json',
+    'verification/sdk-cancellation.json',
     'verification/datastore-mutations.json',
     'verification/call-lifecycle.json',
     'verification/flow-control.json',
@@ -610,7 +612,7 @@ function validateProvenance(root, report) {
         ['workersFetcher', 'verification/workers-fetcher.json'],
         ['workersCompression', 'verification/workers-compression.json'], ['workersRetries', 'verification/workers-retries.json'], ['health', 'verification/health.json'], ['workersServer', 'verification/workers-server.json'], ['modernSdk', 'verification/modern-sdk.json'], ['requestStreaming', 'verification/request-streaming.json'], ['streamingFeasibility', 'verification/streaming-feasibility.json'], ['firestoreWatch', 'verification/firestore-watch.json'], ['modernFirestoreWatch', 'verification/modern-firestore-watch.json'], ['firestoreRecovery', 'verification/firestore-recovery.json'], ['parentCalls', 'verification/parent-calls.json'],
         ['modernFirestoreRecovery', 'verification/modern-firestore-recovery.json'], ['firestoreWatchErrors', 'verification/firestore-watch-errors.json'], ['firestoreReadErrors', 'verification/firestore-read-errors.json'], ['datastoreLookup', 'verification/datastore-lookup.json'], ['datastoreTransactions', 'verification/datastore-transactions.json'],
-        ['datastoreMutations', 'verification/datastore-mutations.json'],
+        ['datastoreMutations', 'verification/datastore-mutations.json'], ['sdkCancellation', 'verification/sdk-cancellation.json'],
         ['workersShared', 'verification/workers-shared.json'], ['googleEmulators', 'verification/google-emulators.json'], ['emulatorLifecycle', 'verification/emulator-lifecycle.json'], ['envoy', 'verification/envoy.json'], ['googlePreflight', 'verification/google-preflight.json']];
     for (const [key, file] of embedded) need(isDeepStrictEqual(report[key], read(root, file)), `${file}: aggregate report drift`);
     const campaign = report.fuzzCampaign;
@@ -651,6 +653,7 @@ function validateProvenance(root, report) {
     validateSecretManagerReport(report.secretManagerExtended);
     validateFirestoreReadReport(report.firestoreReadErrors);
     validateDatastoreTransactionReport(report.datastoreTransactions);
+    validateSdkCancellationReport(report.sdkCancellation);
     validateDatastoreMutationReport(report.datastoreMutations);
     validateDatastoreLookupReport(report.datastoreLookup);
     validateDatastorePaginationReport(report.datastorePagination);
@@ -668,6 +671,7 @@ function validateProvenance(root, report) {
         ['datastore-transactions', report.datastoreTransactions], ['datastore-lookup', report.datastoreLookup],
         ['datastore-mutations', report.datastoreMutations],
         ['datastore-pagination', report.datastorePagination],
+        ['sdk-cancellation', report.sdkCancellation],
         ['workers-resilience', report.workersResilience],
         ['call-lifecycle', report.callLifecycle], ['flow-control', report.flowControl], ['wire-catalog', report.wireCatalog],
         ['auth-catalog', report.authCatalog], ['bootstrap-catalog', report.bootstrapCatalog], ['security-catalog', report.securityCatalog]]) {

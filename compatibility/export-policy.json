@@ -770,6 +770,12 @@
       "signatureNotes": "decodeGrpcStatusDetails<T> returns GrpcStatusDetailsResult<T> with the identical original status, optional decoded Any details, and bounded diagnostics. Exact-type-URL decoders are synchronous; their failures do not replace the RPC status."
     },
     {
+      "entry": "./sdk",
+      "scope": "Optional operation-scoped cancellation for Promise-based Google SDK calls and Datastore paginated query streams over the adapter.",
+      "documentation": "docs/sdk-cancellation.md",
+      "signatureNotes": "cancellableCall returns a Promise and an explicit cancel handle; cancellableQueryStream bounds its public queue and propagates destroy/iterator exit to page production and the active RPC. Both pass a private cancellation parent through GAX per-call options without closing or modifying the shared SDK client. AbortSignal support is local cancellation, never rollback of accepted writes. These helpers extend the pinned SDK surface; unwrapped native SDK behavior remains unchanged."
+    },
+    {
       "entry": "./build",
       "scope": "Opt-in Node-only SDK build tooling and diagnostics for two exact pinned dependency and schema profiles.",
       "documentation": "docs/profiles.md",

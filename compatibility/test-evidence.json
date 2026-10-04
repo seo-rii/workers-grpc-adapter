@@ -1603,7 +1603,7 @@
             },
             {
               "pointer": "/publicTypeSubpaths",
-              "equals": 7
+              "equals": 8
             },
             {
               "pointer": "/consumerFixtures",
@@ -83055,6 +83055,110 @@
                 "failed-writes-preserve-state",
                 "atomic-batch-failure-creates-nothing",
                 "verified-delete-cleanup"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sdk-query-cancellation",
+      "appliesToOriginalCatalog": false,
+      "reason": "Optional query wrapper stops subsequent paging and cancels the scoped RPC on destroy, iterator exit or AbortSignal, with lazy-start suppression, same-client isolation and released resources.",
+      "limitations": [
+        "Optional adapter helpers do not change unwrapped native or adapter SDK methods. Controlled Node/workerd execution does not prove remote backend cleanup or production transaction semantics."
+      ],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/sdk-cancellation.json",
+          "source": "scripts/test-sdk-cancellation.cjs",
+          "command": "sdk-cancellation",
+          "array": "/extensionCases",
+          "where": {
+            "id": "sdk-query-cancellation"
+          },
+          "anchor": "extensionCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 64
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "grpc-web",
+                "cloudflare"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sdk-call-cancellation",
+      "appliesToOriginalCatalog": false,
+      "reason": "Optional Promise wrapper provides explicit Commit cancellation with lazy-start suppression, completion races, same-client isolation, released resources and accepted mutations still persisted; high-level SDK Rollback cleanup is counted separately.",
+      "limitations": [
+        "Optional adapter helpers do not change unwrapped native or adapter SDK methods. Controlled Node/workerd execution does not prove remote backend cleanup or production transaction semantics."
+      ],
+      "references": [
+        {
+          "kind": "json-case",
+          "report": "verification/sdk-cancellation.json",
+          "source": "scripts/test-sdk-cancellation.cjs",
+          "command": "sdk-cancellation",
+          "array": "/extensionCases",
+          "where": {
+            "id": "sdk-call-cancellation"
+          },
+          "anchor": "extensionCases",
+          "assertions": [
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/scenarioCount",
+              "equals": 72
+            },
+            {
+              "pointer": "/profiles",
+              "equals": [
+                "google-static-v1",
+                "google-modern-v1"
+              ]
+            },
+            {
+              "pointer": "/runtimes",
+              "equals": [
+                "node",
+                "workerd"
+              ]
+            },
+            {
+              "pointer": "/modes",
+              "equals": [
+                "grpc-web",
+                "cloudflare"
               ]
             }
           ]

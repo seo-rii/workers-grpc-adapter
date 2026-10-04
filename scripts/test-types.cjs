@@ -46,6 +46,7 @@ try {
         const observerSource = fs.readFileSync(path.join(root, 'test/types-observer.cts'), 'utf8');
         const sources = { consumer: source, legacy: legacySource, transport: transportSource, observer: observerSource,
             statusDetails: fs.readFileSync(path.join(root, 'test/types-status-details.cts'), 'utf8'),
+            sdkCancellation: fs.readFileSync(path.join(root, 'test/types-sdk-cancellation.cts'), 'utf8'),
             retryThrottling: fs.readFileSync(path.join(root, 'test/types-retry-throttling.cts'), 'utf8'),
             serverStreaming: fs.readFileSync(path.join(root, 'test/types-server-streaming.cts'), 'utf8'),
             catalogConfig: fs.readFileSync(path.join(root, 'test/types-catalog-config.cts'), 'utf8') };

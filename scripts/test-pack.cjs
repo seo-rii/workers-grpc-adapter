@@ -127,6 +127,7 @@ async function main() {
             await run(process.execPath, ['-e', assertion], fixture);
             if (override) {
                 await run(process.execPath, ['-e', "const a=require('node:assert/strict');const c=require('@grpc/grpc-js/status-details');import('@grpc/grpc-js/status-details').then(m=>{a.strictEqual(m.decodeGrpcStatusDetails,c.decodeGrpcStatusDetails);const s={code:7,details:'denied',metadata:{get:()=>[]}};a.strictEqual(m.decodeGrpcStatusDetails(s).status,s);});"], fixture);
+                await run(process.execPath, ['-e', "const a=require('node:assert/strict');const c=require('@grpc/grpc-js/sdk');import('@grpc/grpc-js/sdk').then(async m=>{a.strictEqual(m.cancellableCall,c.cancellableCall);a.strictEqual(m.cancellableQueryStream,c.cancellableQueryStream);const call=c.cancellableCall(()=>new Promise(()=>{}));call.cancel();await a.rejects(call.promise,{code:1});});"], fixture);
                 const invoke = `const a=require('node:assert/strict'),g=require('@grpc/grpc-js');let n=0,completed=false;process.on('exit',()=>a.equal(completed,true));globalThis.fetch=async()=>{n++;return new Response(Buffer.concat([Buffer.from([0,0,0,0,2,8,1]),Buffer.from([128,0,0,0,16]),Buffer.from('grpc-status: 0\\r\\n')]),{headers:{'content-type':'application/grpc-web+proto'}});};const c=new g.Client('fixture.example',g.credentials.createSsl());c.makeUnaryRequest('/example.Service/Unary',x=>x,x=>x,Buffer.from([8,1]),(e,v)=>{a.equal(e,null);a.deepEqual(v,Buffer.from([8,1]));a.equal(n,1);c.close();completed=true;});`;
                 await run(process.execPath, ['-e', invoke], fixture);
             }
@@ -216,7 +217,9 @@ async function main() {
             assert.equal(graph.identity.status, 'single-installation');
             for (const extension of ['mts', 'cts']) {
                 for (const [name, source] of [['sdk-consumer', 'fixtures/google/types/consumer.mts'], ['sdk-contract', 'test/types-catalog-sdk.cts'],
-                    ['adapter-config', 'test/types-catalog-config.cts'], ['adapter-server', 'test/types-server-streaming.cts']]) {
+                    ['adapter-config', 'test/types-catalog-config.cts'], ['adapter-server', 'test/types-server-streaming.cts'],
+                    ['adapter-sdk-cancellation', 'test/types-sdk-cancellation.cts'],
+                    ['sdk-cancellation-google', 'test/types-sdk-cancellation-google.cts']]) {
                     fs.copyFileSync(path.join(root, source), path.join(fresh, `${name}.${extension}`));
                 }
             }

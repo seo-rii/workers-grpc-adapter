@@ -375,6 +375,26 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/sdk-cancellation.md#fence-1",
+      "file": "docs/sdk-cancellation.md",
+      "ordinal": 1,
+      "language": "ts",
+      "sha256": "4ea0cf7e10ce8cc10be19cb0c1d90c8da293f6df0d67a22db947e3fdb0dbd19c",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
+    },
+    {
+      "id": "docs/sdk-cancellation.md#fence-2",
+      "file": "docs/sdk-cancellation.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "688671eba5a3cdda9b0f6d5fbb720dca7735cad62cd150923bc317270bc2338d",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
+    },
+    {
       "id": "docs/server.md#fence-1",
       "file": "docs/server.md",
       "ordinal": 1,

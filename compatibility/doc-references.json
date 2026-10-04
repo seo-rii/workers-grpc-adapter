@@ -33,6 +33,7 @@
     "docs/request-streaming.md": "maintained",
     "docs/resources.md": "maintained",
     "docs/retries.md": "maintained",
+    "docs/sdk-cancellation.md": "maintained",
     "docs/sdk-performance.md": "maintained",
     "docs/server.md": "maintained",
     "docs/sources.md": "maintained",
