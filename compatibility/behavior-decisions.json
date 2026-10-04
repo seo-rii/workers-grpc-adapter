@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "scope": "current adapter behavior; does not rewrite the original catalog or certify native equivalence",
+  "decisions": [
+    {
+      "id": "API-011",
+      "decision": "bounded-unary-rejection",
+      "contract": "Retain immediate UNIMPLEMENTED (12) for an extra unary response, with one terminal result and prompt cleanup.",
+      "rationale": "Pinned native grpc-js 1.14.0 waits until its deadline (4). Reproducing that wait would retain a malformed call indefinitely without a deadline. Native timing/status parity remains outside this adapter contract.",
+      "report": "verification/api-contracts.json",
+      "originalRequirementSatisfied": false,
+      "catalogCaseSha256": "2b587bdeb04c3d54262ab7001d4d28caec797c243989fde028a5b73e0a4cffb6"
+    },
+    {
+      "id": "FLOW-006",
+      "decision": "bounded-unary-rejection",
+      "contract": "One unary read demand consumes its trailers or immediately rejects an extra message with UNIMPLEMENTED (12).",
+      "rationale": "Keep resource-bounded trailer/cardinality processing. The independent complete-wire control and native one-message control remain required; native duplicate-response timing/status parity is not claimed.",
+      "report": "verification/flow-control.json",
+      "originalRequirementSatisfied": false,
+      "catalogCaseSha256": "caadce9e2bc1d1e912646ef44333f86fce751a1cfd558609c6f518413af4b62e"
+    },
+    {
+      "id": "WIRE-013",
+      "decision": "supported-compression",
+      "contract": "Accept correctly negotiated gzip and deflate data frames with bounded decompression. Reject unsupported encodings, malformed compression, and compressed trailers before deserialization.",
+      "rationale": "The original blanket rejection predates implemented compression. Supersede that restriction for the current adapter contract while preserving the original catalog as historical evidence.",
+      "report": "verification/wire-catalog.json",
+      "originalRequirementSatisfied": false,
+      "catalogCaseSha256": "39f82d13df113283b9b2860c66c95ae5e39520bf33ee8db543d4cb66180cd398"
+    },
+    {
+      "id": "WIRE-016",
+      "decision": "stable-missing-status-diagnostic",
+      "contract": "EOF without gRPC status terminates UNKNOWN with WGA_MISSING_GRPC_STATUS, never OK.",
+      "rationale": "Retain the implemented diagnostic so existing error handlers remain compatible. The differently named diagnostic in the original catalog is not implemented or treated as an alias.",
+      "report": "verification/wire-catalog.json",
+      "originalRequirementSatisfied": false,
+      "catalogCaseSha256": "9521cbe1339d668f83616ae933433e03b2469d5f41412007aa0e45738684a04c"
+    }
+  ]
+}

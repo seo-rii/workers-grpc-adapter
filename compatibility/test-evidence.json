@@ -5372,7 +5372,7 @@
       "coverage": "partial",
       "reason": "Independent HTTP/2 controls confirm two messages and OK trailers. The pinned native unary client receives the first then deadlines with code 4, whereas Node/workerd adapters promptly reject with code 12 and clean up; native cardinality parity is not satisfied.",
       "gaps": [
-        "Pinned native grpc-js 1.14.0 reaches DEADLINE_EXCEEDED after the first of two messages, while the adapter rejects extra unary messages with UNIMPLEMENTED. The original native-parity requirement is not met."
+        "Native duplicate-unary timing/status parity remains unsatisfied. The current adapter deliberately rejects extra messages promptly with UNIMPLEMENTED; compatibility/behavior-decisions.json records the retained bounded behavior."
       ],
       "references": [
         {
@@ -8782,7 +8782,7 @@
       "coverage": "partial",
       "reason": "Ten public compression variants per runtime/mode distinguish supported gzip/deflate, malformed payload, identity mismatch, unknown codec and compressed trailers. Rejected bytes never reach deserialization. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [
-        "The historical catalog requires blanket compressed-frame rejection, which predates implemented gzip/deflate support. Its expectation needs an explicit compatibility decision."
+        "The original blanket compression rejection remains unsatisfied. compatibility/behavior-decisions.json explicitly supersedes it with bounded negotiated gzip/deflate support and rejection of malformed/unsupported compression."
       ],
       "references": [
         {
@@ -9090,7 +9090,7 @@
       "coverage": "partial",
       "reason": "Data followed by EOF without status preserves the complete message and terminates UNKNOWN with the actual WGA_MISSING_GRPC_STATUS diagnostic. Installed Node/workerd calls execute both transport modes with one terminal, exact decoded-byte summaries and zero retained call ownership before client close; separate Node probes measure actual parser allocations.",
       "gaps": [
-        "The original catalog names WGA_STATUS_MISSING; the executed diagnostic is WGA_MISSING_GRPC_STATUS. No runtime diagnostic was renamed to conceal this difference."
+        "The original catalog diagnostic name remains unsatisfied. compatibility/behavior-decisions.json retains UNKNOWN/WGA_MISSING_GRPC_STATUS as the canonical existing adapter behavior; no diagnostic alias is claimed."
       ],
       "references": [
         {
@@ -11540,7 +11540,7 @@
       "coverage": "partial",
       "reason": "Exactly one low-level startRead reaches trailers for one unary message and rejects a duplicate in Node/workerd. Independent native HTTP/2 probes reproduce the cardinality divergence and verify complete duplicate response bytes and OK trailers.",
       "gaps": [
-        "Pinned native unary delivers only the first response internally and waits for deadline (4), while the adapter promptly rejects a second message (12); native cardinality equivalence is intentionally not claimed."
+        "Native duplicate-unary timing/status parity remains unsatisfied. The current adapter deliberately rejects extra messages promptly with UNIMPLEMENTED; compatibility/behavior-decisions.json records the retained bounded behavior."
       ],
       "references": [
         {

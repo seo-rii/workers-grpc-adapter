@@ -52,7 +52,7 @@
       "kind": "diagnostic",
       "value": "WGA_STATUS_MISSING",
       "classification": "historical",
-      "context": "  the original catalog names `WGA_STATUS_MISSING`. The precise diagnostic is now",
+      "context": "  the original catalog names `WGA_STATUS_MISSING`. The implemented diagnostic",
       "reason": "The original catalog diagnostic is explicitly contrasted with the implemented WGA_MISSING_GRPC_STATUS policy; this is not a current diagnostic claim."
     },
     {

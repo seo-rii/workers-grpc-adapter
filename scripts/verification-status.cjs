@@ -20,6 +20,23 @@ const local = [
     ...[1, 2, 3, 4, 6, 7].map(n => `SEC-${String(n).padStart(3, '0')}`),
     'RETRY-001', 'RETRY-004', 'WIRE-023', 'LIFE-015',
 ];
+const behaviorDecisions = require('../compatibility/behavior-decisions.json');
+const originalCatalog = require('../compatibility/test-catalog.json');
+const policyReports = { 'API-011': 'verification/api-contracts.json', 'FLOW-006': 'verification/flow-control.json',
+    'WIRE-013': 'verification/wire-catalog.json', 'WIRE-016': 'verification/wire-catalog.json' };
+function validateDecisions(policy, original = originalCatalog) {
+    const need = (condition, message) => { if (!condition) throw new Error(`WGA_EVIDENCE_INVALID: behavior decision ${message}`); };
+    need(policy?.schemaVersion === 1 && Number.isSafeInteger(policy.revision) && policy.revision >= 1
+        && typeof policy.scope === 'string' && policy.scope.length > 30, 'schema');
+    need(Array.isArray(policy.decisions) && isDeepStrictEqual(policy.decisions.map(row => row.id).sort(), Object.keys(policyReports).sort()), 'exact case set');
+    for (const row of policy.decisions) {
+        const spec = original.cases.filter(value => value.id === row.id);
+        need(spec.length === 1 && row.catalogCaseSha256 === crypto.createHash('sha256').update(JSON.stringify(spec[0])).digest('hex'), `${row.id} original catalog hash`);
+        need(row.originalRequirementSatisfied === false && row.report === policyReports[row.id]
+            && ['decision', 'contract', 'rationale'].every(key => typeof row[key] === 'string' && row[key].length > 10), `${row.id} scope/proof`);
+    }
+    return policy;
+}
 const cloud = catalog.ids;
 const campaignIds = [...local, ...Object.keys(differences), ...cloud].sort();
 function validateLiveSummary(live) {
@@ -42,11 +59,12 @@ function validateLiveSummary(live) {
     need(live.certificationPassed === live.cases.every(row => row.catalogMatch), 'certification consistency');
     return live;
 }
-function summarize(evidence, live) {
+function summarize(evidence, live, policy = behaviorDecisions) {
     const need = (condition, message) => { if (!condition) throw new Error(`WGA_EVIDENCE_INVALID: campaign ${message}`); };
     need(evidence?.cases?.length === 189 && evidence.summary?.planned === 189 && evidence.releaseEligible === false, 'complete local catalog required');
     need(new Set(campaignIds).size === 44, '44 unique original cases required');
     if (live) validateLiveSummary(live);
+    validateDecisions(policy);
     const rows = campaignIds.map(id => {
         const matches = evidence.cases.filter(row => row.id === id);
         need(matches.length === 1, `missing/duplicate ${id}`);
@@ -60,7 +78,21 @@ function summarize(evidence, live) {
         if (differences[id]) {
             need(row.coverage === 'partial' && row.execution === 'passed' && row.references?.length > 0 && row.satisfiesPlannedCase === false,
                 `difference lacks current execution: ${id}`);
-            return { ...result, disposition: differences[id][0], explanation: differences[id][1] };
+            const decision = policy.decisions.find(value => value.id === id);
+            if (decision) {
+                need(row.references.some(ref => ref.report === decision.report), `policy lacks current execution: ${id}`);
+                return { ...result, disposition: 'verified-adapter-policy', explanation: differences[id][1],
+                    policy: { revision: policy.revision, ...decision } };
+            }
+            const supplementalId = id === 'DS-021' ? 'sdk-query-cancellation' : 'sdk-call-cancellation';
+            const extensions = (evidence.supplementalCases || []).filter(value => value.id === supplementalId);
+            need(extensions.length === 1, `missing/duplicate SDK extension: ${id}`);
+            const extension = extensions[0];
+            need(extension.execution === 'passed' && extension.appliesToOriginalCatalog === false
+                && extension.references?.some(ref => ref.report === 'verification/sdk-cancellation.json'), `SDK extension lacks current execution: ${id}`);
+            return { ...result, disposition: 'verified-sdk-extension', explanation: differences[id][1],
+                extension: { id: supplementalId, entry: '@grpc/grpc-js/sdk', changesUnwrappedSdk: false,
+                    evidence: [...new Set(extension.references.map(ref => ref.report || ref.source))] } };
         }
         const liveRows = live?.cases?.filter(item => item.id === id) || [];
         need(!live || liveRows.length === 1, `live case missing/duplicated: ${id}`);
@@ -73,6 +105,9 @@ function summarize(evidence, live) {
     return { schemaVersion: 1, status: 'campaign-classified', releaseEligible: false,
         originalCatalog: evidence.summary, campaignCount: rows.length, localGapsVerified: local.length,
         verifiedDifferences: Object.keys(differences).length, cloudCases: cloud.length,
+        adapterPoliciesVerified: rows.filter(row => row.disposition === 'verified-adapter-policy').length,
+        sdkExtensionsVerified: rows.filter(row => row.disposition === 'verified-sdk-extension').length,
+        behaviorDecisionSha256: crypto.createHash('sha256').update(JSON.stringify(policy)).digest('hex'),
         liveReceiptIncluded: !!live, liveRun: live?.run || null, cases: rows };
 }
 function writeCampaign(root, { liveFile } = {}) {
@@ -114,7 +149,8 @@ if (require.main === module) {
         const report = writeCampaign(root, { liveFile });
         console.log(JSON.stringify({ status: report.status, campaignCount: report.campaignCount,
             localGapsVerified: report.localGapsVerified, verifiedDifferences: report.verifiedDifferences,
+            adapterPoliciesVerified: report.adapterPoliciesVerified, sdkExtensionsVerified: report.sdkExtensionsVerified,
             cloudCases: report.cloudCases, liveReceiptIncluded: report.liveReceiptIncluded }));
     } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
-module.exports = { summarize, writeCampaign, validateLiveSummary, campaignIds, differences, local, cloud };
+module.exports = { summarize, writeCampaign, validateLiveSummary, validateDecisions, campaignIds, differences, local, cloud };

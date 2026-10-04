@@ -6,14 +6,18 @@ const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const catalog = require('../scripts/gcp-catalog.cjs');
-const { summarize, writeCampaign, campaignIds, local, differences } = require('../scripts/verification-status.cjs');
+const { summarize, writeCampaign, validateDecisions, campaignIds, local, differences } = require('../scripts/verification-status.cjs');
+const decisions = require('../compatibility/behavior-decisions.json');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 function fixture() {
     const original = require('../compatibility/test-catalog.json');
-    return { releaseEligible: false, summary: { planned: 189 }, cases: original.cases.map(({ id }) => ({
+    return { releaseEligible: false, summary: { planned: 189 }, supplementalCases:
+        ['sdk-query-cancellation', 'sdk-call-cancellation'].map(id => ({ id, execution: 'passed',
+            appliesToOriginalCatalog: false, references: [{ report: 'verification/sdk-cancellation.json' }] })),
+    cases: original.cases.map(({ id }) => ({
         id, coverage: local.includes(id) ? 'covered' : differences[id] ? 'partial' : 'unimplemented',
         execution: local.includes(id) || differences[id] ? 'passed' : 'not_run',
-        satisfiesPlannedCase: local.includes(id), references: [{ report: 'synthetic-receipt.json' }],
+        satisfiesPlannedCase: local.includes(id), references: [{ report: decisions.decisions.find(row => row.id === id)?.report || 'synthetic-receipt.json' }],
     })) };
 }
 function rawFixture() {
@@ -51,6 +55,8 @@ test('complete campaign accounts for every one of the original 44 gaps', () => {
     assert.equal(result.cases.length, 44);
     assert.equal(result.localGapsVerified, 28);
     assert.equal(result.verifiedDifferences, 6);
+    assert.equal(result.adapterPoliciesVerified, 4);
+    assert.equal(result.sdkExtensionsVerified, 2);
     assert.equal(result.cloudCases, 10);
     assert.equal(result.liveReceiptIncluded, false);
     assert.equal(result.releaseEligible, false);
@@ -71,11 +77,52 @@ test('live execution does not rewrite local coverage or imply catalog compliance
     live.cases.pop();
     assert.throws(() => summarize(fixture(), live), /live case missing/);
 });
-test('campaign keeps all six executed compatibility differences partial', () => {
+test('campaign keeps all six original compatibility differences partial after explicit decisions', () => {
     for (const id of Object.keys(differences)) {
         const evidence = fixture();
         const row = evidence.cases.find(row => row.id === id); row.coverage = 'covered'; row.satisfiesPlannedCase = true;
         assert.throws(() => summarize(evidence), /difference lacks current execution/);
+    }
+});
+test('behavior decisions require original hashes and executed reports without rewriting original requirements', () => {
+    assert.equal(validateDecisions(decisions), decisions);
+    for (const mutate of [
+        value => { value.decisions.pop(); },
+        value => { value.decisions[1] = value.decisions[0]; },
+        value => { value.decisions[0].originalRequirementSatisfied = true; },
+        value => { value.decisions[0].catalogCaseSha256 = '0'.repeat(64); },
+        value => { value.decisions[0].report = 'unexecuted.json'; },
+        value => { value.decisions[0].rationale = ''; },
+        value => { value.revision = 0; },
+    ]) {
+        const policy = structuredClone(decisions); mutate(policy);
+        assert.throws(() => summarize(fixture(), undefined, policy), /behavior decision/);
+    }
+    for (const decision of decisions.decisions) {
+        const evidence = fixture(); evidence.cases.find(row => row.id === decision.id).references = [{ report: 'unrelated.json' }];
+        assert.throws(() => summarize(evidence), /policy lacks current execution/);
+    }
+    const resolved = summarize(fixture()).cases.filter(row => row.disposition === 'verified-adapter-policy');
+    assert.ok(resolved.every(row => row.originalCoverage === 'partial' && row.originalRequirementSatisfied === false));
+});
+test('SDK cancellation extensions preserve unwrapped SDK boundaries and require their own execution', () => {
+    const evidence = fixture();
+    evidence.supplementalCases = ['sdk-query-cancellation', 'sdk-call-cancellation'].map(id => ({
+        id, execution: 'passed', appliesToOriginalCatalog: false, references: [{ report: 'verification/sdk-cancellation.json' }],
+    }));
+    const result = summarize(evidence);
+    assert.equal(result.sdkExtensionsVerified, 2);
+    assert.ok(result.cases.filter(row => row.disposition === 'verified-sdk-extension').every(row =>
+        row.originalRequirementSatisfied === false && row.extension.changesUnwrappedSdk === false));
+    for (const mutate of [
+        value => { value.supplementalCases = []; },
+        value => { value.supplementalCases[0].execution = 'not_run'; },
+        value => { value.supplementalCases[0].appliesToOriginalCatalog = true; },
+        value => { value.supplementalCases[0].references = []; },
+        value => { value.supplementalCases.push(value.supplementalCases[0]); },
+    ]) {
+        const invalid = structuredClone(evidence); mutate(invalid);
+        assert.throws(() => summarize(invalid), /SDK extension/);
     }
 });
 test('campaign rejects inconsistent catalog matches environment reasons and execution layers', () => {

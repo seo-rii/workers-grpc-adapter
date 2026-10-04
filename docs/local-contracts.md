@@ -50,7 +50,10 @@ the extra message immediately (`UNIMPLEMENTED`, 12). The independent HTTP/2 peer
 also has a successful one-message control, and a raw consuming probe verifies
 both response frames, OK trailers and stream completion. This is a recorded
 cardinality difference, not evidence for the original catalog's native-parity
-expectation. The adapter retains its bounded rejection behavior.
+expectation. The adapter retains its bounded rejection behavior as an explicit
+versioned [behavior decision](../compatibility/behavior-decisions.json).
+Waiting for the pinned native deadline would retain a malformed RPC indefinitely
+when callers omit a deadline; the adapter does not reproduce that behavior.
 
 ## Call lifetime and asynchronous ownership
 
@@ -174,9 +177,13 @@ request has no Fetch attempt. Headers-only errors preserve custom metadata in
 the initial event and terminal status; this is the adapter's observed event
 classification, without claiming native event parity.
 
-Two original requirements remain partial: `WIRE-013` predates supported
-gzip/deflate compression; `WIRE-016` requests a different missing-status
-diagnostic name. `WIRE-023` now rejects malformed padding, including `AQI==`,
+Two original requirements remain partial, with explicit current behavior
+decisions: `WIRE-013` is superseded by supported gzip/deflate compression with
+bounded decompression and rejection of malformed or unsupported encodings;
+`WIRE-016` retains `UNKNOWN / WGA_MISSING_GRPC_STATUS` as the canonical diagnostic.
+The older name in the original catalog is not an alias. These decisions preserve
+existing adapter behavior and do not turn either historical requirement into a
+passing native-parity claim. `WIRE-023` now rejects malformed padding, including `AQI==`,
 in both headers and trailers while retaining valid padded and unpadded values.
 The pinned native decoder's more permissive result remains recorded separately.
 

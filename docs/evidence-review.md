@@ -24,7 +24,9 @@ work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
 accounting and credential isolation satisfy eleven. Mutation contracts and
 emulator accounting satisfy twelve more. Performance and documentation work each
 satisfy five more cases. The complete authentication, bootstrap, security and
-retry matrix satisfies another 27 cases. The remaining 17 original requirements
+retry matrix satisfies another 27 cases. The invalid-deadline correction now
+satisfies `LIFE-015`, bringing the current totals to **173 covered, 9 partial and
+7 without an accepted current local execution reference**. The remaining 16 original requirements
 cannot be translated into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
@@ -305,11 +307,13 @@ retained rather than treated as transport equivalence.
 
 ## Remaining work
 
-The complete local campaign validates all 27 former authentication, bootstrap,
-security and retry gaps together. Ten partial cases retain their original gaps
-in the mapping. Keep
-production index requirements (`DS-019`), native stream destruction (`DS-021`)
-and public Commit cancellation (`TX-008`) as explicit boundaries. The five
+The complete local campaign validates the 27 former authentication, bootstrap,
+security and retry gaps plus corrected invalid-deadline handling together.
+Nine partial cases retain their original conditions in the mapping. The separate
+dated cloud receipt exercises the `DS-019` production index/error behavior;
+network-disabled CI cannot reproduce it. Optional SDK cancellation helpers
+address `DS-021` and `TX-008` for wrapped adapter calls, with independent
+supplemental evidence; unwrapped SDK methods retain their native boundaries. The five
 performance measurement/policy contracts have local execution evidence;
 production performance thresholds remain unset and cannot certify a release.
 
@@ -324,32 +328,39 @@ references, alongside the shared Node/workerd matrix. The checker expands only b
 `const` tables with direct test registrations and still requires each exact TAP
 result to pass. It does not execute source or infer success for unrun cases.
 
-## Expectations that need a compatibility decision
+## Current compatibility decisions
 
-These cannot be closed just by adding a reference:
+The versioned [behavior decisions](../compatibility/behavior-decisions.json)
+record retained adapter contracts and the exact original requirement hashes.
+The unified report requires current execution of their referenced suites.
+These decisions do not rewrite the original catalog or claim native parity:
 
 - `API-011`: pinned native grpc-js reaches deadline after duplicate unary
-  responses; the adapter rejects immediately. See [client contracts](local-contracts.md).
+  responses; the adapter retains immediate rejection and cleanup instead of
+  retaining malformed calls until a possibly absent deadline. See [client contracts](local-contracts.md).
 - `WIRE-013`: the original blanket compressed-frame rejection predates the
   implemented gzip/deflate support. Supported compression, unsupported encoding
-  and malformed flags now have distinct results. Keep the original case visible
-  until its historical expectation is explicitly superseded.
+  and malformed flags have distinct results. The blanket restriction is now
+  explicitly superseded for the current contract; its original case remains visible.
 - `WIRE-016`: missing status returns `UNKNOWN / WGA_MISSING_GRPC_STATUS`;
-  the original catalog names `WGA_STATUS_MISSING`. The precise diagnostic is now
-  exercised without claiming that the names match.
-- `LIFE-015`: invalid Date returns adapter `INTERNAL`, whereas the catalog asks
-  for `INVALID_ARGUMENT`. Pinned native throws `RangeError` synchronously before
-  returning a call. This is an API error-policy decision, not missing execution.
+  the original catalog names `WGA_STATUS_MISSING`. The implemented diagnostic
+  remains canonical to preserve existing error handlers; the names are not aliases.
+- `LIFE-015`: invalid Date now returns asynchronous `INVALID_ARGUMENT`, satisfying
+  the catalog. Pinned native still throws `RangeError` synchronously before
+  returning a call; that difference is tested separately.
 - `FLOW-006`: the adapter reads trailers and rejects a duplicate unary message
   with one read demand; pinned native delivers the first internally and waits
   for deadline. The new flow suite reproduces the `API-011` cardinality
   difference with counted read demands and an independent complete-wire control.
 - `DS-021`: pinned native Datastore and the adapter both continue paging after
   `runQueryStream().destroy()`; `end()` stops later pages but does not cancel a
-  pending unary page. The original no-extra-page expectation is unmet.
+  pending unary page. The optional [query wrapper](sdk-cancellation.md) stops
+  pagination and cancels its scoped RPC on destroy, iterator exit or abort.
+  It does not alter unwrapped native or adapter SDK methods.
 - `TX-008`: public high-level and generated-v1 Commit promises expose no cancel
-  handle in the two pinned SDKs. Deadline evidence does not prove explicit
-  cancellation or undo an already applied mutation.
+  handle in the two pinned SDKs. The optional `cancellableCall()` wrapper adds
+  explicit cancellation; controlled accepted-write tests verify that cancelling
+  does not undo an already applied mutation.
 
 ## Historical cloud evidence and release gates
 
