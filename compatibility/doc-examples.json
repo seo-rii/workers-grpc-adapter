@@ -205,6 +205,16 @@
       "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
     },
     {
+      "id": "docs/gcp-cloud-probe.md#fence-2",
+      "file": "docs/gcp-cloud-probe.md",
+      "ordinal": 2,
+      "language": "sh",
+      "sha256": "6be2d6e8037ece1a5ba3f56c76417c47ebc057fe71a6a9de18507d0a4722a1ef",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Explicit temporary cloud deployment with an optional owned-account IAM grant; requires separate authorization and is not executed by local documentation tests."
+    },
+    {
       "id": "docs/google-tests.md#fence-1",
       "file": "docs/google-tests.md",
       "ordinal": 1,
