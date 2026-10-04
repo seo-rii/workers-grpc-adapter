@@ -22,7 +22,9 @@ HTTP fallback tests to individual execution references. Lifecycle work adds
 seventeen completed call cases and the full HTTP fallback matrix. Flow-control
 work satisfies six additional cases, wire checks satisfy eighteen, and SDK read
 accounting and credential isolation satisfy eleven. Mutation contracts and
-emulator accounting satisfy twelve more. The remaining 54 unsatisfied cases cannot be translated into a percentage of implementation work:
+emulator accounting satisfy twelve more. Performance and documentation work each
+satisfy five more cases. The remaining 44 unsatisfied cases cannot be translated
+into a percentage of implementation work:
 a missing assertion, an SDK behavior difference and a cloud release gate have
 very different costs. `releaseEligible` remains `false`.
 
