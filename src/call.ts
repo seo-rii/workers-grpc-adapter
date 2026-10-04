@@ -162,7 +162,11 @@ export class WorkersCall {
             this.cancelWithStatus(status.INTERNAL, 'WGA_LATE_CREDENTIALS');
             return;
         }
-        this.credentials = this.credentials.compose(creds);
+        if (!(creds instanceof CallCredentials)) {
+            throw new TypeError('Foreign CallCredentials');
+        }
+        // grpc-js merges per-call metadata before channel credential metadata.
+        this.credentials = creds.compose(this.credentials);
     }
     start(metadata: Metadata, listener: CallListener): void {
         if (this.started) {
@@ -219,7 +223,10 @@ export class WorkersCall {
         this.metadata = metadata.clone();
         if (c.options.credentials) {
             try {
-                this.credentials = this.credentials.compose(c.options.credentials);
+                if (!(c.options.credentials instanceof CallCredentials)) {
+                    throw new TypeError('Foreign CallCredentials');
+                }
+                this.credentials = c.options.credentials.compose(this.credentials);
             }
             catch {
                 this.finish(status.INTERNAL, 'WGA_CALL_CREDENTIALS');
