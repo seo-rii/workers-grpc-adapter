@@ -35,9 +35,10 @@ very different costs. `releaseEligible` remains `false`.
 
 `npm run verify` executes every local gate, including the three catalog matrices,
 and emits `verification/remaining-campaign.json`. This completion view accounts
-for all 44 cases that remained after documentation work: 27 newly verified local
-requirements, seven reproduced compatibility or upstream SDK boundaries, and ten
-live-cloud requirements. It never relabels a reproduced difference as parity.
+for all 44 cases that remained after documentation work: 28 newly verified local
+requirements, four explicit adapter behavior decisions, two upstream SDK
+boundaries with optional cancellation helpers, and ten live-cloud requirements.
+It never relabels a reproduced difference or an optional helper as native parity.
 
 After an explicit cloud run, `npm run verification:status --
 --cloud=verification/gcp-cloud-catalog.json` joins the current local evidence with
@@ -78,7 +79,7 @@ The [export and declaration contract](exports.md) completes `PKG-013`. Its polic
 reviews all 123 names in the native/adapter root declaration union: 24 supported
 within scope, three import-only failures, 56 type-only names, and 40 unsupported
 native names. Public signatures and their declaration dependencies are
-snapshotted alongside all seven declaration-bearing subpaths. The default gate
+snapshotted alongside all eight declaration-bearing subpaths. The default gate
 rejects changes until the snapshot is deliberately reviewed and refreshed.
 
 Consumer inventories scan 32 source files across four installed SDK fixtures.
@@ -90,8 +91,8 @@ now have accepted execution evidence.
 
 ## Lifecycle work executed
 
-The same 45 controlled scenarios run in each of Node/workerd and the two
-transport modes: 180 recorded scenarios covering 1,388 calls. Authentication
+The same 47 controlled scenarios run in each of Node/workerd and the two
+transport modes: 188 recorded scenarios. Authentication
 and half-close ordering, cancel before listener installation, queued write
 acknowledgements, pending Fetch/read failures, EOF/cancel ordering, channel close,
 independent calls and reentrant listeners have explicit traces and owner counts.
@@ -106,8 +107,10 @@ adapter-visible counts, not total JS heap measurements. See the
 [lifetime contract](local-contracts.md#call-lifetime-and-asynchronous-ownership)
 for the exact byte categories and controlled-reader boundary.
 
-`LIFE-001`–`LIFE-014` and `LIFE-016`–`LIFE-018` are now covered. `LIFE-015`
-retains the invalid-Date error-policy difference below. `WIRE-018` now executes
+All eighteen lifecycle cases are now covered. `LIFE-015` rejects invalid
+deadlines asynchronously with `INVALID_ARGUMENT` before authentication or Fetch;
+the pinned native client's synchronous throw remains a separate observed
+difference. `WIRE-018` now executes
 all nine required HTTP mappings, including status-less 502 and 504.
 
 ## Flow-control work executed
@@ -290,7 +293,7 @@ retains the generated table and its reproducible receipt (`DOC-002`).
 | Configuration | 11 | 0 | 0 |
 | Authentication | 15 | 0 | 0 |
 | Wire protocol | 25 | 2 | 0 |
-| Call lifecycle | 17 | 1 | 0 |
+| Call lifecycle | 18 | 0 | 0 |
 | Flow control | 6 | 1 | 0 |
 | SDK bootstrap | 11 | 0 | 0 |
 | Datastore | 22 | 2 | 0 |

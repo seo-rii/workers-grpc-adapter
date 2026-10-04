@@ -154,7 +154,7 @@ relabeled `T` merely because it would disappear from emitted JavaScript.
 | `/build/src/client`, `/build/src/client.js` | Explicit aliases of the same client module, preserving root constructor/helper identity. Also expose `callErrorFromStatus` and the type-only `SurfaceCall`; readiness still fails as described above. |
 | `/package.json` | Package metadata. |
 
-Other upstream deep paths are not exported. These seven declaration-bearing
+Other upstream deep paths are not exported. These eight declaration-bearing
 subpaths are also snapshotted; adding an extension does not claim native root
 parity. Mixed ESM/CommonJS imports share implementation and configuration
 identity.
