@@ -30,6 +30,11 @@ function publicRows(runtime, mode) {
       resources: native ? null : { ...usage(), activeCalls: 1, bufferedBytes: 3072 } });
     const late = scenario === 'slow' ? hwm : scenario === 'partial' ? (native ? 4 : 1) : 0;
     const data = Array.from({ length: delivered }, (_, index) => `data:${index}`);
+    const requestId = `${runtime}:${mode}:${scenario}`;
+    const requestBytes = Buffer.byteLength(JSON.stringify({ id: requestId, scenario, count, size, catalogId: id, requestId }));
+    const zeroBytes = { requestBytes: 0, pendingMessageBytes: 0, parserAssemblyBytes: 0, runtimeChunkBytes: 0, readableBytes: 0 };
+    const highWater = { requestBytes, pendingMessageBytes: pressured ? size : 0,
+      parserAssemblyBytes: size + 5, runtimeChunkBytes: size + 5, readableBytes: pressured ? size : 0 };
     return { id, scenario, requestId: `${runtime}:${mode}:${scenario}`, runtime, mode, status: 'passed',
       requestedCount: count, messageSize: size, deliveredCount: delivered, deliveredBytes: delivered * size,
       payloadByteSum: byteSum(delivered, size), codes: [code], terminalCount: 1, errorCodes: code ? [code] : [],
@@ -43,6 +48,9 @@ function publicRows(runtime, mode) {
       discardedMessages: cancelled ? hwm : 0, readableLengthAfterDiscard: 0,
       maxExecution: native ? null : execution, finalExecution: native ? null : { ...empty },
       finalDiagnostics: native ? null : diagnostics(), finalResources: native ? null : usage(),
+      bufferOwnership: native ? null : { scope: 'adapter-visible-buffer-references', additive: false, highWater,
+        samples: { requestRetained: { ...zeroBytes, requestBytes }, backpressured: pressured ? { ...highWater, requestBytes: 0 } : null,
+          released: { ...zeroBytes } } },
       activeCallsBeforeClose: native ? null : 0, cleanupVerifiedBeforeClose: true, elapsedMs: 30 };
   });
 }
@@ -101,6 +109,31 @@ function fixture() {
       before: state(), explicitCancelled: [], after: state() })) };
 }
 const row = (r, scenario, run = 0) => r.runs[run].rows.find(value => value.scenario === scenario);
+
+test('EVIDENCE stream ownership separates request, pending, assembly, chunk and public queue bytes', () => {
+  validateFlowControlReport(fixture());
+  for (const mutate of [
+    r => { row(r, 'slow').bufferOwnership = null; },
+    r => { row(r, 'slow').bufferOwnership.additive = true; },
+    r => { row(r, 'slow').bufferOwnership.scope = 'isolate-total-heap'; },
+    r => { row(r, 'slow').bufferOwnership.totalHeapBytes = 4096; },
+    r => { row(r, 'slow').bufferOwnership.samples.requestRetained.requestBytes = 0; },
+    r => { row(r, 'pause').bufferOwnership.samples.backpressured = null; },
+    r => { row(r, 'slow').bufferOwnership.samples.backpressured.requestBytes = 1; },
+    r => { row(r, 'slow').bufferOwnership.highWater.readableBytes++; },
+    r => { r.native.rows[0].bufferOwnership = row(r, 'slow').bufferOwnership; },
+    ...['requestBytes', 'pendingMessageBytes', 'parserAssemblyBytes', 'runtimeChunkBytes', 'readableBytes'].flatMap(key => [
+      r => { row(r, 'slow').bufferOwnership.highWater[key]++; },
+      r => { row(r, 'slow').bufferOwnership.samples.released[key] = 1; },
+      r => { delete row(r, 'slow').bufferOwnership.samples.requestRetained[key]; },
+    ]),
+    ...['pendingMessageBytes', 'parserAssemblyBytes', 'runtimeChunkBytes', 'readableBytes'].map(key =>
+      r => { row(r, 'slow').bufferOwnership.samples.backpressured[key] = 0; }),
+  ]) {
+    const report = fixture(); mutate(report);
+    assert.throws(() => validateFlowControlReport(report), /WGA_EVIDENCE_INVALID/);
+  }
+});
 function reject(mutate) { const report = fixture(); mutate(report); assert.throws(() => validateFlowControlReport(report), /WGA_EVIDENCE_INVALID/); }
 
 test('EVIDENCE flow control accepts native and adapter receipts while preserving distinct ownership boundaries', () => {

@@ -74,7 +74,7 @@ function publicRow(row, spec, native = false) {
     need(row.readableLengthBeforeDiscard === 0, `${label} consumed public queue`);
   }
   if (native) {
-    for (const field of ['maxExecution', 'finalExecution', 'finalDiagnostics', 'finalResources', 'activeCallsBeforeClose']) {
+    for (const field of ['maxExecution', 'finalExecution', 'finalDiagnostics', 'finalResources', 'activeCallsBeforeClose', 'bufferOwnership']) {
       need(row[field] === null, `${label} no fabricated native adapter counters`);
     }
     for (const snapshot of [row.pausedSample, row.cancelSample].filter(Boolean)) {
@@ -90,6 +90,31 @@ function publicRow(row, spec, native = false) {
     same(row.finalExecution, zero, `${label} actual execution cleanup`);
     same(row.finalDiagnostics, { terminal: true, fetchCount: 1, requestBytes: 0, responseBytes: 0, timerActive: false }, `${label} terminal diagnostics`);
     resourceBounds(row.finalResources, label);
+    const ownership = row.bufferOwnership;
+    need(ownership?.scope === 'adapter-visible-buffer-references' && ownership.additive === false,
+      `${label} byte ownership is not a heap total`);
+    same(Object.keys(ownership).sort(), ['additive', 'highWater', 'samples', 'scope'], `${label} byte ownership schema`);
+    const byteKeys = ['requestBytes', 'pendingMessageBytes', 'parserAssemblyBytes', 'runtimeChunkBytes', 'readableBytes'];
+    same(Object.keys(ownership.samples).sort(), ['backpressured', 'released', 'requestRetained'], `${label} ownership checkpoints`);
+    for (const sample of [ownership.highWater, ...Object.values(ownership.samples)].filter(value => value !== null)) {
+      need(sample && Object.keys(sample).length === byteKeys.length && byteKeys.every(key => integer(sample[key], 1048576)),
+        `${label} measured byte categories`);
+    }
+    const requestBytes = Buffer.byteLength(JSON.stringify({ id: row.requestId, scenario, count, size, catalogId: id, requestId: row.requestId }));
+    same(ownership.samples.requestRetained, { requestBytes, pendingMessageBytes: 0, parserAssemblyBytes: 0,
+      runtimeChunkBytes: 0, readableBytes: 0 }, `${label} actual serialized request checkpoint`);
+    same(ownership.highWater, { requestBytes, pendingMessageBytes: row.maxExecution.pendingMessageBytes,
+      parserAssemblyBytes: row.maxExecution.parserAssemblyBytes, runtimeChunkBytes: row.maxExecution.runtimeChunkBytes,
+      readableBytes: row.maxReadableLength * size }, `${label} high-water categories match sampled owners`);
+    same(ownership.samples.released, Object.fromEntries(byteKeys.map(key => [key, 0])), `${label} all byte owners released`);
+    if (scenario !== 'total') need(ownership.samples.backpressured !== null, `${label} real backpressure checkpoint`);
+    if (ownership.samples.backpressured !== null) {
+      const bytes = ownership.samples.backpressured;
+      need(bytes.requestBytes === 0 && bytes.pendingMessageBytes === size && bytes.readableBytes === size
+        && bytes.parserAssemblyBytes > 0 && bytes.runtimeChunkBytes > 0,
+      `${label} request release and occupied pending, assembly, runtime chunk and queue`);
+      need(byteKeys.every(key => bytes[key] <= ownership.highWater[key]), `${label} checkpoints stay within observed high water`);
+    }
     for (const snapshot of [row.pausedSample, row.cancelSample].filter(Boolean)) {
       executionBounds(snapshot.execution, size, label); resourceBounds(snapshot.resources, label, false);
     }

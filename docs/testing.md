@@ -535,6 +535,15 @@ Save a confirmed failure as a focused regression test before fixing it. A passin
 
 Benchmarks report local p50/p95 latency, cold require, bundle size, observed buffering and process memory for large/small/slow/concurrent cases. They do not establish ownership of Fetch allocator bytes or deployed Worker performance. Production budgets remain unset.
 
+`npm run test:flow:control` also measures five distinct byte categories during
+the same slow-consumer workload: retained serialized request, pending response,
+parser assembly, runtime-provided chunk, and queued public Buffers. Node and
+workerd execute both modes with native business-result comparison. The report
+keeps a request-retention checkpoint, an actual backpressure checkpoint, sampled
+high-water values, and a zero-owner checkpoint after terminal cleanup and public
+queue disposal. These references can share backing storage; their sum is not a
+heap measurement. Native rows do not invent adapter-internal counters.
+
 Workerd tests exercise static SDK imports, constructors, protobuf encoding/decoding/reflection, authentication headers, first RPCs and later invocations. The lazy SDK gate additionally starts with no SDK modules initialized, imports all three inside the first request, and repeats on a warm request with different credentials. It checks six RPCs, including Datastore explain metrics decoded through the separate `Struct` schema with nested objects, lists, nulls, strings, numbers and booleans. Negative controls reject missing build presets and mismatched profile/schema hashes. The preset does not manually patch installed node_modules or provide a generic require shim. Both new SDK gates are required by `verify` and CI.
 
 The controlled shared workerd bridge buffers finite responses. The Worker SDK harness verifies client-visible cancellation; the resilience gate additionally observes interrupted loopback responses closing before disposal. Reports identify Wrangler, Miniflare, workerd and compatibility-date versions; local workerd is not a deployed Cloudflare account test.

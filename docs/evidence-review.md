@@ -1,6 +1,6 @@
 # Original catalog evidence review
 
-Reviewed on 2026-10-03 against the implementation, test sources and completed
+Reviewed on 2026-10-04 against the implementation, test sources and completed
 local reports. The initial reconciliation connected existing evidence. The
 subsequent packaging work adds executable installation, identity, offline-doctor,
 complete SDK bundle checks, reviewed export/declaration contracts, and addressable
@@ -11,11 +11,11 @@ The unchanged [original catalog](../compatibility/test-catalog.json) contains
 records an exact source/report reference and any remaining gap for every ID.
 `npm run verify` validates those references against its own current execution.
 
-| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | Meaning |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | Execution satisfies the original case. |
-| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | Related execution exists, but named conditions remain. |
-| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
+| Coverage | Before review | After reconciliation | After packaging | After lifecycle | After flow control | After wire checks | After SDK accounting | After mutations/emulators | After performance | Meaning |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Covered | 41 | 58 | 70 | 88 | 94 | 112 | 123 | 135 | 136 | Execution satisfies the original case. |
+| Partial | 112 | 118 | 108 | 90 | 84 | 66 | 56 | 45 | 44 | Related execution exists, but named conditions remain. |
+| No accepted current execution reference | 36 | 13 | 11 | 11 | 11 | 11 | 10 | 9 | 9 | Stored as `unimplemented`; this is an evidence classification, not a runtime feature inventory. |
 
 Packaging work satisfies twelve additional cases and connects seven existing
 HTTP fallback tests to individual execution references. Lifecycle work adds
@@ -207,9 +207,12 @@ emulator accounting uses grpc-web; controlled gates separately test both modes.
 All Datastore catalog cases except production index requirements (`DS-019`) and
 the native SDK destroy behavior (`DS-021`) now have complete local evidence.
 
-Actual SDK workerd benchmarks already run, but do not separately time every
-initialization phase or measure every owned buffer category. Those are narrower
-remaining conditions than “not tested.”
+The shared flow suite now records separate request, pending-message, parser
+assembly, runtime-chunk and public Buffer queue bytes in Node and workerd, in
+both modes. It captures the retained request, actual backpressure and released
+owners, plus sampled high-water values. Shared backing storage is not added into
+a heap estimate. This covers `PERF-003`. Actual SDK workerd benchmarks already
+run; separate initialization timing and mixed-fault heap trends remain.
 
 ## Coverage by area
 
@@ -229,7 +232,7 @@ remaining conditions than “not tested.”
 | Retry | 2 | 2 | 0 |
 | Security | 1 | 6 | 0 |
 | Cloud | 0 | 2 | 7 |
-| Performance | 0 | 5 | 0 |
+| Performance | 1 | 4 | 0 |
 | Documentation | 0 | 3 | 2 |
 
 Flow control now includes the native comparisons and specific

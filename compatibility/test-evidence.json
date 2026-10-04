@@ -76086,11 +76086,9 @@
     },
     {
       "id": "PERF-003",
-      "coverage": "partial",
-      "reason": "Slow-reader tests bound Readable messages, transport lookahead and aggregate adapter byte leases; workerd fault waves also record peak readable messages and transport bytes. SDK benchmarks separately sample V8 heap/backing storage without presenting either as total isolate memory.",
-      "gaps": [
-        "Measure request snapshots, pending response messages, parser assembly and runtime-provided chunks as distinct ownership categories under the slow-consumer workload; current diagnostics and lease peaks do not provide that complete breakdown."
-      ],
+      "coverage": "covered",
+      "reason": "The shared native/Node/workerd flow suite measures serialized request retention before Fetch, separate pending-message/parser-assembly/runtime-chunk/Readable Buffer byte categories during slow consumption, and zero measured owners after completion and public queue disposal. Both adapter modes retain measured checkpoints and sampled high-water values; categories may share backing storage and are never added into a heap estimate.",
+      "gaps": [],
       "references": [
         {
           "kind": "tap",
@@ -76126,6 +76124,484 @@
               "equals": "slow-stream-order-and-buffering"
             }
           ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/0/rows",
+          "where": {
+            "scenario": "slow"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "node"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 129
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/0/rows",
+          "where": {
+            "scenario": "pause"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "node"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 131
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/1/rows",
+          "where": {
+            "scenario": "slow"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "node"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 125
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/1/rows",
+          "where": {
+            "scenario": "pause"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "node"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 127
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/2/rows",
+          "where": {
+            "scenario": "slow"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "workerd"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 135
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/2/rows",
+          "where": {
+            "scenario": "pause"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "workerd"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "cloudflare"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 137
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/3/rows",
+          "where": {
+            "scenario": "slow"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "workerd"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 131
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "json-case",
+          "report": "verification/flow-control.json",
+          "source": "fixtures/shared/flow-control.mjs",
+          "command": "flow-control",
+          "array": "/runs/3/rows",
+          "where": {
+            "scenario": "pause"
+          },
+          "anchor": "bufferOwnership",
+          "assertions": [
+            {
+              "pointer": "/runtime",
+              "equals": "workerd"
+            },
+            {
+              "pointer": "/mode",
+              "equals": "grpc-web"
+            },
+            {
+              "pointer": "/status",
+              "equals": "passed"
+            },
+            {
+              "pointer": "/bufferOwnership/scope",
+              "equals": "adapter-visible-buffer-references"
+            },
+            {
+              "pointer": "/bufferOwnership/additive",
+              "equals": false
+            },
+            {
+              "pointer": "/bufferOwnership/samples/requestRetained/requestBytes",
+              "equals": 133
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/pendingMessageBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/backpressured/readableBytes",
+              "equals": 1024
+            },
+            {
+              "pointer": "/bufferOwnership/samples/released",
+              "equals": {
+                "requestBytes": 0,
+                "pendingMessageBytes": 0,
+                "parserAssemblyBytes": 0,
+                "runtimeChunkBytes": 0,
+                "readableBytes": 0
+              }
+            },
+            {
+              "pointer": "/cleanupVerifiedBeforeClose",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "kind": "tap",
+          "source": "test/flow-control-evidence.test.cjs",
+          "command": "tests",
+          "name": "EVIDENCE stream ownership separates request, pending, assembly, chunk and public queue bytes"
         }
       ],
       "catalogCaseSha256": "adf9e7cf2b09c044c878fda4f24540e97a87950dd002c20826c0a15bed6f247b"

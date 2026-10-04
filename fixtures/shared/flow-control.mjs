@@ -64,7 +64,18 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
     const codes = [], errorCodes = [], events = [];
     let dataAfterTerminal = 0;
     const maxExecution = adapter ? { ...zeroExecution } : null;
+    const bufferOwnership = adapter ? { scope: 'adapter-visible-buffer-references', additive: false,
+      highWater: { requestBytes: 0, pendingMessageBytes: 0, parserAssemblyBytes: 0, runtimeChunkBytes: 0, readableBytes: 0 },
+      samples: { requestRetained: null, backpressured: null, released: null } } : null;
     const started = Date.now();
+    const ownedBytes = () => {
+      const execution = wire.executionDiagnostics();
+      return { requestBytes: wire.diagnostics().requestBytes, pendingMessageBytes: execution.pendingMessageBytes,
+        parserAssemblyBytes: execution.parserAssemblyBytes, runtimeChunkBytes: execution.runtimeChunkBytes,
+        // Identity-deserialized Buffers have a known byte length. This does not
+        // estimate arbitrary SDK objects, allocator overhead or total heap.
+        readableBytes: surface.readableLength * spec.size };
+    };
     const sample = () => {
       maxReadableLength = Math.max(maxReadableLength, surface.readableLength);
       assert.ok(codes.length <= 1, 'one terminal status');
@@ -72,6 +83,11 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
       if (!adapter) return;
       const value = wire.executionDiagnostics();
       for (const key of Object.keys(maxExecution)) maxExecution[key] = Math.max(maxExecution[key], value[key]);
+      const bytes = ownedBytes();
+      for (const key of Object.keys(bytes)) bufferOwnership.highWater[key] = Math.max(bufferOwnership.highWater[key], bytes[key]);
+      if (!bufferOwnership.samples.backpressured && value.pendingMessages === 1 && surface.readableLength === 1) {
+        bufferOwnership.samples.backpressured = bytes;
+      }
       assert.ok(value.pendingMessages <= 1, 'one decoded message awaits demand');
       assert.ok(value.parserAssemblies <= 1, 'one parser assembly is live');
       assert.ok(value.activePumps <= 1, 'one transport pump');
@@ -146,7 +162,12 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
     try {
       surface = client.makeServerStreamRequest('/flow.Test/Stream', value => Buffer.from(JSON.stringify(value)), value => value,
         { ...spec, id: requestId, catalogId: spec.id, requestId }, { deadline: Date.now() + 30000 });
-      if (adapter) wire = transportCall(surface);
+      if (adapter) {
+        wire = transportCall(surface);
+        bufferOwnership.samples.requestRetained = ownedBytes();
+        assert.ok(bufferOwnership.samples.requestRetained.requestBytes > 0, 'serialized request owner is actually occupied');
+        sample();
+      }
       surface.on('data', onData);
       surface.on('error', error => { errorCodes.push(error.code); events.push(`error:${error.code}`); });
       surface.on('status', value => { codes.push(value.code); events.push(`status:${value.code}`); });
@@ -204,6 +225,10 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
       while (surface.read() !== null) discardedMessages++;
       surface.destroy();
       assert.equal(surface.readableLength, 0);
+      if (adapter) {
+        bufferOwnership.samples.released = ownedBytes();
+        assert.ok(Object.values(bufferOwnership.samples.released).every(value => value === 0), 'every measured byte owner is released');
+      }
       rows.push({ id: spec.id, scenario: spec.scenario, requestId, runtime, mode, status: 'passed',
         requestedCount: spec.count, messageSize: spec.size, deliveredCount, deliveredBytes, payloadByteSum,
         codes: [...codes], terminalCount: codes.length, errorCodes: [...errorCodes], endCount, cancelCount,
@@ -211,7 +236,7 @@ export async function runPublicFlowSuite({ grpc, createWorkersGrpcTransport, fet
         readableHighWaterMark: surface.readableHighWaterMark, maxReadableLength,
         pauseDeliveredDuringWindow, pauseWindowMs, pausedSample, cancelSample, readableLengthAfterCancel,
         readableLengthBeforeDiscard, discardedMessages, readableLengthAfterDiscard: surface.readableLength,
-        maxExecution, finalExecution, finalDiagnostics, finalResources,
+        maxExecution, finalExecution, finalDiagnostics, finalResources, bufferOwnership,
         activeCallsBeforeClose: adapter ? channel.activeCallCount() : null,
         cleanupVerifiedBeforeClose: true, elapsedMs: Date.now() - started });
       completed = true;
