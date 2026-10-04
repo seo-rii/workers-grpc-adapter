@@ -1,11 +1,13 @@
-import { Datastore, v1 } from '@google-cloud/datastore';
+import { Datastore, DatastoreClient } from '@google-cloud/datastore';
 import type { CallOptions } from 'google-gax';
 import { cancellableCall, cancellableQueryStream } from '@grpc/grpc-js/sdk';
 
 type Assert<T extends true> = T;
 type NotAny<T> = 0 extends (1 & T) ? false : true;
 declare const datastore: Datastore;
-declare const generated: v1.DatastoreClient;
+// Legacy v1 is declared as any; the public named export retains the real class.
+declare const generated: DatastoreClient;
+type GeneratedClientIsTyped = Assert<NotAny<typeof generated>>;
 const options: CallOptions = { timeout: 1_000, retry: null };
 const commit = cancellableCall(gax => datastore.transaction().commit(gax), { gaxOptions: options });
 const transactionTuple: Promise<[unknown]> = commit.promise;
@@ -17,6 +19,16 @@ commit.promise.then(([response]) => {
 });
 const unary = cancellableCall(gax => generated.commit({ projectId: 'fixture' }, gax), { gaxOptions: options });
 const generatedTuple: Promise<[unknown, unknown, unknown]> = unary.promise;
+const direct = generated.commit({ projectId: 'fixture' }, options);
+const exactGeneratedTuple: typeof direct = unary.promise;
+unary.promise.then(([response, request]) => {
+    type Typed = Assert<NotAny<typeof response>>;
+    const indexUpdates: number | null | undefined = response.indexUpdates;
+    const projectId: string | null | undefined = request?.projectId;
+    // @ts-expect-error the generated response retains its protobuf object type
+    const invalid: number = response;
+    void [indexUpdates, projectId, invalid];
+});
 const query = datastore.createQuery('Fixture');
 const rows = cancellableQueryStream<{ name: string }>(
     gax => datastore.runQueryStream(query, { gaxOptions: gax }),
@@ -31,4 +43,4 @@ async function consume(): Promise<void> {
         void [name, invalid]; break;
     }
 }
-void [transactionTuple, generatedTuple, consume];
+void [transactionTuple, generatedTuple, exactGeneratedTuple, consume];

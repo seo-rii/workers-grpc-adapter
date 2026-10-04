@@ -460,7 +460,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 115
+              "equals": 119
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -497,7 +497,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 115
+              "equals": 119
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -1644,7 +1644,7 @@
             },
             {
               "pointer": "/files",
-              "equals": 115
+              "equals": 119
             }
           ]
         },
