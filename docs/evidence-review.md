@@ -397,8 +397,26 @@ seven caller Fetch attempts returned `ECONNRESET` before HTTP headers. Its actua
 primary error was `DEPLOYED_SOAK_FAILED`; intentional failure injection was not
 reached. All nine temporary resources were deleted, both database operations
 settled, and existing GCP and Cloudflare inventories matched. The reset cause
-remains unresolved. This later result is not a successful endurance gate and
+was not established for those individual failures. This later result is not a successful endurance gate and
 does not replace the narrower historical success of the earlier sequential run.
+
+The subsequent [fresh HTTPS caller rerun](gcp-cloud-probe.md#fresh-https-caller-rerun-2026-10-05-kst)
+at `8725b42` passed the same native/deployed catalog and real token-renewal
+checks, then completed 600 of 600 burst requests without failed, missed or
+pending work. It reached the intentional failure, retained that primary error,
+deleted all nine resources, settled both database operations and matched the
+existing GCP and Cloudflare inventories. Its expected exit `1` records the
+negative cleanup test. Source provenance covers 19 files, including the opt-in
+caller helper. The service-account deletion row retains a stale earlier HTTP
+code; a separate immutable-UID read confirmed `404`.
+
+The [controlled reset comparison](caller-connection-resets.md) observed two
+Fetch failures on reused sockets and no failures in 300 fresh HTTPS requests.
+That synthetic Worker run removed its owned Worker but failed its inventory
+gate because another existing Worker's metadata differed between snapshots.
+It supports a caller connection failure mechanism without establishing all
+seven earlier causes. Fresh POST connections do not change adapter Fetch,
+and their finite success does not establish pooled connection reliability.
 
 Production IAM policy coverage, source-credential renewal, federation, quota,
 transaction contention, prolonged traffic, and dependency/security/license

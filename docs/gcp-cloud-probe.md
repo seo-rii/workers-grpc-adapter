@@ -291,6 +291,66 @@ The live receipt retains eight passed live catalog behaviors and one passed loca
 environment-policy check; failure injection is blocked. Existing-project use and
 the failed repetition check keep this separate from release certification.
 
+## Fresh HTTPS caller rerun: 2026-10-05 (KST)
+
+Run `wga-probe-20261005-5ba39f15` repeated the same approved existing-project
+catalog, natural credential renewal, 600-second burst and failure injection
+with source [`8725b42`](https://github.com/seo-rii/workers-grpc-adapter/commit/8725b4297535269c87962228265c0ce5c238fe73)
+and `--worker-http=fresh`. The Node `v24.1.0` caller used a new HTTPS/TLS
+connection per POST, with no failed-POST retry or transport fallback. Worker
+adapter Fetch behavior was unchanged. The [caller reset diagnosis](caller-connection-resets.md)
+records the separate controlled comparison and its attribution limits.
+
+Native and both deployed modes passed the finite SDK/catalog suites. The strict
+repetition validator also passed the complete ten-minute window:
+
+| Mode | Completed | Passed | Failed | Recovery passed | SDK read passed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| grpc-web gateway | 300 | 300 | 0 | 250 | 50 |
+| Cloudflare automatic conversion | 300 | 300 | 0 | 250 | 50 |
+| Total | 600 | 600 | 0 | 500 | 100 |
+
+Missed, interrupted, pending and timed-out requests were zero. The orchestrator
+observed four pending requests and drained to zero calls and timeout handles.
+Its counter includes admission before HTTP transmission and does not prove
+Worker/backend concurrency or overlap in every burst. Caller latency was p50
+233.23 ms, p95 515.89 ms, p99 813.12 ms and maximum 1005.48 ms. These measurements
+include fresh TLS connections and are not a pooled-transport performance comparison.
+
+Actual 60-second target-token expiry and renewal passed in all three paths:
+two mints and four expected permission-denied RPCs per reused SDK/auth client,
+with authorization generations `[1, 1, 2, 2]`. Native, gateway and automatic
+checks took 60.636, 61.925 and 62.408 seconds respectively. This still does not
+establish source-credential renewal or successful data access after renewal.
+
+The requested failure injection was reached. The primary error remained
+`INTENTIONAL_CATALOG_E2E_FAILURE`, and the runner exited `1` after cleanup in
+1363.51 seconds. This is the expected negative-test outcome, rather than an
+all-success process exit. All nine resources had acknowledged `DELETE 200`
+responses and verified absence; both database deletion operations settled.
+Eight deletion rows recorded final `404`. The service-account row retained an
+earlier `lookupStatus: 200` when its later polling branch verified absence;
+a separate read-only lookup by immutable UID returned `404`. The account's
+temporary TokenCreator policy target was removed.
+
+Existing GCP inventory matched exactly: zero Cloud Run services, one existing
+database, zero secrets, one existing service account and zero artifact repositories.
+The supervisor's independent Cloudflare comparison also matched exactly: 15
+existing Workers before and after. No project or billing change was made in
+this rerun. Required APIs enabled for the earlier run remain enabled.
+
+Catalog, renewal and repetition source hashes matched the same 19-file manifest,
+including the new caller helper. The retained bundle SHA-256 is
+`ddda9f995b7b5b68e9df82c2c7f96e2e336ee68624f7c1b12872e460110bf72f`.
+All ten catalog behaviors passed, including the local environment-policy check
+and live failure cleanup. Existing-project use still leaves the original
+dedicated-project condition unmet. The receipt therefore retains
+`releaseEligible: false` and `certificationPassed: false`.
+
+This finite fresh-caller result does not erase the earlier seven failures,
+confirm each one's cause, or establish default pooled Fetch or long-term
+production reliability.
+
 ## Bounded deployed repetition and client recovery
 
 Add `--soak-seconds=600` to the temporary deployment command to exercise both
