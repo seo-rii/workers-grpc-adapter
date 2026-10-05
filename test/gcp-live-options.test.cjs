@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { parseSoakSeconds, parseSoakBurst } = require('../scripts/gcp-soak.cjs');
 const { parseAuthRenewalArgs } = require('../scripts/gcp-auth-renewal.cjs');
+const { parseWorkerHttpArgs } = require('../scripts/gcp-worker-http.cjs');
 const source = fs.readFileSync(path.join(__dirname, '../scripts/gcp-cloud-probe.cjs'), 'utf8');
 const start = source.indexOf('async function main() {');
 const end = source.indexOf('\nasync function cleanup()', start);
@@ -13,15 +14,22 @@ assert.ok(start >= 0 && end > start);
 const main = source.slice(start, end);
 
 async function rejectBeforeCredentials(args, expected) {
-  let credentialReads = 0;
+  let credentialReads = 0, networkRequests = 0;
+  const report = {};
+  const networkBoundary = () => { networkRequests++; throw new Error('NETWORK_BOUNDARY'); };
   const run = vm.runInNewContext(`(${main})`, {
-    process: { argv: ['node', 'gcp-cloud-probe.cjs', ...args], env: {} },
-    report: {}, root: '/fixture', parseSoakSeconds, parseSoakBurst, parseAuthRenewalArgs,
+    process: { argv: ['node', 'gcp-cloud-probe.cjs', ...args], env: {},
+      version: process.version, versions: { undici: process.versions.undici } },
+    report, root: '/fixture', parseSoakSeconds, parseSoakBurst, parseAuthRenewalArgs, parseWorkerHttpArgs,
     catalog: { sourceHashes: () => ({}) },
     secret() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
+    gcloud() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
+    fetch: networkBoundary, fetchWorkerHttp: networkBoundary, api: networkBoundary,
   });
   await assert.rejects(run(), expected);
   assert.equal(credentialReads, 0);
+  assert.equal(networkRequests, 0);
+  return report;
 }
 
 test('live opt-in and malformed repetition options fail before credential discovery', async () => {
@@ -36,6 +44,32 @@ test('live opt-in and malformed repetition options fail before credential discov
   }
   await rejectBeforeCredentials(['--deploy-temporary', '--soak-seconds=600', '--soak-burst=4'],
     /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+});
+
+test('live caller transport flags are validated before credentials and network access', async () => {
+  await rejectBeforeCredentials(['--worker-http=fresh'], /EXPLICIT_DEPLOY_TEMPORARY_REQUIRED/);
+  for (const options of [
+    ['--worker-http'], ['--worker-http', 'fresh'], ['--worker-http='], ['--worker-http=Fresh'],
+    ['--worker-http=unknown'], ['--worker-http=fresh '], ['--worker-http-other=fresh'],
+    ['--worker-http=fresh', '--worker-http=fresh'], ['--worker-http=fetch', '--worker-http=fresh'],
+  ]) {
+    await rejectBeforeCredentials(['--deploy-temporary', '--project=unused-project', ...options],
+      /INVALID_WORKER_HTTP_OPTION/);
+  }
+  for (const transport of ['fetch', 'fresh']) {
+    const report = await rejectBeforeCredentials(['--deploy-temporary', `--worker-http=${transport}`],
+      /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+    assert.equal(report.workerHttp.transport, transport);
+    assert.equal(report.workerHttp.node, process.version);
+    if (transport === 'fetch') assert.equal(report.workerHttp.undici, process.versions.undici || null);
+    else {
+      assert.equal(report.workerHttp.protocol, 'https/http1');
+      assert.equal(report.workerHttp.connection, 'fresh-per-post');
+      assert.equal(Object.hasOwn(report.workerHttp, 'undici'), false);
+    }
+  }
+  const defaultReport = await rejectBeforeCredentials(['--deploy-temporary'], /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+  assert.equal(defaultReport.workerHttp.transport, 'fetch');
 });
 
 test('temporary-account token grant requires catalog mode and exactly one explicit flag', async () => {
