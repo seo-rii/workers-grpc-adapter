@@ -193,7 +193,10 @@ The default scheduler starts at most one HTTP request per second, with at most
 two in flight globally and at most 600 dispatch slots. Add
 `--soak-burst=4` with `--soak-seconds=60` through `600` to dispatch four requests
 at the start of each four-second window, two for each mode. A separate receipt
-schema requires actual four-request overlap; a capacity miss fails the run.
+schema requires four simultaneously pending orchestrator requests; a capacity
+miss fails the run. This counter includes dispatch before Fetch starts and does
+not prove concurrent execution inside a Worker or backend, or overlap in every
+four-request group.
 This keeps the same total request count and does not add resources or IAM grants.
 Both patterns alternate the two transport modes. Every sixth request for each mode runs the real Secret Manager SDK's
 `GetSecret` suite against the temporary secret. Other requests run a fixed batch
