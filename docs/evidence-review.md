@@ -390,6 +390,16 @@ case and all 600 repetition requests passed; all nine temporary resources were
 deleted and existing inventory was unchanged. The cleanup test deliberately
 exited nonzero after preserving its injected primary failure.
 
+The later [nadd-al burst run](gcp-cloud-probe.md#nadd-al-deployment-and-burst-result-2026-10-05-kst)
+at `fba4b8a` passed the finite native/deployed SDK suites and real target-token
+renewal, then failed its ten-minute repetition gate: 593 of 600 requests passed;
+seven caller Fetch attempts returned `ECONNRESET` before HTTP headers. Its actual
+primary error was `DEPLOYED_SOAK_FAILED`; intentional failure injection was not
+reached. All nine temporary resources were deleted, both database operations
+settled, and existing GCP and Cloudflare inventories matched. The reset cause
+remains unresolved. This later result is not a successful endurance gate and
+does not replace the narrower historical success of the earlier sequential run.
+
 Production IAM policy coverage, source-credential renewal, federation, quota,
 transaction contention, prolonged traffic, and dependency/security/license
 release review remain separate gates. The finite denied-RPC renewal probe does

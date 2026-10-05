@@ -215,6 +215,65 @@ long-running reliability also remain separate checks. The receipt therefore
 keeps `releaseEligible: false` and `certificationPassed: false`, while recording
 the successful behavior and verified deletion separately.
 
+## nadd-al deployment and burst result: 2026-10-05 (KST)
+
+Run `wga-probe-20261005-585517a2` used the approved existing `nadd-al` project
+and source [`fba4b8a`](https://github.com/seo-rii/workers-grpc-adapter/commit/fba4b8a7fddcc38840dab240d07adbb79e78c80c).
+Before deployment, the missing Cloud Run, Datastore, Secret Manager, IAM,
+IAM Credentials, Artifact Registry and Service Usage APIs were enabled. Those
+prerequisites remain enabled. The runner then recorded existing resources and
+created two Cloud Run services, two named databases, two secrets, one service
+account and two Workers with random run names.
+
+Native and both Worker modes passed the finite SDK/catalog suites, including
+CRUD, typed cursor queries, aggregation, transactions/rollback, real query errors,
+restricted-principal denial and Secret Manager payload/list operations. Actual
+60-second impersonated-token renewal also passed in all three modes: two mints,
+four authorizations, generations `[1, 1, 2, 2]` and four expected status-7 RPCs
+per mode. Workers checked the bearer at transport Fetch; native checked auth-client
+request headers. This does not establish renewal of the source user credential or
+successful data access after renewal.
+
+The ten-minute `--soak-burst=4` check completed every planned request, but failed
+its strict success gate:
+
+| Mode | Completed | Passed | Failed | Recovery passed | SDK read passed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| grpc-web gateway | 300 | 297 | 3 | 248 | 49 |
+| Cloudflare automatic conversion | 300 | 296 | 4 | 247 | 49 |
+| Total | 600 | 593 | 7 | 495 | 98 |
+
+All seven failures were caller Fetch `TypeError / ECONNRESET`, before any HTTP
+status was received, in 5.37–38.99 milliseconds. They occurred at zero-based slots
+60, 465–467, 564–565 and 567. There were no missed slots, request timeouts,
+interruptions or pending requests. The orchestrator observed four pending requests
+at once; its final in-flight and timeout counters were zero. This counter does
+not establish concurrent execution inside a Worker or backend. Across all 600
+attempts, latency was p50 235.56 ms, p95 370.68 ms, p99 849.75 ms and maximum
+1713.49 ms, including failed attempts.
+
+Basic network access, DNS resolution, a fresh authenticated GCP read and Node
+connectivity to the Cloudflare API succeeded during cleanup. These checks do not
+identify the source of the resets; local transport, edge and backend attribution
+remain unresolved. No retry was added to mask the failed observations. The
+primary error was `DEPLOYED_SOAK_FAILED`, exit `1`. The requested intentional
+failure injection was not reached, so `CLOUD-009` remains unexecuted in this run.
+
+Cleanup still completed: all nine resources had acknowledged `DELETE 200`
+responses and final `404` lookups, with both database deletion operations settled.
+The owned service-account deletion removed the temporary caller TokenCreator
+grant's target. GCP inventory matched exactly before and after: zero Cloud Run
+services, one existing database, zero secrets, one existing service account and
+zero artifact repositories. A separate supervisor compared the existing
+Cloudflare Worker metadata inventory: 15 before, 15 after, exact equality.
+
+The source hashes for catalog, renewal and repetition each matched the same
+18-file manifest. The retained bundle SHA-256 is
+`fd8ded8f81d7a1adf47edc3f4d659a568319f42e47f70ca563cc9379e2f38be6`.
+The live receipt retains eight passed live catalog behaviors and one passed local
+environment-policy check; failure injection is blocked. Existing-project use and
+the failed repetition check keep this separate from release certification.
+
 ## Bounded deployed repetition and client recovery
 
 Add `--soak-seconds=600` to the temporary deployment command to exercise both
