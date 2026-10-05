@@ -10,6 +10,7 @@
     "docs/api.md": "maintained",
     "docs/architecture.md": "maintained",
     "docs/call-lifecycle.md": "maintained",
+    "docs/caller-connection-resets.md": "maintained",
     "docs/cloud-probe.md": "historical",
     "docs/cloudflare-conversion.md": "historical",
     "docs/compression.md": "maintained",
