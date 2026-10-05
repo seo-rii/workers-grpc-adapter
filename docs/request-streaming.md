@@ -76,3 +76,12 @@ public Writable and Duplex APIs through that same local gateway, including
 ordered frames, response-before-second-request, a slow backend, compression,
 half-close, limits, errors and cleanup. This gate does not establish compatibility
 with every streaming SDK or a deployed gateway's buffering and timeout policy.
+
+The gate includes 14 scenarios. Its bidirectional cases combine gzip request
+frames with responses before half-close, cancel after the first response with
+native-peer cancellation, and resume the same call after an idle interval.
+Both the Worker and native server record the idle gap. The default is 1,650 ms;
+`node scripts/test-request-streaming.cjs --idle-ms=30000` selects a 30-second
+check, with a maximum selectable interval of 120 seconds. The 30-second local
+run passed all 14 scenarios on 2026-10-05. Longer intervals remain finite checks
+of local workerd, Envoy and the native server.

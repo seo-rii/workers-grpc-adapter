@@ -18,11 +18,15 @@ const native = nativeRequire('@grpc/grpc-js');
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel, CoreHeaders } = req('miniflare');
 const pin = require('../fixtures/envoy/binary.json');
 const binary = process.env.WGA_ENVOY_BINARY || path.join(root, 'fixtures/envoy/.cache', `envoy-${pin.version}`);
-const scenarios = ['client-stream', 'bidi', 'slow-consumer', 'empty', 'gzip', 'receive-limit', 'error-after-end', 'early-error', 'cancel', 'deadline', 'channel-close'];
+const scenarios = ['client-stream', 'bidi', 'bidi-gzip', 'bidi-idle', 'bidi-cancel-after-response', 'slow-consumer', 'empty', 'gzip', 'receive-limit', 'error-after-end', 'early-error', 'cancel', 'deadline', 'channel-close'];
 const sourceBuild = process.argv.includes('--source-build');
+const idleOption = process.argv.find(arg => arg.startsWith('--idle-ms='));
+const idleTargetMs = idleOption ? Number(idleOption.slice('--idle-ms='.length)) : 1650;
+assert.ok(Number.isSafeInteger(idleTargetMs) && idleTargetMs >= 1500 && idleTargetMs <= 120000, 'idle duration must be 1500..120000 ms');
 const report = { status: 'running', startedAt: new Date().toISOString(), runtime: process.version,
   scope: 'experimental adapter gateway client-streaming and full-duplex through real local Envoy', adapterStreamingEnabled: true, sourceBuild, cloudflareEdgeConversionTested: false,
-  officialGrpcWebClientUsed: false, liveCloud: false, results: [], nativeBaseline: [], serverCases: [], gatewayResponses: [], cleanup: {} };
+  officialGrpcWebClientUsed: false, liveCloud: false, idleTargetMs,
+  results: [], nativeBaseline: [], serverCases: [], gatewayRequests: [], gatewayResponses: [], cleanup: {} };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(check, label, timeout = 3000) {
@@ -67,7 +71,8 @@ async function main() {
   let envoy, envoyExit, envoyExited, worker, scratch, fd;
   function observe(call, method) {
     const id = call.metadata.get('x-wga-case')[0]; assert.equal(typeof id, 'string'); assert.ok(!states.has(id));
-    const state = { id, method, messages: 0, bytes: 0, values: [], halfClosed: false, cancelled: false, pauses: 0,
+    const state = { id, method, messages: 0, bytes: 0, values: [], arrivalTimes: [], responsesSent: 0,
+      halfClosed: false, cancelled: false, pauses: 0,
       firstArrivalBeforeHalfClose: false, firstResponseBeforeSecondRequest: false };
     states.set(id, state); active.add(call);
     call.on('cancelled', () => { state.cancelled = true; active.delete(call); });
@@ -79,7 +84,7 @@ async function main() {
       clientStream(call, callback) {
         const state = observe(call, 'ClientStream'); let replied = false;
         call.on('data', payload => {
-          state.messages++; state.bytes += payload.length; state.values.push(payload[0]);
+          state.messages++; state.bytes += payload.length; state.values.push(payload[0]); state.arrivalTimes.push(Date.now());
           if (state.messages === 1) state.firstArrivalBeforeHalfClose = !state.halfClosed;
           if (state.id.endsWith('early-error') && !replied) {
             replied = true; active.delete(call); callback({ code: native.status.PERMISSION_DENIED, details: 'controlled early refusal' }); return;
@@ -101,9 +106,9 @@ async function main() {
       bidi(call) {
         const state = observe(call, 'Bidi');
         call.on('data', payload => {
-          state.messages++; state.bytes += payload.length; state.values.push(payload[0]);
+          state.messages++; state.bytes += payload.length; state.values.push(payload[0]); state.arrivalTimes.push(Date.now());
           if (state.messages === 1) { state.firstArrivalBeforeHalfClose = !state.halfClosed; state.firstResponseBeforeSecondRequest = true; }
-          call.write(payload);
+          call.write(payload); state.responsesSent++;
         });
         call.on('end', () => { active.delete(call); call.end(); });
       },
@@ -170,7 +175,7 @@ async function main() {
     report.bundleSha256 = hash(bundle.outputFiles[0].contents);
     for (const mode of ['gateway']) {
       worker = new Miniflare(convertV4MiniflareOptions({ modules: true, script: bundle.outputFiles[0].text,
-        compatibilityDate: '2026-09-21', compatibilityFlags: ['nodejs_compat'], bindings: { MODE: mode }, log: new Log(LogLevel.NONE),
+        compatibilityDate: '2026-09-21', compatibilityFlags: ['nodejs_compat'], bindings: { MODE: mode, IDLE_MS: String(idleTargetMs) }, log: new Log(LogLevel.NONE),
         outboundService: { node: async (request, response) => {
           const headers = new Headers(request.headers);
           const url = new URL(headers.get(CoreHeaders.ORIGINAL_URL) ?? request.url, `https://${headers.get('host')}`);
@@ -188,6 +193,14 @@ async function main() {
             const outgoing = Object.fromEntries(Object.entries(request.headers).filter(([key]) =>
               !['host', 'connection', 'content-length', 'transfer-encoding'].includes(key) && !key.startsWith('mf-')));
             assert.equal(outgoing['content-type'], mode === 'convert' ? 'application/grpc-web' : 'application/grpc-web+proto');
+            const observedRequest = { id: outgoing['x-wga-case'], encoding: outgoing['grpc-encoding'] ?? null,
+              firstFrameFlag: null, uploadedBytes: 0, ended: false };
+            report.gatewayRequests.push(observedRequest);
+            request.on('data', chunk => {
+              if (observedRequest.firstFrameFlag === null && chunk.length) observedRequest.firstFrameFlag = chunk[0];
+              observedRequest.uploadedBytes += chunk.length;
+            });
+            request.on('end', () => { observedRequest.ended = true; });
             const upstream = http.request({ hostname: '127.0.0.1', port: gatewayPort, path: url.pathname, method: 'POST', headers: outgoing });
             forwarding.add(upstream); upstream.on('close', () => forwarding.delete(upstream));
             upstream.on('response', incoming => {
@@ -218,12 +231,13 @@ async function main() {
       }));
       try {
         for (const scenario of scenarios) {
-          const response = await bounded(worker.dispatchFetch(`https://fixture.test/${scenario}`), `worker-${scenario}`, 12000);
+          const response = await bounded(worker.dispatchFetch(`https://fixture.test/${scenario}`), `worker-${scenario}`,
+            scenario === 'bidi-idle' ? idleTargetMs + 10000 : 12000);
           const result = await response.json(); assert.equal(response.status, 200, JSON.stringify(result)); assert.equal(result.outcome, 'supported'); report.results.push(result);
           const id = `${mode}-${scenario}`;
           // Readable end only proves half-close. It may remove the call from
           // active before the native cancellation event reaches the handler.
-          if (['cancel', 'deadline', 'channel-close'].includes(scenario)) {
+          if (['cancel', 'deadline', 'channel-close', 'bidi-cancel-after-response'].includes(scenario)) {
             await until(() => states.get(id)?.cancelled === true, `native-cancellation-${id}`);
             assert.equal(result.nativeCancellation, true);
           }
@@ -236,8 +250,33 @@ async function main() {
             if (scenario !== 'empty') assert.ok(state.firstArrivalBeforeHalfClose);
             assert.equal(state.messages, result.writes);
             if (scenario === 'bidi') assert.ok(result.responseBeforeSecondRequest && state.firstResponseBeforeSecondRequest && state.halfClosed);
-            if (['cancel', 'deadline', 'channel-close'].includes(scenario)) assert.ok(state.cancelled);
+            if (['bidi-gzip', 'bidi-idle'].includes(scenario)) {
+              assert.ok(result.responseBeforeSecondRequest && state.firstResponseBeforeSecondRequest && state.halfClosed);
+              assert.equal(state.responsesSent, 2);
+            }
+            if (scenario === 'bidi-idle') {
+              assert.ok(result.idleGapMs >= idleTargetMs - 100);
+              assert.ok(state.arrivalTimes[1] - state.arrivalTimes[0] >= idleTargetMs - 100);
+            }
+            if (scenario === 'bidi-cancel-after-response') {
+              assert.equal(result.grpcStatus, native.status.CANCELLED);
+              assert.equal(state.responsesSent, 1);
+              assert.ok(result.responseBeforeSecondRequest);
+            }
+            if (['cancel', 'deadline', 'channel-close', 'bidi-cancel-after-response'].includes(scenario)) assert.ok(state.cancelled);
             if (scenario === 'slow-consumer') assert.equal(state.pauses, 32);
+            const request = report.gatewayRequests.find(value => value.id === id);
+            assert.ok(request);
+            if (scenario === 'empty') {
+              assert.equal(request.uploadedBytes, 0); assert.equal(request.firstFrameFlag, null);
+            } else assert.ok(request.uploadedBytes > 5);
+            if (scenario === 'gzip' || scenario === 'bidi-gzip') {
+              assert.equal(request.encoding, 'gzip'); assert.equal(request.firstFrameFlag, 1);
+            } else if (scenario !== 'empty') assert.equal(request.firstFrameFlag, 0);
+            if (scenario.startsWith('bidi')) {
+              const gatewayResponse = report.gatewayResponses.find(value => value.id === id);
+              assert.ok(gatewayResponse && !gatewayResponse.requestHalfClosedAtHeaders);
+            }
           }
         }
       } finally { await worker.dispose(); worker = undefined; }

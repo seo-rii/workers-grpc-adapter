@@ -18,6 +18,7 @@ const methods = Object.fromEntries(['ClientStream', 'Bidi'].map(name => [name[0]
   requestSerialize: encode, responseDeserialize: decode,
 }]));
 const Streaming = makeGenericClientConstructor(methods, 'fixture.Streaming');
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function transportCall(surface) {
   let call = surface.call;
   while (call && typeof call.diagnostics !== 'function') call = call.call ?? call.nextCall;
@@ -27,10 +28,12 @@ function transportCall(surface) {
 export default {
   async fetch(request, env) {
     const scenario = new URL(request.url).pathname.slice(1), id = `${env.MODE}-${scenario}`;
+    const idleTargetMs = Number(env.IDLE_MS);
+    assert.ok(Number.isSafeInteger(idleTargetMs) && idleTargetMs >= 1500 && idleTargetMs <= 120000);
     const transport = createWorkersGrpcTransport({ mode: 'grpc-web', endpoints: { 'stream.test': 'https://stream-gateway.invalid' },
       experimentalRequestStreaming: true });
     const client = new Streaming('stream.test', credentials.createSsl(), transport.grpcOptions({
-      ...(scenario === 'gzip' ? { 'grpc.default_compression_algorithm': compressionAlgorithms.gzip } : {}),
+      ...(['gzip', 'bidi-gzip'].includes(scenario) ? { 'grpc.default_compression_algorithm': compressionAlgorithms.gzip } : {}),
       ...(scenario === 'receive-limit' ? { 'grpc.max_receive_message_length': 3 } : {}),
     }));
     const metadata = new Metadata(); metadata.set('x-wga-case', id);
@@ -38,20 +41,29 @@ export default {
       const response = await fetch(`https://stream-control.invalid/${id}/${operation}?count=${count}`, { method: 'POST' });
       assert.equal(response.status, 200); return response.json();
     };
-    const timeout = scenario === 'deadline' || scenario === 'early-error' ? 300 : 5000;
-    let call, writes = 0, writeCallbacks = 0, writeErrors = 0, responseBeforeSecondRequest = false;
+    const timeout = scenario === 'deadline' || scenario === 'early-error' ? 300 : scenario === 'bidi-idle' ? idleTargetMs + 6000 : 5000;
+    let call, writes = 0, writeCallbacks = 0, writeErrors = 0, responseBeforeSecondRequest = false, idleGapMs = 0;
     const seen = [];
     try {
       let responsePromise;
-      if (scenario === 'bidi') {
+      if (scenario.startsWith('bidi')) {
         call = client.bidi(metadata, { deadline: Date.now() + timeout });
         const firstResponse = new Promise(resolve => call.once('data', resolve));
         call.on('data', value => seen.push(value[0])); call.on('error', () => {});
         const terminal = new Promise(resolve => call.on('status', resolve));
         await new Promise((resolve, reject) => call.write(Buffer.from([1]), error => { writeCallbacks++; error ? reject(error) : resolve(); })); writes++;
         assert.equal((await firstResponse)[0], 1); responseBeforeSecondRequest = true;
-        await new Promise((resolve, reject) => call.write(Buffer.from([2]), error => { writeCallbacks++; error ? reject(error) : resolve(); })); writes++;
-        call.end(); assert.equal((await terminal).code, 0); assert.deepEqual(seen, [1, 2]);
+        if (scenario === 'bidi-idle') {
+          const idleStart = Date.now(); await sleep(idleTargetMs); idleGapMs = Date.now() - idleStart;
+          const stillOpen = await control('observed');
+          assert.equal(stillOpen.messages, 1); assert.equal(stillOpen.halfClosed, false); assert.equal(stillOpen.cancelled, false);
+        }
+        if (scenario === 'bidi-cancel-after-response') {
+          call.cancel(); assert.equal((await terminal).code, 1); assert.deepEqual(seen, [1]);
+        } else {
+          await new Promise((resolve, reject) => call.write(Buffer.from([2]), error => { writeCallbacks++; error ? reject(error) : resolve(); })); writes++;
+          call.end(); assert.equal((await terminal).code, 0); assert.deepEqual(seen, [1, 2]);
+        }
       } else {
         responsePromise = new Promise(resolve => {
           call = client.clientStream(metadata, { deadline: Date.now() + timeout }, (error, value) => resolve({ error, value }));
@@ -82,11 +94,12 @@ export default {
       assert.deepEqual(transportCall(call).diagnostics(), { terminal: true, fetchCount: 1, requestBytes: 0, responseBytes: 0, timerActive: false });
       // Local status and request half-close can precede the native peer's
       // cancellation event. Keep this invocation alive until it is observed.
-      const requiresCancellation = ['cancel', 'deadline', 'channel-close'].includes(scenario);
+      const requiresCancellation = ['cancel', 'deadline', 'channel-close', 'bidi-cancel-after-response'].includes(scenario);
       const nativeState = await control(requiresCancellation ? 'cancelled' : 'observed');
       if (requiresCancellation) assert.equal(nativeState.cancelled, true);
       return Response.json({ scenario, mode: env.MODE, outcome: 'supported', writes, writeCallbacks, writeErrors,
-        responseBeforeSecondRequest, grpcStatus: { cancel: 1, deadline: 4, 'channel-close': 14, 'early-error': 4, 'error-after-end': 7, 'receive-limit': 8 }[scenario] ?? 0,
+        responseBeforeSecondRequest, idleGapMs,
+        grpcStatus: { cancel: 1, 'bidi-cancel-after-response': 1, deadline: 4, 'channel-close': 14, 'early-error': 4, 'error-after-end': 7, 'receive-limit': 8 }[scenario] ?? 0,
         activeCalls: 0, transportBytes: 0, nativeCancellation: nativeState.cancelled });
     } catch (error) {
       return Response.json({ scenario, mode: env.MODE, outcome: 'failed', error: error.message, code: error.code }, { status: 500 });
