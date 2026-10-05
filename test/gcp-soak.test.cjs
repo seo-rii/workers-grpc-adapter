@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('../scripts/gcp-soak.cjs');
+const { parseSoakSeconds, parseSoakBurst, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('../scripts/gcp-soak.cjs');
 
 // Advance a monotonic virtual clock to pending waits. Production still always
 // runs 60..600 real seconds at one fixed slot per second; tests cannot configure
@@ -60,7 +60,7 @@ function responseFor({ route, mode }) {
       responseBytes: 0, timers: 0, nonterminalCalls: 0, capturedCalls: 4 }, elapsedMs: 10 } };
 }
 
-async function run({ seconds = 60, delay = 10, mutate, request: customRequest, signal } = {}) {
+async function run({ seconds = 60, burst = false, delay = 10, mutate, request: customRequest, signal } = {}) {
   const clock = virtualClock(), requests = [];
   let active = 0, maximum = 0;
   const request = async plan => {
@@ -77,7 +77,7 @@ async function run({ seconds = 60, delay = 10, mutate, request: customRequest, s
       return response;
     } finally { active--; }
   };
-  const receipt = await clock.drive(runDeployedSoak({ seconds, now: clock.now, wait: clock.wait, request, signal }));
+  const receipt = await clock.drive(runDeployedSoak({ seconds, burst, now: clock.now, wait: clock.wait, request, signal }));
   return { receipt, requests, maximum, active, clock };
 }
 
@@ -92,6 +92,59 @@ test('deployed repetition is opt-in and rejects duplicate, malformed and unbound
     ['--soak-seconds=60', '--soak-seconds=60'], ['--soak-seconds=600', '--soak-seconds=60'], [null],
   ]) assert.throws(() => parseSoakSeconds(args), /soak|Soak/);
   assert.throws(() => parseSoakSeconds(null), /arguments/);
+  assert.equal(parseSoakBurst([]), false);
+  assert.equal(parseSoakBurst(['--soak-seconds=600']), false);
+  assert.equal(parseSoakBurst(['--soak-seconds=600', '--soak-burst=4']), true);
+  for (const args of [
+    ['--soak-burst=4'], ['--soak-seconds=600', '--soak-burst'],
+    ['--soak-seconds=600', '--soak-burst=2'],
+    ['--soak-seconds=600', '--soak-burst=4', '--soak-burst=4'],
+  ]) assert.throws(() => parseSoakBurst(args), /soak/);
+});
+
+test('four-request bursts overlap in both modes and retain the complete fixed window', async () => {
+  const { receipt, requests, maximum, active } = await run({ burst: true, delay: 1500 });
+  assert.deepEqual(validateDeployedSoak(receipt), { ok: true, errors: [] });
+  assert.equal(receipt.schemaVersion, 3);
+  assert.equal(receipt.limits.maxInFlight, 4);
+  assert.equal(receipt.limits.dispatchPattern, 'burst4');
+  assert.equal(receipt.maxInFlightObserved, 4);
+  assert.equal(maximum, 4);
+  assert.equal(active, 0);
+  assert.equal(receipt.count, 60);
+  assert.equal(receipt.window.observedMs, 60000);
+  for (let wave = 0; wave < 15; wave++) {
+    const batch = receipt.observations.slice(wave * 4, wave * 4 + 4);
+    assert.deepEqual(batch.map(row => row.mode), ['grpc-web', 'cloudflare', 'grpc-web', 'cloudflare']);
+    assert.ok(batch.every(row => row.plannedAtMs === wave * 4000));
+    assert.ok(batch.every(row => row.startedOrder < Math.min(...batch.map(item => item.completedOrder))));
+  }
+  assert.ok(requests.every((row, index) => index < 4 || row.dispatched - requests[index - 4].dispatched >= 4000));
+});
+
+test('burst capacity exhaustion is reported as a failed run with no extra dispatches', async () => {
+  const { receipt, requests, maximum, active } = await run({ burst: true, delay: 4500 });
+  assert.equal(receipt.status, 'failed');
+  assert.equal(validateDeployedSoak(receipt).ok, false);
+  assert.equal(maximum, 4);
+  assert.equal(active, 0);
+  assert.ok(receipt.summary.missed > 0);
+  assert.ok(receipt.observations.filter(row => row.status === 'missed').every(row => row.reason === 'capacity'));
+  assert.equal(receipt.started, requests.length);
+});
+
+test('burst receipts reject a forged concurrency claim or a changed wave schedule', async () => {
+  const { receipt } = await run({ burst: true, delay: 500 });
+  assert.equal(validateDeployedSoak(receipt).ok, true);
+  const changed = structuredClone(receipt);
+  changed.maxInFlightObserved = 3;
+  assert.ok(validateDeployedSoak(changed).errors.includes('concurrency'));
+  changed.maxInFlightObserved = 4;
+  changed.observations[4].plannedAtMs = 1000;
+  assert.ok(validateDeployedSoak(changed).errors.includes('observation:soak-0005:identity'));
+  changed.observations[4].plannedAtMs = 4000;
+  changed.limits.maxInFlight = 8;
+  assert.ok(validateDeployedSoak(changed).errors.includes('limits'));
 });
 
 test('sixty real-time slots require both modes, fixed SDK reads, complete recovery steps and full observation window', async () => {

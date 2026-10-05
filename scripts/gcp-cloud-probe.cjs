@@ -12,7 +12,7 @@ const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const reportFile = path.join(root, 'verification/gcp-cloud-probe.json');
 const report = { startedAt: new Date().toISOString(), status: 'running', releaseEligible: false, resources: [], results: [], cleanup: [] };
 const catalog = require('./gcp-catalog.cjs');
-const { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('./gcp-soak.cjs');
+const { parseSoakSeconds, parseSoakBurst, runDeployedSoak, validateDeployedSoak, workerRequestFailure } = require('./gcp-soak.cjs');
 const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
 const { awaitOwnedRestrictedToken } = require('./gcp-restricted-token.cjs');
 const { parseAuthRenewalArgs, validateCredentialRenewal } = require('./gcp-auth-renewal.cjs');
@@ -296,9 +296,11 @@ async function waitWorkerReady(mode, targetKey = mode) {
 async function main() {
   if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
   const soakSeconds = parseSoakSeconds(process.argv.slice(2));
+  const soakBurst = parseSoakBurst(process.argv.slice(2));
   report.authRenewalRequested = parseAuthRenewalArgs(process.argv.slice(2));
   if (report.authRenewalRequested) report.authRenewalSourceHashes = catalog.sourceHashes(root);
   report.soakRequested = soakSeconds !== undefined;
+  if (soakBurst) report.soakBurstRequested = true;
   if (report.soakRequested) report.soakSourceHashes = catalog.sourceHashes(root);
   report.catalogRequested = process.argv.includes('--catalog');
   const iamOptions = process.argv.filter(value => value.startsWith('--grant-owned-token-creator'));
@@ -526,7 +528,7 @@ async function main() {
     phase('deployed-bounded-soak');
     soakController = new AbortController();
     try {
-      report.soak = await runDeployedSoak({ seconds: soakSeconds, signal: soakController.signal,
+      report.soak = await runDeployedSoak({ seconds: soakSeconds, burst: soakBurst, signal: soakController.signal,
         request: ({ route, mode, timeoutMs, signal }) => workerRequest(route, true, mode, timeoutMs, signal) });
       save();
       const checked = validateDeployedSoak(report.soak);

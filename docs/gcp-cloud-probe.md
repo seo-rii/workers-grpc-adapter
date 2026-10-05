@@ -181,9 +181,13 @@ credentials are read or infrastructure is created. This reuses the same isolated
 services and adds no resources or IAM grants itself. With `--catalog
 --inject-catalog-failure`, the intentional cleanup test runs after this window.
 
-The scheduler starts at most one HTTP request per second, with at most two in
-flight globally and at most 600 dispatch slots. It alternates the two transport
-modes. Every sixth request for each mode runs the real Secret Manager SDK's
+The default scheduler starts at most one HTTP request per second, with at most
+two in flight globally and at most 600 dispatch slots. Add
+`--soak-burst=4` with `--soak-seconds=60` through `600` to dispatch four requests
+at the start of each four-second window, two for each mode. A separate receipt
+schema requires actual four-request overlap; a capacity miss fails the run.
+This keeps the same total request count and does not add resources or IAM grants.
+Both patterns alternate the two transport modes. Every sixth request for each mode runs the real Secret Manager SDK's
 `GetSecret` suite against the temporary secret. Other requests run a fixed batch
 on one gRPC client: unary success, an expected status-3 error, server-stream
 cancellation after one message, then another successful unary call. Targets and
@@ -213,7 +217,8 @@ workerd before deployment. Normal CI exercises those local checks and never
 enables the deployed repetition automatically.
 
 This provides a finite observation of repeated deployed calls and recovery on the
-same client after application errors and caller cancellation. It does not measure
+same client after application errors and caller cancellation. The burst option
+also checks simultaneous deployed requests through both modes. It does not measure
 the full deployed isolate heap, prove backend cancellation, exercise real service
 outages or credential renewal, or establish multi-hour stream reliability.
 `releaseEligible` remains `false` even when this bounded test passes.

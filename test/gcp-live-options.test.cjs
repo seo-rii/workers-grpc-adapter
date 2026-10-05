@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { parseSoakSeconds } = require('../scripts/gcp-soak.cjs');
+const { parseSoakSeconds, parseSoakBurst } = require('../scripts/gcp-soak.cjs');
 const { parseAuthRenewalArgs } = require('../scripts/gcp-auth-renewal.cjs');
 const source = fs.readFileSync(path.join(__dirname, '../scripts/gcp-cloud-probe.cjs'), 'utf8');
 const start = source.indexOf('async function main() {');
@@ -16,7 +16,7 @@ async function rejectBeforeCredentials(args, expected) {
   let credentialReads = 0;
   const run = vm.runInNewContext(`(${main})`, {
     process: { argv: ['node', 'gcp-cloud-probe.cjs', ...args], env: {} },
-    report: {}, root: '/fixture', parseSoakSeconds, parseAuthRenewalArgs,
+    report: {}, root: '/fixture', parseSoakSeconds, parseSoakBurst, parseAuthRenewalArgs,
     catalog: { sourceHashes: () => ({}) },
     secret() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
   });
@@ -30,6 +30,12 @@ test('live opt-in and malformed repetition options fail before credential discov
     ['--soak-seconds=600', '--soak-seconds=600']]) {
     await rejectBeforeCredentials(['--deploy-temporary', ...args], /[Ss]oak/);
   }
+  for (const args of [['--soak-burst=4'], ['--soak-seconds=600', '--soak-burst=2'],
+    ['--soak-seconds=600', '--soak-burst=4', '--soak-burst=4']]) {
+    await rejectBeforeCredentials(['--deploy-temporary', ...args], /soak-burst/);
+  }
+  await rejectBeforeCredentials(['--deploy-temporary', '--soak-seconds=600', '--soak-burst=4'],
+    /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
 });
 
 test('temporary-account token grant requires catalog mode and exactly one explicit flag', async () => {

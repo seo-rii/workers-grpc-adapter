@@ -7,6 +7,8 @@ const MODES = Object.freeze(['grpc-web', 'cloudflare']);
 const SOURCE = 'deployed-worker-http';
 const LIMITS = Object.freeze({ maxInFlight: 2, minDispatchSpacingMs: 1000,
   maxRequests: 600, requestTimeoutMs: 30000, drainTimeoutMs: 30000 });
+const BURST_LIMITS = Object.freeze({ ...LIMITS, maxInFlight: 4, minDispatchSpacingMs: 0,
+  dispatchPattern: 'burst4' });
 const STEP_IDS = ['initial-unary', 'expected-error', 'cancel-stream', 'recovered-unary'];
 const STEP_KEYS = ['id', 'passed', 'statusCode', 'callbackCode', 'callbackCount',
   'errorCount', 'statusCount', 'messageCount', 'messagesMatch', 'detailsMatch', 'fetchCount', 'elapsedMs'];
@@ -92,12 +94,22 @@ function parseSoakSeconds(argv) {
   return seconds;
 }
 
-function plannedRow(slot) {
+function parseSoakBurst(argv) {
+  if (!Array.isArray(argv) || argv.some(value => typeof value !== 'string')) throw new TypeError('Invalid soak arguments');
+  const selected = argv.filter(value => value.startsWith('--soak-burst'));
+  if (!selected.length) return false;
+  if (selected.length !== 1 || selected[0] !== '--soak-burst=4' || parseSoakSeconds(argv) === undefined) {
+    throw new TypeError('Use one --soak-burst=4 with --soak-seconds');
+  }
+  return true;
+}
+
+function plannedRow(slot, burst = false) {
   const mode = MODES[slot % MODES.length];
   const kind = (Math.floor(slot / MODES.length) + 1) % 6 === 0 ? 'sdk-read' : 'recovery';
   return { id: `soak-${String(slot + 1).padStart(4, '0')}`, slot, mode, source: SOURCE, kind,
     route: kind === 'recovery' ? `/echo/${mode}/recovery` : `/gcp/${mode}/secret-manager-read`,
-    plannedAtMs: slot * LIMITS.minDispatchSpacingMs };
+    plannedAtMs: burst ? Math.floor(slot / 4) * 4000 : slot * LIMITS.minDispatchSpacingMs };
 }
 
 function validBody(body, row) {
@@ -161,10 +173,12 @@ function waitMilliseconds(ms, signal) {
   });
 }
 
-async function runDeployedSoak({ seconds, request, now = () => performance.now(), wait = waitMilliseconds, signal } = {}) {
+async function runDeployedSoak({ seconds, burst = false, request, now = () => performance.now(), wait = waitMilliseconds, signal } = {}) {
   if (!validSeconds(seconds)) throw new RangeError('Soak duration must be 60..600 seconds');
+  if (typeof burst !== 'boolean') throw new TypeError('Invalid soak burst option');
   if (typeof request !== 'function' || typeof now !== 'function' || typeof wait !== 'function') throw new TypeError('Invalid soak dependencies');
   if (signal !== undefined && !(signal instanceof AbortSignal)) throw new TypeError('Invalid soak signal');
+  const limits = burst ? BURST_LIMITS : LIMITS;
   const started = now();
   if (!finite(started)) throw new TypeError('Invalid monotonic clock');
   let previous = started;
@@ -175,7 +189,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
     return value - started;
   };
   const durationMs = seconds * 1000;
-  const rows = Array.from({ length: seconds }, (_, slot) => ({ ...plannedRow(slot),
+  const rows = Array.from({ length: seconds }, (_, slot) => ({ ...plannedRow(slot, burst),
     startedAtMs: null, completedAtMs: null, startedOrder: null, completedOrder: null, durationMs: null, timeoutMs: null,
     status: 'interrupted', reason: 'interrupted', timedOut: false, httpStatus: null, result: null, failure: null }));
   const active = new Set();
@@ -191,7 +205,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
     const controller = new AbortController(), timerController = new AbortController();
     row.startedAtMs = dispatchTime;
     row.startedOrder = eventOrder++;
-    row.timeoutMs = Math.min(LIMITS.requestTimeoutMs, durationMs + LIMITS.drainTimeoutMs - dispatchTime);
+    row.timeoutMs = Math.min(limits.requestTimeoutMs, durationMs + limits.drainTimeoutMs - dispatchTime);
     row.status = 'pending'; row.reason = 'drain-timeout';
     const entry = { controller, timerController, task: null, interrupted: false };
     active.add(entry);
@@ -234,7 +248,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
   try {
     for (const row of rows) {
       if (interrupted) break;
-      const target = Math.max(row.plannedAtMs, lastDispatch + LIMITS.minDispatchSpacingMs);
+      const target = Math.max(row.plannedAtMs, lastDispatch + limits.minDispatchSpacingMs);
       const wakeAt = Math.min(target, row.plannedAtMs + 1000);
       while (!interrupted) {
         const remaining = wakeAt - elapsed();
@@ -247,7 +261,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
       if (dispatchTime >= row.plannedAtMs + 1000 || dispatchTime >= durationMs) {
         row.status = 'missed'; row.reason = 'slot-expired'; continue;
       }
-      if (active.size >= LIMITS.maxInFlight) { row.status = 'missed'; row.reason = 'capacity'; continue; }
+      if (active.size >= limits.maxInFlight) { row.status = 'missed'; row.reason = 'capacity'; continue; }
       lastDispatch = dispatchTime;
       dispatch(row, dispatchTime);
     }
@@ -258,7 +272,7 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
       catch (error) { if (!interrupted) throw error; }
     }
     const observedMs = elapsed();
-    const drainDeadline = Math.min(durationMs, observedMs) + LIMITS.drainTimeoutMs;
+    const drainDeadline = Math.min(durationMs, observedMs) + limits.drainTimeoutMs;
     if (active.size && elapsed() < drainDeadline) {
       const drainController = new AbortController();
       try {
@@ -272,10 +286,10 @@ async function runDeployedSoak({ seconds, request, now = () => performance.now()
     for (let turn = 0; turn < 8; turn++) await Promise.resolve();
     const finishedAtMs = elapsed();
     const summary = summarize(rows);
-    const receipt = { schemaVersion: 2, source: SOURCE, releaseEligible: false,
+    const receipt = { schemaVersion: burst ? 3 : 2, source: SOURCE, releaseEligible: false,
       status: interrupted ? 'interrupted' : summary.passed === seconds && active.size === 0 && pendingTimeouts === 0 ? 'passed' : 'failed',
       durationSeconds: seconds, window: { durationMs, observedMs, completed: !interrupted && observedMs >= durationMs,
-        drainMs: Math.max(0, finishedAtMs - observedMs), interrupted }, limits: { ...LIMITS },
+        drainMs: Math.max(0, finishedAtMs - observedMs), interrupted }, limits: { ...limits },
       count: rows.length, started: summary.started, completed: summary.completed,
       maxInFlightObserved, observations: rows, summary,
       cleanup: { inFlight: active.size, pendingTimeouts } };
@@ -295,9 +309,11 @@ function validateDeployedSoak(receipt) {
     'window', 'limits', 'count', 'started', 'completed', 'maxInFlightObserved', 'observations', 'summary', 'cleanup'])) {
     return { ok: false, errors: ['receipt-schema'] };
   }
-  check(receipt.schemaVersion === 2 && receipt.source === SOURCE && receipt.releaseEligible === false, 'receipt-identity');
+  const burst = receipt.schemaVersion === 3;
+  const limits = burst ? BURST_LIMITS : LIMITS;
+  check([2, 3].includes(receipt.schemaVersion) && receipt.source === SOURCE && receipt.releaseEligible === false, 'receipt-identity');
   check(validSeconds(receipt.durationSeconds), 'duration');
-  check(exactKeys(receipt.limits, Object.keys(LIMITS)) && Object.keys(LIMITS).every(key => receipt.limits[key] === LIMITS[key]), 'limits');
+  check(exactKeys(receipt.limits, Object.keys(limits)) && Object.keys(limits).every(key => receipt.limits[key] === limits[key]), 'limits');
   const window = receipt.window;
   const validWindow = exactKeys(window, ['durationMs', 'observedMs', 'completed', 'drainMs', 'interrupted'])
     && window.durationMs === receipt.durationSeconds * 1000 && finite(window.observedMs) && finite(window.drainMs)
@@ -305,7 +321,7 @@ function validateDeployedSoak(receipt) {
   check(validWindow, 'window-schema');
   if (validWindow) {
     check(window.completed === true && window.interrupted === false && window.observedMs >= window.durationMs, 'observation-window-incomplete');
-    check(window.observedMs + window.drainMs <= window.durationMs + LIMITS.drainTimeoutMs + 1000, 'bounded-drain');
+    check(window.observedMs + window.drainMs <= window.durationMs + limits.drainTimeoutMs + 1000, 'bounded-drain');
   }
   check(receipt.status === 'passed', 'receipt-not-passed');
   if (!Array.isArray(receipt.observations) || receipt.observations.length !== receipt.durationSeconds
@@ -316,7 +332,7 @@ function validateDeployedSoak(receipt) {
   let lastDispatch = -Infinity;
   const events = [];
   for (let slot = 0; slot < rows.length; slot++) {
-    const row = rows[slot], plan = plannedRow(slot), prefix = `observation:${plan.id}:`;
+    const row = rows[slot], plan = plannedRow(slot, burst), prefix = `observation:${plan.id}:`;
     if (!exactKeys(row, ROW_KEYS)) { check(false, prefix + 'schema'); continue; }
     check(Object.keys(plan).every(key => row[key] === plan[key]), prefix + 'identity');
     check(STATUSES.includes(row.status) && REASONS.includes(row.reason) && typeof row.timedOut === 'boolean', prefix + 'state');
@@ -330,10 +346,10 @@ function validateDeployedSoak(receipt) {
     check(orderValid, prefix + 'event-order');
     if (timesValid) {
       check(row.startedAtMs >= plan.plannedAtMs && row.startedAtMs < plan.plannedAtMs + 1000, prefix + 'dispatch-slot');
-      check(row.startedAtMs - lastDispatch >= LIMITS.minDispatchSpacingMs, prefix + 'dispatch-spacing');
-      check(finite(row.timeoutMs) && row.timeoutMs > 0 && row.timeoutMs <= LIMITS.requestTimeoutMs
+      check(row.startedAtMs - lastDispatch >= limits.minDispatchSpacingMs, prefix + 'dispatch-spacing');
+      check(finite(row.timeoutMs) && row.timeoutMs > 0 && row.timeoutMs <= limits.requestTimeoutMs
         && row.completedAtMs - row.startedAtMs <= row.timeoutMs
-        && row.startedAtMs + row.timeoutMs <= receipt.durationSeconds * 1000 + LIMITS.drainTimeoutMs, prefix + 'timeout');
+        && row.startedAtMs + row.timeoutMs <= receipt.durationSeconds * 1000 + limits.drainTimeoutMs, prefix + 'timeout');
       if (validWindow) check(row.completedAtMs <= window.observedMs + window.drainMs, prefix + 'completion-after-receipt');
       lastDispatch = row.startedAtMs;
       if (orderValid) events.push({ order: row.startedOrder, at: row.startedAtMs, delta: 1 },
@@ -350,9 +366,10 @@ function validateDeployedSoak(receipt) {
     const event = events[index];
     check(event.order === index && event.at >= lastEventAt, 'event-timeline');
     current += event.delta; maximum = Math.max(maximum, current); lastEventAt = event.at;
-    check(current >= 0 && current <= LIMITS.maxInFlight, 'concurrency-window');
+    check(current >= 0 && current <= limits.maxInFlight, 'concurrency-window');
   }
   check(events.length === rows.length * 2 && current === 0 && receipt.maxInFlightObserved === maximum, 'concurrency');
+  if (burst) check(maximum === BURST_LIMITS.maxInFlight, 'burst-overlap');
   const summary = summarize(rows);
   check(same(receipt.summary, summary), 'summary');
   check(receipt.count === rows.length && receipt.started === summary.started && receipt.completed === summary.completed
@@ -363,4 +380,4 @@ function validateDeployedSoak(receipt) {
   return { ok: errors.length === 0, errors };
 }
 
-module.exports = { parseSoakSeconds, runDeployedSoak, validateDeployedSoak, workerRequestFailure };
+module.exports = { parseSoakSeconds, parseSoakBurst, runDeployedSoak, validateDeployedSoak, workerRequestFailure };
