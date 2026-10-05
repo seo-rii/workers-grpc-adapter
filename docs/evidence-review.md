@@ -395,3 +395,39 @@ transaction contention, prolonged traffic, and dependency/security/license
 release review remain separate gates. The finite denied-RPC renewal probe does
 not establish successful data access after renewal or the original dedicated-project
 invariant. Local fuzz volume and passing emulators do not substitute for them.
+
+## Dependency and license review: 2026-10-05
+
+A read-only npm advisory audit examined the root and all five fixture lockfiles
+at `8d971e8`; their hashes were unchanged after the audit. Root and the modern
+adapter graph reported zero vulnerable packages. The static adapter graph
+reported two, its native control three, the modern native control two, and the
+Worker development tool graph three. These are vulnerable-package counts;
+transitive parents can refer to the same advisory.
+
+The static Worker bundle includes `protobufjs@7.4.0`, which has critical and high
+advisories. Its schema-loading code-execution advisory requires attacker control
+over a schema or descriptor; the pinned build only accepts the approved schema
+hashes. That restriction is relevant to reachability, but does not close the
+remaining protobuf advisories or the dependency release gate. See the upstream
+[schema code-generation advisory](https://github.com/protobufjs/protobuf.js/security/advisories/GHSA-xq3m-2v4x-88gg)
+and [schema-name advisory](https://github.com/protobufjs/protobuf.js/security/advisories/GHSA-f38q-mgvj-vph7).
+Updating the static Datastore/protobuf pair requires a new exact profile revision
+and its build, declaration, SDK, emulator and deployment checks.
+
+The native controls use `@grpc/grpc-js@1.14.0`, which also has high advisories.
+That native package is absent from the Worker bundle; the adapter separately
+vendors selected upstream client files, so any affected copied code requires
+its own review. The Worker tool findings concern Miniflare, Wrangler and undici;
+those development packages are absent from both deployed SDK bundles. Their
+upgrades still need local workerd/toolchain verification.
+
+The package retains its MIT license and the vendored Apache-2.0 license and
+notices. Every package entry in the six lockfile graphs has license metadata.
+The LGPL-marked entries belong to optional sharp/libvips development packages,
+which are absent from the adapter tarball dependencies and SDK Worker bundles.
+This is a metadata, provenance and packaging review; it does not constitute a
+legal determination for every transitive license or approval to publish.
+
+Security/profile migration and the remaining production gates keep
+`releaseEligible: false`.
