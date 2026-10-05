@@ -16,6 +16,7 @@ const { parseSoakSeconds, parseSoakBurst, runDeployedSoak, validateDeployedSoak,
 const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
 const { awaitOwnedRestrictedToken } = require('./gcp-restricted-token.cjs');
 const { parseAuthRenewalArgs, validateCredentialRenewal } = require('./gcp-auth-renewal.cjs');
+const { fetchWorkerHttp, parseWorkerHttpArgs } = require('./gcp-worker-http.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
 let interrupted = false;
@@ -264,9 +265,13 @@ async function workerRequest(route, authorized = true, targetKey = route.split('
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
   let response;
   try {
-    response = await fetch(report.workerUrls[targetKey] + route, { method: 'POST', redirect: 'error',
+    const options = {
       signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
-      headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} });
+      headers: authorized ? { authorization: `Bearer ${workerKey}` } : {} };
+    const url = report.workerUrls[targetKey] + route;
+    response = report.workerHttp?.transport === 'fresh'
+      ? await fetchWorkerHttp(url, options)
+      : await fetch(url, { ...options, method: 'POST', redirect: 'error' });
   } catch (error) { throw workerRequestFailure('fetch', error); }
   let value;
   try { value = await response.text(); }
@@ -295,6 +300,9 @@ async function waitWorkerReady(mode, targetKey = mode) {
 }
 async function main() {
   if (!process.argv.includes('--deploy-temporary')) throw new Error('EXPLICIT_DEPLOY_TEMPORARY_REQUIRED');
+  const workerHttp = parseWorkerHttpArgs(process.argv.slice(2));
+  report.workerHttp = { transport: workerHttp, node: process.version,
+    ...(workerHttp === 'fetch' ? { undici: process.versions.undici || null } : { protocol: 'https/http1', connection: 'fresh-per-post' }) };
   const soakSeconds = parseSoakSeconds(process.argv.slice(2));
   const soakBurst = parseSoakBurst(process.argv.slice(2));
   report.authRenewalRequested = parseAuthRenewalArgs(process.argv.slice(2));

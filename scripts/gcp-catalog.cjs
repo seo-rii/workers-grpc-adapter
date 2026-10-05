@@ -16,7 +16,7 @@ const caseSuites = {
 };
 const ids = ['DS-019', ...Array.from({ length: 9 }, (_, i) => `CLOUD-${String(i + 1).padStart(3, '0')}`)];
 const SOURCE_FILES = Object.freeze(['scripts/gcp-cloud-probe.cjs', 'scripts/gcp-native-probe.cjs', 'scripts/gcp-catalog.cjs',
-    'scripts/gcp-soak.cjs', 'scripts/gcp-owned-iam.cjs',
+    'scripts/gcp-soak.cjs', 'scripts/gcp-worker-http.cjs', 'scripts/gcp-owned-iam.cjs',
     'scripts/gcp-auth-renewal.cjs', 'scripts/gcp-restricted-token.cjs',
     'fixtures/google/gcp-auth-renewal.mjs', 'fixtures/google/shared/credential-renewal.mjs',
     'fixtures/google/gcp-probe.mjs', 'fixtures/google/gcp-echo-probe.mjs', 'fixtures/google/shared/cloud-catalog.mjs',

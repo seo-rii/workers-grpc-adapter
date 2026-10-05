@@ -24,6 +24,20 @@ node scripts/gcp-cloud-probe.cjs --deploy-temporary \
 
 Run the deployment command in the background with stdout/stderr directed to a restricted log. It takes several minutes. Avoid terminating it during cleanup. `SIGINT` and `SIGTERM` stop subsequent test work and retain cleanup; an uncatchable termination or provider outage requires checking the saved receipt.
 
+The existing-project runner accepts `--worker-http=fetch` (the default) or
+`--worker-http=fresh`. The latter uses Node HTTPS with a new TLS connection for
+each caller POST to a deployed Worker. It does not retry failed POSTs or follow
+redirects, limits response bodies to 256 KiB, and preserves cancellation and
+separate header/body error reporting. `workerHttp` records the selected caller
+transport and Node version in the receipt. The helper is included in source
+provenance. Invalid or repeated options fail before credentials or deployment.
+
+Use the fresh option as a caller-connection control when investigating pooled
+connection resets. Its TLS cost changes caller latency. It does not change
+Worker-to-backend Fetch, SDK retries or adapter behavior, and a successful run
+does not demonstrate production connection-pool reliability. Provider API calls
+still use Fetch. The dedicated-project wrapper does not accept this control.
+
 Add `--catalog --inject-catalog-failure` to execute the remaining live catalog
 matrix in the same run. This adds typed Datastore entities and ordered cursor
 pages, count/sum/average, explicit rollback, actual missing-index and invalid-query

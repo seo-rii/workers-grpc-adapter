@@ -173,28 +173,70 @@ async function authenticatedRequestBoundary() {
   assert.equal(calls.length, 2, 'Caller cancellation is composed with the request timeout');
 }
 
+async function freshRequestBoundary() {
+  const timeoutSignal = {}, callerSignal = {}, combinedSignal = {};
+  let expectedSignal = timeoutSignal, authorized = true, calls = 0;
+  const context = {
+    report: { workerUrls: { 'cloudflare-flag': 'https://readiness.invalid' }, workerHttp: { transport: 'fresh' } },
+    workerKey: 'synthetic-test-key', workerRequestFailure,
+    AbortSignal: {
+      timeout(ms) { assert.equal(ms, 5000); return timeoutSignal; },
+      any(signals) {
+        assert.equal(signals.length, 2); assert.equal(signals[0], callerSignal); assert.equal(signals[1], timeoutSignal);
+        return combinedSignal;
+      },
+    },
+    async fetch() { assert.fail('The fresh control must not silently fall back to Fetch'); },
+    async fetchWorkerHttp(url, options) {
+      calls++;
+      assert.equal(url, 'https://readiness.invalid/gcp/cloudflare/ready');
+      assert.equal(options.signal, expectedSignal);
+      assert.deepEqual(JSON.parse(JSON.stringify(options.headers)), authorized
+        ? { authorization: 'Bearer synthetic-test-key' } : {});
+      assert.equal(options.body, undefined);
+      assert.equal(options.method, undefined, 'The HTTPS helper owns its fixed POST method');
+      assert.equal(options.redirect, undefined, 'The HTTPS helper never follows redirects');
+      return { status: authorized ? 200 : 418,
+        text: async () => authorized ? JSON.stringify({ status: 'ready', mode: 'cloudflare' })
+          : 'synthetic private non-JSON response' };
+    },
+  };
+  const request = vm.runInContext('(' + requestSource + ')',
+    vm.createContext(context, { codeGeneration: { strings: false, wasm: false } }));
+  const authenticated = await request('/gcp/cloudflare/ready', true, 'cloudflare-flag', 5000);
+  assert.equal(authenticated.httpStatus, 200); assert.equal(authenticated.body.status, 'ready');
+  expectedSignal = combinedSignal; authorized = false;
+  const denied = await request('/gcp/cloudflare/ready', false, 'cloudflare-flag', 5000, callerSignal);
+  assert.equal(denied.httpStatus, 418);
+  assert.deepEqual(JSON.parse(JSON.stringify(denied.body)), { code: 'NON_JSON_RESPONSE' });
+  assert.equal(JSON.stringify(denied).includes('synthetic private'), false);
+  assert.equal(calls, 2, 'Authorization and caller cancellation are preserved by the fresh control');
+}
+
 async function requestFailureStages() {
-  for (const phase of ['fetch', 'response-body']) {
-    let fetchCalls = 0, bodyReads = 0;
+  for (const transport of [undefined, 'fetch', 'fresh']) for (const phase of ['fetch', 'response-body']) {
+    let requestCalls = 0, bodyReads = 0;
     const failures = [];
-    const original = new TypeError('synthetic private URL and token must not be retained', {
-      cause: Object.assign(new Error('synthetic private socket details'), {
-        code: phase === 'fetch' ? 'EAI_AGAIN' : 'UND_ERR_SOCKET',
-      }),
-    });
+    const original = transport === 'fresh'
+      ? Object.assign(new Error('synthetic private URL and token must not be retained'), { code: 'ECONNRESET' })
+      : new TypeError('synthetic private URL and token must not be retained', {
+        cause: Object.assign(new Error('synthetic private socket details'), {
+          code: phase === 'fetch' ? 'EAI_AGAIN' : 'UND_ERR_SOCKET',
+        }),
+      });
+    const perform = async () => {
+      requestCalls++;
+      if (phase === 'fetch') throw original;
+      return { status: 503, async text() { bodyReads++; throw original; } };
+    };
     const context = {
-      report: { workerUrls: { cloudflare: 'https://readiness.invalid' } },
+      report: { workerUrls: { cloudflare: 'https://readiness.invalid' },
+        ...(transport ? { workerHttp: { transport } } : {}) },
       workerKey: 'synthetic-test-key',
       AbortSignal: { timeout: () => ({}) },
-      workerRequestFailure(...args) {
-        failures.push(args);
-        return workerRequestFailure(...args);
-      },
-      async fetch() {
-        fetchCalls++;
-        if (phase === 'fetch') throw original;
-        return { status: 503, async text() { bodyReads++; throw original; } };
-      },
+      workerRequestFailure(...args) { failures.push(args); return workerRequestFailure(...args); },
+      async fetch() { assert.notEqual(transport, 'fresh'); return perform(); },
+      async fetchWorkerHttp() { assert.equal(transport, 'fresh'); return perform(); },
     };
     const isolated = vm.createContext(context, { codeGeneration: { strings: false, wasm: false } });
     const request = vm.runInContext('(' + requestSource + ')', isolated);
@@ -202,12 +244,12 @@ async function requestFailureStages() {
       assert.equal(error.message, 'WGA_WORKER_REQUEST_FAILED');
       assert.equal(error.cause, undefined, 'The original cause is not retained');
       assert.equal(error.stack.includes('synthetic private'), false);
+      assert.equal(JSON.stringify(error, Object.getOwnPropertyNames(error)).includes('synthetic private'), false);
       return true;
     });
-    assert.equal(fetchCalls, 1, 'A failed probe request is never silently retried');
+    assert.equal(requestCalls, 1, 'A failed probe request is never silently retried or switched to another transport');
     assert.equal(bodyReads, phase === 'fetch' ? 0 : 1);
-    assert.equal(failures.length, 1);
-    assert.equal(failures[0][0], phase);
+    assert.equal(failures.length, 1); assert.equal(failures[0][0], phase);
     assert.equal(failures[0][1], original, 'The helper receives the actual failure at the boundary');
     assert.equal(failures[0][2], phase === 'fetch' ? undefined : 503,
       'An HTTP status is retained only after response headers arrived');
@@ -222,9 +264,10 @@ async function main() {
   await explicitTarget();
   await gatewayTarget();
   await authenticatedRequestBoundary();
+  await freshRequestBoundary();
   await requestFailureStages();
-  console.log(JSON.stringify({ status: 'passed', cases: 9, networkRequests: 0, credentialReads: 0,
-    scope: 'authenticated Worker readiness, propagation retries, mode matching, timeout, interruption and request failure stages' }));
+  console.log(JSON.stringify({ status: 'passed', cases: 14, networkRequests: 0, credentialReads: 0,
+    scope: 'authenticated Worker readiness, propagation retries, mode matching, timeout, interruption, Fetch and fresh HTTPS request boundaries and failure stages' }));
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

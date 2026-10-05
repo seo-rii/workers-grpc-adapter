@@ -63,10 +63,10 @@ test('environment policy controls remain local even without any deployed receipt
     assert.ok(policy.reasons.includes('environment-gate-exercised-locally'));
     assert.ok(result.cases.filter(row => row.id !== 'CLOUD-008').every(row => row.executionLayer === 'live' && row.behavior !== 'passed'));
 });
-test('cloud provenance exports the exact frozen eighteen-source manifest', () => {
+test('cloud provenance exports the exact frozen nineteen-source manifest', () => {
     assert.ok(Object.isFrozen(SOURCE_FILES));
     assert.deepEqual(SOURCE_FILES, ['scripts/gcp-cloud-probe.cjs', 'scripts/gcp-native-probe.cjs', 'scripts/gcp-catalog.cjs',
-        'scripts/gcp-soak.cjs', 'scripts/gcp-owned-iam.cjs',
+        'scripts/gcp-soak.cjs', 'scripts/gcp-worker-http.cjs', 'scripts/gcp-owned-iam.cjs',
         'scripts/gcp-auth-renewal.cjs', 'scripts/gcp-restricted-token.cjs',
         'fixtures/google/gcp-auth-renewal.mjs', 'fixtures/google/shared/credential-renewal.mjs',
         'fixtures/google/gcp-probe.mjs', 'fixtures/google/gcp-echo-probe.mjs', 'fixtures/google/shared/cloud-catalog.mjs',
