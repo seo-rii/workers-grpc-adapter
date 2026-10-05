@@ -119,6 +119,14 @@ tokens are checked for leaks in returned receipts. CI runs this local gate witho
 Google credentials or external calls; it does not establish that a real IAM
 service accepted the requested lifetime, nor prove request-disconnect propagation.
 
+The [source-credential regressions](../test/gcp-auth-renewal-sources.test.cjs)
+also attach OAuth refresh-token, external-account STS and signed service-account
+JWT sources to the same pinned `Impersonated` client. Each source exchanges twice
+before two target mints, reuses cached credentials, and propagates a later source
+failure without minting or reusing an expired target token. Fetch and Node HTTP
+requests are blocked by the test; endpoint responses are synthetic and expiration
+is forced locally. This covers the source/target refresh interaction for CI.
+
 ### Live renewal and permission results: 2026-10-05 (KST)
 
 Run `wga-probe-20261004-433e2bc6` tested source
