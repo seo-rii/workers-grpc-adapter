@@ -37,6 +37,9 @@ connection resets. Its TLS cost changes caller latency. It does not change
 Worker-to-backend Fetch, SDK retries or adapter behavior, and a successful run
 does not demonstrate production connection-pool reliability. Provider API calls
 still use Fetch. The dedicated-project wrapper does not accept this control.
+See the [controlled reset diagnosis](caller-connection-resets.md) for the local
+and deployed comparisons, their failed inventory gate and the remaining limits
+on attributing the original SDK-run errors.
 
 Add `--catalog --inject-catalog-failure` to execute the remaining live catalog
 matrix in the same run. This adds typed Datastore entities and ordered cursor
