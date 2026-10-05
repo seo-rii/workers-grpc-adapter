@@ -67,6 +67,41 @@ behavior separately from that unmet environment condition. Negative environment
 gate controls are local evidence. The public native echo image cannot expose
 backend generator cleanup after caller cancellation.
 
+## Optional dedicated project lifecycle
+
+The separate `scripts/gcp-dedicated-probe.cjs` wrapper can create a new random
+project, link the sole visible open billing account and enable the fixed APIs
+needed by this probe. It requires both `--create-dedicated-project` and
+`--link-unique-billing-account`. These flags authorize additional infrastructure
+changes; use them only with permission to create and bill that project. This
+wrapper rejects `--project`, so it cannot repurpose an existing project.
+
+It accepts the same `--region`, `--catalog`, `--grant-owned-token-creator`,
+`--verify-auth-renewal`, `--soak-seconds`, `--soak-burst` and
+`--inject-catalog-failure` options described here. CF credentials and `gcloud`
+authentication are still required. Run it in a restricted background log, as
+with the existing-project runner. Normal CI only exercises simulated provider
+responses and never invokes this opt-in command.
+
+Before provisioning, it saves a private plan under `.wga-build/gcp-dedicated/`.
+The helper requires an absent project ID, an acknowledged creation operation,
+the resulting immutable project number and exact ownership labels. It checks
+identity again before billing, API enablement and deletion. A collision, denied
+lookup, ambiguous response or multiple visible billing accounts stops setup.
+An uncertain creation preserves the plan and any acknowledged operation name
+for manual recovery; it does not infer ownership from a later matching lookup.
+
+The child probe waits for its per-resource cleanup before the wrapper unlinks
+billing and requests deletion of the owned project, including on test failure.
+The private receipt records child and project cleanup separately: shutting down
+GCP cannot remove a Cloudflare Worker. A missing child receipt or unresolved
+resource cleanup keeps the run failed even when project shutdown succeeds.
+The final project state is `DELETE_REQUESTED`, not an immediate 404. Google
+retains a deleted project during its restoration period; see
+[project shutdown](https://docs.cloud.google.com/resource-manager/docs/creating-managing-projects#shutting_down_projects).
+Signals stop subsequent work and let cleanup finish. An uncatchable process
+termination or provider outage still requires inspecting the saved receipts.
+
 ## Optional credential renewal
 
 Add `--catalog --verify-auth-renewal` to verify an impersonated credential's
