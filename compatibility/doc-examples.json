@@ -275,6 +275,16 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/live-transactions.md#fence-1",
+      "file": "docs/live-transactions.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "d54b8d5faf8a9606d12586118d7bbe58393b4b269977e4318ba73fff1c506556",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Explicit temporary cloud deployment command; ordinary documentation tests do not execute infrastructure mutations."
+    },
+    {
       "id": "docs/modern-sdk.md#fence-1",
       "file": "docs/modern-sdk.md",
       "ordinal": 1,
@@ -403,6 +413,16 @@
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
+    },
+    {
+      "id": "docs/security-migration.md#fence-1",
+      "file": "docs/security-migration.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "9a0ef653175cbae6271b90096ada6a412915cd9b92e8882dbb45a472a6834384",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Registry advisory audit commands run separately during security migration; this documentation consumer gate does not execute them."
     },
     {
       "id": "docs/server.md#fence-1",

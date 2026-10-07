@@ -20,6 +20,9 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [Executable documentation](documentation.md) | Example execution, generated support tables, policy comparisons and reference/provenance checks |
 | [Public client contracts](local-contracts.md) | Original API, configuration and type cases with native and workerd evidence |
 | [Google SDK tests](google-tests.md) | Pinned fixtures, emulators, adding scenarios and live opt-in |
+| [Live transaction verification](live-transactions.md) | Owned optimistic conflicts, accepted Commit response discard and reconciliation |
+| [Security migration](security-migration.md) | Patched pinned dependencies, graph audits and vendored-source boundaries |
+| [Open-source publication review](open-source-readiness.md) | License, package contents, credential screening and visibility checks |
 | [Design decisions](decisions.md) | Reasons for the implementation boundaries |
 | [Sources and provenance](sources.md) | Official references, pinned artifacts and source verification |
 
