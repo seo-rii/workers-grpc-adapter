@@ -1374,7 +1374,7 @@
           "assertions": [
             {
               "pointer": "/bundledInputs",
-              "equals": 701
+              "equals": 556
             }
           ]
         },
@@ -1586,7 +1586,7 @@
             },
             {
               "pointer": "/upstreamNames",
-              "equals": 96
+              "equals": 95
             },
             {
               "pointer": "/adapterNames",
