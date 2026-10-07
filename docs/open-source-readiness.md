@@ -6,12 +6,14 @@ publishing an npm package, or claiming production certification.
 
 ## Assessment
 
-The repository is suitable for an experimental source release after the final
-verification and maintainer checks below. It has an explicit license,
-reproducible vendored sources, contribution and security guidance, pinned
-dependency profiles, a credential-free local verification workflow, and
-documented compatibility boundaries. Source publication does not establish a
-stable release, a security maintenance commitment, or production certification.
+The source tree has the foundations for an experimental open-source release:
+an explicit license, reproducible vendored sources, contribution and security
+guidance, pinned dependency profiles, a credential-free local verification
+workflow, and documented compatibility boundaries. Keep GitHub visibility
+private until the retained Actions artifact notice gap below is resolved and
+the final verification and maintainer checks are complete. Source publication
+does not establish a stable release, a security maintenance commitment, or
+production certification.
 
 `private: true` remains intentional. It prevents npm publication; it does not
 prevent distributing a source checkout under its existing licenses. A public
@@ -75,6 +77,29 @@ and license/notice assets. The dependency graph includes optional LGPL-marked
 development tools; these are not adapter runtime dependencies or contents of the
 adapter tarball. Publishing separate SDK Worker bundles or tool binaries would
 require reviewing the actual redistributed contents and their notices.
+
+## Public visibility blocker: retained benchmark artifacts
+
+The reviewed retained Actions snapshot contains 19 artifacts with generated
+`verification/transport-benchmark/client.mjs` and `client.mjs.gz`, representing
+three distinct bundle contents. These bundle only the installed adapter client;
+they do not contain Google SDKs. The benchmark explicitly uses
+`legalComments: 'none'`, and the inspected bundles contain no license text or
+modification notice. None of those artifact archives includes standalone
+adapter `LICENSE` or `NOTICE` assets. Their cached upstream grpc-js archive
+does include its original license, which does not supply the adapter's MIT
+copyright/permission notice or the modified adapter's notices.
+
+This is a concrete distribution gap: making the repository public also exposes
+these generated artifacts. [MIT](https://opensource.org/license/mit) requires
+preserving its copyright and permission notice, and Apache-2.0 requires license,
+attribution, and modification notices as applicable. Fix future benchmark
+distribution to include the required notices and license copies, and decide
+whether to wait for affected retained artifacts to expire or authorize their
+removal before changing visibility. That includes the 19 reviewed copies and
+any later copies generated without the required notices. The artifact inventory
+is retained in the private review receipt. This review did not modify the
+workflow or delete any artifacts.
 
 ## Credentials, history, and cloud identifiers
 
@@ -145,16 +170,18 @@ authorized publication. This review did not change repository settings.
 
 Before changing visibility:
 
-1. Verify the final migrated revision with vendoring, package, SDK, workerd,
+1. Resolve the generated benchmark artifact notice gap and confirm that the
+   affected retained artifacts have expired or been removed with authorization.
+2. Verify the final migrated revision with vendoring, package, SDK, workerd,
    emulator, and CI checks. Retain historical vulnerable-version results as
    historical evidence rather than treating them as current results.
-2. Retain the real transaction conflict and accepted-Commit evidence, including
+3. Retain the real transaction conflict and accepted-Commit evidence, including
    request counts, read-back decisions, retry boundaries, and completed cleanup.
-3. Screen the final source revision and retained Actions logs/artifacts for
+4. Screen the final source revision and retained Actions logs/artifacts for
    credentials; classify findings without publishing credential values.
-4. Accept disclosure of Git author identities and historical project metadata,
+5. Accept disclosure of Git author identities and historical project metadata,
    and verify the private vulnerability-reporting channel.
-5. Keep the README's experimental status and supported-profile scope. Decide
+6. Keep the README's experimental status and supported-profile scope. Decide
    separately whether to enable public source visibility or publish a package.
 
 Real transaction coverage and a clean dependency audit strengthen the
