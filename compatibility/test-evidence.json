@@ -12545,13 +12545,13 @@
           "command": "workers-sdk",
           "array": "/checks",
           "where": {
-            "$value": "nested-descriptor-transform-scope"
+            "$value": "resolved-descriptor-transform-scope"
           },
-          "anchor": "nested-descriptor-transform-scope",
+          "anchor": "resolved-descriptor-transform-scope",
           "assertions": [
             {
               "pointer": "",
-              "equals": "nested-descriptor-transform-scope"
+              "equals": "resolved-descriptor-transform-scope"
             }
           ]
         },
