@@ -6,6 +6,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
+const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const req = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const native = createRequire(path.join(root, 'fixtures/native/package.json'));
@@ -38,10 +39,33 @@ async function main() {
     const type = native('protobufjs').loadSync(path.join(root, 'fixtures/shared/catalog-api.proto')).lookupType('catalog.api.nested.Envelope').setup();
     // Compile the actual protobufjs-generated codecs while Node permits code generation;
     // workerd receives static source and performs no eval or filesystem loading.
+    // Match the SDK preset's portable Writer factory: BufferWriter relies on
+    // native Buffer UTF-8 methods whose default-length behavior differs in Workers.
     const methods = ['encode', 'decode', 'fromObject', 'toObject'].map(key => `${key}: ${type[key].toString()}`).join(',\n');
-    const generated = `import p from ${JSON.stringify(native.resolve('protobufjs/minimal'))}; import { Buffer } from 'node:buffer'; const { Writer, Reader }=p; const codec={ctor:${type.ctor.toString()},${methods}};codec.ctor.prototype.text=''; const definition=JSON.parse(${JSON.stringify(JSON.stringify(definition))},(key,value)=>value?.type==='Buffer'&&Array.isArray(value.data)?Buffer.from(value.data):value); const method=definition['catalog.api.nested.Echo'].Unary; method.requestSerialize=method.responseSerialize=value=>Buffer.from(codec.encode(codec.fromObject(value)).finish()); method.requestDeserialize=method.responseDeserialize=bytes=>codec.toObject(codec.decode(bytes),{defaults:true}); export default definition;`;
+    const generated = `import p from ${JSON.stringify(native.resolve('protobufjs/minimal'))}; import { Buffer } from 'node:buffer'; const { Reader, util }=p; const Writer={create:()=>new p.Writer()}; const codec={ctor:${type.ctor.toString()},${methods}};codec.ctor.prototype.text=''; const definition=JSON.parse(${JSON.stringify(JSON.stringify(definition))},(key,value)=>value?.type==='Buffer'&&Array.isArray(value.data)?Buffer.from(value.data):value); const method=definition['catalog.api.nested.Echo'].Unary; method.requestSerialize=method.responseSerialize=value=>Buffer.from(codec.encode(codec.fromObject(value)).finish()); method.requestDeserialize=method.responseDeserialize=bytes=>codec.toObject(codec.decode(bytes),{defaults:true}); export default definition;`;
+    // Run the actual emitted module in a fresh lexical scope before bundling it.
+    // Generator helpers can change between protobuf releases; native proto-loader
+    // execution alone cannot establish that the static module carries that scope.
+    const staticModuleFile = path.join(scratch, 'static-codecs.mjs');
+    fs.writeFileSync(staticModuleFile, generated, { mode: 0o600 });
+    const staticDefinition = (await import(pathToFileURL(staticModuleFile).href)).default;
+    const staticMethod = staticDefinition['catalog.api.nested.Echo'].Unary;
+    const nativeMethod = definition['catalog.api.nested.Echo'].Unary;
+    const calibrationPayloads = ['', '안녕 ☃', 'x'.repeat(96)];
+    for (const text of calibrationPayloads) {
+      const bytes = nativeMethod.requestSerialize({ text });
+      assert.deepEqual(staticMethod.requestSerialize({ text }), bytes, 'standalone static codec/native wire');
+      assert.deepEqual(staticMethod.responseDeserialize(bytes), nativeMethod.responseDeserialize(bytes), 'standalone static codec/native value');
+    }
+    assert.deepEqual(staticMethod.responseDeserialize(Buffer.alloc(0)), nativeMethod.responseDeserialize(Buffer.alloc(0)), 'standalone static codec/native empty wire');
+    assert.throws(() => nativeMethod.requestSerialize(null), TypeError, 'native codec invalid object control');
+    assert.throws(() => staticMethod.requestSerialize(null), TypeError, 'standalone static codec invalid object');
+    assert.throws(() => nativeMethod.responseDeserialize(Buffer.from([128])), RangeError, 'native codec truncated varint control');
+    assert.throws(() => staticMethod.responseDeserialize(Buffer.from([128])), RangeError, 'standalone static codec truncated varint');
     report.protoLoader = { version: native('@grpc/proto-loader/package.json').version, protobufjs: native('protobufjs/package.json').version,
       transformation: 'loadSync real proto; preserve full descriptor graph; precompile actual protobufjs encode/decode/fromObject/toObject static functions',
+      staticCodecCalibration: { payloads: calibrationPayloads, standaloneModule: true, nativeSerializationMatched: true,
+        nativeDeserializationMatched: true, emptyWireMatched: true, malformedObjectRejected: true, malformedWireRejected: true },
       descriptorSha256: digest(JSON.stringify(definition)), staticModuleSha256: digest(generated), descriptorPath: 'verification/api-contracts/package-definition.json', staticModulePath: 'verification/api-contracts/static-codecs.mjs' };
     fs.mkdirSync(path.join(root, 'verification/api-contracts'), { recursive: true });
     fs.writeFileSync(path.join(root, report.protoLoader.descriptorPath), JSON.stringify(definition));

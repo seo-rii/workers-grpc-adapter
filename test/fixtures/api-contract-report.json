@@ -14,7 +14,20 @@
       "descriptorSha256": "91aa81d5d7c1a78e9f1cc78b678955f8841c97a6283d70598bef5d7680eff770",
       "staticModuleSha256": "3859a385d4348bd48739fc2cc90a30080fef3a2cec5e9b6b83ad2cfea68ffc00",
       "descriptorPath": "verification/api-contracts/package-definition.json",
-      "staticModulePath": "verification/api-contracts/static-codecs.mjs"
+      "staticModulePath": "verification/api-contracts/static-codecs.mjs",
+      "staticCodecCalibration": {
+        "payloads": [
+          "",
+          "\uc548\ub155 \u2603",
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "standaloneModule": true,
+        "nativeSerializationMatched": true,
+        "nativeDeserializationMatched": true,
+        "emptyWireMatched": true,
+        "malformedObjectRejected": true,
+        "malformedWireRejected": true
+      }
     },
     "generatedArtifacts": {
       "verification/api-contracts/package-definition.json": "91aa81d5d7c1a78e9f1cc78b678955f8841c97a6283d70598bef5d7680eff770",

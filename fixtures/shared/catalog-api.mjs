@@ -112,7 +112,11 @@ export function createApiRunner(grpc, adapter, config, mode, loadedDefinition) {
           assert.equal(nested.State.type.value[1].name, 'READY'); assert.equal(nested.Envelope.type.field[0].name, 'text');
           assert.equal(nested.Echo.service, loadedDefinition['catalog.api.nested.Echo']);
           const c = client(nested.Echo); const payloads = ['', '안녕 ☃', 'x'.repeat(96)];
-          for (const text of payloads) { const value = await call(c, { invoke: cb => c.Unary({ text }, cb) }); assert.deepEqual(value.callbacks[0].value, { text }); }
+          for (const text of payloads) {
+            const value = await call(c, { invoke: cb => c.Unary({ text }, cb) });
+            assert.equal(value.callbacks[0].code, 0, `API-004 payload bytes=${Buffer.byteLength(text)}: ${JSON.stringify(value.callbacks[0])}`);
+            assert.deepEqual(value.callbacks[0].value, { text });
+          }
           assert.ok(nested.Envelope.fileDescriptorProtos.every(value => Buffer.isBuffer(value)));
           extra.descriptorGraph = JSON.stringify(loadedDefinition);
           extra = { ...extra, payloads: ['', '안녕 ☃', 'x'.repeat(96)], nestedPackage: 'catalog.api.nested', enumIdentity: true, messageIdentity: true, serviceIdentity: true, enumName: 'READY', fieldName: 'text' };

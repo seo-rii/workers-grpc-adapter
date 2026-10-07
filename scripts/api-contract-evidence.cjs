@@ -53,6 +53,9 @@ function validateApiContractsReport(report) {
   for (const file of ['index.js', 'index.mjs', 'adapter.js', 'adapter.mjs', 'config.js', 'config.mjs']) need(hash(report.installedInputs?.[`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`]), 'installed public graph');
   for (const name of ['@grpc/grpc-js', '@grpc/proto-loader', 'protobufjs']) need(hash(report.nativeInputs?.[`fixtures/native/node_modules/${name}/package.json`]), 'native dependency identity');
   need(report.protoLoader?.version === '0.8.1' && hash(report.protoLoader.descriptorSha256) && hash(report.protoLoader.staticModuleSha256), 'real proto-loader compilation');
+  need(same(report.protoLoader.staticCodecCalibration, { payloads: ['', '안녕 ☃', 'x'.repeat(96)], standaloneModule: true,
+    nativeSerializationMatched: true, nativeDeserializationMatched: true, emptyWireMatched: true,
+    malformedObjectRejected: true, malformedWireRejected: true }), 'standalone generated codec/native calibration');
   need(report.protoLoader.descriptorPath === 'verification/api-contracts/package-definition.json' && report.protoLoader.staticModulePath === 'verification/api-contracts/static-codecs.mjs' && report.generatedArtifacts?.[report.protoLoader.descriptorPath] === report.protoLoader.descriptorSha256 && report.generatedArtifacts?.[report.protoLoader.staticModulePath] === report.protoLoader.staticModuleSha256, 'generated proto artifacts');
   const native = report.native;
   need(native?.version === '1.14.5' && native.transport === 'independent-loopback-http2' && native.sessionsClosed === true && native.results?.length === 6, 'native oracle');
