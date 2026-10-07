@@ -2,7 +2,7 @@
 
 An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carries unary and server-streaming RPCs over binary gRPC-Web using `fetch()` while retaining the upstream client, metadata, interceptor, and stream APIs. Explicit gateway mode also offers experimental client/bidirectional streaming and verified Firestore listeners.
 
-**Prototype: `0.0.0-prototype.1`. Unpublished on npm, with `private: true`.** Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
+**Experimental prototype: `0.0.0-prototype.1`. Prepared for npm distribution under the `experimental` tag.** Registry publication and download verification are recorded separately from the source release. Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
 
 ## Quick start
 
@@ -41,14 +41,14 @@ The adapter implements both routing modes. In `cloudflare` mode it addresses the
 
 In `grpc-web` mode it addresses a trusted gateway from an explicit endpoint map, sends `application/grpc-web+proto`, and sets `cf.grpcWeb: 'passthrough'` so requests reach the gateway unchanged even if the deployment enables automatic conversion. Local Envoy and emulator integrations exercise this gateway path. Both modes send binary gRPC-Web from the Worker. The adapter does not probe capabilities, replay a failed call through the other mode, or use GAX's REST fallback. See the [conversion diagnosis](docs/cloudflare-conversion.md) for the original failures and the evidence behind these settings.
 
-## Using the local package
+## Using the package
 
-The fixture installs the adapter under the `@grpc/grpc-js` dependency name and overrides transitive copies. This is the configuration in [fixtures/google/package.json](fixtures/google/package.json):
+For experimental npm distribution, install the adapter under the `@grpc/grpc-js` dependency name and override transitive copies. Use an exact version and the pinned SDK profile:
 
 ```json
 {
   "dependencies": {
-    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz"
+    "@grpc/grpc-js": "npm:workers-grpc-adapter@0.0.0-prototype.1"
   },
   "overrides": {
     "@grpc/grpc-js": "$@grpc/grpc-js",
@@ -57,7 +57,7 @@ The fixture installs the adapter under the `@grpc/grpc-js` dependency name and o
 }
 ```
 
-The tarball path is relative to that fixture; adjust it for another consumer. There is no published npm installation command yet. Use `npm run doctor` to check the fixture's dependency graph. The scoped auth override resolves a declaration compatibility issue while preserving Secret Manager's separate auth version.
+After registry publication, the equivalent install command is `npm install '@grpc/grpc-js@npm:workers-grpc-adapter@0.0.0-prototype.1'`; retain the root overrides above for SDK consumers. The repository's [Google fixture](fixtures/google/package.json) continues using `file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz` for source checks. That path is relative to the fixture; adjust it for another local consumer. Use `npm run doctor` from the checkout to check the fixture's dependency graph. The scoped auth override resolves a declaration compatibility issue while preserving Secret Manager's separate auth version. npm distribution does not expand the [supported profiles](docs/profiles.md).
 
 Choose one mode before constructing clients. Enable Node compatibility in your Wrangler configuration; the adapter selects conversion per request:
 

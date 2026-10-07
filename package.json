@@ -2,7 +2,12 @@
   "name": "workers-grpc-adapter",
   "version": "0.0.0-prototype.1",
   "description": "Experimental grpc-js client transport over binary gRPC-Web for Workers; not a certified replacement",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "tag": "experimental"
+  },
   "packageManager": "npm@11.4.1",
   "license": "MIT",
   "repository": {

@@ -2,8 +2,11 @@
 
 Review and source publication date: 2026-10-07. The owner authorized publishing
 the source repository as an experimental project at revision `6d84489`.
-GitHub visibility is now public; no npm package or stable release was published,
-and source publication does not establish production certification.
+GitHub visibility is now public. At source publication, no npm package or stable
+release had been published. Source publication does not establish production
+certification. The owner subsequently authorized preparing
+`0.0.0-prototype.1` for public npm distribution under the `experimental` tag;
+registry publication and download verification are recorded separately.
 
 ## Assessment
 
@@ -17,9 +20,12 @@ assets and a prominent notice identifying the modified grpc-js client code. Sour
 does not establish a stable release, a security maintenance commitment, or
 production certification.
 
-`private: true` remains intentional. It prevents npm publication; it does not
-prevent distributing a source checkout under its existing licenses. A public
-source repository can continue using local tarballs and exact SDK profiles.
+The root package now permits npm publication and specifies the public npm
+registry and `experimental` tag. This replaces the source-only preparation's
+`private: true` policy following the separate owner authorization. Fixture
+packages remain private, and local source checks continue using tarballs and
+exact SDK profiles. Experimental npm distribution carries the existing licenses
+and does not establish a stable release or production certification.
 The supported behavior and remaining platform constraints are described in
 [Limitations](limitations.md), [Profiles](profiles.md), and [Testing](testing.md).
 
@@ -117,7 +123,9 @@ post-removal inventory confirmed their absence. Run logs, unrelated artifacts,
 and the final notice-bearing CI artifact were retained. The verified original
 ZIPs, supplemental license archive, exact IDs, and cleanup checks remain in the
 private preparation receipt. The owner subsequently authorized public source
-visibility. npm publication remains disabled and requires separate authorization.
+visibility and subsequently authorized experimental npm publication. The npm
+preparation permits publication of the exact verified archive; successful
+registry publication and download checks require their separate receipt.
 
 ## Credentials, history, and cloud identifiers
 
@@ -215,7 +223,8 @@ change on 2026-10-07; they do not establish a stable release:
    owner-authorized disclosure. Enabled and verified the private
    vulnerability-reporting channel during publication.
 6. Kept the README's experimental status and supported-profile scope. Published
-   only the source repository; npm package publication remains a separate action.
+   only the source repository at that stage; the subsequently authorized
+   experimental npm publication remains a separate action and verification.
 
 Real transaction coverage and a clean dependency audit strengthen the
 experimental support claim. Long-running authentication, quotas, sustained
