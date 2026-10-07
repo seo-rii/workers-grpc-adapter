@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { reviewExports, compactInventory, checkReviewedSnapshot, reviewConsumerImports } = require('../scripts/export-contract.cjs');
 function fixture() {
     const entry = (name, value) => ({ name, type: true, value, sha256: name });
-    return { policy: { schemaVersion: 1, upstream: { package: '@grpc/grpc-js', version: '1.14.0' }, extensions: [],
+    return { policy: { schemaVersion: 1, upstream: { package: '@grpc/grpc-js', version: '1.14.5' }, extensions: [],
         entries: [['Client', 'S'], ['Server', 'I'], ['Options', 'T'], ['Resolver', 'U']].map(([name, grade]) => ({ name, grade,
             scope: 'Explicitly scoped fixture contract.', signatureNotes: 'Reviewed declaration and behavior differences.' })) },
         upstream: { exports: [entry('Client', true), entry('Server', true), entry('Options', false), entry('Resolver', true)] },

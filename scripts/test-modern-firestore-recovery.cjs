@@ -199,9 +199,9 @@ async function main() {
     assert.equal(report.runtime.nativeFirestore, report.runtime.firestore, 'WATCH_NATIVE_SDK_VERSION');
     assert.equal(report.runtime.firestoreApi, '0.2.0', 'WATCH_PINNED_FIRESTORE_API');
     assert.equal(report.runtime.nativeFirestoreApi, report.runtime.firestoreApi, 'WATCH_NATIVE_API_VERSION');
-    assert.equal(report.runtime.nativeGrpc, '1.14.0', 'WATCH_PINNED_NATIVE_GRPC');
+    assert.equal(report.runtime.nativeGrpc, '1.14.5', 'WATCH_PINNED_NATIVE_GRPC');
     assert.equal(report.runtime.controlledPeerFirestore, '8.3.0', 'WATCH_PINNED_PEER_SCHEMA');
-    assert.equal(report.runtime.controlledPeerGrpc, '1.14.0', 'WATCH_PINNED_PEER_GRPC');
+    assert.equal(report.runtime.controlledPeerGrpc, '1.14.5', 'WATCH_PINNED_PEER_GRPC');
     assert.equal(modernRequire('@grpc/grpc-js/package.json').name, 'workers-grpc-adapter', 'WATCH_ADAPTER_IDENTITY');
     report.evidence = Object.fromEntries(['scripts/test-modern-firestore-recovery.cjs', 'fixtures/google/shared/firestore-recovery.mjs', 'fixtures/worker/firestore-recovery.mjs',
         'scripts/firestore-recovery-server.cjs', 'scripts/emulator-envoy.cjs', 'fixtures/envoy/binary.json',

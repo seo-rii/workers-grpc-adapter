@@ -110,7 +110,7 @@ Worker bundle, native SDK graph and exact resume-token comparisons.
 
 ## Preserving terminal RPC errors
 
-`google-static-v1` revision 4 and `google-modern-v1` revision 2 include a guarded
+`google-static-v1` revision 5 and `google-modern-v1` revision 2 include a guarded
 Firestore Listen transformation. The pinned SDKs defer their error event using
 `setImmediate`, but previously piped EOF to Watch first. A permission-denied RPC
 after a snapshot could therefore reconnect as UNKNOWN and lose its original error.

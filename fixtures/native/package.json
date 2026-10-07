@@ -4,10 +4,10 @@
   "type": "module",
   "description": "Pinned native grpc-js baseline for the same Google SDK scenarios",
   "dependencies": {
-    "@google-cloud/datastore": "10.1.0",
+    "@google-cloud/datastore": "10.1.1",
     "@google-cloud/firestore": "8.3.0",
     "@google-cloud/secret-manager": "7.1.0",
-    "@grpc/grpc-js": "1.14.0"
+    "@grpc/grpc-js": "1.14.5"
   },
   "overrides": {
     "@grpc/grpc-js": "$@grpc/grpc-js",

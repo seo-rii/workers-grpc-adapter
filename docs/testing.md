@@ -143,7 +143,7 @@ separate RPC, workerd and emulator gates establish runtime behavior.
 
 ## Native SDK comparisons
 
-`fixtures/native` installs grpc-js 1.14.0, while `fixtures/google` installs the replacement. Doctor reports record the dependency graph and integrity. The consumers execute identical shared business bytes and compare their hashes, RPC methods/statuses and binary gRPC-Web content types.
+`fixtures/native` installs grpc-js 1.14.5, while `fixtures/google` installs the replacement. Doctor reports record the dependency graph and integrity. The consumers execute identical shared business bytes and compare their hashes, RPC methods/statuses and binary gRPC-Web content types.
 
 Controlled cases cover Datastore/Firestore CRUD, query, transaction and read-stream behavior; missing Firestore documents; unsupported Listen; and Secret Manager success, permission and missing-resource errors. Fault cases include Datastore `ABORTED`, an applied Commit whose response is withheld until a deadline, and a Firestore conflict followed by exactly one SDK transaction retry. Follow-up reads distinguish a failed response from a write that never happened.
 
@@ -241,7 +241,7 @@ unreleased resources and stale source/dependency identities.
 
 ## Datastore mutation contracts
 
-`npm run test:datastore-mutations` executes the same Datastore 10.1.0 business
+`npm run test:datastore-mutations` executes the same Datastore 10.1.1 business
 module with native grpc-js and both adapter modes in Node/workerd: 18 scenarios,
 90 cases, 275 service RPCs and 220 actual adapter Fetches. A controlled stateful
 native service records the actual decoded Commit, Lookup and AllocateIds
@@ -267,7 +267,7 @@ generated-v1 client and is exercised separately by the official emulator gate.
 ## Datastore transactions and interrupted Commit responses
 
 `npm run test:datastore-transactions` runs identical transaction operations with
-Datastore 10.1.0 and 11.1.0, using native grpc-js and both adapter modes in Node
+Datastore 10.1.1 and 11.1.0, using native grpc-js and both adapter modes in Node
 and workerd: 100 cases, 470 service RPCs, 376 adapter Fetch calls and 10 separate
 control acknowledgements. A controlled native service owns the test's in-memory transaction
 state. Actual Envoy translates local adapter traffic; this does not exercise

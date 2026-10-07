@@ -31,7 +31,7 @@ test('SDK doctor visits every GAX in an SDK transitive closure', t => {
 });
 test('SDK doctor rejects a native grpc shadowed under a second GAX', t => {
     const base = fixture(t);
-    packageAt(base, 'node_modules/helper/node_modules/@grpc/grpc-js', { name: '@grpc/grpc-js', version: '1.14.0' });
+    packageAt(base, 'node_modules/helper/node_modules/@grpc/grpc-js', { name: '@grpc/grpc-js', version: '1.14.5' });
     const report = inspect(base, ['example-sdk']);
     assert.equal(report.passed, false);
     const wrong = report.results[0].graph.flatMap(item => item.grpcImports).filter(item => item.status === 'wrong-implementation');

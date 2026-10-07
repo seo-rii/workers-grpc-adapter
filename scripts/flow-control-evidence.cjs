@@ -275,7 +275,7 @@ function validateFlowControlReport(report, { allowSourceBuild = false } = {}) {
   for (const file of ['package.json', 'build/src/client.js', 'build/src/subchannel-call.js', 'build/src/server.js']) {
     need(hash(report.nativeInputs[`fixtures/native/node_modules/@grpc/grpc-js/${file}`]), `native ${file}`);
   }
-  need(report.native?.version === '1.14.0' && report.native.runtime === 'native' && report.native.mode === 'native'
+  need(report.native?.version === '1.14.5' && report.native.runtime === 'native' && report.native.mode === 'native'
     && report.native.status === 'passed' && report.native.rows?.length === 5, 'pinned native public baseline');
   for (const spec of publicSpecs) {
     const selected = report.native.rows.filter(row => row.id === spec[0]); need(selected.length === 1, 'unique native public scenario');

@@ -42,7 +42,7 @@ Firestore 9.2 also supplies `grpc-node.flow_control_window: 262144` and `grpc.us
 
 ## Local verification
 
-`node scripts/test-modern-sdk.cjs` compares the separately installed `fixtures/modern` adapter graph against `fixtures/modern-native` with native grpc-js 1.14.0. Both fixtures compile the same real SDK consumer under strict Node16, NodeNext and Bundler resolution, using ESM and CommonJS sources and `skipLibCheck: false`.
+`node scripts/test-modern-sdk.cjs` compares the separately installed `fixtures/modern` adapter graph against `fixtures/modern-native` with native grpc-js 1.14.5. Both fixtures compile the same real SDK consumer under strict Node16, NodeNext and Bundler resolution, using ESM and CommonJS sources and `skipLibCheck: false`.
 
 The runtime gate executes identical business-source bytes against the existing controlled native gRPC service. It covers Datastore entity write/read/query/delete and legacy key encoding, Firestore document write/read/query/delete, and Secret Manager metadata success plus missing/permission errors. Node adapter calls and both workerd transport modes must match native method/status traces and business assertions. Worker requests carry credentials through the actual pinned Google auth and GAX code, with all outbound I/O redirected to the local service.
 

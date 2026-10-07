@@ -72,7 +72,7 @@ function wireRows(runtime, mode) {
 function fixture() {
   const contexts = [['native', 'native'], ['node', 'cloudflare'], ['node', 'grpc-web'], ['workerd', 'cloudflare'], ['workerd', 'grpc-web']];
   const runs = contexts.slice(1).map(([runtime, mode]) => ({ runtime, mode, status: 'passed', rows: [...publicRows(runtime, mode), ...wireRows(runtime, mode)] }));
-  const native = { runtime: 'native', mode: 'native', status: 'passed', rows: publicRows('native', 'native'), version: '1.14.0',
+  const native = { runtime: 'native', mode: 'native', status: 'passed', rows: publicRows('native', 'native'), version: '1.14.5',
     chunk: { id: 'FLOW-007', scenario: 'coalesced-native-stream', requestId: 'native:native:chunk', count: 128,
       bytes: 32768, codes: [0], errors: [], nativeChunkBoundaryClaimed: false },
     wire: { rows: [false, true].map(duplicate => ({ id: 'FLOW-006', scenario: duplicate ? 'unary-duplicate' : 'unary-one',

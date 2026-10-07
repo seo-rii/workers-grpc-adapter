@@ -84,7 +84,7 @@ async function listenLifecycle(t, method, mode) {
   assert.ok(releases > 0, 'finished Listen releases the SDK stream lifetime');
 }
 
-for (const [fixture, profile, revision] of [['google', 'google-static-v1', 4], ['modern', 'google-modern-v1', 2]]) {
+for (const [fixture, profile, revision] of [['google', 'google-static-v1', 5], ['modern', 'google-modern-v1', 2]]) {
   test(`BUILD ${profile} preserves Listen errors before EOF without changing server streams`, async t => {
     const projectRoot = path.join(root, 'fixtures', fixture), file = path.join(projectRoot, sourcePath);
     const original = fs.readFileSync(file, 'utf8');

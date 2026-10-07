@@ -73,7 +73,7 @@ Repeated local workerd fault waves verify concurrent calls, slow streams, deadli
 
 Official Firestore 1.22.0 Native and Datastore modes run through real Envoy locally. These tests cover the explicitly asserted data, query, stream and error behavior. Emulator results do not establish production IAM, composite-index requirements, quotas or transaction concurrency. Secret Manager still uses a controlled server. The emulator-only synthetic owner header is injected by local Envoy and is not authentication evidence.
 
-Controlled [Datastore Lookup tests](datastore-lookup.md) cover mixed found/missing/deferred rounds, get overloads, partial stream errors, bounded explicit SDK retries and per-RPC deadlines. Successful deferred rounds can continue beyond one RPC timeout; ending an SDK read stream stops later rounds but does not cancel an already pending unary Lookup. These checks use the pinned Datastore 10.1.0 graph and a controlled peer, not production Datastore storage.
+Controlled [Datastore Lookup tests](datastore-lookup.md) cover mixed found/missing/deferred rounds, get overloads, partial stream errors, bounded explicit SDK retries and per-RPC deadlines. Successful deferred rounds can continue beyond one RPC timeout; ending an SDK read stream stops later rounds but does not cancel an already pending unary Lookup. These checks use the pinned Datastore 10.1.1 graph and a controlled peer, not production Datastore storage.
 
 Controlled Firestore read tests compare both pinned SDK profiles across native
 grpc-js and both adapter modes in Node/workerd. They exercise permanent failures

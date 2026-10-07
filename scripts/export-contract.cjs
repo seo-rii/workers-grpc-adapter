@@ -8,7 +8,7 @@ function need(value, message) {
 
 function reviewExports({ policy, upstream, adapter, upstreamRuntime, adapterRuntime, extensions, subpaths = new Map(), subpathRuntime = new Map() }) {
     need(policy.schemaVersion === 1 && policy.upstream?.package === '@grpc/grpc-js'
-        && policy.upstream.version === '1.14.0', 'unreviewed upstream reference');
+        && policy.upstream.version === '1.14.5', 'unreviewed upstream reference');
     const native = new Map(upstream.exports.map(item => [item.name, item]));
     const replacement = new Map(adapter.exports.map(item => [item.name, item]));
     const names = [...new Set([...native.keys(), ...replacement.keys()])].sort();

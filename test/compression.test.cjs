@@ -77,7 +77,7 @@ test('COMPRESSION strict channel enum and metadata negotiation support identity/
 });
 
 test('COMPRESSION framing and decoded bytes match pinned native grpc-js codecs and NoCompress', async () => {
-    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.0');
+    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.5');
     const payloads = [Buffer.alloc(0), Buffer.from([0, 255, 128, 13, 10]), Buffer.from('한글 payload '.repeat(2000))];
     for (const [algorithm, encoding] of encodings.entries()) for (const payload of payloads) for (const flags of [0, 1, 2, 3]) {
         const oracle = new CompressionFilter({ 'grpc.default_compression_algorithm': algorithm, 'grpc.max_receive_message_length': limit }, {});

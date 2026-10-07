@@ -49,7 +49,7 @@ async function nativeOracle(shared) {
   const grpc = nativeRequire('@grpc/grpc-js');
   const { LoadBalancingCall } = nativeRequire('@grpc/grpc-js/build/src/load-balancing-call');
   const { restrictControlPlaneStatusCode } = nativeRequire('@grpc/grpc-js/build/src/control-plane-status');
-  check(nativeRequire('@grpc/grpc-js/package.json').version === '1.14.0', 'NATIVE_PIN');
+  check(nativeRequire('@grpc/grpc-js/package.json').version === '1.14.5', 'NATIVE_PIN');
   const fixture = shared.compositionFixture(grpc), ready = defer();
   const subchannel = { getChannelzRef: () => ({ id: 1 }), getAddress: () => 'controlled-native-subchannel',
     getCallCredentials: () => fixture.channelCalls, getConnectivityState: () => grpc.connectivityState.READY,
@@ -62,7 +62,7 @@ async function nativeOracle(shared) {
   await fixture.release(); const metadata = await ready.promise;
   const codes = Object.fromEntries([undefined, 16, 14, ...shared.forbiddenCodes].map(code =>
     [String(code), restrictControlPlaneStatusCode(code === undefined ? 2 : code, 'controlled').code]));
-  return { version: '1.14.0', actualLoadBalancingCall: true, controlledReadySubchannel: true,
+  return { version: '1.14.5', actualLoadBalancingCall: true, controlledReadySubchannel: true,
     networkUsed: false, composition: { metadata, completed: fixture.completed }, codes,
     inputs: Object.fromEntries(['package.json', 'build/src/load-balancing-call.js', 'build/src/call-credentials.js',
       'build/src/metadata.js', 'build/src/control-plane-status.js'].map(file => {

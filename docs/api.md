@@ -227,7 +227,7 @@ verified through the experimental gateway path. SDK listener lifetime is owned
 by the application: install an error callback, unsubscribe before leaving the
 Worker lifetime, then terminate the client. See [Firestore listeners](firestore-watch.md).
 
-The `google-static-v1` revision 4 and `google-modern-v1` revision 2 presets also
+The `google-static-v1` revision 5 and `google-modern-v1` revision 2 presets also
 preserve Firestore Listen terminal errors before EOF reaches Watch. This guarded
 build transformation changes only Listen stream completion and records
 `firestoreWatchEndDeferrals: 1` in its manifest. Direct Node SDK consumers without

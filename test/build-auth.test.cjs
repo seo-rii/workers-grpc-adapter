@@ -49,7 +49,7 @@ test('BUILD pinned Gaxios uses native Fetch and preserves explicit fetch precede
   assert.equal((await custom._defaultAdapter({ ...options, fetchImplementation: fetcher('request') })).data.label, 'request');
   assert.deepEqual(calls, ['native', 'client', 'request']);
   assert.deepEqual(preset.manifest().transformed.map(item => item.nativeFetchDefaults), [1, 1]);
-  assert.equal(preset.manifest().revision, 4);
+  assert.equal(preset.manifest().revision, 5);
   assert.equal(preset.manifest().nodeModulesModified, false);
   assert.equal(preset.manifest().globalPrototypePatched, false);
   assert.equal(fs.readFileSync(path.join(projectRoot, sourcePath), 'utf8'), upstream);

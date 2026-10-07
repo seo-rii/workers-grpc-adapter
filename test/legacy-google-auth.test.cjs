@@ -21,7 +21,7 @@ async function outcome(engine, setup) {
 }
 
 test('AUTH legacy callback contract matches pinned native grpc-js for supported records', async () => {
-    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.0');
+    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.5');
     for (const kind of ['sync', 'async', 'empty', 'inherited', 'inherited-forEach', 'null-prototype', 'both']) {
         const setup = calls => {
             const provider = {

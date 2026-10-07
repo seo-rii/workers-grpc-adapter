@@ -44,7 +44,7 @@ function validateAuthCatalogReport(report, { allowSourceBuild = false } = {}) {
       && !file.split('/').includes('..') && digest(hash), 'installed input');
   }
   const native = report.native;
-  need(native?.version === '1.14.0' && native.actualLoadBalancingCall === true && native.controlledReadySubchannel === true && native.networkUsed === false, 'native oracle');
+  need(native?.version === '1.14.5' && native.actualLoadBalancingCall === true && native.controlledReadySubchannel === true && native.networkUsed === false, 'native oracle');
   for (const file of ['package.json', 'load-balancing-call.js', 'call-credentials.js', 'metadata.js', 'control-plane-status.js']) {
     const relative = `fixtures/native/node_modules/@grpc/grpc-js/${file === 'package.json' ? '' : 'build/src/'}${file}`;
     need(digest(native.inputs?.[relative]), `native provenance ${file}`);

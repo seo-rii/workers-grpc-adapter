@@ -9,7 +9,7 @@ const envoyPin = require('../fixtures/envoy/binary.json');
 function fixture() {
   const hash = 'a'.repeat(64), results = [], wire = [], sources = {}, evidence = {}, installedInputs = {}, nativeInputs = {};
   const profiles = [
-    { id: 'google-static-v1', version: '8.3.0', fixture: 'google', native: 'native', revision: 4 },
+    { id: 'google-static-v1', version: '8.3.0', fixture: 'google', native: 'native', revision: 5 },
     { id: 'google-modern-v1', version: '9.2.0', fixture: 'modern', native: 'modern-native', revision: 2 },
   ];
   for (const file of ['scripts/test-firestore-read-errors.cjs', 'scripts/firestore-read-error-server.cjs', 'scripts/firestore-read-evidence.cjs',
@@ -78,7 +78,7 @@ function fixture() {
     sharedSha256: hash, sources, evidence, installedInputs, nativeInputs, node: 'v24.1.0', workerd: '1.20260923.0', miniflare: '4.0.0',
     compatibilityDate: '2026-09-21', peerFaults: [], boundaryErrors: [], asyncErrors: [], cleanupFailures: [],
     testInstrumentation: { method: 'Firestore.snapshot_', versions: ['8.3.0', '9.2.0'], originalInvoked: true, controlDataRpcSeparated: true },
-    profiles: profiles.map(profile => ({ id: profile.id, firestore: profile.version, nativeFirestore: profile.version, nativeGrpc: '1.14.0',
+    profiles: profiles.map(profile => ({ id: profile.id, firestore: profile.version, nativeFirestore: profile.version, nativeGrpc: '1.14.5',
       buildProfile: { name: profile.id, revision: profile.revision, sha256: hash, registrySha256: hash }, bundleSha256: hash })),
     results, caseCount: 100, rpcCount: 260, fetchCount: 208, controlRequests: 70, wire,
     envoy: { version: envoyPin.version, sha256: envoyPin.sha256, observationPoint: 'router-upstream-access-log',

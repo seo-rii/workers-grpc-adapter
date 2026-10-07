@@ -3,7 +3,7 @@ const { isDeepStrictEqual } = require('node:util');
 const envoyPin = require('../fixtures/envoy/binary.json');
 const runtimes = ['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd-grpc-web', 'workerd-cloudflare'];
 const profiles = [
-  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '8.3.0', revision: 4 },
+  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '8.3.0', revision: 5 },
   { id: 'google-modern-v1', fixture: 'modern', native: 'modern-native', version: '9.2.0', revision: 2 },
 ];
 const scenarios = ['batch-permanent-partial', 'batch-transient-before', 'batch-transient-partial',
@@ -73,7 +73,7 @@ function validateFirestoreReadReport(report) {
     const receipts = report.profiles.filter(value => value.id === profile.id);
     need(receipts.length === 1, 'profile receipt uniqueness');
     const receipt = receipts[0];
-    need(receipt.firestore === profile.version && receipt.nativeFirestore === profile.version && receipt.nativeGrpc === '1.14.0', 'pinned native and adapter SDKs');
+    need(receipt.firestore === profile.version && receipt.nativeFirestore === profile.version && receipt.nativeGrpc === '1.14.5', 'pinned native and adapter SDKs');
     need(receipt.buildProfile?.name === profile.id && receipt.buildProfile.revision === profile.revision
       && digest(receipt.buildProfile.sha256) && digest(receipt.buildProfile.registrySha256) && digest(receipt.bundleSha256), 'built Worker profile provenance');
     for (const [mapName, fixture, grpcEntry] of [['installedInputs', profile.fixture, 'dist/index.js'], ['nativeInputs', profile.native, 'build/src/index.js']]) {

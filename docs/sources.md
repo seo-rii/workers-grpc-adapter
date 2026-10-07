@@ -18,7 +18,7 @@ These references explain the design and verification boundaries. External docume
 ## Repository pins
 
 - [vendor/UPSTREAM.json](../vendor/UPSTREAM.json) records grpc-js 1.14.0 npm integrity, commit `3dd281b00fd54ad8f811e941c1d9acc0785c3182`, original and patched source hashes, and patch hashes. `node vendor/verify.cjs` reproduces the patches.
-- [compatibility/candidates.json](../compatibility/candidates.json) records the installed Datastore 10.1.0, Firestore 8.3.0 and Secret Manager 7.1.0 artifacts, npm integrity and source references.
+- [compatibility/candidates.json](../compatibility/candidates.json) records the installed Datastore 10.1.1, Firestore 8.3.0 and Secret Manager 7.1.0 artifacts, npm integrity and source references.
 - Fixture `package-lock.json` files pin the complete adapter/native/Worker dependency graphs. Generated `compatibility/google-graph.json` and `compatibility/google-native-graph.json` report their actual resolution.
 - [fixtures/envoy/binary.json](../fixtures/envoy/binary.json) pins the Envoy release and SHA-256.
 - [fixtures/emulators/toolchain.json](../fixtures/emulators/toolchain.json) pins the official Firestore emulator and Java distribution, including download URLs, size, checksum and provenance.

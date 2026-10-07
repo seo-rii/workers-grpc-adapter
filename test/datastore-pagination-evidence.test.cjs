@@ -61,11 +61,11 @@ function fixture() {
   return { status: 'passed', liveGoogle: false, cloudflareTranslation: false, officialEmulator: false,
     controlledNativeGrpcServer: true, workerAbortPropagationTested: false, resourcesCheckedBeforeClose: true,
     sameSharedSource: true, runtimeDisposed: true, nativeBusinessEquivalent: true, runtime: 'v22.0.0', compatibilityDate: '2026-09-21',
-    workerdVersion: '1.20260923.0', miniflareVersion: '4.0.0', sdkVersion: '10.1.0', nativeGrpcVersion: '1.14.0',
+    workerdVersion: '1.20260923.0', miniflareVersion: '4.0.0', sdkVersion: '10.1.1', nativeGrpcVersion: '1.14.5',
     instrumentation: { syntheticCallIdHeader: true, internalCallDiagnostics: true, oauthNetworkGuard: true, sdkCloseAfterSnapshot: true },
     installedInputs, evidence: Object.fromEntries(sources.map(source => [source, hash])), bundleSha256: hash,
     sharedSourceHashes: helpers, sourceHashes: Object.fromEntries(['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd'].map(runtime => [runtime, { ...helpers }])),
-    buildProfile: { name: 'google-static-v1', revision: 4, sha256: hash, registrySha256: hash },
+    buildProfile: { name: 'google-static-v1', revision: 5, sha256: hash, registrySha256: hash },
     results, rpcCount: 310, grpcWebRequests: 248, authNetworkRequests: 0, controlRequests: 30 };
 }
 function row(report, scenario = 'stream-error', runtime = 'workerd-cloudflare') {

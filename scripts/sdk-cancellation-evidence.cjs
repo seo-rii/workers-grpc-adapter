@@ -8,8 +8,8 @@ const scenarios = [
   'transaction-cancel-inflight', 'transaction-completion-first',
 ];
 const profiles = [
-  { id: 'google-static-v1', fixture: 'google', sdkVersion: '10.1.0', revision: 4,
-    generatedPackage: '@google-cloud/datastore', generatedVersion: '10.1.0' },
+  { id: 'google-static-v1', fixture: 'google', sdkVersion: '10.1.1', revision: 5,
+    generatedPackage: '@google-cloud/datastore', generatedVersion: '10.1.1' },
   { id: 'google-modern-v1', fixture: 'modern', sdkVersion: '11.1.0', revision: 2,
     generatedPackage: '@google-cloud/datastore-api', generatedVersion: '0.3.0' },
 ];
@@ -89,7 +89,7 @@ function validateSdkCancellationReport(report) {
   need(same(report.instrumentation, { channelDiagnostics: true, observer: true, localAbortSignal: true,
     projectIdResolutionBarrier: true, resourcesBeforeSdkClose: true }), 'instrumentation disclosure');
   need(report.compatibilityDate === '2026-09-21' && /^v\d+\.\d+\.\d+/.test(report.runtime)
-    && same(report.versions, { workerd: '1.20260921.1', miniflare: '5.20260921.0-alpha' }), 'pinned workerd runtime provenance');
+    && same(report.versions, { workerd: '1.20261006.1', miniflare: '5.20261006.0-alpha' }), 'pinned workerd runtime provenance');
   need(Number.isFinite(Date.parse(report.startedAt)) && Number.isFinite(Date.parse(report.finishedAt))
     && Date.parse(report.finishedAt) >= Date.parse(report.startedAt), 'execution interval');
   need(same(Object.keys(report.evidence ?? {}).sort(), [...sources].sort())

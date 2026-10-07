@@ -10,7 +10,7 @@ const envoyPin = require('../fixtures/envoy/binary.json');
 function fixture() {
   const hash = 'a'.repeat(64), results = [], wire = [], sources = {}, evidence = {}, installedInputs = {}, nativeInputs = {};
   const profiles = [
-    { id: 'google-static-v1', version: '10.1.0', fixture: 'google', native: 'native', revision: 4 },
+    { id: 'google-static-v1', version: '10.1.1', fixture: 'google', native: 'native', revision: 5 },
     { id: 'google-modern-v1', version: '11.1.0', fixture: 'modern', native: 'modern-native', revision: 2 },
   ];
   const one = '00ff0180', two = '00ff0280';
@@ -100,7 +100,7 @@ function fixture() {
     testInstrumentation: { syntheticIdentityHeaders: true, oauthCredentialIsolation: true, syntheticCachedOAuthTokens: true, nativeLoopbackTls: true, targetObservation: 'auth-service-url-and-fetch-origin-or-native-authority', privateSdkHooks: false,
       privateSdkCleanup: true, controlDataRpcSeparated: true, realHttp2Reset: true },
     nativeTls: { calls: 16, temporaryCredentials: true, activeStreams: 0, faults: [], disposed: true },
-    profiles: profiles.map(profile => ({ id: profile.id, datastore: profile.version, nativeDatastore: profile.version, nativeGrpc: '1.14.0',
+    profiles: profiles.map(profile => ({ id: profile.id, datastore: profile.version, nativeDatastore: profile.version, nativeGrpc: '1.14.5',
       buildProfile: { name: profile.id, revision: profile.revision, sha256: hash, registrySha256: hash }, bundleSha256: hash })),
     results, caseCount: 100, rpcCount: 470, fetchCount: 376, controlRequests: 10, wire,
     envoy: { version: envoyPin.version, sha256: envoyPin.sha256, observationPoint: 'router-upstream-access-log', exit: { code: 0, signal: null } },
@@ -219,7 +219,7 @@ test('EVIDENCE Datastore transactions rejects incomplete or duplicate matrix cel
     ['missing profile', r => { r.profiles.pop(); }],
     ['duplicate profile', r => { r.profiles[1] = structuredClone(r.profiles[0]); }],
     ['wrong SDK', r => { r.profiles[1].datastore = '11.2.0'; }],
-    ['wrong native SDK', r => { r.profiles[1].nativeDatastore = '10.1.0'; }],
+    ['wrong native SDK', r => { r.profiles[1].nativeDatastore = '10.1.1'; }],
     ['wrong native gRPC', r => { r.profiles[0].nativeGrpc = '1.15.0'; }],
     ['missing runtime', r => { r.results = r.results.filter(value => value.runtime !== 'adapter-cloudflare'); }],
     ['missing case', r => { r.results.pop(); }],

@@ -55,7 +55,7 @@ function validateApiContractsReport(report) {
   need(report.protoLoader?.version === '0.8.1' && hash(report.protoLoader.descriptorSha256) && hash(report.protoLoader.staticModuleSha256), 'real proto-loader compilation');
   need(report.protoLoader.descriptorPath === 'verification/api-contracts/package-definition.json' && report.protoLoader.staticModulePath === 'verification/api-contracts/static-codecs.mjs' && report.generatedArtifacts?.[report.protoLoader.descriptorPath] === report.protoLoader.descriptorSha256 && report.generatedArtifacts?.[report.protoLoader.staticModulePath] === report.protoLoader.staticModuleSha256, 'generated proto artifacts');
   const native = report.native;
-  need(native?.version === '1.14.0' && native.transport === 'independent-loopback-http2' && native.sessionsClosed === true && native.results?.length === 6, 'native oracle');
+  need(native?.version === '1.14.5' && native.transport === 'independent-loopback-http2' && native.sessionsClosed === true && native.results?.length === 6, 'native oracle');
   need(native.rawControl?.messages === 2 && native.rawControl.grpcStatus === 0 && native.rawControl.endStream === true && native.rawControl.responseHex === '00000000070a05666972737400000000080a067365636f6e64', 'raw HTTP2 duplicate response control');
   for (const id of ['control-one-message', 'API-007', 'API-008', 'API-009', 'API-010', 'API-011']) {
     const rows = native.results.filter(value => value.id === id); need(rows.length === 1, 'native case matrix'); const value = rows[0];

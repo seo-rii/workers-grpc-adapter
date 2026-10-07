@@ -6,7 +6,7 @@ The fixtures exercise real Google Node SDK packages with the adapter installed a
 
 | Package | Version |
 |---|---|
-| `@google-cloud/datastore` | `10.1.0` |
+| `@google-cloud/datastore` | `10.1.1` |
 | `@google-cloud/firestore` | `8.3.0` |
 | `@google-cloud/secret-manager` | `7.1.0` |
 | Native `@grpc/grpc-js` baseline | `1.14.0` |

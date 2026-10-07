@@ -68,7 +68,7 @@ function entity(key) {
 }
 
 async function main() {
-  assert.equal(report.sdkVersion, '10.1.0');
+  assert.equal(report.sdkVersion, '10.1.1');
   assert.equal(googleRequire('@google-cloud/datastore/package.json').version, report.sdkVersion);
   report.evidence = Object.fromEntries(['scripts/test-datastore-lookup.cjs', 'scripts/datastore-lookup-evidence.cjs', 'fixtures/worker/datastore-lookup.mjs',
     'fixtures/google/shared/datastore-lookup.mjs', 'fixtures/google/shared/assert.mjs', 'fixtures/google/shared/sdk-call-accounting.mjs',

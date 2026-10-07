@@ -60,9 +60,9 @@ function validateDatastorePaginationReport(report) {
     'google-gax/package.json', 'google-auth-library/package.json']) {
     need(hash(report.installedInputs?.[`fixtures/${fixture}/node_modules/${file}`]), 'installed SDK and transport inputs');
   }
-  need(report.sdkVersion === '10.1.0' && report.nativeGrpcVersion === '1.14.0', 'pinned SDK and grpc versions');
+  need(report.sdkVersion === '10.1.1' && report.nativeGrpcVersion === '1.14.5', 'pinned SDK and grpc versions');
   need(sources.every(source => hash(report.evidence?.[source])) && hash(report.bundleSha256), 'source and bundle hashes');
-  need(report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 4
+  need(report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 5
     && hash(report.buildProfile.sha256) && hash(report.buildProfile.registrySha256), 'Worker build profile');
   need(same(Object.keys(report.sourceHashes ?? {}).sort(), [...runtimes.slice(0, 3), 'workerd'].sort()), 'exact source runtime matrix');
   const helpers = ['datastore-pagination.mjs', 'assert.mjs', 'sdk-call-accounting.mjs'];

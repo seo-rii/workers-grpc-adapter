@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "upstream": {
     "package": "@grpc/grpc-js",
-    "version": "1.14.0"
+    "version": "1.14.5"
   },
   "root": {
     "native": {
@@ -1048,34 +1048,6 @@
             "cfd53e2648c5d69534c9649e9ac2451cff8ec9850d662ea3edfa177b6ff3685d",
             "d678504709756949c56a0b3bb66d03489ff8295c1f62e91dedbb95ffb8121653",
             "d77bb01271e5ae620069b3d24fc1de0325eecf7857a68a995186a8818a83d335",
-            "f6feca37301ddd66e26700a6ae234be60ccc1f8e2b3a9cc40b2de2e73a5bef54"
-          ]
-        },
-        {
-          "name": "InterceptingCallInterface",
-          "type": true,
-          "value": false,
-          "kind": "InterfaceDeclaration",
-          "signature": "interface InterceptingCallInterface {\n    cancelWithStatus(status: Status, details: string): void;\n    getPeer(): string;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: any): void;\n    sendMessage(message: any): void;\n    startRead(): void;\n    halfClose(): void;\n    getAuthContext(): AuthContext | null;\n}",
-          "sha256": "bb90d996caef98b71bf78c85f3f12da33dda141a9519374611ea56eb10a26164",
-          "dependencies": [
-            "03ddd7a87b8bec465b4d346ba7e3554a595994aa2a673692ce40e963467c348c",
-            "0d1dc594b0b03bac039bf3bbae0db566fb20ac017209bd2099c69c67969a030b",
-            "36abc22e531b9002a0c0fdac5272bc4b2b1822c39d4c16eddeca468a336a4f8c",
-            "4041e8f85debd16e7abffad53666e5b480bd753d7e72949a798933c9e8edc3a8",
-            "49a5a8e7b7d5c03c7e1d9cea07a2360d85998374957e4793e1ce9cdde85b85cb",
-            "51b1374832999a0872ea510c354b414899779cae5bb357a1364a0f931e447b2d",
-            "5546f6cfe03685d0bad3df68f089bee14969c5067f8743b5aa222e9bdce683da",
-            "72e048cd81dc59a12f6ebc469beb12910d08d20fecfee3f9ddaa2d6f8d4b1061",
-            "7f9b49dda96f509dfe2ab1b601fc3add6f9f1d4a5aaa218ce7731d005e7b7ccb",
-            "850a368878305ddf09bda24b2bcd00c114ba4103eb4d32bb0cec058bf5f8b930",
-            "9f6438058d28ae2aea5f387587ba0fb114836433e6b1568ecfce4c5c72b38cd8",
-            "a0599e24d272e913685ebe02716706d580746a2f8c50afad59028ac4f92b1ee3",
-            "a583d005ad43823d50ea0c73563f3744dd84f800a1cc91439ffb5f4d331a8b09",
-            "abf5d9d6f78bb449f6374ef9cbaa6c8ebbdc2dca91a235a69295cb77266482ca",
-            "af86475458c83795044b47f30d4852256e3c27ee3b4a7e9c2df1c8153bebdcdf",
-            "b857d9259bdf3930729abd372b5e5df3b35d2c12b5dadf2f15bfeeb878a26722",
-            "c84106f368dc4ae4865e6b693acfb7410cc6e52e18df6b667298208134b373d2",
             "f6feca37301ddd66e26700a6ae234be60ccc1f8e2b3a9cc40b2de2e73a5bef54"
           ]
         },
@@ -3002,7 +2974,7 @@
           "value": true,
           "kind": "SourceFile",
           "signature": "namespace {\n    BackoffTimeout: BackoffTimeout;\n    BaseFilter: BaseFilter;\n    BaseSubchannelWrapper: BaseSubchannelWrapper;\n    CHANNEL_ARGS_CONFIG_SELECTOR_KEY: CHANNEL_ARGS_CONFIG_SELECTOR_KEY;\n    CaCertificateUpdate: CaCertificateUpdate;\n    CaCertificateUpdateListener: CaCertificateUpdateListener;\n    CallStream: Call;\n    CertificateProvider: CertificateProvider;\n    ChannelControlHelper: ChannelControlHelper;\n    ChildLoadBalancerHandler: ChildLoadBalancerHandler;\n    ConfigSelector: ConfigSelector;\n    ConnectivityStateListener: ConnectivityStateListener;\n    Duration: Duration;\n    Endpoint: Endpoint;\n    EndpointMap: EndpointMap;\n    FailurePercentageEjectionConfig: FailurePercentageEjectionConfig;\n    FileWatcherCertificateProvider: FileWatcherCertificateProvider;\n    FileWatcherCertificateProviderConfig: FileWatcherCertificateProviderConfig;\n    Filter: Filter;\n    FilterFactory: FilterFactory;\n    FilterStackFactory: FilterStackFactory;\n    GrpcUri: GrpcUri;\n    HealthListener: HealthListener;\n    HostPort: HostPort;\n    IdentityCertificateUpdate: IdentityCertificateUpdate;\n    IdentityCertificateUpdateListener: IdentityCertificateUpdateListener;\n    LeafLoadBalancer: LeafLoadBalancer;\n    LoadBalancer: LoadBalancer;\n    OutlierDetectionRawConfig: OutlierDetectionRawConfig;\n    PickArgs: PickArgs;\n    PickResult: PickResult;\n    PickResultType: PickResultType;\n    Picker: Picker;\n    QueuePicker: QueuePicker;\n    Resolver: Resolver;\n    ResolverListener: ResolverListener;\n    SUBCHANNEL_ARGS_EXCLUDE_KEY_PREFIX: SUBCHANNEL_ARGS_EXCLUDE_KEY_PREFIX;\n    SecureConnectResult: SecureConnectResult;\n    SecureConnector: SecureConnector;\n    StatusOr: StatusOr;\n    SubchannelAddress: SubchannelAddress;\n    SubchannelInterface: SubchannelInterface;\n    SuccessRateEjectionConfig: SuccessRateEjectionConfig;\n    TypedLoadBalancingConfig: TypedLoadBalancingConfig;\n    UnavailablePicker: UnavailablePicker;\n    createCertificateProviderChannelCredentials: createCertificateProviderChannelCredentials;\n    createCertificateProviderServerCredentials: createCertificateProviderServerCredentials;\n    createChildChannelControlHelper: createChildChannelControlHelper;\n    createResolver: createResolver;\n    createServerCredentialsWithInterceptors: createServerCredentialsWithInterceptors;\n    durationToMs: durationToMs;\n    endpointHasAddress: endpointHasAddress;\n    endpointToString: endpointToString;\n    isLoadBalancerNameRegistered: isLoadBalancerNameRegistered;\n    log: log;\n    parseDuration: parseDuration;\n    parseLoadBalancingConfig: parseLoadBalancingConfig;\n    registerAdminService: registerAdminService;\n    registerLoadBalancerType: registerLoadBalancerType;\n    registerResolver: registerResolver;\n    selectLbConfigFromList: selectLbConfigFromList;\n    splitHostPort: splitHostPort;\n    statusOrFromError: statusOrFromError;\n    statusOrFromValue: statusOrFromValue;\n    subchannelAddressToString: subchannelAddressToString;\n    trace: trace;\n    uriToString: uriToString;\n}",
-          "sha256": "08096e1cc38ce1f30c644554bfc9f96f8de4a7ba5d6480aff7b2a2dbd573f5ee",
+          "sha256": "d7f2089b9a3244d3461538e1bc4d70bd9c08a8e4a6540c85cf225acd4046a199",
           "dependencies": [
             "01abc86230027424a5954b263930915b21935ee63822fd8113ff416e07e6fe99",
             "0231447432a9f8fcf87ee249c097ce3cf6726acdd0ca0c6d74caa1bdddfd52be",
@@ -3072,7 +3044,6 @@
             "4971ffc1910e86fd7b9397f7a29d23c11d55476980f6c29d292d08b95a04a3fb",
             "49a5a8e7b7d5c03c7e1d9cea07a2360d85998374957e4793e1ce9cdde85b85cb",
             "4b67f2bd7071423d8a9f5b0d9a1c8b93168dc88ce1ca6084566846ef814c173b",
-            "4cb11aa148dedfe5868787ac4cc57fe5e4ef6ca5a469881d51a09dbea02c2708",
             "4fd7ef9a435dd6d003477264e59f4dfaea5cd8126d28f8906cbe2f536e642646",
             "50ca0f4d0f33f3c4028b631b1a938d176a78d8b061d1f0aa128db82b725579e4",
             "51b1374832999a0872ea510c354b414899779cae5bb357a1364a0f931e447b2d",
@@ -3106,6 +3077,7 @@
             "79c63a99fff82190ef025a7901faf0c6d4e35169f618cfa68902f778229bf97e",
             "79f636a3c825adad4d2cc4390429c0b6aa255fd05bb432c995259df05344040f",
             "7a49bce62919b6e8337b90b8a25565d083403f81e249535e1a9bc7bde4e5eed4",
+            "7b3b80e99ab8b2b908a31476450020464f760852ba482c39a9fac9fe9b63d7f2",
             "7f9b49dda96f509dfe2ab1b601fc3add6f9f1d4a5aaa218ce7731d005e7b7ccb",
             "7fac852dcbdac516f7e75c7f4ed8922488edbb9bf375a9d8d5449922280c12cc",
             "7fae2eb32f443169d2e22143221110c5687e0276d8301499cecf97c778fa597f",
@@ -3130,6 +3102,7 @@
             "a0528f11facaabaea577836b33a46c232c8c5ab62675cc3a2c5067d8702bb37b",
             "a0599e24d272e913685ebe02716706d580746a2f8c50afad59028ac4f92b1ee3",
             "a0afeed8cd8196577455ed98cd0aa638cc566cd013040878b35ff91ea49175b4",
+            "a434132f2ce59756482a5df60c62f91d4a0f1d6da675e1c1719da8776d13b97c",
             "a583d005ad43823d50ea0c73563f3744dd84f800a1cc91439ffb5f4d331a8b09",
             "a5dabdbf019523df0444e4ddcca132a0ea17fab0a5b1aac230c804b183eaa39e",
             "a83207a96ee9c740b0914f95f5f4e338152d99088314c2f6f7691179dae474d0",
@@ -3196,7 +3169,6 @@
             "f0a0708a7bf07626e6f517cb878205e06969fd7f181657e48507e3796d024e47",
             "f2dd20e8b1b28cd0acb5be5bab890c3cc259d98a9ce6afbc09130bf2d51845ed",
             "f559034349b9b29bb33f4dec9a71c3d21aee9e62597e0bb2b840bf7439d6ff35",
-            "f60ead39dab813d96256dadbe43a132df9a24438811cb93ddbc001ca92f65e4f",
             "f63477e2b6ead95dadb5477a31b782cd6320b36c02d1b4d29914942f1f5c5360",
             "f6feca37301ddd66e26700a6ae234be60ccc1f8e2b3a9cc40b2de2e73a5bef54",
             "fb68514978549a060d5582125310864c35394a00cdaedb2d16a5abb617a6c451",
@@ -3214,7 +3186,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getChannelzHandlers(): ChannelzHandlers;",
-          "sha256": "705b623d35bb9839f72c95c83017e3349fa7f98e8ccebc11b29831cff7640db4",
+          "sha256": "f087e13a315173c8a9e4f9fa3320d2f6993779e43f783564ce4b40d3ea17f3e8",
           "dependencies": [
             "01abc86230027424a5954b263930915b21935ee63822fd8113ff416e07e6fe99",
             "0231447432a9f8fcf87ee249c097ce3cf6726acdd0ca0c6d74caa1bdddfd52be",
@@ -3332,7 +3304,6 @@
             "4a6f30cbca6bacc00392dc7e4aeaddcc959554e96966a691e6852aa8b3997420",
             "4b67f2bd7071423d8a9f5b0d9a1c8b93168dc88ce1ca6084566846ef814c173b",
             "4c277d288b3ed7e80e179fe5b89b67524eb24b6ed4f1e9e843f998eb244f895c",
-            "4cb11aa148dedfe5868787ac4cc57fe5e4ef6ca5a469881d51a09dbea02c2708",
             "4df8992104f9c34daa0b5779afa07abc9690d09692ada3f8db79edbfc0a33941",
             "4f5bb7b80b0814767e07ee37435bfee5078da1a092ebc1dc4621b179183abea3",
             "4fd7ef9a435dd6d003477264e59f4dfaea5cd8126d28f8906cbe2f536e642646",
@@ -3365,7 +3336,6 @@
             "6b611f79a0932b223fa0a4cbd901d65a8339eac5994be984d1bd98d78494bd51",
             "6b6a1258b853d2868be579f69a7b1ec41e331f7a95590a1604a03a248e9ce4ee",
             "6d10ed68ba84d5435cfb0ceba0466121cb14ea6d35dfdffa1edbcb609605a897",
-            "6d14554e824ca547c547703f841ccbd4ced34de55c52cbc4e98b08450bf4e187",
             "6d7c3745ebe5c2ac5e146bbe733ec82aa5e60bdfa71146feacc6bac8403d4474",
             "6f1ae79949565bdabd5d8ab0c6b9ccb0af2a29a343fbbeff417ab934210305ed",
             "6fe6890d616093dcf651bf479a5acd79f4027c7bdcbfe4cf7f74574e0f6afb4a",
@@ -3385,6 +3355,7 @@
             "79c63a99fff82190ef025a7901faf0c6d4e35169f618cfa68902f778229bf97e",
             "79f636a3c825adad4d2cc4390429c0b6aa255fd05bb432c995259df05344040f",
             "7a49bce62919b6e8337b90b8a25565d083403f81e249535e1a9bc7bde4e5eed4",
+            "7b3b80e99ab8b2b908a31476450020464f760852ba482c39a9fac9fe9b63d7f2",
             "7b6f244fd6b58bf870218836bf3aada45f2abfb97e56a06b78e1966db0b424bc",
             "7f9b49dda96f509dfe2ab1b601fc3add6f9f1d4a5aaa218ce7731d005e7b7ccb",
             "7fac852dcbdac516f7e75c7f4ed8922488edbb9bf375a9d8d5449922280c12cc",
@@ -3435,6 +3406,7 @@
             "a286aa0a6ab662e51cfff30f795c695a5e96078e17e474fd04eaae5ddb04e10c",
             "a3bea5ddd15fad4d0b3578dcb45037df2062ee3583bf24bd9b4d97f4ab32428d",
             "a3d2413ec883d9dfe78fe1fd393eb1a3ae9261b587f751834ef389d13eedc06a",
+            "a434132f2ce59756482a5df60c62f91d4a0f1d6da675e1c1719da8776d13b97c",
             "a4cafef703e674af3cde87325d71ac73b45ca81be79c7a1f80a2272b5073063a",
             "a4dd1f37ba79654cfc6acf94fd458120df1ee2d036d292692612fa55a0064556",
             "a583d005ad43823d50ea0c73563f3744dd84f800a1cc91439ffb5f4d331a8b09",
@@ -3527,6 +3499,7 @@
             "dcc5a77bb1a9e5fb4a4c723c885c14849145fae7c94920427674144989e67855",
             "de6400ebc73d3890c4c12306cb634addd5caf097c21aa662399d2069847da84e",
             "de875569d795d0220d56828aed8235e20644cf53176cb670e95d835bed065839",
+            "ded245bc715e433e267eb69ead48901f25c86b93c78308d17fda53f28a617139",
             "dfa9b4c6ea2a076b7663b1d8b251a9d8e7386db987a4b3e698f141d878370ce4",
             "dfe92f3def598251ec5ee0e9da8ae690ba15ec454812e02bfd4fb78bd20ca78d",
             "e0d1b718f95c74c02c1e34e0b7784a6af61ab8e0dbf8b1c36341df30b3fee42e",
@@ -3554,7 +3527,6 @@
             "f2e7a44b83f6fe879d9a784396606115bb15d619e02257bc4d1ea59ad39a2790",
             "f559034349b9b29bb33f4dec9a71c3d21aee9e62597e0bb2b840bf7439d6ff35",
             "f5b6f8fed28eab9f805de28348dc212ffc3974338f7ffc679b206f4aaefb6626",
-            "f60ead39dab813d96256dadbe43a132df9a24438811cb93ddbc001ca92f65e4f",
             "f63477e2b6ead95dadb5477a31b782cd6320b36c02d1b4d29914942f1f5c5360",
             "f6feca37301ddd66e26700a6ae234be60ccc1f8e2b3a9cc40b2de2e73a5bef54",
             "f9785449fd1bd88c6bd6e25e191ec6560759ae14d12e8c535efc7fd062b88052",
@@ -3578,7 +3550,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getChannelzServiceDefinition(): ChannelzDefinition;",
-          "sha256": "8224bef3b91222cdb8aa76c86ad973c0f3691c61b74a6a764b493050efc11765",
+          "sha256": "b9d36c82559b8a3f3e77de6572e82cfe5f1da09840dc3528f9d93858a31ff52f",
           "dependencies": [
             "01abc86230027424a5954b263930915b21935ee63822fd8113ff416e07e6fe99",
             "0231447432a9f8fcf87ee249c097ce3cf6726acdd0ca0c6d74caa1bdddfd52be",
@@ -3697,7 +3669,6 @@
             "4a6f30cbca6bacc00392dc7e4aeaddcc959554e96966a691e6852aa8b3997420",
             "4b67f2bd7071423d8a9f5b0d9a1c8b93168dc88ce1ca6084566846ef814c173b",
             "4c277d288b3ed7e80e179fe5b89b67524eb24b6ed4f1e9e843f998eb244f895c",
-            "4cb11aa148dedfe5868787ac4cc57fe5e4ef6ca5a469881d51a09dbea02c2708",
             "4df8992104f9c34daa0b5779afa07abc9690d09692ada3f8db79edbfc0a33941",
             "4f5bb7b80b0814767e07ee37435bfee5078da1a092ebc1dc4621b179183abea3",
             "4fd7ef9a435dd6d003477264e59f4dfaea5cd8126d28f8906cbe2f536e642646",
@@ -3730,7 +3701,6 @@
             "6b611f79a0932b223fa0a4cbd901d65a8339eac5994be984d1bd98d78494bd51",
             "6b6a1258b853d2868be579f69a7b1ec41e331f7a95590a1604a03a248e9ce4ee",
             "6d10ed68ba84d5435cfb0ceba0466121cb14ea6d35dfdffa1edbcb609605a897",
-            "6d14554e824ca547c547703f841ccbd4ced34de55c52cbc4e98b08450bf4e187",
             "6d7c3745ebe5c2ac5e146bbe733ec82aa5e60bdfa71146feacc6bac8403d4474",
             "6f1ae79949565bdabd5d8ab0c6b9ccb0af2a29a343fbbeff417ab934210305ed",
             "6fe6890d616093dcf651bf479a5acd79f4027c7bdcbfe4cf7f74574e0f6afb4a",
@@ -3750,6 +3720,7 @@
             "79c63a99fff82190ef025a7901faf0c6d4e35169f618cfa68902f778229bf97e",
             "79f636a3c825adad4d2cc4390429c0b6aa255fd05bb432c995259df05344040f",
             "7a49bce62919b6e8337b90b8a25565d083403f81e249535e1a9bc7bde4e5eed4",
+            "7b3b80e99ab8b2b908a31476450020464f760852ba482c39a9fac9fe9b63d7f2",
             "7b6f244fd6b58bf870218836bf3aada45f2abfb97e56a06b78e1966db0b424bc",
             "7f9b49dda96f509dfe2ab1b601fc3add6f9f1d4a5aaa218ce7731d005e7b7ccb",
             "7fac852dcbdac516f7e75c7f4ed8922488edbb9bf375a9d8d5449922280c12cc",
@@ -3800,6 +3771,7 @@
             "a286aa0a6ab662e51cfff30f795c695a5e96078e17e474fd04eaae5ddb04e10c",
             "a3bea5ddd15fad4d0b3578dcb45037df2062ee3583bf24bd9b4d97f4ab32428d",
             "a3d2413ec883d9dfe78fe1fd393eb1a3ae9261b587f751834ef389d13eedc06a",
+            "a434132f2ce59756482a5df60c62f91d4a0f1d6da675e1c1719da8776d13b97c",
             "a4cafef703e674af3cde87325d71ac73b45ca81be79c7a1f80a2272b5073063a",
             "a4dd1f37ba79654cfc6acf94fd458120df1ee2d036d292692612fa55a0064556",
             "a583d005ad43823d50ea0c73563f3744dd84f800a1cc91439ffb5f4d331a8b09",
@@ -3891,6 +3863,7 @@
             "dcc5a77bb1a9e5fb4a4c723c885c14849145fae7c94920427674144989e67855",
             "de6400ebc73d3890c4c12306cb634addd5caf097c21aa662399d2069847da84e",
             "de875569d795d0220d56828aed8235e20644cf53176cb670e95d835bed065839",
+            "ded245bc715e433e267eb69ead48901f25c86b93c78308d17fda53f28a617139",
             "dfa9b4c6ea2a076b7663b1d8b251a9d8e7386db987a4b3e698f141d878370ce4",
             "dfe92f3def598251ec5ee0e9da8ae690ba15ec454812e02bfd4fb78bd20ca78d",
             "e0d1b718f95c74c02c1e34e0b7784a6af61ab8e0dbf8b1c36341df30b3fee42e",
@@ -3918,7 +3891,6 @@
             "f2e7a44b83f6fe879d9a784396606115bb15d619e02257bc4d1ea59ad39a2790",
             "f559034349b9b29bb33f4dec9a71c3d21aee9e62597e0bb2b840bf7439d6ff35",
             "f5b6f8fed28eab9f805de28348dc212ffc3974338f7ffc679b206f4aaefb6626",
-            "f60ead39dab813d96256dadbe43a132df9a24438811cb93ddbc001ca92f65e4f",
             "f63477e2b6ead95dadb5477a31b782cd6320b36c02d1b4d29914942f1f5c5360",
             "f6feca37301ddd66e26700a6ae234be60ccc1f8e2b3a9cc40b2de2e73a5bef54",
             "f9785449fd1bd88c6bd6e25e191ec6560759ae14d12e8c535efc7fd062b88052",
@@ -5352,11 +5324,6 @@
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}"
         },
-        "4cb11aa148dedfe5868787ac4cc57fe5e4ef6ca5a469881d51a09dbea02c2708": {
-          "name": "build/src/subchannel.d.ts#Subchannel",
-          "kind": "ClassDeclaration",
-          "signature": "class Subchannel implements SubchannelInterface {\n    constructor(channelTarget: GrpcUri, subchannelAddress: SubchannelAddress, options: ChannelOptions, credentials: ChannelCredentials, connector: SubchannelConnector);\n    ref(): void;\n    unref(): void;\n    unrefIfOneRef(): boolean;\n    createCall(metadata: Metadata, host: string, method: string, listener: SubchannelCallInterceptingListener): SubchannelCall;\n    startConnecting(): void;\n    getConnectivityState(): ConnectivityState;\n    addConnectivityStateListener(listener: ConnectivityStateListener): void;\n    removeConnectivityStateListener(listener: ConnectivityStateListener): void;\n    resetBackoff(): void;\n    getAddress(): string;\n    getChannelzRef(): SubchannelRef;\n    isHealthy(): boolean;\n    addHealthStateWatcher(listener: (healthy: boolean) => void): void;\n    removeHealthStateWatcher(listener: (healthy: boolean) => void): void;\n    getRealSubchannel(): this;\n    realSubchannelEquals(other: SubchannelInterface): boolean;\n    throttleKeepalive(newKeepaliveTime: number): void;\n    getCallCredentials(): CallCredentials;\n    getChannel(): Channel;\n    addDataWatcher(dataWatcher: DataWatcher): void;\n    getOrCreateDataProducer(name: string, createDataProducer: (subchannel: Subchannel) => DataProducer): DataProducer;\n    removeDataProducer(name: string): void;\n}"
-        },
         "4df8992104f9c34daa0b5779afa07abc9690d09692ada3f8db79edbfc0a33941": {
           "name": "build/src/index.d.ts#setLogVerbosity",
           "kind": "VariableDeclaration",
@@ -5517,11 +5484,6 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface CaCertificateUpdate {\n    caCertificate: Buffer;\n}"
         },
-        "6d14554e824ca547c547703f841ccbd4ced34de55c52cbc4e98b08450bf4e187": {
-          "name": "build/src/index.d.ts#$module",
-          "kind": "SourceFile",
-          "signature": "namespace {\n    Call: Call;\n    CallCredentials: CallCredentials;\n    CallInvocationTransformer: CallInvocationTransformer;\n    CallOptions: CallOptions;\n    CallProperties: CallProperties;\n    Channel: ChannelImplementation;\n    ChannelCredentials: ChannelCredentials;\n    ChannelInterface: Channel;\n    ChannelOptions: ChannelOptions;\n    Client: Client;\n    ClientDuplexStream: ClientDuplexStream;\n    ClientOptions: ClientOptions;\n    ClientReadableStream: ClientReadableStream;\n    ClientUnaryCall: ClientUnaryCall;\n    ClientWritableStream: ClientWritableStream;\n    ConnectionInjector: ConnectionInjector;\n    Deadline: Deadline;\n    FullResponder: FullResponder;\n    FullServerListener: FullServerListener;\n    GrpcObject: GrpcObject;\n    InterceptingCall: InterceptingCall;\n    InterceptingCallInterface: InterceptingCallInterface;\n    InterceptingListener: InterceptingListener;\n    Interceptor: Interceptor;\n    InterceptorConfigurationError: InterceptorConfigurationError;\n    InterceptorOptions: InterceptorOptions;\n    InterceptorProvider: InterceptorProvider;\n    KeyCertPair: KeyCertPair;\n    Listener: Listener;\n    ListenerBuilder: ListenerBuilder;\n    LoadBalancingConfig: LoadBalancingConfig;\n    Metadata: Metadata;\n    MetadataOptions: MetadataOptions;\n    MetadataValue: MetadataValue;\n    MethodConfig: MethodConfig;\n    MethodDefinition: MethodDefinition;\n    NextCall: NextCall;\n    OAuth2Client: OAuth2Client;\n    ProtobufTypeDefinition: ProtobufTypeDefinition;\n    Requester: Requester;\n    RequesterBuilder: RequesterBuilder;\n    Responder: Responder;\n    ResponderBuilder: ResponderBuilder;\n    RetryPolicy: RetryPolicy;\n    Server: Server;\n    ServerCredentials: ServerCredentials;\n    ServerDuplexStream: ServerDuplexStream;\n    ServerErrorResponse: ServerErrorResponse;\n    ServerInterceptingCall: ServerInterceptingCall;\n    ServerInterceptingCallInterface: ServerInterceptingCallInterface;\n    ServerInterceptor: ServerInterceptor;\n    ServerListener: ServerListener;\n    ServerListenerBuilder: ServerListenerBuilder;\n    ServerMethodDefinition: ServerMethodDefinition;\n    ServerMetricRecorder: ServerMetricRecorder;\n    ServerOptions: ServerOptions;\n    ServerReadableStream: ServerReadableStream;\n    ServerUnaryCall: ServerUnaryCall;\n    ServerWritableStream: ServerWritableStream;\n    ServiceClientConstructor: ServiceClientConstructor;\n    ServiceConfig: ServiceConfig;\n    ServiceDefinition: ServiceDefinition;\n    ServiceError: ServiceError;\n    StatusBuilder: StatusBuilder;\n    StatusObject: StatusObject;\n    UntypedHandleCall: UntypedHandleCall;\n    UntypedServiceImplementation: UntypedServiceImplementation;\n    VerifyOptions: VerifyOptions;\n    addAdminServicesToServer: addAdminServicesToServer;\n    closeClient: closeClient;\n    compressionAlgorithms: CompressionAlgorithms;\n    connectivityState: ConnectivityState;\n    credentials: credentials;\n    deserialize: Deserialize;\n    experimental: $module;\n    getChannelzHandlers: getChannelzHandlers;\n    getChannelzServiceDefinition: getChannelzServiceDefinition;\n    getClientChannel: getClientChannel;\n    handleBidiStreamingCall: handleBidiStreamingCall;\n    handleClientStreamingCall: handleClientStreamingCall;\n    handleServerStreamingCall: handleServerStreamingCall;\n    handleUnaryCall: handleUnaryCall;\n    load: load;\n    loadObject: loadObject;\n    loadPackageDefinition: loadPackageDefinition;\n    logVerbosity: LogVerbosity;\n    makeClientConstructor: makeClientConstructor;\n    makeGenericClientConstructor: makeClientConstructor;\n    propagate: Propagate;\n    requestCallback: UnaryCallback;\n    sendUnaryData: sendUnaryData;\n    serialize: Serialize;\n    setLogVerbosity: setLogVerbosity;\n    setLogger: setLogger;\n    status: Status;\n    waitForClientReady: waitForClientReady;\n}"
-        },
         "6d7c3745ebe5c2ac5e146bbe733ec82aa5e60bdfa71146feacc6bac8403d4474": {
           "name": "build/src/connectivity-state.d.ts#ConnectivityState",
           "kind": "EnumDeclaration",
@@ -5616,6 +5578,11 @@
           "name": "build/src/load-balancer.d.ts#ChannelControlHelper",
           "kind": "InterfaceDeclaration",
           "signature": "interface ChannelControlHelper {\n    createSubchannel(subchannelAddress: SubchannelAddress, subchannelArgs: ChannelOptions): SubchannelInterface;\n    updateState(connectivityState: ConnectivityState, picker: Picker, errorMessage: string | null): void;\n    requestReresolution(): void;\n    addChannelzChild(child: ChannelRef | SubchannelRef): void;\n    removeChannelzChild(child: ChannelRef | SubchannelRef): void;\n}"
+        },
+        "7b3b80e99ab8b2b908a31476450020464f760852ba482c39a9fac9fe9b63d7f2": {
+          "name": "build/src/subchannel.d.ts#Subchannel",
+          "kind": "ClassDeclaration",
+          "signature": "class Subchannel implements SubchannelInterface {\n    constructor(channelTarget: GrpcUri, subchannelAddress: SubchannelAddress, options: ChannelOptions, credentials: ChannelCredentials, connector: SubchannelConnector);\n    ref(): void;\n    unref(): void;\n    unrefIfOneRef(): boolean;\n    createCall(metadata: Metadata, host: string, method: string, listener: SubchannelCallInterceptingListener, callId?: number): SubchannelCall;\n    startConnecting(): void;\n    getConnectivityState(): ConnectivityState;\n    addConnectivityStateListener(listener: ConnectivityStateListener): void;\n    removeConnectivityStateListener(listener: ConnectivityStateListener): void;\n    resetBackoff(): void;\n    getAddress(): string;\n    getChannelzRef(): SubchannelRef;\n    isHealthy(): boolean;\n    addHealthStateWatcher(listener: (healthy: boolean) => void): void;\n    removeHealthStateWatcher(listener: (healthy: boolean) => void): void;\n    getRealSubchannel(): this;\n    realSubchannelEquals(other: SubchannelInterface): boolean;\n    throttleKeepalive(newKeepaliveTime: number): void;\n    getCallCredentials(): CallCredentials;\n    getChannel(): Channel;\n    addDataWatcher(dataWatcher: DataWatcher): void;\n    getOrCreateDataProducer(name: string, createDataProducer: (subchannel: Subchannel) => DataProducer): DataProducer;\n    removeDataProducer(name: string): void;\n}"
         },
         "7b6f244fd6b58bf870218836bf3aada45f2abfb97e56a06b78e1966db0b424bc": {
           "name": "build/src/generated/grpc/channelz/v1/ChannelConnectivityState.d.ts#_grpc_channelz_v1_ChannelConnectivityState_State__Output",
@@ -5866,6 +5833,11 @@
           "name": "build/src/generated/grpc/channelz/v1/ChannelTraceEvent.d.ts#ChannelTraceEvent",
           "kind": "InterfaceDeclaration",
           "signature": "interface ChannelTraceEvent {\n    'description'?: (string);\n    'severity'?: (_grpc_channelz_v1_ChannelTraceEvent_Severity);\n    'timestamp'?: (_google_protobuf_Timestamp | null);\n    'channel_ref'?: (_grpc_channelz_v1_ChannelRef | null);\n    'subchannel_ref'?: (_grpc_channelz_v1_SubchannelRef | null);\n    'child_ref'?: \"channel_ref\" | \"subchannel_ref\";\n}"
+        },
+        "a434132f2ce59756482a5df60c62f91d4a0f1d6da675e1c1719da8776d13b97c": {
+          "name": "build/src/transport.d.ts#Transport",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface Transport {\n    getChannelzRef(): SocketRef;\n    getPeerName(): string;\n    getOptions(): ChannelOptions;\n    getAuthContext(): AuthContext;\n    createCall(metadata: Metadata, host: string, method: string, listener: SubchannelCallInterceptingListener, subchannelCallStatsTracker: Partial<CallEventTracker>, callId?: number): SubchannelCall;\n    addDisconnectListener(listener: TransportDisconnectListener): void;\n    shutdown(): void;\n}"
         },
         "a4cafef703e674af3cde87325d71ac73b45ca81be79c7a1f80a2272b5073063a": {
           "name": "build/src/client.d.ts#CallInvocationTransformer",
@@ -6327,6 +6299,11 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface LoadBalancerConstructor {\n    new (channelControlHelper: ChannelControlHelper): LoadBalancer;\n}"
         },
+        "ded245bc715e433e267eb69ead48901f25c86b93c78308d17fda53f28a617139": {
+          "name": "build/src/index.d.ts#$module",
+          "kind": "SourceFile",
+          "signature": "namespace {\n    Call: Call;\n    CallCredentials: CallCredentials;\n    CallInvocationTransformer: CallInvocationTransformer;\n    CallOptions: CallOptions;\n    CallProperties: CallProperties;\n    Channel: ChannelImplementation;\n    ChannelCredentials: ChannelCredentials;\n    ChannelInterface: Channel;\n    ChannelOptions: ChannelOptions;\n    Client: Client;\n    ClientDuplexStream: ClientDuplexStream;\n    ClientOptions: ClientOptions;\n    ClientReadableStream: ClientReadableStream;\n    ClientUnaryCall: ClientUnaryCall;\n    ClientWritableStream: ClientWritableStream;\n    ConnectionInjector: ConnectionInjector;\n    Deadline: Deadline;\n    FullResponder: FullResponder;\n    FullServerListener: FullServerListener;\n    GrpcObject: GrpcObject;\n    InterceptingCall: InterceptingCall;\n    InterceptingListener: InterceptingListener;\n    Interceptor: Interceptor;\n    InterceptorConfigurationError: InterceptorConfigurationError;\n    InterceptorOptions: InterceptorOptions;\n    InterceptorProvider: InterceptorProvider;\n    KeyCertPair: KeyCertPair;\n    Listener: Listener;\n    ListenerBuilder: ListenerBuilder;\n    LoadBalancingConfig: LoadBalancingConfig;\n    Metadata: Metadata;\n    MetadataOptions: MetadataOptions;\n    MetadataValue: MetadataValue;\n    MethodConfig: MethodConfig;\n    MethodDefinition: MethodDefinition;\n    NextCall: NextCall;\n    OAuth2Client: OAuth2Client;\n    ProtobufTypeDefinition: ProtobufTypeDefinition;\n    Requester: Requester;\n    RequesterBuilder: RequesterBuilder;\n    Responder: Responder;\n    ResponderBuilder: ResponderBuilder;\n    RetryPolicy: RetryPolicy;\n    Server: Server;\n    ServerCredentials: ServerCredentials;\n    ServerDuplexStream: ServerDuplexStream;\n    ServerErrorResponse: ServerErrorResponse;\n    ServerInterceptingCall: ServerInterceptingCall;\n    ServerInterceptingCallInterface: ServerInterceptingCallInterface;\n    ServerInterceptor: ServerInterceptor;\n    ServerListener: ServerListener;\n    ServerListenerBuilder: ServerListenerBuilder;\n    ServerMethodDefinition: ServerMethodDefinition;\n    ServerMetricRecorder: ServerMetricRecorder;\n    ServerOptions: ServerOptions;\n    ServerReadableStream: ServerReadableStream;\n    ServerUnaryCall: ServerUnaryCall;\n    ServerWritableStream: ServerWritableStream;\n    ServiceClientConstructor: ServiceClientConstructor;\n    ServiceConfig: ServiceConfig;\n    ServiceDefinition: ServiceDefinition;\n    ServiceError: ServiceError;\n    StatusBuilder: StatusBuilder;\n    StatusObject: StatusObject;\n    UntypedHandleCall: UntypedHandleCall;\n    UntypedServiceImplementation: UntypedServiceImplementation;\n    VerifyOptions: VerifyOptions;\n    addAdminServicesToServer: addAdminServicesToServer;\n    closeClient: closeClient;\n    compressionAlgorithms: CompressionAlgorithms;\n    connectivityState: ConnectivityState;\n    credentials: credentials;\n    deserialize: Deserialize;\n    experimental: $module;\n    getChannelzHandlers: getChannelzHandlers;\n    getChannelzServiceDefinition: getChannelzServiceDefinition;\n    getClientChannel: getClientChannel;\n    handleBidiStreamingCall: handleBidiStreamingCall;\n    handleClientStreamingCall: handleClientStreamingCall;\n    handleServerStreamingCall: handleServerStreamingCall;\n    handleUnaryCall: handleUnaryCall;\n    load: load;\n    loadObject: loadObject;\n    loadPackageDefinition: loadPackageDefinition;\n    logVerbosity: LogVerbosity;\n    makeClientConstructor: makeClientConstructor;\n    makeGenericClientConstructor: makeClientConstructor;\n    propagate: Propagate;\n    requestCallback: UnaryCallback;\n    sendUnaryData: sendUnaryData;\n    serialize: Serialize;\n    setLogVerbosity: setLogVerbosity;\n    setLogger: setLogger;\n    status: Status;\n    waitForClientReady: waitForClientReady;\n}"
+        },
         "dfa9b4c6ea2a076b7663b1d8b251a9d8e7386db987a4b3e698f141d878370ce4": {
           "name": "build/src/generated/grpc/channelz/v1/ChannelTraceEvent.d.ts#_grpc_channelz_v1_ChannelTraceEvent_Severity",
           "kind": "TypeAliasDeclaration+VariableDeclaration",
@@ -6461,11 +6438,6 @@
           "name": "build/src/make-client.d.ts#loadPackageDefinition",
           "kind": "FunctionDeclaration",
           "signature": "function loadPackageDefinition(packageDef: PackageDefinition): GrpcObject;"
-        },
-        "f60ead39dab813d96256dadbe43a132df9a24438811cb93ddbc001ca92f65e4f": {
-          "name": "build/src/transport.d.ts#Transport",
-          "kind": "InterfaceDeclaration",
-          "signature": "interface Transport {\n    getChannelzRef(): SocketRef;\n    getPeerName(): string;\n    getOptions(): ChannelOptions;\n    getAuthContext(): AuthContext;\n    createCall(metadata: Metadata, host: string, method: string, listener: SubchannelCallInterceptingListener, subchannelCallStatsTracker: Partial<CallEventTracker>): SubchannelCall;\n    addDisconnectListener(listener: TransportDisconnectListener): void;\n    shutdown(): void;\n}"
         },
         "f63477e2b6ead95dadb5477a31b782cd6320b36c02d1b4d29914942f1f5c5360": {
           "name": "build/src/duration.d.ts#Duration",

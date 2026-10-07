@@ -192,7 +192,7 @@ function validateCallLifecycleReport(report, { allowSourceBuild = false } = {}) 
     && typeof report.miniflare === 'string' && report.miniflare.length > 0, 'runtime identity');
   need(digest(report.bundleSha256), 'bundle hash');
   need(sources.every(file => digest(report.evidence?.[file])), 'source evidence');
-  same(report.nativeDeadline, { grpc: '1.14.0', variant: 'invalid-date', threwSynchronously: true,
+  same(report.nativeDeadline, { grpc: '1.14.5', variant: 'invalid-date', threwSynchronously: true,
     errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
     adapterPolicy: 'asynchronous-invalid-argument' }, 'pinned native invalid-Date boundary');
   need(report.nativeInputs && typeof report.nativeInputs === 'object' && !Array.isArray(report.nativeInputs), 'native inputs');

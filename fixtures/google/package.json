@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Pinned real Google SDK consumer of the local grpc-js replacement",
   "dependencies": {
-    "@google-cloud/datastore": "10.1.0",
+    "@google-cloud/datastore": "10.1.1",
     "@google-cloud/firestore": "8.3.0",
     "@google-cloud/secret-manager": "7.1.0",
     "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz"

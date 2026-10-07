@@ -1,16 +1,16 @@
 {
   "status": "registry-installed-and-locked",
-  "checkedAt": "2026-09-23",
+  "checkedAt": "2026-10-07",
   "node": "v24.1.0",
   "npm": "11.4.1",
   "typescript": "5.8.3",
   "sdkCandidates": [
     {
       "package": "@google-cloud/datastore",
-      "version": "10.1.0",
-      "sourceBlob": "8e8583e2a64ed9e4515077f22a40e2dd2cce89a4",
-      "npmIntegrity": "sha512-FqkIRF0zu8Q4BTY0H2P6AT8vqDUVykqHy9MR6X3ptg6ZadgN404J9CVItgYYLXX4/vVdQlSzYeUw//98H+MRIA==",
-      "installed": true
+      "version": "10.1.1",
+      "npmIntegrity": "sha512-HFQGB9D+pP7yfmnWI/CqpGZ/hhHF/RJsQrhLW7WSgDwJr/sXNgXjmuJknUwbD2RfGDN4iVReMFtkJ0+7u6JQgg==",
+      "installed": true,
+      "sourceGitHead": "5ffca12206b54abdd2660cc698e99edb58b59894"
     },
     {
       "package": "@google-cloud/firestore",
@@ -30,11 +30,20 @@
   "grpcJsReference": {
     "version": "1.14.0",
     "clientSourceBlob": "dc75ac4828d4db3c9ef84692d30c878357ea8cfc",
-    "installed": true,
+    "installed": false,
     "vendored": true,
     "integrity": "sha512-N8Jx6PaYzcTRNzirReJCtADVoq4z7+1KQ4E70jTg/koQiMoUSN1kbNjPOqpPbhMFhfU1/l7ixspPl8dNY+FoUg==",
     "gitHead": "3dd281b00fd54ad8f811e941c1d9acc0785c3182"
   },
   "fullDependencyGraphLocked": true,
-  "note": "Actual SDK artifacts installed and npm ci verified; live cloud certification remains pending."
+  "note": "Exact SDK graph locks and installed profiles; vendored client sources remain derived from grpc-js 1.14.0, while both executable native baselines use patched grpc-js 1.14.5. Live cloud certification remains separate.",
+  "nativeGrpcBaseline": {
+    "version": "1.14.5",
+    "integrity": "sha512-7VZM+SVdEcUUqSQeNI3zM8Qs/BhQKZndPo2h5VkYkAM8Iz0wJIa8mKV5ekQGqG8UUsnkQ0NMxIxwkIHYvj0qOw==",
+    "gitHead": "56567d9604b4e45cdca0d2e3c2a60ac227ee659d",
+    "fixtures": [
+      "native",
+      "modern-native"
+    ]
+  }
 }

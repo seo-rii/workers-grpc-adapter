@@ -11,7 +11,7 @@ function fixture() {
     startedAt: '2026-10-04T00:00:00Z', finishedAt: '2026-10-04T00:01:00Z', runtime: 'v22.23.3',
     liveCloud: false, cloudflareTranslation: false, officialEmulator: false, controlledFetchPeer: true,
     backendCancellationProven: false, optionalExtensions: true, upstreamSdkBehaviorChanged: false,
-    compatibilityDate: '2026-09-21', versions: { workerd: '1.20260921.1', miniflare: '5.20260921.0-alpha' },
+    compatibilityDate: '2026-09-21', versions: { workerd: '1.20261006.1', miniflare: '5.20261006.0-alpha' },
     instrumentation: { channelDiagnostics: true, observer: true, localAbortSignal: true,
       projectIdResolutionBarrier: true, resourcesBeforeSdkClose: true },
     evidence: Object.fromEntries(sources.map(file => [file, hash])), installedInputs: {}, profiles: [],

@@ -5,7 +5,7 @@ const sources = ['scripts/test-bootstrap-catalog.cjs', 'scripts/bootstrap-catalo
   'fixtures/worker/bootstrap-catalog.mjs', 'fixtures/worker/bootstrap-app-probe.mjs',
   'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/modern/package-lock.json',
   'fixtures/modern-native/package-lock.json', 'fixtures/worker/package-lock.json'];
-const profiles = { 'google-static-v1': { revision: 4, fixture: 'google', nativeFixture: 'native', types: 891, schemas: 18 },
+const profiles = { 'google-static-v1': { revision: 5, fixture: 'google', nativeFixture: 'native', types: 764, schemas: 14 },
   'google-modern-v1': { revision: 2, fixture: 'modern', nativeFixture: 'modern-native', types: 1069, schemas: 15 } };
 const firstMethods = ['fromObject', 'toObject', 'encode', 'decode'];
 const methods = ['ctor', 'create', 'verify', 'fromObject', 'toObject', 'encode', 'decode', 'encodeDelimited', 'decodeDelimited',
@@ -47,7 +47,7 @@ function validateBootstrapCatalogReport(report) {
   for (const row of report.profiles) {
     const expected = profiles[row.id];
     need(row.status === 'passed' && row.runtimeDisposed === true && row.revision === expected.revision
-      && row.fixture === expected.fixture && row.nativeFixture === expected.nativeFixture && row.nativeGrpcVersion === '1.14.0', 'profile pins and execution');
+      && row.fixture === expected.fixture && row.nativeFixture === expected.nativeFixture && row.nativeGrpcVersion === '1.14.5', 'profile pins and execution');
     need(hash(row.bundleSha256) && hash(row.oracleInputsSha256) && row.build?.profile === row.id && row.build.revision === expected.revision
       && hash(row.build.profileSha256) && hash(row.build.registrySha256) && row.build.nodeModulesModified === false && row.build.globalPrototypePatched === false,
     'installed registry provenance');
@@ -110,15 +110,15 @@ function validateBootstrapCatalogReport(report) {
       && application.includedIndependentInput === true && application.transformedIndependentInputs === 0
       && hash(application.sourceTreeSha256) && hash(application.baselineBundleSha256), 'application-owned physical protobuf isolation');
     same(application.probe, application.baseline, 'same app behavior with/without preset');
-    const legacyApp = row.id === 'google-static-v1', largeInteger = legacyApp ? '9007199254740992' : '9007199254740993';
-    need(application.copiedPackageVersion === (legacyApp ? '7.4.0' : '7.6.6'), 'independent application protobuf version');
+    const largeInteger = '9007199254740993';
+    need(application.copiedPackageVersion === '7.6.6', 'independent application protobuf version');
     same(application.probe, { fields: [['label', 'string', 1], ['count', 'int64', 2]],
       wire: [10, 'application-owned', 16, '42'], codegen: 'EvalError', largeIntegerRoundtrip: largeInteger,
-      rootFromJSON: legacyApp ? 'passed' : 'EvalError',
+      rootFromJSON: 'EvalError',
       customSchemaAccepted: true, ownRootConstructor: true },
     'reflection/writer work and app codegen rejection remains intact');
     same(application.precisionBoundary, { input: '9007199254740993', native: '9007199254740993', workerd: largeInteger,
-      matchesNative: !legacyApp, presetChangesBaseline: false }, 'unmodified application protobuf precision boundary preserved');
+      matchesNative: true, presetChangesBaseline: false }, 'unmodified application protobuf precision boundary preserved');
     same(row.closure?.highLevelConstructors, ['datastore', 'firestore'], 'high-level constructor closure');
     same(row.closure.highLevelInitialized, ['firestore-batch-get'], 'high-level Firestore lazy stub closure');
     same(row.closure.gaxCopies, ['gax-0', 'gax-1'], 'both GAX copies');

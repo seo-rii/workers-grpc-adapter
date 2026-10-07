@@ -106,7 +106,7 @@ The pinned Google SDK graph also needs the Node-only `@grpc/grpc-js/build` prese
 
 ## What is tested
 
-The fixtures pin Datastore **10.1.0**, Firestore **8.3.0**, and Secret Manager **7.1.0**. Checks include strict TypeScript consumers, actual tarball installation, native grpc-js comparisons, actual Envoy translation, and local workerd execution.
+The fixtures pin Datastore **10.1.1**, Firestore **8.3.0**, and Secret Manager **7.1.0**. Checks include strict TypeScript consumers, actual tarball installation, native grpc-js comparisons, actual Envoy translation, and local workerd execution.
 
 Shared business modules run unchanged in native Node, Node with the adapter, and workerd. The harness compares source hashes, business assertions, RPC methods, and statuses. Official Firestore emulators in Native and Datastore modes cover CRUD, queries and aggregation, data types, transactions and rollback, missing results, backend errors, and write atomicity. Additional controlled-server cases cover cancellation, transaction retries, and a commit applied before its response is lost. Local Secret Manager tests use a controlled server, not an official emulator.
 

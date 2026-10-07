@@ -88,10 +88,10 @@ async function main() {
     const manifest = json(path.join(root, 'package.json'));
     addPackage(manifest, actualTarball);
     const upstream = await prepareLockedPackages();
-    const nativeGrpcMetadata = registryPackages.get('@grpc/grpc-js').get('1.14.0');
-    const nativeGrpcArchive = tarballs.get('@grpc/grpc-js@1.14.0');
-    fake('@grpc/grpc-js', '1.14.0', {}, "module.exports={nativeMock:true};\n");
-    fake('wga-fixture-gax', '1.0.0', { '@grpc/grpc-js': '^1.14.0' }, "exports.grpc=require('@grpc/grpc-js');exports.metadata=require('@grpc/grpc-js/package.json');\n");
+    const nativeGrpcMetadata = registryPackages.get('@grpc/grpc-js').get('1.14.5');
+    const nativeGrpcArchive = tarballs.get('@grpc/grpc-js@1.14.5');
+    fake('@grpc/grpc-js', '1.14.5', {}, "module.exports={nativeMock:true};\n");
+    fake('wga-fixture-gax', '1.0.0', { '@grpc/grpc-js': '^1.14.5' }, "exports.grpc=require('@grpc/grpc-js');exports.metadata=require('@grpc/grpc-js/package.json');\n");
     fake('wga-fixture-sdk', '1.0.0', { 'wga-fixture-gax': '1.0.0' }, "module.exports=require('wga-fixture-gax');\n");
     const registryMisses = [];
     const server = http.createServer((req, res) => {

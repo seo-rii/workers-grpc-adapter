@@ -241,7 +241,7 @@ test('SERVER disposes an iterator returned by a handler promise after its deadli
 });
 
 test('SERVER unary and stream bytes/status/metadata match an actual pinned native grpc-js server', async () => {
-    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.0');
+    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.5');
     const nativeServer = new native.Server();
     nativeServer.addService(definition, {
         echo(call, callback) { const initial = new native.Metadata(); initial.set('x-initial', 'fixture'); call.sendMetadata(initial);

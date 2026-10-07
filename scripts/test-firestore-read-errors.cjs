@@ -178,7 +178,7 @@ async function main() {
     const native = createRequire(path.join(root, 'fixtures', profile.native, 'package.json'));
     const receipt = { id: profile.id, firestore: req('@google-cloud/firestore/package.json').version,
       nativeFirestore: native('@google-cloud/firestore/package.json').version, nativeGrpc: native('@grpc/grpc-js/package.json').version };
-    check(receipt.firestore === profile.version && receipt.nativeFirestore === profile.version && receipt.nativeGrpc === '1.14.0', 'READ_PINNED_SDKS');
+    check(receipt.firestore === profile.version && receipt.nativeFirestore === profile.version && receipt.nativeGrpc === '1.14.5', 'READ_PINNED_SDKS');
     report.profiles.push(receipt); await runNode(profile, 'native');
     if (!nativeOnly) {
       await runNode(profile, 'adapter-grpc-web'); await runNode(profile, 'adapter-cloudflare');

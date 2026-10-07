@@ -9,7 +9,7 @@
     "externalRequests": 0,
     "protoLoader": {
       "version": "0.8.1",
-      "protobufjs": "7.4.0",
+      "protobufjs": "7.6.6",
       "transformation": "loadSync real proto; preserve full descriptor graph; precompile actual protobufjs encode/decode/fromObject/toObject static functions",
       "descriptorSha256": "91aa81d5d7c1a78e9f1cc78b678955f8841c97a6283d70598bef5d7680eff770",
       "staticModuleSha256": "3859a385d4348bd48739fc2cc90a30080fef3a2cec5e9b6b83ad2cfea68ffc00",
@@ -25,7 +25,7 @@
     "miniflare": "5.20260921.0-alpha",
     "node": "v24.1.0",
     "native": {
-      "version": "1.14.0",
+      "version": "1.14.5",
       "transport": "independent-loopback-http2",
       "results": [
         {
@@ -717,7 +717,7 @@
         {
           "wire": "000000000c0a0aec9588eb859520e29883",
           "request": {
-            "text": "안녕 ☃"
+            "text": "\uc548\ub155 \u2603"
           },
           "metadata": {
             "order": null,
@@ -794,7 +794,7 @@
               0,
               "",
               {
-                "text": "안녕 ☃"
+                "text": "\uc548\ub155 \u2603"
               }
             ],
             [
@@ -808,7 +808,7 @@
               "code": 0,
               "details": "",
               "value": {
-                "text": "안녕 ☃"
+                "text": "\uc548\ub155 \u2603"
               },
               "asynchronous": true
             }
@@ -894,7 +894,7 @@
       "resourcesIdle": true,
       "payloads": [
         "",
-        "안녕 ☃",
+        "\uc548\ub155 \u2603",
         "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
       ],
       "nestedPackage": "catalog.api.nested",

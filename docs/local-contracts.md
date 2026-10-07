@@ -44,7 +44,7 @@ callback can interrupt the following public `status` event; the test records
 that separately from the successful transport observer result.
 
 `API-011` remains partial. With two response messages followed by OK trailers,
-the pinned native grpc-js 1.14.0 unary client delivers only the first message
+the pinned native grpc-js 1.14.5 unary client delivers only the first message
 internally and reaches its deadline (`DEADLINE_EXCEEDED`, 4). The adapter rejects
 the extra message immediately (`UNIMPLEMENTED`, 12). The independent HTTP/2 peer
 also has a successful one-message control, and a raw consuming probe verifies
@@ -95,7 +95,7 @@ not evidence for deployed cancellation propagation.
 negative infinity produces asynchronous `INVALID_ARGUMENT / WGA_INVALID_DEADLINE`
 before authentication or Fetch. Finite past deadlines remain `DEADLINE_EXCEEDED`;
 positive infinity remains the explicit no-deadline sentinel. The native control
-still records pinned grpc-js 1.14.0 throwing `RangeError` synchronously for an
+still records pinned grpc-js 1.14.5 throwing `RangeError` synchronously for an
 invalid Date. Satisfying the adapter's input-error contract does not claim native
 exception parity.
 

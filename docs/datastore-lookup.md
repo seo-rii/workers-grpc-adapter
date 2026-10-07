@@ -1,6 +1,6 @@
 # Datastore deferred Lookup
 
-The pinned `@google-cloud/datastore@10.1.0` supports finite deferred results
+The pinned `@google-cloud/datastore@10.1.1` supports finite deferred results
 through its existing `get()` and `createReadStream()` implementations. The SDK
 issues another unary `Lookup` for only the deferred keys; each round is a new
 adapter call. No adapter retry policy is needed for this behavior.

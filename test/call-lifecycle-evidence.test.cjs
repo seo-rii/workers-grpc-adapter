@@ -113,7 +113,7 @@ function fixture() {
       'fixtures/native/package.json', 'fixtures/native/package-lock.json'].map(file => [file, 'b'.repeat(64)])),
     installedInputs: Object.fromEntries(['index.js', 'index.mjs', 'adapter.js', 'adapter.mjs', 'call.js', 'wire.js']
       .map(file => [`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`, 'c'.repeat(64)])),
-    nativeDeadline: { grpc: '1.14.0', variant: 'invalid-date', threwSynchronously: true,
+    nativeDeadline: { grpc: '1.14.5', variant: 'invalid-date', threwSynchronously: true,
       errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
       adapterPolicy: 'asynchronous-invalid-argument' },
     nativeInputs: Object.fromEntries(['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js']

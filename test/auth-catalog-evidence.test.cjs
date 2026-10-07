@@ -18,7 +18,7 @@ function fixture() {
     evidence: Object.fromEntries(sources.map(file => [file, hash])),
     versions: { auth: ['10.9.1', '11.1.0'], secretManager: '7.1.0', gax: '6.5.0', miniflare: 'synthetic', workerd: 'synthetic' },
     installedInputs: Object.fromEntries(['index.js', 'adapter.js', 'call.js', 'wire.js'].map(file => [`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`, hash])),
-    native: { version: '1.14.0', actualLoadBalancingCall: true, controlledReadySubchannel: true, networkUsed: false,
+    native: { version: '1.14.5', actualLoadBalancingCall: true, controlledReadySubchannel: true, networkUsed: false,
       inputs: Object.fromEntries(['package.json', 'build/src/load-balancing-call.js', 'build/src/call-credentials.js', 'build/src/metadata.js', 'build/src/control-plane-status.js']
         .map(file => [`fixtures/native/node_modules/@grpc/grpc-js/${file}`, hash])),
       codes: { undefined: 2, 16: 16, 14: 14, 0: 13, 3: 13, 5: 13, 6: 13, 9: 13, 10: 13, 11: 13, 15: 13 }, composition: { metadata, completed } },

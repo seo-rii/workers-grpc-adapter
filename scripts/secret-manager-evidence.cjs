@@ -69,9 +69,9 @@ function validateSecretManagerReport(report) {
     'resourcesCheckedBeforeClientClose']) {
     need(report[key] === true, `${key} execution boundary`);
   }
-  need(report.nativeGrpcVersion === '1.14.0' && report.sdkVersion === '7.1.0'
+  need(report.nativeGrpcVersion === '1.14.5' && report.sdkVersion === '7.1.0'
     && typeof report.runtime === 'string' && /^v\d+\.\d+\.\d+/.test(report.runtime), 'pinned runtime identity');
-  need(hash(report.bundleSha256) && report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 4
+  need(hash(report.bundleSha256) && report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 5
     && hash(report.buildProfile.sha256) && hash(report.buildProfile.registrySha256), 'worker bundle/profile identity');
   need(sources.every(file => hash(report.evidence?.[file])), 'source evidence');
   need(isDeepStrictEqual(Object.keys(report.sharedSourceHashes || {}).sort(), [...helpers].sort()), 'shared helper set');

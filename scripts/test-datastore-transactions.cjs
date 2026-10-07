@@ -17,7 +17,7 @@ const sharedPath = path.join(root, 'fixtures/google/shared/datastore-transaction
 const sharedBytes = fs.readFileSync(sharedPath);
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-datastore-transactions-'));
 const profiles = [
-  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '10.1.0' },
+  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '10.1.1' },
   { id: 'google-modern-v1', fixture: 'modern', native: 'modern-native', version: '11.1.0' },
 ];
 const scenarios = ['commit-success', 'query-commit', 'rollback-queued', 'readonly-read', 'readonly-write-rejected', 'commit-aborted', 'disconnect-before-apply', 'disconnect-after-apply', 'v1-deadline-commit', 'crossed-transactions'];
@@ -192,7 +192,7 @@ async function main() {
     const native = createRequire(path.join(root, 'fixtures', profile.native, 'package.json'));
     const receipt = { id: profile.id, datastore: req('@google-cloud/datastore/package.json').version,
       nativeDatastore: native('@google-cloud/datastore/package.json').version, nativeGrpc: native('@grpc/grpc-js/package.json').version };
-    check(receipt.datastore === profile.version && receipt.nativeDatastore === profile.version && receipt.nativeGrpc === '1.14.0', 'TX_PINNED_SDKS');
+    check(receipt.datastore === profile.version && receipt.nativeDatastore === profile.version && receipt.nativeGrpc === '1.14.5', 'TX_PINNED_SDKS');
     report.profiles.push(receipt); await runNode(profile, 'native');
     if (!nativeOnly) {
       await runNode(profile, 'adapter-grpc-web'); await runNode(profile, 'adapter-cloudflare');

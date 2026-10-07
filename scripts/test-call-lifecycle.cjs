@@ -35,7 +35,7 @@ async function main() {
   const nativeRequire = createRequire(path.join(root, 'fixtures/native/package.json'));
   const native = nativeRequire('@grpc/grpc-js');
   const nativeVersion = nativeRequire('@grpc/grpc-js/package.json').version;
-  assert.equal(nativeVersion, '1.14.0');
+  assert.equal(nativeVersion, '1.14.5');
   let authCalls = 0, callbacks = 0, callReturned = false, caught;
   const credentials = native.credentials.createFromMetadataGenerator((_options, done) => {
     authCalls++; done(null, new native.Metadata());

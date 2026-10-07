@@ -51,7 +51,7 @@ async function main() {
     for (const runtime of ['native', 'adapter-grpc-web', 'adapter-cloudflare']) {
       const fixture = path.join(root, 'fixtures', runtime === 'native' ? 'native' : 'google');
       const req = createRequire(path.join(fixture, 'package.json')), grpc = req('@grpc/grpc-js');
-      assert.equal(req('@google-cloud/datastore/package.json').version, '10.1.0');
+      assert.equal(req('@google-cloud/datastore/package.json').version, '10.1.1');
       const consumer = fs.mkdtempSync(path.join(fixture, '.mutations-'));
       try {
         report.sourceHashes[runtime] = {};

@@ -23,8 +23,8 @@ function fixture() {
     cases: caseIds.map(id => ({ id, status: 'passed', profiles: Object.keys(profiles) })),
     catalogCases: caseIds.map(id => ({ id, status: 'passed', profiles: Object.keys(profiles), catalogMatch: true })), profiles: [] };
   for (const [id, spec] of Object.entries(profiles)) {
-    const legacyApp = id === 'google-static-v1', largeInteger = legacyApp ? '9007199254740992' : '9007199254740993';
-    const applicationProbe = { ...app, largeIntegerRoundtrip: largeInteger, rootFromJSON: legacyApp ? 'passed' : 'EvalError' };
+    const largeInteger = '9007199254740993';
+    const applicationProbe = { ...app, largeIntegerRoundtrip: largeInteger, rootFromJSON: 'EvalError' };
     const profile = require(`../src/build/profiles/${id}.json`);
     const installedInputs = Object.fromEntries([...profile.packages.map(item => `${item.path}/package.json`),
       ...profile.files.map(item => item.path), ...profile.schemas.map(item => item.path), ...profile.codegenInputs.map(item => item.path)]
@@ -53,7 +53,7 @@ function fixture() {
         initialized: true, memoized: true, grpcStub: true, ...(name.startsWith('gax-') ? {
           operations: `operations/${name}`, location: name, iam: `roles/${name}`, statusCode: 7 } : {}) })) };
     report.profiles.push({ id, fixture: spec.fixture, nativeFixture: spec.nativeFixture, revision: spec.revision, status: 'passed', runtimeDisposed: true,
-      nativeGrpcVersion: '1.14.0', installedInputs, nativeInputs, bundleSha256: hash, oracleInputsSha256: hash,
+      nativeGrpcVersion: '1.14.5', installedInputs, nativeInputs, bundleSha256: hash, oracleInputsSha256: hash,
       build: { profile: id, revision: spec.revision, profileSha256: hash, registrySha256: hash, nodeModulesModified: false, globalPrototypePatched: false },
       bundleInspection: { status: 'passed', bundleSha256: hash, stages: [{}, {}], nativeGrpcPackages: [], violations: [] },
       loaderResolution: { bundleIncluded: true, ...Object.fromEntries([['installed', spec.fixture], ['native', spec.nativeFixture]].map(([name, fixture]) => [name, {
@@ -68,8 +68,8 @@ function fixture() {
         path: input.path, originalSha256: hash, mutatedSha256: otherHash, code: 'WGA_SCHEMA_MISMATCH', outputCreated: false, installedUnchanged: true }))),
       application: { probe: structuredClone(applicationProbe), baseline: structuredClone(applicationProbe), independentCopies: true, prototypesUnchanged: true,
         sourceTreeUnchanged: true, includedIndependentInput: true, transformedIndependentInputs: 0, sourceTreeSha256: hash, baselineBundleSha256: hash,
-        copiedPackageVersion: legacyApp ? '7.4.0' : '7.6.6', precisionBoundary: { input: '9007199254740993', native: '9007199254740993',
-          workerd: largeInteger, matchesNative: !legacyApp, presetChangesBaseline: false } },
+        copiedPackageVersion: '7.6.6', precisionBoundary: { input: '9007199254740993', native: '9007199254740993',
+          workerd: largeInteger, matchesNative: true, presetChangesBaseline: false } },
       closure, requests, receipts: [{ token: 'closure', accounting: closure.accounting }, ...requests].flatMap(value => value.accounting.fetches.map(fetch => ({
         ...fetch, token: value.token, requestSha256: hash, overlap: value.token.startsWith('parallel-') }))),
     });
@@ -133,7 +133,8 @@ test('EVIDENCE BOOT requires real isolated source/schema mutations and untouched
     ['app behavior differs', (_, row) => { row.application.probe.wire[1] = 'changed'; }],
     ['global prototype changed', (_, row) => { row.application.prototypesUnchanged = false; }],
     ['app codegen unexpectedly works', (_, row) => { row.application.probe.codegen = row.application.baseline.codegen = 'unexpected-success'; }],
-    ['unmodified precision boundary hidden', (_, row) => { row.application.precisionBoundary.matchesNative = true; }],
+    ['precision mismatch hidden', (_, row) => { row.application.precisionBoundary.workerd = '9007199254740992'; }],
+    ['precision comparison differs', (_, row) => { row.application.precisionBoundary.matchesNative = false; }],
   ]);
 });
 test('EVIDENCE BOOT requires common service closure and actual per-request IO/auth/Call isolation', () => {

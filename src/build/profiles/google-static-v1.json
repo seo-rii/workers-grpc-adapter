@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "transformerVersion": 1,
   "id": "google-static-v1",
-  "revision": 4,
+  "revision": 5,
   "packages": [
     {
       "path": "node_modules/gaxios",
@@ -25,8 +25,8 @@
     {
       "path": "node_modules/@google-cloud/datastore",
       "name": "@google-cloud/datastore",
-      "version": "10.1.0",
-      "packageJsonSha256": "e2810efaee094c79e8a2ee799d22c7453cfe4169710a00c9e7ea64ea0e3d62eb"
+      "version": "10.1.1",
+      "packageJsonSha256": "52c2d77d60568107511355dd003117dd5da0cdc652aa0cf3b5374fac69513955"
     },
     {
       "path": "node_modules/@google-cloud/firestore",
@@ -35,7 +35,7 @@
       "packageJsonSha256": "1db32e99d2bb06b2a791faa9910f7f9de6fc857f82b5720524b91218396a4845"
     },
     {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs",
+      "path": "node_modules/protobufjs",
       "name": "protobufjs",
       "version": "7.6.6",
       "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
@@ -53,40 +53,16 @@
       "packageJsonSha256": "336f7359dd0fbc57472b14794817772c09d56642a7e2cde03f213f3c579bb348"
     },
     {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs",
-      "name": "protobufjs",
-      "version": "7.6.6",
-      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
-    },
-    {
       "path": "node_modules/@grpc/proto-loader",
       "name": "@grpc/proto-loader",
       "version": "0.8.1",
       "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9"
     },
     {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs",
-      "name": "protobufjs",
-      "version": "7.6.6",
-      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
-    },
-    {
       "path": "node_modules/google-gax",
       "name": "google-gax",
       "version": "5.0.8",
       "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs",
-      "name": "protobufjs",
-      "version": "7.6.6",
-      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
-    },
-    {
-      "path": "node_modules/protobufjs",
-      "name": "protobufjs",
-      "version": "7.4.0",
-      "packageJsonSha256": "c8618268a771aa0b3d2552d62db9b25fea5958fddcd23dd2542a4bb6237257eb"
     }
   ],
   "files": [
@@ -131,7 +107,7 @@
       ]
     },
     {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/ext/descriptor/index.js",
+      "path": "node_modules/protobufjs/ext/descriptor/index.js",
       "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
       "transforms": [
         {
@@ -171,28 +147,8 @@
       ]
     },
     {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
-      "transforms": [
-        {
-          "rule": "static-root-from-json",
-          "expectedMatches": 1
-        }
-      ]
-    },
-    {
       "path": "node_modules/@grpc/proto-loader/build/src/index.js",
       "sha256": "6f99a960ec14b1afc20fc996824815d9d89d58e7d537c2f2e5c028d8012b012e",
-      "transforms": [
-        {
-          "rule": "static-root-from-json",
-          "expectedMatches": 1
-        }
-      ]
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
       "transforms": [
         {
           "rule": "static-root-from-json",
@@ -231,28 +187,8 @@
       ]
     },
     {
-      "path": "node_modules/google-gax/node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "c2a99ca92c1921d3031722fa77599a6290ebcef0481c13b890f5fd4d743a1ce7",
-      "transforms": [
-        {
-          "rule": "static-root-from-json",
-          "expectedMatches": 1
-        }
-      ]
-    },
-    {
-      "path": "node_modules/protobufjs/ext/descriptor/index.js",
-      "sha256": "3ffe19232a0da1de2cb269a13ddf8d57e6708a3b7584521353923b2770aa684f",
-      "transforms": [
-        {
-          "rule": "static-root-from-json",
-          "expectedMatches": 1
-        }
-      ]
-    },
-    {
       "path": "node_modules/@google-cloud/datastore/build/src/entity.js",
-      "sha256": "2014072fecef2fe876ce94112bd717bff2b926a833fb9690a4e56e44ea7dc60c",
+      "sha256": "80bce3ef12ce5c67004c258f30fa8b658af5e7880d21fd8ffff49c2a8a7f0b42",
       "transforms": [
         {
           "rule": "datastore-legacy-key",
@@ -293,20 +229,20 @@
   ],
   "schemas": [
     {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/common.js",
+      "path": "node_modules/protobufjs/src/common.js",
       "sha256": "577786d95c5cb3e11eb475342735c7cf8c71ecb4456d9f07258d60af8a1bfe9a",
       "common": "google/protobuf/struct.proto"
     },
     {
       "path": "node_modules/@google-cloud/datastore/build/protos/protos.json",
-      "sha256": "a6d5d4be4e2426e2fe53b27f63e3e86eefd4954d4f172aca80ddeb92fba447be"
+      "sha256": "95eb2625c018799e3a12a22d2e574df156c51fbb57cf6b90c573d262a753b8cf"
     },
     {
       "path": "node_modules/@google-cloud/firestore/build/protos/v1.json",
       "sha256": "5e1b31dfe7df56371dc2d993a74f57e4ee1635e650c041b63b902c11d71a5123"
     },
     {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/google/protobuf/descriptor.json",
+      "path": "node_modules/protobufjs/google/protobuf/descriptor.json",
       "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
     },
     {
@@ -330,14 +266,6 @@
       "sha256": "5b20d93e4c0d02af64cfecbb591fd90bd2adbe4e1f5835bf244d78adbc51ede7"
     },
     {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/google/protobuf/descriptor.json",
-      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/google/protobuf/descriptor.json",
-      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
-    },
-    {
       "path": "node_modules/google-gax/build/protos/operations.json",
       "sha256": "cb73b2a9ba2ba37dfd3483f9288c99d399a86fce3be68f18241b26139eed3d8e"
     },
@@ -354,138 +282,34 @@
       "sha256": "027a1510e28535ae45d11a140ee1f32a72e851f0c77cd0fc9e5130edb9d48091"
     },
     {
-      "path": "node_modules/google-gax/node_modules/protobufjs/google/protobuf/descriptor.json",
-      "sha256": "981b346ca9e4ab258dbf53e94104b86f680655137f30624a4eb541112a00d09b"
-    },
-    {
-      "path": "node_modules/protobufjs/google/protobuf/descriptor.json",
-      "sha256": "c83325498a6796562c92a1e0ec90b715cebc87a49ec605cfa30dc523f90a6b81"
-    },
-    {
       "path": "node_modules/@google-cloud/datastore/build/protos/app_engine_key.proto",
       "sha256": "66a935b684da94cdbe55e40199a6c0aa4a0457bdf3b6f67b134238b846cbd77b"
     }
   ],
   "codegenInputs": [
     {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/root.js",
-      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
-    },
-    {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/type.js",
-      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
-    },
-    {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/encoder.js",
-      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
-    },
-    {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/decoder.js",
-      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
-    },
-    {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/verifier.js",
-      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
-    },
-    {
-      "path": "node_modules/@google-cloud/firestore/node_modules/protobufjs/src/converter.js",
-      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/root.js",
-      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/type.js",
-      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/encoder.js",
-      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/decoder.js",
-      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/verifier.js",
-      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
-    },
-    {
-      "path": "node_modules/@google-cloud/secret-manager/node_modules/protobufjs/src/converter.js",
-      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/root.js",
-      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/type.js",
-      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/encoder.js",
-      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/decoder.js",
-      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/verifier.js",
-      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
-    },
-    {
-      "path": "node_modules/@grpc/proto-loader/node_modules/protobufjs/src/converter.js",
-      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/root.js",
-      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/type.js",
-      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/encoder.js",
-      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/decoder.js",
-      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/verifier.js",
-      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
-    },
-    {
-      "path": "node_modules/google-gax/node_modules/protobufjs/src/converter.js",
-      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
-    },
-    {
       "path": "node_modules/protobufjs/src/root.js",
-      "sha256": "862ff11b87634e184751d6e4a71b36063f4fe0d12ccf1ef5b70f0437c75cdaf6"
+      "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"
     },
     {
       "path": "node_modules/protobufjs/src/type.js",
-      "sha256": "a2a2030a5fcb3499a875a035c32b6a9a9cd1b07ed05d46390efccad61ee38acf"
+      "sha256": "a6874ad8df00af6dbbb75c7d2618d05bb1e44ea47c7613edcc21aee7150a2388"
     },
     {
       "path": "node_modules/protobufjs/src/encoder.js",
-      "sha256": "e2cd520cc408c8367c2aa2ab4d4f393f8a9bbfdb3289148181f93baa779213e5"
+      "sha256": "12e8e8bc8a466395d94ccca64b5b0c3f224ae10bf6b51cf6207fc849af47fe75"
     },
     {
       "path": "node_modules/protobufjs/src/decoder.js",
-      "sha256": "8298cce32cf0bfb8782fc0fb05ad5cde374888131035e7a6a886fd2d97687844"
+      "sha256": "4c805fa0b5256a75f618852c8f87f11a8f994ff1eefa57b0202350cc5b8648ce"
     },
     {
       "path": "node_modules/protobufjs/src/verifier.js",
-      "sha256": "fc256498755e24b035dd3a430bd263ec3914c979354f2133e61e596524a83208"
+      "sha256": "bd5582bda1670b0c7a6c2947ab959cbba3bbf64022f10fa6667e24022076e26d"
     },
     {
       "path": "node_modules/protobufjs/src/converter.js",
-      "sha256": "8ae1d3ee777cc94ac0cd959cc001e66d08152cc7f9c524d8b4b10e56c66f3955"
+      "sha256": "9506c4cba14179a0a4ab9c9f1c263f8ab2e67757a6342b04e15817f4a015bb79"
     }
   ],
   "loaderOptions": {

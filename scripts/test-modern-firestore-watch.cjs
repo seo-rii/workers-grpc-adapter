@@ -193,7 +193,7 @@ async function main() {
         workerd: workerRequire('workerd/package.json').version, miniflare: workerRequire('miniflare/package.json').version };
     assert.equal(report.runtime.firestore, '9.2.0', 'WATCH_PINNED_FIRESTORE');
     assert.equal(report.runtime.nativeFirestore, report.runtime.firestore, 'WATCH_NATIVE_SDK_VERSION');
-    assert.equal(report.runtime.nativeGrpc, '1.14.0', 'WATCH_PINNED_NATIVE_GRPC');
+    assert.equal(report.runtime.nativeGrpc, '1.14.5', 'WATCH_PINNED_NATIVE_GRPC');
     assert.equal(modernRequire('@grpc/grpc-js/package.json').name, 'workers-grpc-adapter', 'WATCH_ADAPTER_IDENTITY');
     report.evidence = Object.fromEntries(['scripts/test-modern-firestore-watch.cjs', 'fixtures/google/shared/firestore-watch.mjs', 'fixtures/worker/firestore-watch.mjs',
         'scripts/emulator-envoy.cjs', 'fixtures/emulators/launcher.cjs', 'fixtures/emulators/toolchain.json', 'fixtures/envoy/binary.json',

@@ -62,7 +62,7 @@ test('AUTH native CallCredentials subclass compose receiver keeps per-call befor
     const nativeRequire = createRequire(path.join(__dirname, '../fixtures/native/package.json'));
     const native = nativeRequire('@grpc/grpc-js');
     const { LoadBalancingCall } = nativeRequire('@grpc/grpc-js/build/src/load-balancing-call');
-    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.0');
+    assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.5');
     const make = value => native.credentials.createFromMetadataGenerator((_options, callback) => {
         const metadata = new native.Metadata(); metadata.add('x-order', value); callback(null, metadata);
     });

@@ -12,7 +12,7 @@ const { execFileSync } = require('node:child_process');
 const { createWatchErrorServer } = require('./firestore-watch-error-server.cjs');
 const scenarios = ['permission', 'unavailable', 'end'];
 const profiles = [
-    { id: 'google-static-v1', revision: 4, fixture: 'google', native: 'native', version: '8.3.0' },
+    { id: 'google-static-v1', revision: 5, fixture: 'google', native: 'native', version: '8.3.0' },
     { id: 'google-modern-v1', revision: 2, fixture: 'modern', native: 'modern-native', version: '9.2.0' },
 ];
 const { startEmulatorEnvoy } = require('./emulator-envoy.cjs');
@@ -207,8 +207,8 @@ async function main() {
         assert.equal(req('@google-cloud/firestore/package.json').version, profile.version, 'WATCH_PINNED_FIRESTORE');
         assert.equal(nativeReq('@google-cloud/firestore/package.json').version, profile.version, 'WATCH_PINNED_NATIVE_FIRESTORE');
         assert.equal(req('@grpc/grpc-js/package.json').name, 'workers-grpc-adapter', 'WATCH_ADAPTER_IDENTITY');
-        assert.equal(nativeReq('@grpc/grpc-js/package.json').version, '1.14.0', 'WATCH_NATIVE_GRPC_VERSION');
-        report.runtime[profile.id] = { firestore: profile.version, nativeFirestore: profile.version, nativeGrpc: '1.14.0' };
+        assert.equal(nativeReq('@grpc/grpc-js/package.json').version, '1.14.5', 'WATCH_NATIVE_GRPC_VERSION');
+        report.runtime[profile.id] = { firestore: profile.version, nativeFirestore: profile.version, nativeGrpc: '1.14.5' };
     }
     report.evidence = Object.fromEntries(['scripts/test-firestore-watch-errors.cjs', 'fixtures/google/shared/firestore-watch-errors.mjs', 'fixtures/worker/firestore-watch-errors.mjs',
         'scripts/firestore-watch-error-server.cjs', 'scripts/emulator-envoy.cjs', 'fixtures/envoy/binary.json',

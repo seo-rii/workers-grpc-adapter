@@ -741,9 +741,15 @@ function validateProvenance(root, report) {
         }
     }
     const upstream = read(root, 'vendor/UPSTREAM.json');
-    need(candidates.grpcJsReference.version === upstream.version && candidates.grpcJsReference.integrity === upstream.integrity && candidates.grpcJsReference.gitHead === upstream.gitHead, 'native reference provenance drift');
+    need(candidates.grpcJsReference.version === upstream.version && candidates.grpcJsReference.integrity === upstream.integrity && candidates.grpcJsReference.gitHead === upstream.gitHead, 'vendored source reference provenance drift');
     const nativeLock = read(root, 'fixtures/native/package-lock.json').packages['node_modules/@grpc/grpc-js'];
-    need(nativeLock.version === upstream.version && nativeLock.integrity === upstream.integrity, 'native baseline lock drift');
+    const nativeReference = candidates.nativeGrpcBaseline;
+    const exportPolicy = read(root, 'compatibility/export-policy.json');
+    need(nativeReference?.version === exportPolicy.upstream.version && nativeLock.version === nativeReference.version
+        && nativeLock.integrity === nativeReference.integrity && /^[a-f0-9]{40}$/.test(nativeReference.gitHead), 'native baseline lock/reference drift');
+    const modernNativeLock = read(root, 'fixtures/modern-native/package-lock.json').packages['node_modules/@grpc/grpc-js'];
+    need(modernNativeLock.version === nativeReference.version && modernNativeLock.integrity === nativeReference.integrity,
+        'modern native baseline lock drift');
     need(hash(root, 'vendor/LICENSE') === upstream.licenseSha256, 'upstream license hash drift');
     for (const file of upstream.files) {
         need(hash(root, file.source) === file.sha256 && hash(root, file.target) === file.patchedSha256, `${file.target}: upstream source/patch provenance drift`);
