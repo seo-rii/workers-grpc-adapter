@@ -349,8 +349,9 @@ These decisions do not rewrite the original catalog or claim native parity:
   the original catalog names `WGA_STATUS_MISSING`. The implemented diagnostic
   remains canonical to preserve existing error handlers; the names are not aliases.
 - `LIFE-015`: invalid Date now returns asynchronous `INVALID_ARGUMENT`, satisfying
-  the catalog. Pinned native still throws `RangeError` synchronously before
-  returning a call; that difference is tested separately.
+  the catalog. Pinned native 1.14.5 returns a call with tracing disabled; the
+  separate probe immediately cancels it and records one asynchronous `CANCELLED`
+  callback/status. This does not classify the natural native deadline outcome.
 - `FLOW-006`: the adapter reads trailers and rejects a duplicate unary message
   with one read demand; pinned native delivers the first internally and waits
   for deadline. The new flow suite reproduces the `API-011` cardinality

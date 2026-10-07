@@ -10876,7 +10876,7 @@
     {
       "id": "LIFE-015",
       "coverage": "covered",
-      "reason": "Controlled Node/workerd calls in both modes reject finite past numeric/Date deadlines with DEADLINE_EXCEEDED and invalid Date/NaN/negative infinity asynchronously with INVALID_ARGUMENT/WGA_INVALID_DEADLINE before auth or Fetch, exactly once with released resources. A separately recorded pinned native synchronous RangeError is not claimed as adapter behavior.",
+      "reason": "Controlled Node/workerd calls in both modes reject finite past numeric/Date deadlines with DEADLINE_EXCEEDED and invalid Date/NaN/negative infinity asynchronously with INVALID_ARGUMENT/WGA_INVALID_DEADLINE before auth or Fetch, exactly once with released resources. Pinned native grpc-js separately returns an invalid-Date call with tracing disabled; the probe immediately cancels it and records a single asynchronous CANCELLED callback/status without claiming the natural native deadline or connection outcome.",
       "gaps": [],
       "references": [
         {

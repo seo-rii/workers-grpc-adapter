@@ -33,25 +33,47 @@ async function main() {
   // Record the actual pinned native boundary separately from the adapter's
   // INVALID_ARGUMENT policy. This preflight never starts an HTTP/2 request.
   const nativeRequire = createRequire(path.join(root, 'fixtures/native/package.json'));
-  const native = nativeRequire('@grpc/grpc-js');
+  const traceEnvironment = Object.fromEntries(['GRPC_TRACE', 'GRPC_NODE_TRACE'].map(key => [key, process.env[key]]));
+  let native;
+  try {
+    // Native 1.14.5 formats invalid dates only when tracing is enabled.
+    for (const key of Object.keys(traceEnvironment)) process.env[key] = '';
+    native = nativeRequire('@grpc/grpc-js');
+  } finally {
+    for (const [key, value] of Object.entries(traceEnvironment)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+  const nativeLogging = nativeRequire('@grpc/grpc-js/build/src/logging');
+  for (const tracer of ['channel', 'resolving_call']) assert.equal(nativeLogging.isTracerEnabled(tracer), false);
   const nativeVersion = nativeRequire('@grpc/grpc-js/package.json').version;
   assert.equal(nativeVersion, '1.14.5');
-  let authCalls = 0, callbacks = 0, callReturned = false, caught;
+  let authCalls = 0, callbacks = 0, callReturned = false, caught, nativeCall, callbackCode;
+  const statuses = [];
   const credentials = native.credentials.createFromMetadataGenerator((_options, done) => {
     authCalls++; done(null, new native.Metadata());
   });
   const nativeClient = new native.Client('127.0.0.1:1', native.credentials.createSsl());
   try {
     try {
-      nativeClient.makeUnaryRequest('/catalog.lifecycle.Echo/Unary', value => value, value => value,
-        Buffer.from([8, 1]), { deadline: new Date(NaN), credentials }, () => { callbacks++; });
+      nativeCall = nativeClient.makeUnaryRequest('/catalog.lifecycle.Echo/Unary', value => value, value => value,
+        Buffer.from([8, 1]), { deadline: new Date(NaN), credentials }, error => { callbacks++; callbackCode = error?.code; });
       callReturned = true;
     } catch (error) { caught = error; }
+    assert.equal(caught, undefined, 'tracing-disabled native returns an invalid-Date call');
+    assert.equal(callReturned, true); assert.equal(callbacks, 0); assert.equal(authCalls, 0);
+    nativeCall.on('status', status => statuses.push(status.code));
+    // Stop before resolution/transport and avoid racing native's NaN deadline
+    // timer against a connection error. This records acceptance, not a natural
+    // invalid-Date terminal status.
+    nativeCall.cancel();
+    assert.equal(callbacks, 0, 'native cancellation callback must be asynchronous');
     await new Promise(resolve => setImmediate(resolve));
-    assert.ok(caught instanceof RangeError, 'pinned native invalid Date throws synchronously');
-    assert.equal(callReturned, false); assert.equal(callbacks, 0); assert.equal(authCalls, 0);
-    report.nativeDeadline = { grpc: nativeVersion, variant: 'invalid-date', threwSynchronously: true,
-      errorName: caught.name, callReturned, callbacks, authCalls, nativeParity: false,
+    assert.equal(callbacks, 1); assert.equal(callbackCode, native.status.CANCELLED);
+    assert.deepEqual(statuses, [native.status.CANCELLED]); assert.equal(authCalls, 0);
+    report.nativeDeadline = { grpc: nativeVersion, variant: 'invalid-date', tracing: 'disabled', threwSynchronously: false,
+      errorName: null, callReturned, callbacksBeforeCancel: 0, cancelledByProbe: true,
+      callbacks, callbackCode, statuses, authCalls, nativeParity: false,
       adapterPolicy: 'asynchronous-invalid-argument' };
   } finally { nativeClient.close(); }
   report.nativeInputs = Object.fromEntries(Object.keys(require.cache)

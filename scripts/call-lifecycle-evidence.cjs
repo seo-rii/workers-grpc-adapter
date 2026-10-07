@@ -192,13 +192,14 @@ function validateCallLifecycleReport(report, { allowSourceBuild = false } = {}) 
     && typeof report.miniflare === 'string' && report.miniflare.length > 0, 'runtime identity');
   need(digest(report.bundleSha256), 'bundle hash');
   need(sources.every(file => digest(report.evidence?.[file])), 'source evidence');
-  same(report.nativeDeadline, { grpc: '1.14.5', variant: 'invalid-date', threwSynchronously: true,
-    errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
+  same(report.nativeDeadline, { grpc: '1.14.5', variant: 'invalid-date', tracing: 'disabled', threwSynchronously: false,
+    errorName: null, callReturned: true, callbacksBeforeCancel: 0, cancelledByProbe: true,
+    callbacks: 1, callbackCode: 1, statuses: [1], authCalls: 0, nativeParity: false,
     adapterPolicy: 'asynchronous-invalid-argument' }, 'pinned native invalid-Date boundary');
   need(report.nativeInputs && typeof report.nativeInputs === 'object' && !Array.isArray(report.nativeInputs), 'native inputs');
   for (const [file, hash] of Object.entries(report.nativeInputs)) need(file.startsWith('fixtures/native/node_modules/@grpc/grpc-js/')
     && !file.split('/').includes('..') && digest(hash), 'native input provenance');
-  for (const file of ['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js']) {
+  for (const file of ['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js', 'build/src/logging.js']) {
     need(digest(report.nativeInputs[`fixtures/native/node_modules/@grpc/grpc-js/${file}`]), `native ${file}`);
   }
   need(report.installedInputs && typeof report.installedInputs === 'object' && !Array.isArray(report.installedInputs), 'installed inputs');

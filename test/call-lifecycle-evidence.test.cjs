@@ -113,10 +113,11 @@ function fixture() {
       'fixtures/native/package.json', 'fixtures/native/package-lock.json'].map(file => [file, 'b'.repeat(64)])),
     installedInputs: Object.fromEntries(['index.js', 'index.mjs', 'adapter.js', 'adapter.mjs', 'call.js', 'wire.js']
       .map(file => [`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`, 'c'.repeat(64)])),
-    nativeDeadline: { grpc: '1.14.5', variant: 'invalid-date', threwSynchronously: true,
-      errorName: 'RangeError', callReturned: false, callbacks: 0, authCalls: 0, nativeParity: false,
+    nativeDeadline: { grpc: '1.14.5', variant: 'invalid-date', tracing: 'disabled', threwSynchronously: false,
+      errorName: null, callReturned: true, callbacksBeforeCancel: 0, cancelledByProbe: true,
+      callbacks: 1, callbackCode: 1, statuses: [1], authCalls: 0, nativeParity: false,
       adapterPolicy: 'asynchronous-invalid-argument' },
-    nativeInputs: Object.fromEntries(['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js']
+    nativeInputs: Object.fromEntries(['package.json', 'build/src/client.js', 'build/src/resolving-call.js', 'build/src/deadline.js', 'build/src/logging.js']
       .map(file => [`fixtures/native/node_modules/@grpc/grpc-js/${file}`, 'd'.repeat(64)])),
     runs, caseCount: 188, catalogCases: catalogCases(runs) };
 }
@@ -151,9 +152,12 @@ test('EVIDENCE call lifecycle rejects missing duplicate relabelled or stale prov
     r => { delete r.evidence['fixtures/native/package-lock.json']; }, r => { r.nativeInputs = {}; },
     r => { r.nativeInputs['fixtures/native/node_modules/@grpc/grpc-js/../other.js'] = 'a'.repeat(64); },
     r => { r.nativeDeadline.nativeParity = true; }, r => { r.nativeDeadline.errorName = 'TypeError'; },
-    r => { r.nativeDeadline.threwSynchronously = false; }, r => { r.nativeDeadline.grpc = '1.14.1'; },
-    r => { r.nativeDeadline.authCalls = 1; }, r => { r.nativeDeadline.callbacks = 1; },
-    r => { r.nativeDeadline.callReturned = true; },
+    r => { r.nativeDeadline.threwSynchronously = true; }, r => { r.nativeDeadline.grpc = '1.14.1'; },
+    r => { r.nativeDeadline.authCalls = 1; }, r => { r.nativeDeadline.callbacks = 0; },
+    r => { r.nativeDeadline.callReturned = false; }, r => { r.nativeDeadline.tracing = 'enabled'; },
+    r => { r.nativeDeadline.cancelledByProbe = false; }, r => { r.nativeDeadline.callbackCode = 4; },
+    r => { r.nativeDeadline.statuses = [1, 1]; }, r => { r.nativeDeadline.callbacksBeforeCancel = 1; },
+    r => { delete r.nativeInputs['fixtures/native/node_modules/@grpc/grpc-js/build/src/logging.js']; },
   ]) reject(mutate);
 });
 
