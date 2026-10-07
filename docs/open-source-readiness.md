@@ -1,17 +1,18 @@
 # Open-source publication review
 
-Review date: 2026-10-07. This review concerns publishing the source repository
-as an experimental project. It does not authorize changing GitHub visibility,
-publishing an npm package, or claiming production certification.
+Review and source publication date: 2026-10-07. The owner authorized publishing
+the source repository as an experimental project at revision `6d84489`.
+GitHub visibility is now public; no npm package or stable release was published,
+and source publication does not establish production certification.
 
 ## Assessment
 
 The source tree has the foundations for an experimental open-source release:
 an explicit license, reproducible vendored sources, contribution and security
 guidance, pinned dependency profiles, a credential-free local verification
-workflow, and documented compatibility boundaries. Keep GitHub visibility
-private until the final verification and maintainer checks below are complete.
-Future benchmark uploads now carry the complete license and notice
+workflow, and documented compatibility boundaries. The publication checks below
+record the verified preparation and owner-authorized source visibility change.
+Benchmark uploads now carry the complete license and notice
 assets and a prominent notice identifying the modified grpc-js client code. Source publication
 does not establish a stable release, a security maintenance commitment, or
 production certification.
@@ -115,9 +116,8 @@ artifacts. All 21 were deleted; each artifact ID returned 404, and the
 post-removal inventory confirmed their absence. Run logs, unrelated artifacts,
 and the final notice-bearing CI artifact were retained. The verified original
 ZIPs, supplemental license archive, exact IDs, and cleanup checks remain in the
-private preparation receipt. GitHub visibility remains private and npm
-publication remains disabled. Changing visibility or publishing a package
-requires separate authorization.
+private preparation receipt. The owner subsequently authorized public source
+visibility. npm publication remains disabled and requires separate authorization.
 
 ## Credentials, history, and cloud identifiers
 
@@ -150,18 +150,26 @@ ignored by Git. Public tests use synthetic credentials and loopback services.
 The normal CI workflow does not run cloud tests or upload raw cloud receipts;
 generated documentation manifests can still repeat identifiers from tracked
 documents. Historical documentation contains a shared test-project name and
-temporary run identifiers. The owner should accept their disclosure before
-publication. Editing the current document alone would not remove them from Git
-history or retained Actions artifacts.
+temporary run identifiers. Their disclosure, along with Git author identities,
+was included in the owner-authorized source publication. Editing the current
+document alone would not remove them from Git history or retained Actions artifacts.
 
 This review covers reachable local Git history and the retained Actions snapshot.
 It does not cover deleted or expired artifacts, unreachable Git objects, private
-external services, or every possible secret format. The final source revision and
-any new Actions artifacts need a final screen before changing visibility. The
-2026-10-07 screen at `3a00c0c` covered 166 commits, 1,422 unique blobs, 518 tracked
+external services, or every possible secret format. New source revisions and
+Actions artifacts require their own review. The 2026-10-07 screen at `3a00c0c`
+covered 166 commits, 1,422 unique blobs, 518 tracked
 files, all 95 retained artifacts and 116 completed run logs, plus 53 nested
 containers. It identified no actual credential candidates in the selected
 patterns, with no skipped large blobs or failed downloads.
+
+The final publication preflight at `6d84489` included the subsequent source,
+artifact, and log deltas. It matched all 76 retained artifacts and 118 completed
+runs to the reviewed records, with no new credential candidates or unreviewed
+contents. CI run [37618362401](https://github.com/seo-rii/workers-grpc-adapter/actions/runs/37618362401)
+passed all 867 unit tests and 68 verification commands; its separate cloud
+certification preflight was intentionally blocked. This does not replace the
+actual transaction evidence or establish production certification.
 
 Read-only repository metadata also showed no issues or pull requests, issue
 comments, review comments, releases, or deployment records. Wiki and Pages were
@@ -182,30 +190,32 @@ are disabled; local emulator writes use synthetic projects. Fork contributions
 must retain that separation.
 
 [SECURITY.md](../SECURITY.md) describes private reporting and the current lack of
-a stable maintenance commitment. The referenced maintainer profile currently
-lists an email contact; this review did not test delivery or monitoring. Confirm
-that the contact is maintained. [GitHub private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository)
-is available for public repositories and can be enabled as part of a separately
-authorized publication. This review did not change repository settings.
+a stable maintenance commitment. [GitHub private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository)
+was enabled with source publication, and its enabled state was verified through
+authenticated and anonymous API requests. Use the Security tab's **Report a
+vulnerability** channel. No report was submitted to test delivery or monitoring;
+the maintainer profile's private contact method remains a fallback.
 
-## Publication checks
+## Completed source publication checks
 
-Before changing visibility:
+These historical checks accompanied the owner-authorized public visibility
+change on 2026-10-07; they do not establish a stable release:
 
-1. Verify the notice-bearing benchmark archive in the final CI result and the
+1. Verified the notice-bearing benchmark archive in the final CI result and the
    private receipt confirming completed, authorized removal of all 21
    historical affected artifacts.
-2. Verify the final migrated revision with vendoring, package, SDK, workerd,
-   emulator, and CI checks. Retain historical vulnerable-version results as
+2. Verified the final migrated revision with vendoring, package, SDK, workerd,
+   emulator, and CI checks. Retained historical vulnerable-version results as
    historical evidence rather than treating them as current results.
-3. Retain the real transaction conflict and accepted-Commit evidence, including
+3. Retained the real transaction conflict and accepted-Commit evidence, including
    request counts, read-back decisions, retry boundaries, and completed cleanup.
-4. Screen the final source revision and retained Actions logs/artifacts for
-   credentials; classify findings without publishing credential values.
-5. Accept disclosure of Git author identities and historical project metadata,
-   and verify the private vulnerability-reporting channel.
-6. Keep the README's experimental status and supported-profile scope. Decide
-   separately whether to enable public source visibility or publish a package.
+4. Screened the final source revision and retained Actions logs/artifacts for
+   credentials and classified findings without publishing credential values.
+5. Included Git author identities and historical project metadata in the
+   owner-authorized disclosure. Enabled and verified the private
+   vulnerability-reporting channel during publication.
+6. Kept the README's experimental status and supported-profile scope. Published
+   only the source repository; npm package publication remains a separate action.
 
 Real transaction coverage and a clean dependency audit strengthen the
 experimental support claim. Long-running authentication, quotas, sustained

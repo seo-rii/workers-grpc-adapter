@@ -1,12 +1,14 @@
 # Security
 
-This project is an unpublished prototype. There is no supported stable release or security maintenance schedule. Security fixes are evaluated against the current development version; production suitability has not been established.
+This project is an experimental open-source prototype. There is no supported stable release or security maintenance schedule. Security fixes are evaluated against the current development version; production suitability has not been established.
 
 ## Reporting a vulnerability
 
 Do not put vulnerability details, credentials, tokens, or customer data in an ordinary issue or pull request.
 
-Contact the maintainer through a private contact method listed on [their GitHub profile](https://github.com/seo-rii). If no private method is available, open an issue containing only a request for a private security contact, without reproduction steps or sensitive details. If private vulnerability reporting is enabled in the future, GitHub's **Report a vulnerability** option in the Security tab can also be used.
+Use GitHub's [**Report a vulnerability**](https://github.com/seo-rii/workers-grpc-adapter/security/advisories/new) option in the repository's Security tab. Private vulnerability reporting is enabled; the setting was verified on 2026-10-07. This verification did not submit a report or test delivery or monitoring.
+
+If that channel is unavailable, contact the maintainer through a private contact method listed on [their GitHub profile](https://github.com/seo-rii). If no private method is available, open an issue containing only a request for a private security contact, without reproduction steps or sensitive details.
 
 Once a private channel is established, include:
 
