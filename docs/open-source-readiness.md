@@ -10,8 +10,10 @@ The source tree has the foundations for an experimental open-source release:
 an explicit license, reproducible vendored sources, contribution and security
 guidance, pinned dependency profiles, a credential-free local verification
 workflow, and documented compatibility boundaries. Keep GitHub visibility
-private until the retained Actions artifact notice gap below is resolved and
-the final verification and maintainer checks are complete. Source publication
+private until the historical Actions artifacts below have expired or their
+removal is authorized, and the final verification and maintainer checks are
+complete. Future benchmark uploads now carry the complete license and notice
+assets and a prominent notice identifying the modified grpc-js client code. Source publication
 does not establish a stable release, a security maintenance commitment, or
 production certification.
 
@@ -40,7 +42,7 @@ workerd, emulator, and CI checks must validate the changed pins together.
 
 ## Real transaction verification
 
-The 2026-10-07 campaign at source revision `5ecb406` passed all 12 transaction
+The final 2026-10-07 campaign at source revision `c115240` passed all 12 transaction
 results: four native grpc-js controls, four deployed Worker fallback cases,
 and four deployed Cloudflare conversion cases. Both newly created databases
 confirmed `OPTIMISTIC` concurrency. Datastore and Firestore returned real
@@ -78,28 +80,43 @@ development tools; these are not adapter runtime dependencies or contents of the
 adapter tarball. Publishing separate SDK Worker bundles or tool binaries would
 require reviewing the actual redistributed contents and their notices.
 
-## Public visibility blocker: retained benchmark artifacts
+## Benchmark distribution preparation and historical artifacts
 
-The reviewed retained Actions snapshot contains 19 artifacts with generated
-`verification/transport-benchmark/client.mjs` and `client.mjs.gz`, representing
-three distinct bundle contents. These bundle only the installed adapter client;
-they do not contain Google SDKs. The benchmark explicitly uses
-`legalComments: 'none'`, and the inspected bundles contain no license text or
-modification notice. None of those artifact archives includes standalone
-adapter `LICENSE` or `NOTICE` assets. Their cached upstream grpc-js archive
-does include its original license, which does not supply the adapter's MIT
-copyright/permission notice or the modified adapter's notices.
+The transport benchmark now retains esbuild legal comments, adds a prominent
+notice identifying the modified grpc-js 1.14.0 client code, and copies the complete
+MIT `LICENSE`, adapter `NOTICE`, Apache-2.0 `vendor/LICENSE`, and `vendor/NOTICE`
+from the actual installed adapter. The benchmark receipt binds each copy to
+its installed source and to the lock-identified package tarball. Both the plain
+and gzip bundles carry the same modification notice.
 
-This is a concrete distribution gap: making the repository public also exposes
-these generated artifacts. [MIT](https://opensource.org/license/mit) requires
-preserving its copyright and permission notice, and Apache-2.0 requires license,
-attribution, and modification notices as applicable. Fix future benchmark
-distribution to include the required notices and license copies, and decide
-whether to wait for affected retained artifacts to expire or authorize their
-removal before changing visibility. That includes the 19 reviewed copies and
-any later copies generated without the required notices. The artifact inventory
-is retained in the private review receipt. This review did not modify the
-workflow or delete any artifacts.
+The CI collector includes all four notice assets alongside the bundles and
+esbuild manifest. It rejects an incomplete bundle distribution before creating
+an upload archive. Regression tests inspect the real collector's tar.gz output,
+including byte identity, missing notices, and altered notices. This concerns
+only the adapter client benchmark: its 24 inputs contain no Google SDK or GAX.
+Separate SDK bundle distribution still requires its own notice review.
+
+The retained historical snapshot contains 21 affected Actions artifacts,
+representing three distinct bundle contents, created before this fix. Those
+archives omit standalone adapter LICENSE/NOTICE assets and their bundle comments
+were stripped. A cached pristine grpc-js archive supplies its original Apache
+license, but not the adapter's MIT notice or the modified adapter's notices.
+[MIT](https://opensource.org/license/mit) and
+[Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) require preservation
+of their applicable licenses and notices.
+
+All 21 original artifact ZIPs have verified private backups whose sizes and
+SHA-256 values match GitHub's artifact metadata. A private supplemental archive
+contains the complete license/notice assets, upstream provenance, and the exact
+artifact-to-bundle hash mapping. These private backups preserve the evidence;
+they do not repair the existing hosted copies.
+
+Before making the repository public, either authorize removal of exactly those
+21 backed-up artifacts or wait for all of them to expire and verify their
+absence. Their recorded expiration times run through 2026-10-21 19:12 KST.
+Run logs and unrelated artifacts need not be removed. The exact IDs, original
+backups, and supplement remain in the private preparation receipt. This
+preparation does not delete artifacts, change visibility, or publish npm packages.
 
 ## Credentials, history, and cloud identifiers
 
@@ -139,7 +156,11 @@ history or retained Actions artifacts.
 This review covers reachable local Git history and the retained Actions snapshot.
 It does not cover deleted or expired artifacts, unreachable Git objects, private
 external services, or every possible secret format. The final source revision and
-any new Actions artifacts need a final screen before changing visibility.
+any new Actions artifacts need a final screen before changing visibility. The
+2026-10-07 screen at `3a00c0c` covered 166 commits, 1,422 unique blobs, 518 tracked
+files, all 95 retained artifacts and 116 completed run logs, plus 53 nested
+containers. It identified no actual credential candidates in the selected
+patterns, with no skipped large blobs or failed downloads.
 
 Read-only repository metadata also showed no issues or pull requests, issue
 comments, review comments, releases, or deployment records. Wiki and Pages were
@@ -170,8 +191,9 @@ authorized publication. This review did not change repository settings.
 
 Before changing visibility:
 
-1. Resolve the generated benchmark artifact notice gap and confirm that the
-   affected retained artifacts have expired or been removed with authorization.
+1. Verify the notice-bearing benchmark archive in the final CI result and
+   confirm that the 21 historical affected artifacts have expired or been
+   removed with authorization.
 2. Verify the final migrated revision with vendoring, package, SDK, workerd,
    emulator, and CI checks. Retain historical vulnerable-version results as
    historical evidence rather than treating them as current results.
