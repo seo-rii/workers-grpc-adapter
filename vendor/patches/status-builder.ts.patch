@@ -1,6 +1,15 @@
 --- a/src/status-builder.ts
 +++ b/src/status-builder.ts
-@@ -16,7 +16,7 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2019 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -16,7 +19,7 @@
   */
  
  import { StatusObject } from './call-interface';

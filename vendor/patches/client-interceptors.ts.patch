@@ -1,20 +1,45 @@
 --- a/src/client-interceptors.ts
 +++ b/src/client-interceptors.ts
-@@ -32,2 +32,3 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2019 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -29,12 +32,14 @@
+   MessageContext,
+   Call,
+ } from './call-interface';
 -import { Status } from './constants';
 -import { Channel } from './channel';
 +import { status as Status } from './status';
 +import { Channel, isWorkersChannel } from './channel';
 +import { WorkersGrpcConfigurationError } from './status';
-@@ -35 +36 @@
+ import { CallOptions } from './client';
 -import { ClientMethodDefinition } from './make-client';
 +import { ClientMethodDefinition } from './factory';
-@@ -37,0 +39 @@
+ import { getErrorMessage } from './error';
+ import { AuthContext } from './auth-context';
 +import type { CallLifetime } from './call-lifetime';
-@@ -192,0 +195,2 @@
+ 
+ /**
+  * Error class associated with passing both interceptors and interceptor
+@@ -190,6 +195,8 @@
+ }
+ 
+ export interface InterceptingCallInterface {
 +  /** Internal cleanup must not depend on a cancellation requester forwarding. */
 +  disposePending?(): void;
-@@ -215,14 +219,10 @@
+   cancelWithStatus(status: Status, details: string): void;
+   getPeer(): string;
+   start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;
+@@ -212,21 +219,20 @@
+    * method but it has not been passed to the corresponding next callback
+    */
+   private processingMetadata = false;
 -  /**
 -   * Message context for a pending message that is waiting for
 -   */
@@ -39,13 +64,23 @@
 +  }> = [];
 +  private flushing = false;
 +  private halfCloseRequested = false;
-@@ -229,0 +230,3 @@
+   private pendingHalfClose = false;
 +  private halfClosed = false;
 +  private disposed = false;
 +  private responseListener?: InterceptingListenerImpl;
-@@ -246,0 +250 @@
+   constructor(
+     private nextCall: InterceptingCallInterface,
+     requester?: Requester
+@@ -244,29 +250,49 @@
+   }
+ 
+   cancelWithStatus(status: Status, details: string) {
 +    this.disposePending();
-@@ -251,0 +256,16 @@
+     this.requester.cancel(() => {
+       this.nextCall.cancelWithStatus(status, details);
+     });
+   }
+ 
 +  disposePending(): void {
 +    if (this.disposed) return;
 +    this.disposed = true;
@@ -62,7 +97,10 @@
 +    this.nextCall.disposePending?.();
 +  }
 +
-@@ -256,14 +276,17 @@
+   getPeer() {
+     return this.nextCall.getPeer();
+   }
+ 
 -  private processPendingMessage() {
 -    if (this.pendingMessageContext) {
 -      this.nextCall.sendMessageWithContext(
@@ -94,29 +132,50 @@
 +      }
 +    } finally {
 +      this.flushing = false;
-@@ -276,0 +300 @@
+     }
+   }
+ 
+@@ -274,6 +300,7 @@
+     metadata: Metadata,
+     interceptingListener?: Partial<InterceptingListener>
+   ): void {
 +    if (this.disposed) return;
-@@ -288,0 +313 @@
+     const fullInterceptingListener: InterceptingListener = {
+       onReceiveMetadata:
+         interceptingListener?.onReceiveMetadata?.bind(interceptingListener) ??
+@@ -286,11 +313,15 @@
+         (status => {}),
+     };
+     this.processingMetadata = true;
 +    let continued = false;
-@@ -290,2 +315,3 @@
+     this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
 -      this.processingMetadata = false;
 -      let finalInterceptingListener: InterceptingListener;
 +      if (continued || this.disposed) return;
 +      continued = true;
 +      let finalInterceptingListener: InterceptingListenerImpl;
-@@ -293 +319,3 @@
+       if (isInterceptingListener(listener)) {
 -        finalInterceptingListener = listener;
 +        // Own the forwarding gate, not the supplied listener's lifetime. A
 +        // requester may return a listener borrowed from another interceptor.
 +        finalInterceptingListener = new InterceptingListenerImpl(defaultListener, listener);
-@@ -307,0 +336 @@
+       } else {
+         const fullListener: FullListener = {
+           onReceiveMetadata:
+@@ -305,23 +336,30 @@
+           fullInterceptingListener
+         );
+       }
 +      this.responseListener = finalInterceptingListener;
-@@ -309,2 +338,2 @@
+       this.nextCall.start(md, finalInterceptingListener);
 -      this.processPendingMessage();
 -      this.processPendingHalfClose();
 +      this.processingMetadata = false;
 +      this.flushPendingOperations();
-@@ -315 +344,10 @@
+     });
+   }
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   sendMessageWithContext(context: MessageContext, message: any): void {
 -    this.processingMessage = true;
 +    if (this.disposed) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
 +    if (this.halfCloseRequested) {
@@ -128,7 +187,7 @@
 +    const pending = { context, message: undefined as any, ready: false };
 +    this.pendingMessages.push(pending);
 +    let continued = false;
-@@ -317,8 +355,5 @@
+     this.requester.sendMessage(message, finalMessage => {
 -      this.processingMessage = false;
 -      if (this.processingMetadata) {
 -        this.pendingMessageContext = context;
@@ -142,14 +201,21 @@
 +      pending.message = finalMessage;
 +      pending.ready = true;
 +      this.flushPendingOperations();
-@@ -332 +367 @@
+     });
+   }
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+@@ -329,15 +367,17 @@
+     this.sendMessageWithContext({}, message);
+   }
+   startRead(): void {
 -    this.nextCall.startRead();
 +    if (!this.disposed) this.nextCall.startRead();
-@@ -334,0 +370,3 @@
+   }
+   halfClose(): void {
 +    if (this.disposed || this.halfCloseRequested) return;
 +    this.halfCloseRequested = true;
 +    let continued = false;
-@@ -336,5 +374,4 @@
+     this.requester.halfClose(() => {
 -      if (this.processingMetadata || this.processingMessage) {
 -        this.pendingHalfClose = true;
 -      } else {
@@ -159,7 +225,13 @@
 +      continued = true;
 +      this.pendingHalfClose = true;
 +      this.flushPendingOperations();
-@@ -348,11 +385,8 @@
+     });
+   }
+   getAuthContext(): AuthContext | null {
+@@ -345,17 +385,14 @@
+   }
+ }
+ 
 -function getCall(channel: Channel, path: string, options: CallOptions): Call {
 -  const deadline = options.deadline ?? Infinity;
 -  const host = options.host;
@@ -179,43 +251,91 @@
 +  // between an omitted deadline and explicit Infinity for the Workers policy.
 +  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
 +  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, lifetime.applyOptions(callOptions), lifetime);
-@@ -369 +403,2 @@
+ }
+ 
+ /**
+@@ -366,7 +403,8 @@
+   constructor(
+     protected call: Call,
+     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 -    protected methodDefinition: ClientMethodDefinition<any, any>
 +    protected methodDefinition: ClientMethodDefinition<any, any>,
 +    protected lifetime: CallLifetime
-@@ -378,0 +414 @@
+   ) {}
+   cancelWithStatus(status: Status, details: string): void {
+     this.call.cancelWithStatus(status, details);
+@@ -376,6 +414,7 @@
+   }
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   sendMessageWithContext(context: MessageContext, message: any): void {
 +    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
-@@ -386,0 +423,3 @@
+     let serialized: Buffer;
+     try {
+       serialized = this.methodDefinition.requestSerialize(message);
+@@ -384,6 +423,9 @@
+         Status.INTERNAL,
+         `Request message serialization failure: ${getErrorMessage(e)}`
+       );
 +      // A streaming Writable must settle its in-flight _write callback even
 +      // when serialization fails before the transport receives the message.
 +      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
-@@ -398,0 +438 @@
+       return;
+     }
+     this.call.sendMessageWithContext(context, serialized);
+@@ -396,6 +438,7 @@
+     metadata: Metadata,
+     interceptingListener?: Partial<InterceptingListener>
+   ): void {
 +    if (this.lifetime.isTerminal()) return;
-@@ -449,2 +489,2 @@
+     let readError: StatusObject | null = null;
+     this.call.start(metadata, {
+       onReceiveMetadata: metadata => {
+@@ -446,8 +489,8 @@
+   implements InterceptingCallInterface
+ {
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 -  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>) {
 -    super(call, methodDefinition);
 +  constructor(call: Call, methodDefinition: ClientMethodDefinition<any, any>, lifetime: CallLifetime) {
 +    super(call, methodDefinition, lifetime);
-@@ -486 +526,2 @@
+   }
+   start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
+     let receivedMessage = false;
+@@ -483,13 +526,14 @@
+   channel: Channel,
+   options: InterceptorOptions,
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 -  methodDefinition: ClientMethodDefinition<any, any>
 +  methodDefinition: ClientMethodDefinition<any, any>,
 +  lifetime: CallLifetime
-@@ -488 +529 @@
+ ) {
 -  const call = getCall(channel, methodDefinition.path, options);
 +  const call = getCall(channel, methodDefinition, options, lifetime);
-@@ -490 +531 @@
+   if (methodDefinition.responseStream) {
 -    return new BaseStreamingInterceptingCall(call, methodDefinition);
 +    return new BaseStreamingInterceptingCall(call, methodDefinition, lifetime);
-@@ -492 +533 @@
+   } else {
 -    return new BaseUnaryInterceptingCall(call, methodDefinition);
 +    return new BaseUnaryInterceptingCall(call, methodDefinition, lifetime);
-@@ -566,0 +608,2 @@
+   }
+ }
+ 
+@@ -564,6 +608,8 @@
+       .filter(interceptor => interceptor);
+     // Filter out falsy values when providers return nothing
+   }
 +  if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
 +  const lifetime = channel.createCallLifetime(options);
-@@ -582 +625 @@
+   const interceptorOptions = Object.assign({}, options, {
+     method_definition: methodDefinition,
+   });
+@@ -579,7 +625,8 @@
+       return currentOptions => nextInterceptor(currentOptions, nextCall);
+     },
+     (finalOptions: InterceptorOptions) =>
 -      getBottomInterceptingCall(channel, finalOptions, methodDefinition)
 +      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
-@@ -584,2 +627,3 @@
+   );
 -  return getCall(interceptorOptions);
 -}
 +  try { return lifetime.bind(getCall(interceptorOptions)); }

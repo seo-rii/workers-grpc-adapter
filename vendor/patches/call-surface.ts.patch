@@ -1,14 +1,33 @@
 --- a/src/call-surface.ts
 +++ b/src/call-surface.ts
-@@ -18,2 +18,2 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2019 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -15,11 +18,11 @@
+  *
+  */
+ 
 -import { EventEmitter } from 'events';
 -import { Duplex, Readable, Writable } from 'stream';
 +import { EventEmitter } from 'node:events';
 +import { Duplex, Readable, Writable } from 'node:stream';
-@@ -22 +22 @@
+ 
+ import { StatusObject, MessageContext } from './call-interface';
 -import { Status } from './constants';
 +import { status as Status } from './status';
-@@ -88,0 +89,61 @@
+ import { EmitterAugmentation1 } from './events';
+ import { Metadata } from './metadata';
+ import { ObjectReadable, ObjectWritable, WriteCallback } from './object-stream';
+@@ -86,6 +89,67 @@
+   return Object.assign(new Error(message), status, { stack });
+ }
+ 
 +const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
 +
 +/** Mark the RPC terminal before invoking user callbacks or stream events. */
@@ -70,7 +89,13 @@
 +  }
 +}
 +
-@@ -116,6 +177,11 @@
+ export class ClientUnaryCallImpl
+   extends EventEmitter
+   implements ClientUnaryCall
+@@ -113,12 +177,17 @@
+   implements ClientReadableStream<ResponseType>
+ {
+   public call?: InterceptingCallInterface;
 -  constructor(readonly deserialize: (chunk: Buffer) => ResponseType) {
 -    super({ objectMode: true });
 -  }
@@ -88,9 +113,15 @@
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
-@@ -141,0 +208 @@
+   }
+ 
+   getPeer(): string {
+@@ -139,12 +208,17 @@
+   implements ClientWritableStream<RequestType>
+ {
+   public call?: InterceptingCallInterface;
 +  private readonly lifecycle = new ClientStreamLifecycle(this, true);
-@@ -143,5 +210,9 @@
+   constructor(readonly serialize: (value: RequestType) => Buffer) {
 -    super({ objectMode: true });
 -  }
 -
@@ -105,16 +136,29 @@
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
-@@ -160 +231 @@
+   }
+ 
+   getPeer(): string {
+@@ -157,7 +231,7 @@
+ 
+   _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
+     const context: MessageContext = {
 -      callback: cb,
 +      callback: this.lifecycle.writeCallback(cb),
-@@ -179,0 +251 @@
+     };
+     const flags = Number(encoding);
+     if (!Number.isNaN(flags)) {
+@@ -177,15 +251,21 @@
+   implements ClientDuplexStream<RequestType, ResponseType>
+ {
+   public call?: InterceptingCallInterface;
 +  private readonly lifecycle = new ClientStreamLifecycle(this);
-@@ -182 +254,2 @@
+   constructor(
+     readonly serialize: (value: RequestType) => Buffer,
 -    readonly deserialize: (chunk: Buffer) => ResponseType
 +    readonly deserialize: (chunk: Buffer) => ResponseType,
 +    readableHighWaterMark?: number
-@@ -184,5 +257,9 @@
+   ) {
 -    super({ objectMode: true });
 -  }
 -
@@ -129,6 +173,15 @@
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
-@@ -205 +282 @@
+   }
+ 
+   getPeer(): string {
+@@ -202,7 +282,7 @@
+ 
+   _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
+     const context: MessageContext = {
 -      callback: cb,
 +      callback: this.lifecycle.writeCallback(cb),
+     };
+     const flags = Number(encoding);
+     if (!Number.isNaN(flags)) {

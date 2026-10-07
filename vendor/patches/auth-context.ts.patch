@@ -1,6 +1,15 @@
 --- a/src/auth-context.ts
 +++ b/src/auth-context.ts
-@@ -15,7 +15,7 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2025 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -15,7 +18,7 @@
   *
   */
  

@@ -1,13 +1,25 @@
 --- a/src/client.ts
 +++ b/src/client.ts
-@@ -28,0 +29 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2019 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -26,17 +29,18 @@
+   ClientWritableStreamImpl,
+   ServiceError,
+   callErrorFromStatus,
 +  markCallSurfaceTerminal,
-@@ -30,2 +31,2 @@
+   SurfaceCall,
 -} from './call';
 -import { CallCredentials } from './call-credentials';
 +} from './call-surface';
 +import { CallCredentials } from './credentials';
-@@ -33,5 +34,5 @@
+ import { StatusObject } from './call-interface';
 -import { Channel, ChannelImplementation } from './channel';
 -import { ConnectivityState } from './connectivity-state';
 -import { ChannelCredentials } from './channel-credentials';
@@ -18,10 +30,16 @@
 +import { ChannelCredentials } from './credentials';
 +import { ChannelOptions } from './options';
 +import { status as Status } from './status';
-@@ -39 +40 @@
+ import { Metadata } from './metadata';
 -import { ClientMethodDefinition } from './make-client';
 +import { ClientMethodDefinition } from './factory';
-@@ -47,7 +48 @@
+ import {
+   getInterceptingCall,
+   Interceptor,
+@@ -44,13 +48,7 @@
+   InterceptorArguments,
+   InterceptingCallInterface,
+ } from './client-interceptors';
 -import {
 -  ServerUnaryCall,
 -  ServerReadableStream,
@@ -30,7 +48,13 @@
 -} from './server-call';
 -import { Deadline } from './deadline';
 +import type { Deadline, ParentCall } from './call';
-@@ -74,5 +69,2 @@
+ 
+ const CHANNEL_SYMBOL = Symbol();
+ const INTERCEPTOR_SYMBOL = Symbol();
+@@ -71,11 +69,8 @@
+ export interface CallOptions {
+   deadline?: Deadline;
+   host?: string;
 -  parent?:
 -    | ServerUnaryCall<any, any>
 -    | ServerReadableStream<any, any>
@@ -38,7 +62,13 @@
 -    | ServerDuplexStream<any, any>;
 +  /** Propagate deadline/cancellation from a server call or Fetch handler context. */
 +  parent?: ParentCall | null;
-@@ -147,17 +139,4 @@
+   propagate_flags?: number;
+   credentials?: CallCredentials;
+   interceptors?: Interceptor[];
+@@ -144,23 +139,10 @@
+     this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
+       options.callInvocationTransformer;
+     delete options.callInvocationTransformer;
 -    if (options.channelOverride) {
 -      this[CHANNEL_SYMBOL] = options.channelOverride;
 -    } else if (options.channelFactoryOverride) {
@@ -60,7 +90,13 @@
 +      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
 +    }
 +    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
-@@ -175,27 +154,2 @@
+   }
+ 
+   close(): void {
+@@ -172,33 +154,8 @@
+   }
+ 
+   waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
 -    const checkState = (err?: Error) => {
 -      if (err) {
 -        callback(new Error('Failed to connect before the deadline'));
@@ -90,32 +126,80 @@
 -    setImmediate(checkState);
 +    // Workers fetch has no persistent connection readiness state.
 +    queueMicrotask(() => callback(Object.assign(new Error('WGA_CONNECTIVITY_UNSUPPORTED'), { code: Status.UNIMPLEMENTED })));
-@@ -368 +322 @@
+   }
+ 
+   private checkOptionalUnaryResponseArguments<ResponseType>(
+@@ -365,7 +322,7 @@
+         emitter.emit('status', status);
+       },
+     });
 -    call.sendMessage(argument);
 +    call.sendMessage(callProperties.argument);
-@@ -475,0 +430 @@
+     call.halfClose();
+     return emitter;
+   }
+@@ -473,6 +430,7 @@
+           return;
+         }
+         receivedStatus = true;
 +        markCallSurfaceTerminal(emitter);
-@@ -564 +519 @@
+         if (status.code === Status.OK) {
+           if (responseMessage === null) {
+             const callerStack = getErrorStackString(callerStackError!);
+@@ -561,7 +519,7 @@
+     let callProperties: CallProperties<RequestType, ResponseType> = {
+       argument: argument,
+       metadata: checkedArguments.metadata,
 -      call: new ClientReadableStreamImpl<ResponseType>(deserialize),
 +      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
-@@ -608,0 +564 @@
+       channel: this[CHANNEL_SYMBOL],
+       methodDefinition: methodDefinition,
+       callOptions: checkedArguments.options,
+@@ -606,8 +564,9 @@
+           return;
+         }
+         receivedStatus = true;
 +        markCallSurfaceTerminal(stream);
-@@ -610 +566 @@
+         stream.push(null);
 -        if (status.code !== Status.OK) {
 +        if (status.code !== Status.OK && !stream.destroyed) {
-@@ -620 +576 @@
+           const callerStack = getErrorStackString(callerStackError!);
+           stream.emit('error', callErrorFromStatus(status, callerStack));
+         }
+@@ -617,7 +576,7 @@
+         stream.emit('status', status);
+       },
+     });
 -    call.sendMessage(argument);
 +    call.sendMessage(callProperties.argument);
-@@ -658 +614,2 @@
+     call.halfClose();
+     return stream;
+   }
+@@ -655,7 +614,8 @@
+       metadata: checkedArguments.metadata,
+       call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
+         serialize,
 -        deserialize
 +        deserialize,
 +        this[CHANNEL_SYMBOL].getReadQueueLimit()
-@@ -702,0 +660 @@
+       ),
+       channel: this[CHANNEL_SYMBOL],
+       methodDefinition: methodDefinition,
+@@ -700,8 +660,9 @@
+           return;
+         }
+         receivedStatus = true;
 +        markCallSurfaceTerminal(stream);
-@@ -704 +662 @@
+         stream.push(null);
 -        if (status.code !== Status.OK) {
 +        if (status.code !== Status.OK && !stream.destroyed) {
-@@ -716,0 +675,9 @@
+           const callerStack = getErrorStackString(callerStackError!);
+           stream.emit('error', callErrorFromStatus(status, callerStack));
+         }
+@@ -714,3 +675,12 @@
+     return stream;
+   }
+ }
 +
 +export type { Deadline } from './call';
 +export type { StatusObject } from './call-interface';

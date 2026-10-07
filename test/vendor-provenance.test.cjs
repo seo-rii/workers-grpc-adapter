@@ -18,6 +18,16 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const sri = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64');
 const clone = value => JSON.parse(JSON.stringify(value));
 const read = (base, file) => fs.readFileSync(path.join(base, file));
+test('DOC every modified upstream source prominently identifies the adapter modifications', () => {
+    const modified = manifest.files.filter(file => file.patch);
+    assert.equal(modified.length, 10);
+    for (const file of modified) {
+        const source = read(root, file.target).toString('utf8');
+        const header = source.slice(0, source.indexOf('*/') + 2);
+        assert.match(header, /Modified by workers-grpc-adapter contributors for the Fetch-based Workers\n \* transport\. See vendor\/UPSTREAM\.json and vendor\/patches for provenance\./, file.target);
+        assert.match(header, /Licensed under the Apache License, Version 2\.0/, file.target);
+    }
+});
 function put(base, file, bytes) {
     fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
     fs.writeFileSync(path.join(base, file), bytes);

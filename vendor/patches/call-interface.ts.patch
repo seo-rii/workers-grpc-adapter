@@ -1,20 +1,46 @@
 --- a/src/call-interface.ts
 +++ b/src/call-interface.ts
-@@ -19,3 +19,3 @@
+@@ -1,5 +1,8 @@
+ /*
+  * Copyright 2022 gRPC authors.
++ *
++ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
++ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -16,17 +19,16 @@
+  */
+ 
+ import { AuthContext } from './auth-context';
 -import { CallCredentials } from './call-credentials';
 -import { Status } from './constants';
 -import { Deadline } from './deadline';
 +import { CallCredentials } from './credentials';
 +import { status as Status } from './status';
 +import type { Deadline } from './call';
-@@ -23 +22,0 @@
+ import { Metadata } from './metadata';
 -import { ServerSurfaceCall } from './server-call';
-@@ -29 +28 @@
+ 
+ export interface CallStreamOptions {
+   deadline: Deadline;
+   flags: number;
+   host: string;
 -  parentCall: ServerSurfaceCall | null;
 +  parentCall: unknown;
-@@ -124,0 +124 @@
+ }
+ 
+ export type PartialCallStreamOptions = Partial<CallStreamOptions>;
+@@ -122,61 +124,92 @@
+ }
+ 
+ export class InterceptingListenerImpl implements InterceptingListener {
 +  private disposed = false;
-@@ -130,4 +130,19 @@
+   private processingMetadata = false;
+   private hasPendingMessage = false;
+   private pendingMessage: any;
+   private processingMessage = false;
+   private pendingStatus: StatusObject | null = null;
 -  constructor(
 -    private listener: FullListener,
 -    private nextListener: InterceptingListener
@@ -38,45 +64,67 @@
 +    this.listener = undefined;
 +    this.nextListener = undefined;
 +  }
-@@ -136,3 +151,3 @@
+ 
+   private processPendingMessage() {
 -    if (this.hasPendingMessage) {
 -      this.nextListener.onReceiveMessage(this.pendingMessage);
 -      this.pendingMessage = null;
 +    if (!this.disposed && !this.processingMetadata && this.hasPendingMessage) {
 +      const message = this.pendingMessage;
 +      this.pendingMessage = undefined;
-@@ -139,0 +155 @@
+       this.hasPendingMessage = false;
 +      this.nextListener!.onReceiveMessage(message);
-@@ -144,2 +160,4 @@
+     }
+   }
+ 
+   private processPendingStatus() {
 -    if (this.pendingStatus) {
 -      this.nextListener.onReceiveStatus(this.pendingStatus);
 +    if (!this.disposed && !this.processingMetadata && !this.processingMessage && !this.hasPendingMessage && this.pendingStatus) {
 +      const status = this.pendingStatus;
 +      this.pendingStatus = null;
 +      this.nextListener!.onReceiveStatus(status);
-@@ -149,0 +168 @@
+     }
+   }
+ 
+   onReceiveMetadata(metadata: Metadata): void {
 +    if (this.disposed) return;
-@@ -151 +170,4 @@
+     this.processingMetadata = true;
 -    this.listener.onReceiveMetadata(metadata, metadata => {
 +    let continued = false;
 +    this.listener!.onReceiveMetadata(metadata, metadata => {
 +      if (continued || this.disposed) return;
 +      continued = true;
-@@ -153 +175 @@
+       this.processingMetadata = false;
 -      this.nextListener.onReceiveMetadata(metadata);
 +      this.nextListener!.onReceiveMetadata(metadata);
-@@ -159,0 +182 @@
+       this.processPendingMessage();
+       this.processPendingStatus();
+     });
+   }
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   onReceiveMessage(message: any): void {
 +    if (this.disposed) return;
-@@ -163 +186,4 @@
+     /* If this listener processes messages asynchronously, the last message may
+      * be reordered with respect to the status */
+     this.processingMessage = true;
 -    this.listener.onReceiveMessage(message, msg => {
 +    let continued = false;
 +    this.listener!.onReceiveMessage(message, msg => {
 +      if (continued || this.disposed) return;
 +      continued = true;
-@@ -169 +195 @@
+       this.processingMessage = false;
+       if (this.processingMetadata) {
+         this.pendingMessage = msg;
+         this.hasPendingMessage = true;
+       } else {
 -        this.nextListener.onReceiveMessage(msg);
 +        this.nextListener!.onReceiveMessage(msg);
-@@ -175,2 +201,6 @@
+         this.processPendingStatus();
+       }
+     });
+   }
+   onReceiveStatus(status: StatusObject): void {
 -    this.listener.onReceiveStatus(status, processedStatus => {
 -      if (this.processingMetadata || this.processingMessage) {
 +    if (this.disposed) return;
@@ -85,6 +133,10 @@
 +      if (continued || this.disposed) return;
 +      continued = true;
 +      if (this.processingMetadata || this.processingMessage || this.hasPendingMessage) {
-@@ -179 +209 @@
+         this.pendingStatus = processedStatus;
+       } else {
 -        this.nextListener.onReceiveStatus(processedStatus);
 +        this.nextListener!.onReceiveStatus(processedStatus);
+       }
+     });
+   }

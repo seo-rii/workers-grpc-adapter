@@ -1,6 +1,9 @@
 /*
  * Copyright 2022 gRPC authors.
  *
+ * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
+ * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
