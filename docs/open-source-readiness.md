@@ -4,9 +4,9 @@ Review and source publication date: 2026-10-07. The owner authorized publishing
 the source repository as an experimental project at revision `6d84489`.
 GitHub visibility is now public. At source publication, no npm package or stable
 release had been published. Source publication does not establish production
-certification. The owner subsequently authorized preparing
-`0.0.1` for public npm distribution using npm's default `latest` tag;
-registry publication and download verification are recorded separately.
+certification. The owner subsequently authorized publishing
+`0.0.1` to the public npm registry using npm's default `latest` tag.
+The completed npm publication is recorded below.
 
 ## Assessment
 
@@ -14,7 +14,8 @@ The source tree has the foundations for an experimental open-source release:
 an explicit license, reproducible vendored sources, contribution and security
 guidance, pinned dependency profiles, a credential-free local verification
 workflow, and documented compatibility boundaries. The publication checks below
-record the verified preparation and owner-authorized source visibility change.
+record the verified preparation, owner-authorized source visibility change,
+and subsequent npm publication.
 Benchmark uploads now carry the complete license and notice
 assets and a prominent notice identifying the modified grpc-js client code. Source publication
 does not establish a stable release, a security maintenance commitment, or
@@ -28,6 +29,33 @@ exact SDK profiles. Experimental npm distribution carries the existing licenses
 and does not establish a stable release or production certification.
 The supported behavior and remaining platform constraints are described in
 [Limitations](limitations.md), [Profiles](profiles.md), and [Testing](testing.md).
+
+## Completed npm publication
+
+On 2026-10-07, npm accepted publication of
+[`workers-grpc-adapter@0.0.1`](https://www.npmjs.com/package/workers-grpc-adapter/v/0.0.1)
+using the standard `latest` tag, with no custom distribution tag. The release
+source revision is `3ca0001e933c58ef3bc776d4f5d11015da0be7df`.
+Its [Local verification CI run](https://github.com/seo-rii/workers-grpc-adapter/actions/runs/37628966753)
+completed successfully.
+
+Prepublication validation passed 867 unit tests and 14 checks of the exact
+archive, including fresh SDK consumers, type declarations, export identity,
+and license/provenance checks.
+Release validation also passed 1,476 wire protocol cases and 72 workerd cases
+covering 96 RPCs. The uploaded archive's SHA-256 is
+`8155d0b4df1936fc9dabd7f901c000ae61c79eb04aa1238727ff414519c03a79`.
+Anonymous public-registry metadata confirmed version `0.0.1`, the archive's
+expected SHA-512 integrity, and `latest: 0.0.1` with no custom tag.
+An anonymous download from the published archive URL matched the tested
+archive's SHA-256 and SHA-512 integrity. A fresh installation from the public
+npm registry using the `@grpc/grpc-js` alias passed CommonJS/ESM import and
+constructor-identity checks.
+
+The `0.0.1` version and `latest` tag identify the published package; supported
+behavior remains experimental and limited to the documented pinned profiles.
+This publication does not establish production certification or a stable
+security maintenance commitment.
 
 ## Dependency migration
 
@@ -123,9 +151,9 @@ post-removal inventory confirmed their absence. Run logs, unrelated artifacts,
 and the final notice-bearing CI artifact were retained. The verified original
 ZIPs, supplemental license archive, exact IDs, and cleanup checks remain in the
 private preparation receipt. The owner subsequently authorized public source
-visibility and subsequently authorized experimental npm publication. The npm
-preparation permits publication of the exact verified archive; successful
-registry publication and download checks require their separate receipt.
+visibility and subsequently authorized experimental npm publication. The
+separately completed npm publication uses the exact verified archive described
+above; the historical artifact cleanup is not its package verification.
 
 ## Credentials, history, and cloud identifiers
 
@@ -224,7 +252,7 @@ change on 2026-10-07; they do not establish a stable release:
    vulnerability-reporting channel during publication.
 6. Kept the README's experimental status and supported-profile scope. Published
    only the source repository at that stage; the subsequently authorized
-   experimental npm publication remains a separate action and verification.
+   experimental npm publication is recorded separately above.
 
 Real transaction coverage and a clean dependency audit strengthen the
 experimental support claim. Long-running authentication, quotas, sustained
