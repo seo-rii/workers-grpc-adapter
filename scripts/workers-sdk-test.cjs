@@ -56,12 +56,15 @@ async function main() {
   assert.throws(() => createGoogleWorkerBuild({ projectRoot: shadow, outdir: temporary, typescript: require('typescript') }), { code: 'WGA_SCHEMA_MISMATCH' });
   const preset = createGoogleWorkerBuild({ projectRoot: path.join(root, 'fixtures/google'), outdir: path.join(temporary, 'preset'), typescript: require('typescript') });
   // Execute the transformed descriptor module without an `options` binding.
-  // A nested protobuf package also lives below @grpc/proto-loader/; its module
-  // scope must never receive the loader function's local options parameter.
+  // Resolve the loader's actual protobuf dependency, whether hoisted or nested.
+  // Its module scope must never receive the loader function's local options parameter.
   let transform;
   preset.plugin.setup({ onLoad(_filter, callback) { transform = callback; } });
-  const descriptorPath = path.join(root, 'fixtures/google/node_modules/@grpc/proto-loader/node_modules/protobufjs/ext/descriptor/index.js');
-  const descriptorSource = transform({ path: descriptorPath }).contents;
+  const loaderRequire = createRequire(googleRequire.resolve('@grpc/proto-loader'));
+  const descriptorPath = loaderRequire.resolve('protobufjs/ext/descriptor');
+  const descriptorTransform = transform({ path: descriptorPath });
+  assert.ok(descriptorTransform?.contents, 'the profile must transform the loader-resolved descriptor');
+  const descriptorSource = descriptorTransform.contents;
   const descriptorModule = { exports: {} };
   require('node:vm').runInNewContext(descriptorSource, { require: createRequire(descriptorPath), module: descriptorModule, exports: descriptorModule.exports }, { filename: descriptorPath });
   assert.equal(typeof descriptorModule.exports.FileDescriptorProto.encode, 'function');
@@ -135,7 +138,7 @@ async function main() {
     }
     report.runtimeExecuted = true;
     report.status = 'passed';
-    report.checks = ['static-import', 'datastore-constructor', 'firestore-constructor', 'secret-manager-constructor', 'static-protobuf-constructor-codecs-reflection', 'google-auth-oauth2', 'datastore-lookup', 'firestore-batchGetDocuments-server-stream', 'secret-manager-getSecret', 'second-request', 'two-credentials', 'mid-stream-cancel-between-requests', 'no-rest', 'no-node-modules-patch', 'unknown-profile-rejected', 'unknown-schema-rejected', 'changed-schema-hash-rejected', 'installed-build-entry-types', 'nested-descriptor-transform-scope'];
+    report.checks = ['static-import', 'datastore-constructor', 'firestore-constructor', 'secret-manager-constructor', 'static-protobuf-constructor-codecs-reflection', 'google-auth-oauth2', 'datastore-lookup', 'firestore-batchGetDocuments-server-stream', 'secret-manager-getSecret', 'second-request', 'two-credentials', 'mid-stream-cancel-between-requests', 'no-rest', 'no-node-modules-patch', 'unknown-profile-rejected', 'unknown-schema-rejected', 'changed-schema-hash-rejected', 'installed-build-entry-types', 'resolved-descriptor-transform-scope'];
   } finally { await worker.dispose(); }
 }
 main().catch(error => { report.status = 'failed'; report.reason = error.code || 'WORKER_SDK_TEST_FAILED'; console.error(error); process.exitCode = 1; }).finally(() => {
