@@ -191,6 +191,14 @@
       "sha256": "80bce3ef12ce5c67004c258f30fa8b658af5e7880d21fd8ffff49c2a8a7f0b42",
       "transforms": [
         {
+          "rule": "preserve-static-setup",
+          "expectedMatches": 1
+        },
+        {
+          "rule": "legacy-buffer-base64",
+          "expectedMatches": 1
+        },
+        {
           "rule": "datastore-legacy-key",
           "expectedMatches": 1
         }

@@ -31,6 +31,14 @@ physical protobuf installation. Source checks, transform counts and schema
 validation remain strict. The migration does not broaden supported dependency
 versions. `google-modern-v1` remains revision 2.
 
+The static profile also applies the existing scoped Datastore legacy-key
+guards to the pinned 10.1.1 source. Its import-time `setup()` calls preserve
+the registry's precompiled codecs, and URL-safe key encoding converts the
+Uint8Array result to a Buffer before base64 conversion. The lazy SDK gate
+compares native legacy key bytes and decoded namespace, Unicode ancestors
+and int64 ID values during both cold and warm requests. Runtime code
+generation and global protobuf prototype changes remain disabled.
+
 The static bootstrap inventory now contains 14 physical schema inputs and 764
 type occurrences; its earlier 18-input/891-type inventory included repeated
 protobuf descriptor copies. The modern inventory remains 15 inputs and 1069

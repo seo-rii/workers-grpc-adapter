@@ -9,6 +9,7 @@ const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const googleRoot = path.join(root, 'fixtures/google');
 const googleRequire = createRequire(path.join(googleRoot, 'package.json'));
+const nativeRequire = createRequire(path.join(root, 'fixtures/native/package.json'));
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
 const esbuild = workerRequire('esbuild');
@@ -34,7 +35,19 @@ async function main() {
   report.profileRevision = manifest.revision;
   report.profileSha256 = manifest.profileSha256;
   report.registrySha256 = manifest.registrySha256;
-  report.evidence = Object.fromEntries(['scripts/test-workers-lazy-sdk.cjs', 'fixtures/google/lazy-worker.mjs', 'fixtures/google/package-lock.json', 'fixtures/worker/package-lock.json'].map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
+  report.evidence = Object.fromEntries(['scripts/test-workers-lazy-sdk.cjs', 'fixtures/google/lazy-worker.mjs', 'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/worker/package-lock.json'].map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
+  // The native SDK's untouched legacy group codecs are the independent oracle.
+  const { Datastore } = nativeRequire('@google-cloud/datastore');
+  const nativeDatastore = new Datastore({ projectId: 'wga-lazy' });
+  const nativeKey = nativeDatastore.key({ namespace: 'lazy-namespace', path: ['Ancestor', '한글', 'LazyBootstrap', 7] });
+  const nativeEncoded = await new Promise((resolve, reject) => nativeDatastore.keyToLegacyUrlSafe(nativeKey,
+    (error, value) => error ? reject(error) : resolve(value)));
+  const nativeDecoded = nativeDatastore.keyFromLegacyUrlsafe(nativeEncoded);
+  const expectedLegacyKey = { encoded: nativeEncoded, decoded: { namespace: nativeDecoded.namespace, path: nativeDecoded.path } };
+  assert.deepEqual(expectedLegacyKey.decoded, { namespace: 'lazy-namespace', path: ['Ancestor', '한글', 'LazyBootstrap', '7'] });
+  await Promise.all([...nativeDatastore.clients_.values()].map(client => client.close()));
+  report.nativeLegacyKey = { sdkVersion: nativeRequire('@google-cloud/datastore/package.json').version,
+    matchedColdAndWarm: false, encodedSha256: digest(nativeEncoded) };
   const P = googleRequire('protobufjs');
   const schema = (name, file) => P.Root.fromJSON(JSON.parse(fs.readFileSync(path.join(path.dirname(googleRequire.resolve(`${name}/package.json`)), file), 'utf8')));
   const datastore = schema('@google-cloud/datastore', 'build/protos/protos.json');
@@ -90,6 +103,7 @@ async function main() {
       assert.equal(response.status, 200, JSON.stringify(data));
       assert.equal(data.status, 'passed');
       assert.deepEqual(data.stages, ['datastore-import', 'firestore-import', 'secret-manager-import', 'sdk-constructors', 'datastore-run-query', 'firestore-batch-get', 'secret-manager-get']);
+      assert.deepEqual(data.legacyKey, expectedLegacyKey);
       const expected = { name: '한글 index', count: 12.5, enabled: true, optional: null, nested: { field: 'value' }, values: [7, 'seven', false] };
       assert.deepEqual(data.explainMetrics.planSummary.indexesUsed, [expected]);
       assert.deepEqual(data.explainMetrics.executionStats.debugStats, expected);
@@ -100,7 +114,8 @@ async function main() {
     }
     assert.equal(manifest.globalPrototypePatched, false);
     assert.equal(manifest.nodeModulesModified, false);
-    report.checks = ['cold-request-dynamic-imports', 'warm-request-dynamic-imports', 'datastore-run-query', 'datastore-struct-explain-metrics', 'nested-struct-and-list-values', 'firestore-server-stream', 'secret-manager-unary', 'request-credential-isolation', 'no-global-prototype-patch', 'no-node-modules-patch'];
+    report.nativeLegacyKey.matchedColdAndWarm = true;
+    report.checks = ['cold-request-dynamic-imports', 'warm-request-dynamic-imports', 'datastore-native-legacy-key-codecs', 'datastore-run-query', 'datastore-struct-explain-metrics', 'nested-struct-and-list-values', 'firestore-server-stream', 'secret-manager-unary', 'request-credential-isolation', 'no-global-prototype-patch', 'no-node-modules-patch'];
     report.status = 'passed';
   } finally { await worker.dispose(); }
 }

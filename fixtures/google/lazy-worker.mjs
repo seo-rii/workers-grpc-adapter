@@ -20,6 +20,11 @@ export default {
       datastore = new Datastore({ projectId: 'wga-lazy', authClient, fallback: false });
       firestore = new Firestore({ projectId: 'wga-lazy', authClient, preferRest: false });
       secretManager = new SecretManagerServiceClient({ projectId: 'wga-lazy', authClient, fallback: false });
+      const key = datastore.key({ namespace: 'lazy-namespace', path: ['Ancestor', '한글', 'LazyBootstrap', 7] });
+      const encodedKey = await new Promise((resolve, reject) => datastore.keyToLegacyUrlSafe(key,
+        (error, value) => error ? reject(error) : resolve(value)));
+      const decodedKey = datastore.keyFromLegacyUrlsafe(encodedKey);
+      const legacyKey = { encoded: encodedKey, decoded: { namespace: decodedKey.namespace, path: decodedKey.path } };
       stages.push('sdk-constructors');
       const [entities, info] = await datastore.runQuery(datastore.createQuery('LazyBootstrap'), {
         explainOptions: { analyze: true }, gaxOptions: { retry: null, timeout: 5000 },
@@ -32,10 +37,10 @@ export default {
       const [secret] = await secretManager.getSecret({ name: 'projects/wga-lazy/secrets/bootstrap' }, { retry: null, timeout: 5000 });
       stages.push('secret-manager-get');
       await close();
-      return Response.json({ status: 'passed', stages, explainMetrics: info.explainMetrics, secretName: secret.name });
+      return Response.json({ status: 'passed', stages, legacyKey, explainMetrics: info.explainMetrics, secretName: secret.name });
     } catch (error) {
       await close().catch(() => {});
-      return Response.json({ status: 'failed', stages, code: error.code ?? error.name, message: error.message }, { status: 500 });
+      return Response.json({ status: 'failed', stages, code: error.code ?? error.name, message: error.message, stack: error.stack }, { status: 500 });
     }
   },
 };
