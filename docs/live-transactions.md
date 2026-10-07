@@ -83,6 +83,11 @@ fresh recovery transaction.
 
 The cloud runner retains its private source and bundle hashes, transport
 receipts, resource identities, and final infrastructure cleanup result locally.
+The runner exited successfully and verified all eight owned resources absent,
+including both completed database deletion operations. The GCP inventories
+matched. Cloudflare's existing script names also matched, but one pre-existing
+Worker outside this run had a different `etag` and modification time. The probe
+did not target that Worker; account-wide metadata immutability was not established.
 The results establish the bounded scenarios above; they do not close the
 dedicated-project certification gate or establish natural network-failure
 frequency and write-retry safety for arbitrary applications.
