@@ -70,3 +70,19 @@ checks. No metadata, token, or record payload is copied into that summary.
 The original dedicated-project certification gate remains separate. A successful
 temporary campaign in a shared project does not satisfy that gate or establish
 production IAM, quota, long-running authentication, or sustained-load reliability.
+
+## Executed campaign
+
+On 2026-10-07, campaign `wga-probe-20261007-e4171af0` ran from source revision
+`5ecb406` in an authorized shared project in `asia-northeast3`. All twelve
+transaction executions passed: four native controls, four gateway fallback
+calls, and four Cloudflare conversion calls. Both returned database
+configurations confirmed `OPTIMISTIC` mode. Every scenario included record
+cleanup and a verified subsequent read; conflict scenarios also committed a
+fresh recovery transaction.
+
+The cloud runner retains its private source and bundle hashes, transport
+receipts, resource identities, and final infrastructure cleanup result locally.
+The results establish the bounded scenarios above; they do not close the
+dedicated-project certification gate or establish natural network-failure
+frequency and write-retry safety for arbitrary applications.
