@@ -6,9 +6,19 @@ const { createHash } = require('node:crypto');
 const { isDeepStrictEqual } = require('node:util');
 const prefix = 'fixtures/worker/node_modules/@grpc/grpc-js/';
 const sources = ['scripts/benchmark.cjs', 'scripts/transport-benchmark-evidence.cjs',
+  'scripts/collect-ci-receipts.py', '.github/workflows/local.yml',
   'fixtures/worker/package.json', 'fixtures/worker/package-lock.json'];
 const artifacts = ['verification/transport-benchmark/client.mjs', 'verification/transport-benchmark/client.mjs.gz',
   'verification/transport-benchmark/esbuild-metafile.json'];
+const noticeFiles = ['LICENSE', 'NOTICE', 'vendor/LICENSE', 'vendor/NOTICE'];
+const modificationNotice = [
+  '/*!',
+  ' * workers-grpc-adapter: includes modified @grpc/grpc-js 1.14.0 client code.',
+  ' * Original adapter code: MIT; copied and modified grpc-js code: Apache-2.0.',
+  ' * Complete licenses and notices accompany this bundle in LICENSE, NOTICE,',
+  ' * vendor/LICENSE and vendor/NOTICE.',
+  ' */',
+].join('\n');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const integer = (value, minimum = 0) => Number.isSafeInteger(value) && value >= minimum;
@@ -66,13 +76,21 @@ function validateTransportBenchmarkReport(report) {
   need(bundle?.status === 'measured' && bundle.name === 'transport-only' && /^\d+\.\d+\.\d+$/.test(bundle.esbuild), 'required bundle build');
   equal(bundle.config, { absWorkingDir: '.', entryPoints: [`${prefix}dist/index.mjs`], outfile: artifacts[0],
     bundle: true, write: false, format: 'esm', platform: 'neutral', target: ['es2022'], external: ['node:*'],
-    minify: true, metafile: true, sourcemap: false, legalComments: 'none' }, 'exact bundle build configuration');
+    minify: true, metafile: true, sourcemap: false, legalComments: 'eof',
+    banner: { js: modificationNotice } }, 'exact bundle build configuration');
   need(bundle.scope === 'Installed client root ESM entry; Node builtins external; no Google SDK or Workers CJS require bridge; bundle not executed.', 'bundle scope');
   need(bundle.path === artifacts[0] && bundle.gzipPath === artifacts[1] && bundle.metafilePath === artifacts[2]
     && integer(bundle.minifiedBytes, 1) && integer(bundle.gzipBytes, 1) && bundle.gzipBytes < bundle.minifiedBytes
     && bundle.gzipLevel === 9 && hash(bundle.sha256) && hash(bundle.gzipSha256) && hash(bundle.metafileSha256), 'bundle artifacts');
+  equal(keys(bundle.notices), noticeFiles.map(file => `verification/transport-benchmark/${file}`).sort(), 'complete license/notice asset set');
+  for (const file of noticeFiles) {
+    const target = `verification/transport-benchmark/${file}`, notice = bundle.notices[target];
+    need(notice?.source === prefix + file && hash(notice.sha256)
+      && notice.sha256 === report.installedInputs[prefix + file], 'notice/installed package identity');
+  }
   equal(report.generatedArtifacts, { [artifacts[0]]: bundle.sha256, [artifacts[1]]: bundle.gzipSha256,
-    [artifacts[2]]: bundle.metafileSha256 }, 'generated artifact manifest');
+    [artifacts[2]]: bundle.metafileSha256,
+    ...Object.fromEntries(Object.entries(bundle.notices).map(([file, notice]) => [file, notice.sha256])) }, 'generated artifact manifest');
   const metafile = bundle.metafile;
   need(metafile && keys(metafile.inputs).length > 1 && keys(metafile.inputs).every(file => safe(file) && file.startsWith(prefix)), 'installed transport-only build inputs');
   equal(keys(metafile.outputs), [artifacts[0]], 'one minified client output');
@@ -94,7 +112,8 @@ function validateTransportBenchmarkReport(report) {
   equal(keys(bundle.toolInputs), ['fixtures/worker/node_modules/esbuild/package.json', 'fixtures/worker/node_modules/esbuild/lib/main.js',
     `${binaryPrefix}package.json`, `${binaryPrefix}${runtime.platform === 'win32' ? 'esbuild.exe' : 'bin/esbuild'}`].sort(), 'actual esbuild/binary inputs');
   need(Object.values(bundle.toolInputs).every(hash), 'esbuild/binary hashes');
-  equal(keys(report.installedInputs), [...new Set([...report.executionInputs, ...keys(bundle.inputSha256), `${prefix}package.json`])].sort(), 'complete installed input manifest');
+  equal(keys(report.installedInputs), [...new Set([...report.executionInputs, ...keys(bundle.inputSha256), `${prefix}package.json`,
+    ...noticeFiles.map(file => prefix + file)])].sort(), 'complete installed input manifest');
   need(Array.isArray(report.scenarios) && report.scenarios.length === 4 && report.caseCount === 4, 'exact scenario matrix');
   report.scenarios.forEach((row, rowIndex) => {
     const config = workloads[rowIndex];
@@ -193,6 +212,9 @@ function validateTransportBenchmarkArtifacts(report, root) {
     need(member && digest(member) === expected, `installed input differs from packed member ${file}`);
   }
   const bundle = report.bundle, bytes = read(bundle.path), gzip = read(bundle.gzipPath);
+  need(bytes.toString('utf8').startsWith(modificationNotice + '\n'), 'prominent bundled modification notice');
+  for (const [file, notice] of Object.entries(bundle.notices))
+    need(read(file).equals(read(notice.source)), 'distributed notice differs from installed package');
   need(bytes.length === bundle.minifiedBytes && gzip.length === bundle.gzipBytes
     && zlib.gunzipSync(gzip, { maxOutputLength: bytes.length }).equals(bytes)
     && zlib.gzipSync(bytes, { level: 9 }).equals(gzip), 'actual minified/gzip bytes and encoding');
@@ -205,4 +227,4 @@ function validateTransportBenchmarkArtifacts(report, root) {
   }
   return report;
 }
-module.exports = { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts, sources, artifacts };
+module.exports = { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts, sources, artifacts, noticeFiles, modificationNotice };

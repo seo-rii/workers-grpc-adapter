@@ -10,7 +10,7 @@ const { createHash } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
 const zlib = require('node:zlib');
-const { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts, sources } = require('./transport-benchmark-evidence.cjs');
+const { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts, sources, noticeFiles, modificationNotice } = require('./transport-benchmark-evidence.cjs');
 const root = path.resolve(__dirname, '..');
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const grpc = workerRequire('@grpc/grpc-js');
@@ -174,7 +174,7 @@ async function bundleSizes() {
   const esbuild = workerRequire('esbuild');
   const config = { absWorkingDir: '.', entryPoints: [`${installedRoot}dist/index.mjs`], outfile: 'verification/transport-benchmark/client.mjs',
     bundle: true, write: false, format: 'esm', platform: 'neutral', target: ['es2022'], external: ['node:*'],
-    minify: true, metafile: true, sourcemap: false, legalComments: 'none' };
+    minify: true, metafile: true, sourcemap: false, legalComments: 'eof', banner: { js: modificationNotice } };
   const output = await esbuild.build({ ...config, absWorkingDir: root });
   assert.equal(output.outputFiles.length, 1);
   const bytes = output.outputFiles[0].contents, gzip = zlib.gzipSync(bytes, { level: 9 });
@@ -182,6 +182,14 @@ async function bundleSizes() {
   const gzipPath = `${config.outfile}.gz`, metafileBytes = Buffer.from(JSON.stringify(output.metafile, null, 2) + '\n');
   fs.mkdirSync(path.dirname(path.join(root, config.outfile)), { recursive: true });
   for (const [file, contents] of [[config.outfile, bytes], [gzipPath, gzip], [metafilePath, metafileBytes]]) fs.writeFileSync(path.join(root, file), contents);
+  const notices = {};
+  for (const file of noticeFiles) {
+    const source = installedRoot + file, target = `verification/transport-benchmark/${file}`;
+    const contents = fs.readFileSync(path.join(root, source));
+    fs.mkdirSync(path.dirname(path.join(root, target)), { recursive: true });
+    fs.writeFileSync(path.join(root, target), contents);
+    notices[target] = { source, sha256: digest(contents) };
+  }
   const relative = file => path.relative(root, file).split(path.sep).join('/');
   const platformPackage = `@esbuild/${process.platform}-${process.arch}`;
   const binary = workerRequire.resolve(`${platformPackage}/${process.platform === 'win32' ? 'esbuild.exe' : 'bin/esbuild'}`);
@@ -190,7 +198,7 @@ async function bundleSizes() {
     workerRequire.resolve(`${platformPackage}/package.json`), binary].map(relative);
   return { status: 'measured', name: 'transport-only', esbuild: esbuild.version, config, minifiedBytes: bytes.length,
     gzipBytes: gzip.length, sha256: digest(bytes), gzipSha256: digest(gzip), path: config.outfile, gzipPath, gzipLevel: 9,
-    metafilePath, metafileSha256: digest(metafileBytes), metafile: output.metafile,
+    metafilePath, metafileSha256: digest(metafileBytes), metafile: output.metafile, notices,
     inputSha256: Object.fromEntries(Object.keys(output.metafile.inputs).map(file => [file, fileHash(file)])),
     toolInputs: Object.fromEntries(toolInputs.map(file => [file, fileHash(file)])),
     scope: 'Installed client root ESM entry; Node builtins external; no Google SDK or Workers CJS require bridge; bundle not executed.' };
@@ -217,7 +225,8 @@ async function main() {
   const bundle = await bundleSizes();
   const executionInputs = Object.keys(require.cache).filter(file => file.startsWith(path.join(root, installedRoot)))
     .map(file => path.relative(root, file).split(path.sep).join('/')).sort();
-  const installedInputs = [...new Set([...executionInputs, ...Object.keys(bundle.inputSha256), `${installedRoot}package.json`])].sort();
+  const installedInputs = [...new Set([...executionInputs, ...Object.keys(bundle.inputSha256), `${installedRoot}package.json`,
+    ...noticeFiles.map(file => installedRoot + file)])].sort();
   const report = { schemaVersion: 1, status: 'passed', createdAt: new Date().toISOString(), sourceBuild: false,
     runtimeExecuted: true, realGoogleSDK: false, workerdExecuted: false, liveGoogle: false, liveCloud: false,
     controlledFetch: true, mode: 'grpc-web', budgetsChosen: false, responseChunkBytes: chunkBytes,
@@ -233,7 +242,8 @@ async function main() {
     installedInputs: Object.fromEntries(installedInputs.map(file => [file, fileHash(file)])),
     coldRequireMs: { ...summary(cold.map(value => value.elapsedMs)), measurements: cold, entry,
       scope: 'Fresh Node process require only; process startup excluded; not workerd cold start' },
-    bundle, generatedArtifacts: { [bundle.path]: bundle.sha256, [bundle.gzipPath]: bundle.gzipSha256, [bundle.metafilePath]: bundle.metafileSha256 },
+    bundle, generatedArtifacts: { [bundle.path]: bundle.sha256, [bundle.gzipPath]: bundle.gzipSha256, [bundle.metafilePath]: bundle.metafileSha256,
+      ...Object.fromEntries(Object.entries(bundle.notices).map(([file, notice]) => [file, notice.sha256])) },
     scenarios: results, caseCount: results.length, logicalCalls: results.reduce((sum, value) => sum + value.fetches, 0),
     fetches: results.reduce((sum, value) => sum + value.fetches, 0), resourcesCheckedBeforeClose: true };
   validateTransportBenchmarkReport(report); validateTransportBenchmarkArtifacts(report, root);

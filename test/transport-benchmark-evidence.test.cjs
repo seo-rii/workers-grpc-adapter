@@ -6,10 +6,21 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const { createHash } = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const { validateTransportBenchmarkReport, validateTransportBenchmarkArtifacts } = require('../scripts/transport-benchmark-evidence.cjs');
 const prefix = 'fixtures/worker/node_modules/@grpc/grpc-js/';
+const benchmarkDirectory = 'verification/transport-benchmark/';
 const output = 'verification/transport-benchmark/client.mjs';
 const manifest = 'verification/transport-benchmark/esbuild-metafile.json';
+// Declare the redistribution policy independently of the producer and its
+// validator so an omitted license cannot become a self-consistent receipt.
+const noticeFiles = ['LICENSE', 'NOTICE', 'vendor/LICENSE', 'vendor/NOTICE'];
+const modificationNotice = '/*!\n'
+  + ' * workers-grpc-adapter: includes modified @grpc/grpc-js 1.14.0 client code.\n'
+  + ' * Original adapter code: MIT; copied and modified grpc-js code: Apache-2.0.\n'
+  + ' * Complete licenses and notices accompany this bundle in LICENSE, NOTICE,\n'
+  + ' * vendor/LICENSE and vendor/NOTICE.\n'
+  + ' */';
 const version = '0.0.0-fixture', toolVersion = '0.25.0';
 const tarballPath = `artifacts/workers-grpc-adapter-${version}.tgz`;
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -26,6 +37,10 @@ function fixture() {
   put(prefix + 'dist/index.mjs', 'import grpc from "./index.js";export const {Client,Metadata,makeGenericClientConstructor}=grpc;\n');
   put(prefix + 'dist/adapter.js', 'exports.syntheticAdapterFixture = true;\n');
   put(prefix + 'dist/wire.js', 'exports.syntheticWireFixture = true;\n');
+  put(prefix + 'LICENSE', 'MIT License\nCopyright Synthetic adapter contributors\nSynthetic complete MIT permission and warranty terms.\n');
+  put(prefix + 'NOTICE', 'Synthetic adapter attribution: modified @grpc/grpc-js 1.14.0 client code, Apache-2.0.\n');
+  put(prefix + 'vendor/LICENSE', 'Apache License\nVersion 2.0, January 2004\nSynthetic complete Apache license terms.\n');
+  put(prefix + 'vendor/NOTICE', 'Synthetic copied and modified grpc-js attribution.\nCopyright gRPC authors.\n');
   const installedPaths = [...files.keys()].sort();
   const archive = [];
   for (const file of installedPaths) {
@@ -50,12 +65,15 @@ function fixture() {
   } }));
   put('scripts/benchmark.cjs', '// Synthetic benchmark source bytes for artifact validation only.\n');
   put('scripts/transport-benchmark-evidence.cjs', '// Synthetic validator source bytes for artifact validation only.\n');
+  put('scripts/collect-ci-receipts.py', '# Synthetic collector source bytes for artifact validation only.\n');
+  put('.github/workflows/local.yml', '# Synthetic workflow source bytes for artifact validation only.\n');
   put('fixtures/worker/node_modules/esbuild/package.json', JSON.stringify({ name: 'esbuild', version: toolVersion }));
   put('fixtures/worker/node_modules/esbuild/lib/main.js', 'exports.syntheticToolFixture = true;\n');
   put('fixtures/worker/node_modules/@esbuild/linux-x64/package.json', JSON.stringify({ name: '@esbuild/linux-x64', version: toolVersion }));
   put('fixtures/worker/node_modules/@esbuild/linux-x64/bin/esbuild', 'Synthetic unexecuted binary fixture\n');
-  const bytes = Buffer.from(`export const Client=class{},Metadata=class{},makeGenericClientConstructor=()=>Client;const synthetic="${'a'.repeat(1000)}";\n`);
+  const bytes = Buffer.from(`${modificationNotice}\nexport const Client=class{},Metadata=class{},makeGenericClientConstructor=()=>Client;const synthetic="${'a'.repeat(1000)}";\n`);
   const gzip = zlib.gzipSync(bytes, { level: 9 }); put(output, bytes); put(output + '.gz', gzip);
+  for (const file of noticeFiles) put(benchmarkDirectory + file, files.get(prefix + file));
   const metafile = { inputs: {
     [prefix + 'dist/index.js']: { bytes: files.get(prefix + 'dist/index.js').length, imports: [] },
     [prefix + 'dist/index.mjs']: { bytes: files.get(prefix + 'dist/index.mjs').length,
@@ -76,6 +94,7 @@ function fixture() {
     runtime: { node: 'v22.0.0', v8: 'synthetic-v8', platform: 'linux', arch: 'x64', kernel: 'synthetic-kernel', cpuModel: 'synthetic-cpu',
       logicalCpus: 2, totalMemoryBytes: 1073741824, nodeExecutableSha256: hash },
     evidence: inputHashes(['scripts/benchmark.cjs', 'scripts/transport-benchmark-evidence.cjs',
+      'scripts/collect-ci-receipts.py', '.github/workflows/local.yml',
       'fixtures/worker/package.json', 'fixtures/worker/package-lock.json']),
     installedPackage: { path: prefix + 'package.json', name: 'workers-grpc-adapter', version, alias: '@grpc/grpc-js',
       lockfile: 'fixtures/worker/package-lock.json', lockEntry: 'node_modules/@grpc/grpc-js', resolved, integrity,
@@ -87,12 +106,15 @@ function fixture() {
       samples: 7, min: 1, p50: 4, p95: 7, max: 7 },
     bundle: { status: 'measured', name: 'transport-only', esbuild: toolVersion,
       config: { absWorkingDir: '.', entryPoints: [prefix + 'dist/index.mjs'], outfile: output, bundle: true, write: false,
-        format: 'esm', platform: 'neutral', target: ['es2022'], external: ['node:*'], minify: true, metafile: true, sourcemap: false, legalComments: 'none' },
+        format: 'esm', platform: 'neutral', target: ['es2022'], external: ['node:*'], minify: true, metafile: true, sourcemap: false,
+        legalComments: 'eof', banner: { js: modificationNotice } },
       scope: 'Installed client root ESM entry; Node builtins external; no Google SDK or Workers CJS require bridge; bundle not executed.',
       path: output, gzipPath: output + '.gz', metafilePath: manifest, minifiedBytes: bytes.length, gzipBytes: gzip.length, gzipLevel: 9,
       sha256: digest(bytes), gzipSha256: digest(gzip), metafileSha256: digest(files.get(manifest)), metafile,
-      inputSha256: inputHashes(Object.keys(metafile.inputs)), toolInputs: inputHashes(toolInputs) },
-    generatedArtifacts: inputHashes([output, output + '.gz', manifest]),
+      inputSha256: inputHashes(Object.keys(metafile.inputs)), toolInputs: inputHashes(toolInputs),
+      notices: Object.fromEntries(noticeFiles.map(file => [benchmarkDirectory + file,
+        { source: prefix + file, sha256: digest(files.get(prefix + file)) }])) },
+    generatedArtifacts: inputHashes([output, output + '.gz', manifest, ...noticeFiles.map(file => benchmarkDirectory + file)]),
     scenarios: [], caseCount: 4, logicalCalls: 154, fetches: 154, resourcesCheckedBeforeClose: true,
   };
   const workloads = [
@@ -181,6 +203,30 @@ test('EVIDENCE transport benchmark requires installed Node provenance and exact 
   ]);
 });
 
+test('EVIDENCE transport benchmark requires complete MIT and Apache notices from the measured packed package', () => {
+  const { report } = fixture();
+  validateTransportBenchmarkReport(report);
+  assert.deepEqual(Object.keys(report.bundle.notices), noticeFiles.map(file => benchmarkDirectory + file));
+  assert.deepEqual(Object.values(report.bundle.notices).map(notice => notice.source), noticeFiles.map(file => prefix + file));
+  rejectMutations([
+    report => { delete report.evidence['scripts/collect-ci-receipts.py']; },
+    report => { delete report.evidence['.github/workflows/local.yml']; },
+    report => { report.bundle.config.legalComments = 'none'; },
+    report => { delete report.bundle.config.banner; },
+    report => { report.bundle.config.banner.js = modificationNotice.replace('modified', 'original'); },
+    report => { report.bundle.notices = {}; },
+    report => { report.bundle.notices[benchmarkDirectory + 'third-party-LICENSE'] = report.bundle.notices[benchmarkDirectory + 'LICENSE']; },
+    ...noticeFiles.flatMap(file => [
+      report => { delete report.bundle.notices[benchmarkDirectory + file]; },
+      report => { report.bundle.notices[benchmarkDirectory + file].source = prefix + '../LICENSE'; },
+      report => { report.bundle.notices[benchmarkDirectory + file].source = prefix + 'package.json'; },
+      report => { report.bundle.notices[benchmarkDirectory + file].sha256 = hash; },
+      report => { delete report.generatedArtifacts[benchmarkDirectory + file]; },
+      report => { delete report.installedInputs[prefix + file]; },
+    ]),
+  ]);
+});
+
 test('EVIDENCE transport benchmark recomputes cold and iteration summaries without counting warmups', () => {
   const { report } = fixture(); validateTransportBenchmarkReport(report);
   assert.deepEqual(report.coldRequireMs.measurements.map(item => item.elapsedMs), [7, 6, 5, 4, 3, 2, 1]);
@@ -251,7 +297,8 @@ test('EVIDENCE transport benchmark checks real artifact bytes and detects self-c
     return structuredClone(original.report);
   }
   validateTransportBenchmarkArtifacts(reset(), root);
-  for (const file of [output, output + '.gz', manifest, prefix + 'dist/index.js', prefix + 'dist/adapter.js',
+  for (const file of [output, output + '.gz', manifest, ...noticeFiles.flatMap(file => [benchmarkDirectory + file, prefix + file]),
+    prefix + 'dist/index.js', prefix + 'dist/adapter.js',
     'scripts/benchmark.cjs', 'fixtures/worker/node_modules/@esbuild/linux-x64/bin/esbuild', tarballPath]) {
     const report = reset(); fs.appendFileSync(path.join(root, file), 'changed');
     assert.throws(() => validateTransportBenchmarkArtifacts(report, root), /WGA_EVIDENCE_INVALID/, file);
@@ -279,5 +326,75 @@ test('EVIDENCE transport benchmark checks real artifact bytes and detects self-c
   {
     const report = reset(); fs.unlinkSync(path.join(root, output));
     assert.throws(() => validateTransportBenchmarkArtifacts(report, root), /missing regular artifact/);
+  }
+  for (const file of noticeFiles) {
+    const report = reset(), destination = benchmarkDirectory + file;
+    fs.unlinkSync(path.join(root, destination));
+    assert.throws(() => validateTransportBenchmarkArtifacts(report, root), /missing regular artifact/);
+  }
+  for (const file of noticeFiles) {
+    const report = reset(), source = prefix + file, destination = benchmarkDirectory + file;
+    // An attacker rehashing both the installed copy and bundled notice must
+    // still fail the independent comparison with the lock-identified package.
+    const changed = Buffer.from('A rehashed notice omitting the original license and attribution.\n');
+    fs.writeFileSync(path.join(root, source), changed); fs.writeFileSync(path.join(root, destination), changed);
+    report.installedInputs[source] = report.bundle.notices[destination].sha256 = report.generatedArtifacts[destination] = digest(changed);
+    assert.throws(() => validateTransportBenchmarkArtifacts(report, root), /installed input differs from packed member/);
+  }
+  {
+    const report = reset(), changed = fs.readFileSync(path.join(root, output));
+    changed[0] = 32; // Leave the reported build banner intact but remove it from actual bytes.
+    const gzip = zlib.gzipSync(changed, { level: 9 });
+    fs.writeFileSync(path.join(root, output), changed); fs.writeFileSync(path.join(root, output + '.gz'), gzip);
+    report.bundle.sha256 = report.generatedArtifacts[output] = digest(changed);
+    report.bundle.gzipSha256 = report.generatedArtifacts[output + '.gz'] = digest(gzip); report.bundle.gzipBytes = gzip.length;
+    assert.throws(() => validateTransportBenchmarkArtifacts(report, root), /WGA_EVIDENCE_INVALID/);
+  }
+});
+
+test('EVIDENCE actual CI collector preserves bundled license bytes in its tar archive', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-ci-benchmark-notices-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const repository = path.resolve(__dirname, '..'), { files } = fixture();
+  const expected = new Map([output, output + '.gz', manifest, ...noticeFiles.map(file => benchmarkDirectory + file)]
+    .map(file => [file, files.get(file)]));
+  for (const [file, bytes] of expected) {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true }); fs.writeFileSync(path.join(root, file), bytes);
+  }
+  fs.writeFileSync(path.join(root, 'verification/private.txt'), 'Do not include an unselected file.');
+  fs.writeFileSync(path.join(root, 'private-credentials.txt'), 'Do not follow this symlink.');
+  fs.symlinkSync('../../private-credentials.txt', path.join(root, benchmarkDirectory, 'private.txt'));
+  const archivePath = path.join(root, 'receipts.tar.gz'), logs = path.join(root, 'empty-logs');
+  fs.mkdirSync(logs);
+  const workflow = fs.readFileSync(path.join(repository, '.github/workflows/local.yml'), 'utf8');
+  assert.match(workflow, /python3\s+scripts\/collect-ci-receipts\.py\b/, 'CI must execute the collector tested here');
+  execFileSync('python3', [path.join(repository, 'scripts/collect-ci-receipts.py'), '--root', root,
+    '--output', archivePath, '--log-dir', logs], { timeout: 10000, encoding: 'utf8', maxBuffer: 1024 * 1024 });
+  // Inspect the actual gzip/tar member data independently with Python's tar
+  // reader. This exercises the production CI inclusion filter without
+  // extracting members or reading the developer's log directory.
+  const inspected = JSON.parse(execFileSync('python3', ['-c',
+    'import hashlib,json,sys,tarfile\n'
+    + 'with tarfile.open(sys.argv[1], "r:gz") as archive:\n'
+    + '    members = {}\n'
+    + '    for member in archive.getmembers():\n'
+    + '        assert member.isfile() and not member.issym() and member.name not in members\n'
+    + '        data = archive.extractfile(member).read()\n'
+    + '        members[member.name] = {"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()}\n'
+    + '    print(json.dumps(members))\n', archivePath], { timeout: 10000, encoding: 'utf8', maxBuffer: 1024 * 1024 }));
+  assert.deepEqual(Object.keys(inspected).sort(), [...expected.keys()].sort());
+  for (const [file, bytes] of expected) assert.deepEqual(inspected[file], { bytes: bytes.length, sha256: digest(bytes) }, file);
+  for (const file of noticeFiles) {
+    const destination = path.join(root, benchmarkDirectory, file);
+    for (const variant of ['missing', 'symlink']) {
+      fs.rmSync(archivePath, { force: true }); fs.unlinkSync(destination);
+      if (variant === 'symlink') fs.symlinkSync(path.join(root, 'private-credentials.txt'), destination);
+      assert.throws(() => execFileSync('python3', [path.join(repository, 'scripts/collect-ci-receipts.py'), '--root', root,
+        '--output', archivePath, '--log-dir', logs], { timeout: 10000, encoding: 'utf8', maxBuffer: 1024 * 1024 }),
+      error => error.status !== 0 && /Incomplete transport bundle distribution/.test(error.stderr), `${variant} ${file}`);
+      assert.equal(fs.existsSync(archivePath), false, 'an incomplete distribution must fail before writing an archive');
+      if (variant === 'symlink') fs.unlinkSync(destination);
+      fs.writeFileSync(destination, expected.get(benchmarkDirectory + file));
+    }
   }
 });
