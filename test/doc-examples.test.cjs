@@ -99,8 +99,8 @@ function syntheticReport() {
     counts: { documents: 2, blocks: 7, executed: 2, expected: 5 },
     evidence: Object.fromEntries([...sources, ...documents.map(row => row.file)].map(file => [file, h])),
     installedInputs: Object.fromEntries(['package.json', 'dist/index.mjs', 'dist/config.mjs', 'dist/index.js', 'dist/config.js'].map(file => [prefix + file, h])),
-    installedPackage: { alias: '@grpc/grpc-js', name: 'workers-grpc-adapter', version: '0.0.0-prototype.1', path: prefix + 'package.json',
-      lockfile: 'fixtures/worker/package-lock.json', resolved: 'file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz', integrity: 'sha512-' + 'A'.repeat(86) + '==', tarballSha256: h },
+    installedPackage: { alias: '@grpc/grpc-js', name: 'workers-grpc-adapter', version: '0.0.1', path: prefix + 'package.json',
+      lockfile: 'fixtures/worker/package-lock.json', resolved: 'file:../../artifacts/workers-grpc-adapter-0.0.1.tgz', integrity: 'sha512-' + 'A'.repeat(86) + '==', tarballSha256: h },
     runs: [], rpcCount: 2, fetchCount: 2, externalRequests: 0 };
   for (const selected of selections) {
     const origin = selected.mode === 'cloudflare' ? 'https://service.example' : 'https://gateway.example';

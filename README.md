@@ -2,7 +2,7 @@
 
 An experimental `@grpc/grpc-js` client adapter for Cloudflare Workers. It carries unary and server-streaming RPCs over binary gRPC-Web using `fetch()` while retaining the upstream client, metadata, interceptor, and stream APIs. Explicit gateway mode also offers experimental client/bidirectional streaming and verified Firestore listeners.
 
-**Experimental prototype: `0.0.0-prototype.1`. Prepared for npm distribution under the `experimental` tag.** Registry publication and download verification are recorded separately from the source release. Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
+**Experimental adapter: `0.0.1`.** Local tests exercise real Google SDKs and official emulators; separate temporary deployments also verify authenticated Google APIs using Cloudflare automatic conversion and an explicit gateway. These tests do not establish complete grpc-js compatibility or production readiness.
 
 ## Quick start
 
@@ -48,7 +48,7 @@ For experimental npm distribution, install the adapter under the `@grpc/grpc-js`
 ```json
 {
   "dependencies": {
-    "@grpc/grpc-js": "npm:workers-grpc-adapter@0.0.0-prototype.1"
+    "@grpc/grpc-js": "npm:workers-grpc-adapter@0.0.1"
   },
   "overrides": {
     "@grpc/grpc-js": "$@grpc/grpc-js",
@@ -57,7 +57,7 @@ For experimental npm distribution, install the adapter under the `@grpc/grpc-js`
 }
 ```
 
-After registry publication, the equivalent install command is `npm install '@grpc/grpc-js@npm:workers-grpc-adapter@0.0.0-prototype.1'`; retain the root overrides above for SDK consumers. The repository's [Google fixture](fixtures/google/package.json) continues using `file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz` for source checks. That path is relative to the fixture; adjust it for another local consumer. Use `npm run doctor` from the checkout to check the fixture's dependency graph. The scoped auth override resolves a declaration compatibility issue while preserving Secret Manager's separate auth version. npm distribution does not expand the [supported profiles](docs/profiles.md).
+The equivalent install command is `npm install '@grpc/grpc-js@npm:workers-grpc-adapter@0.0.1'`; retain the root overrides above for SDK consumers. The repository's [Google fixture](fixtures/google/package.json) continues using `file:../../artifacts/workers-grpc-adapter-0.0.1.tgz` for source checks. That path is relative to the fixture; adjust it for another local consumer. Use `npm run doctor` from the checkout to check the fixture's dependency graph. The scoped auth override resolves a declaration compatibility issue while preserving Secret Manager's separate auth version. npm distribution does not expand the [supported profiles](docs/profiles.md).
 
 Choose one mode before constructing clients. Enable Node compatibility in your Wrangler configuration; the adapter selects conversion per request:
 

@@ -47,7 +47,7 @@
       "file": "README.md",
       "ordinal": 3,
       "language": "json",
-      "sha256": "7b85364f605711c4a37e362b4c29b92ce2baa53c8575e3bdb350900b213c834b",
+      "sha256": "0f0e865873542b77e1e13ed195d220f7fcd770e984877a878eba2c38e2eaee8e",
       "classification": "expected",
       "category": "configuration-fragment",
       "reason": "Illustrative configuration fragment requiring a surrounding consumer setup; this block is not executed."

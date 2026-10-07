@@ -115,7 +115,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -137,7 +137,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 12
@@ -155,7 +155,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -181,7 +181,7 @@
             },
             {
               "pointer": "/alias",
-              "equals": "npm:workers-grpc-adapter@0.0.0-prototype.1"
+              "equals": "npm:workers-grpc-adapter@0.0.1"
             },
             {
               "pointer": "/override",
@@ -214,7 +214,7 @@
             },
             {
               "pointer": "/alias",
-              "equals": "npm:workers-grpc-adapter@0.0.0-prototype.1"
+              "equals": "npm:workers-grpc-adapter@0.0.1"
             },
             {
               "pointer": "/override",
@@ -280,7 +280,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -302,7 +302,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 12
@@ -320,7 +320,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -574,7 +574,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -596,7 +596,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 12
@@ -614,7 +614,7 @@
                     {
                       "path": "node_modules/@grpc/grpc-js",
                       "implementation": "workers-grpc-adapter",
-                      "version": "0.0.0-prototype.1"
+                      "version": "0.0.1"
                     }
                   ],
                   "grpcImportCount": 6
@@ -644,7 +644,7 @@
             },
             {
               "pointer": "/consumers/0/implementationVersion",
-              "equals": "0.0.0-prototype.1"
+              "equals": "0.0.1"
             },
             {
               "pointer": "/esmCjsIdentity",
@@ -673,7 +673,7 @@
             },
             {
               "pointer": "/consumers/0/implementationVersion",
-              "equals": "0.0.0-prototype.1"
+              "equals": "0.0.1"
             },
             {
               "pointer": "/esmCjsIdentity",
@@ -979,8 +979,8 @@
           "array": "/duplicates",
           "where": {
             "versions": [
-              "0.0.0-prototype.1",
-              "0.0.0-prototype.1"
+              "0.0.1",
+              "0.0.1"
             ]
           },
           "anchor": "duplicates.push",
@@ -1011,7 +1011,7 @@
           "array": "/duplicates",
           "where": {
             "versions": [
-              "0.0.0-prototype.1",
+              "0.0.1",
               "0.0.0-packaging-duplicate.1"
             ]
           },

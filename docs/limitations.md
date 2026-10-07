@@ -1,6 +1,6 @@
 # Limitations and compatibility status
 
-This is an experimental prototype. Version `0.0.0-prototype.1` is prepared for public npm distribution under the `experimental` tag; registry publication and download verification are recorded separately. The supported dependency profiles remain exact and pinned. Package availability and passing local tests do not establish a complete grpc-js replacement or production readiness.
+This is an experimental adapter at version `0.0.1`. The supported dependency profiles remain exact and pinned. Package availability and passing local tests do not establish a complete grpc-js replacement or production readiness.
 
 ## Remaining release gates
 

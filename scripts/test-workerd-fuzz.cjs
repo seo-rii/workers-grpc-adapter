@@ -193,7 +193,7 @@ async function main() {
         .map(file => [file, digest(fs.readFileSync(path.join(root, file)))]));
     const installed = path.dirname(req.resolve('@grpc/grpc-js/package.json'));
     report.installedRuntimeHashes = Object.fromEntries(['dist/index.mjs', 'dist/adapter.mjs'].map(file => [file, digest(fs.readFileSync(path.join(installed, file)))]));
-    report.packageSha256 = digest(fs.readFileSync(path.join(root, 'artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz')));
+    report.packageSha256 = digest(fs.readFileSync(path.join(root, 'artifacts/workers-grpc-adapter-0.0.1.tgz')));
     const banner = `import * as b from 'node:buffer';import * as e from 'node:events';import * as s from 'node:stream';import * as z from 'node:zlib';const builtins={'node:buffer':b,'node:events':e,'node:stream':s,'node:zlib':z};const require=name=>{if(Object.hasOwn(builtins,name))return builtins[name];throw new Error('Unsupported runtime require');};`;
     const bundle = await req('esbuild').build({ entryPoints: [path.join(root, 'fixtures/worker/fuzz-client.mjs')], bundle: true,
         write: false, metafile: true, format: 'esm', platform: 'neutral', target: 'es2022', external: ['node:*'], banner: { js: banner } });

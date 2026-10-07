@@ -205,14 +205,14 @@ function publicRow(row, spec, mode) {
   else need(row.maxExecution.parserAssemblyBytes === 0 && row.maxExecution.runtimeChunkBytes === 0, `${label} no fabricated sampled owners`);
   const type = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
   let request = { accept: type, 'content-type': type, 'grpc-accept-encoding': 'identity,deflate,gzip',
-    'grpc-encoding': 'identity', 'x-grpc-web': '1', 'x-user-agent': 'workers-grpc-adapter/0.0.0-prototype.1' };
+    'grpc-encoding': 'identity', 'x-grpc-web': '1', 'x-user-agent': 'workers-grpc-adapter/0.0.1' };
   if (spec.id === 'WIRE-022') {
     request['x-repeat'] = 'first, second';
     if (spec.variant.endsWith('-and-binary')) request['trace-bin'] = 'AQI=, AwQ=';
   }
   if (spec.variant === 'request-budget-limit') {
     request['x-user-agent'] += ' wire-boundary'; request['trace-bin'] = 'AQI=';
-    request['x-pad'] = repeated(mode === 'cloudflare' ? 65067 : 65055, 97);
+    request['x-pad'] = repeated(mode === 'cloudflare' ? 65079 : 65067, 97);
   }
   if (!spec.fetchCount) request = null;
   same(row.requestHeaders, request, `${label} emitted request metadata`); same(row.budgets, spec.budgets, `${label} encoded control-inclusive budgets`);

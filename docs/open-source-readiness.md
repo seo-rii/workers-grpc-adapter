@@ -5,7 +5,7 @@ the source repository as an experimental project at revision `6d84489`.
 GitHub visibility is now public. At source publication, no npm package or stable
 release had been published. Source publication does not establish production
 certification. The owner subsequently authorized preparing
-`0.0.0-prototype.1` for public npm distribution under the `experimental` tag;
+`0.0.1` for public npm distribution using npm's default `latest` tag;
 registry publication and download verification are recorded separately.
 
 ## Assessment
@@ -21,7 +21,7 @@ does not establish a stable release, a security maintenance commitment, or
 production certification.
 
 The root package now permits npm publication and specifies the public npm
-registry and `experimental` tag. This replaces the source-only preparation's
+registry, without a custom distribution tag. This replaces the source-only preparation's
 `private: true` policy following the separate owner authorization. Fixture
 packages remain private, and local source checks continue using tarballs and
 exact SDK profiles. Experimental npm distribution carries the existing licenses

@@ -7,7 +7,7 @@
     "@google-cloud/datastore": "11.1.0",
     "@google-cloud/firestore": "9.2.0",
     "@google-cloud/secret-manager": "7.1.0",
-    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz"
+    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.1.tgz"
   },
   "overrides": {
     "@grpc/grpc-js": "$@grpc/grpc-js",

@@ -66,7 +66,7 @@ export function validateOptions(options: ChannelOptions, authority: string, conf
         }
         return value === -1 ? ceiling : Math.min(value as number, ceiling);
     }
-    const agents = ['workers-grpc-adapter/0.0.0-prototype.1'];
+    const agents = ['workers-grpc-adapter/0.0.1'];
     for (const key of ['grpc.primary_user_agent', 'grpc.secondary_user_agent']) {
         const value = options[key];
         if (value !== undefined) {

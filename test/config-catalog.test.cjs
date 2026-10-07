@@ -34,7 +34,7 @@ test('CFG-001 first unconfigured Channel uses cloudflare defaults and no implici
     assert.equal(snapshot.transportMaxReceiveBytes, 32 * 1024 * 1024);
     assert.deepEqual(client.getChannel().limits, {
       maxSend: 32 * 1024 * 1024, maxReceive: 4 * 1024 * 1024,
-      userAgent: 'workers-grpc-adapter/0.0.0-prototype.1', compression: 'identity',
+      userAgent: 'workers-grpc-adapter/0.0.1', compression: 'identity',
     });
     assert.equal(fetches, 0, 'Channel construction must not fetch');
     globalThis.fetch = async (url, init) => {

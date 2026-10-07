@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.0-prototype.1.tgz"
+    "@grpc/grpc-js": "file:../../artifacts/workers-grpc-adapter-0.0.1.tgz"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

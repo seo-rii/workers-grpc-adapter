@@ -187,14 +187,14 @@ function publicRows(mode) {
     const fetchCount = Number(variant !== 'request-budget-limit-plus-one'), stream = kind === 'stream';
     const type = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
     let requestHeaders = { accept: type, 'content-type': type, 'grpc-accept-encoding': 'identity,deflate,gzip',
-      'grpc-encoding': 'identity', 'x-grpc-web': '1', 'x-user-agent': 'workers-grpc-adapter/0.0.0-prototype.1' };
+      'grpc-encoding': 'identity', 'x-grpc-web': '1', 'x-user-agent': 'workers-grpc-adapter/0.0.1' };
     if (number === 22) {
       requestHeaders['x-repeat'] = 'first, second';
       if (variant.endsWith('-and-binary')) requestHeaders['trace-bin'] = 'AQI=, AwQ=';
     }
     if (variant === 'request-budget-limit') {
       requestHeaders['x-user-agent'] += ' wire-boundary'; requestHeaders['trace-bin'] = 'AQI=';
-      requestHeaders['x-pad'] = digest(mode === 'cloudflare' ? 65067 : 65055);
+      requestHeaders['x-pad'] = digest(mode === 'cloudflare' ? 65079 : 65067);
     }
     if (!fetchCount) requestHeaders = null;
     return { id: idOf(number), variant, kind, status: 'passed', catalogMatch, fetchCount, callbackCount: Number(!stream),

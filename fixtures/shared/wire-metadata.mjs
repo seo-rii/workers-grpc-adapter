@@ -142,7 +142,7 @@ export function* metadataCases(mode) {
   const requestType = mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto';
   const requestControls = [['content-type', requestType], ['accept', requestType], ['x-grpc-web', '1'],
     ['grpc-encoding', 'identity'], ['grpc-accept-encoding', 'identity,deflate,gzip'],
-    ['x-user-agent', 'workers-grpc-adapter/0.0.0-prototype.1 wire-boundary']];
+    ['x-user-agent', 'workers-grpc-adapter/0.0.1 wire-boundary']];
   const requestPadding = limit - budget([...requestControls, ['trace-bin', 'AQI='], ['x-pad', '']]);
   for (const excess of [0, 1]) {
     yield { id: 'WIRE-026', variant: `request-budget-${excess ? 'limit-plus-one' : 'limit'}`, kind: 'unary',
