@@ -10,9 +10,8 @@ The source tree has the foundations for an experimental open-source release:
 an explicit license, reproducible vendored sources, contribution and security
 guidance, pinned dependency profiles, a credential-free local verification
 workflow, and documented compatibility boundaries. Keep GitHub visibility
-private until the historical Actions artifacts below have expired or their
-removal is authorized, and the final verification and maintainer checks are
-complete. Future benchmark uploads now carry the complete license and notice
+private until the final verification and maintainer checks below are complete.
+Future benchmark uploads now carry the complete license and notice
 assets and a prominent notice identifying the modified grpc-js client code. Source publication
 does not establish a stable release, a security maintenance commitment, or
 production certification.
@@ -111,12 +110,14 @@ contains the complete license/notice assets, upstream provenance, and the exact
 artifact-to-bundle hash mapping. These private backups preserve the evidence;
 they do not repair the existing hosted copies.
 
-Before making the repository public, either authorize removal of exactly those
-21 backed-up artifacts or wait for all of them to expire and verify their
-absence. Their recorded expiration times run through 2026-10-21 19:12 KST.
-Run logs and unrelated artifacts need not be removed. The exact IDs, original
-backups, and supplement remain in the private preparation receipt. This
-preparation does not delete artifacts, change visibility, or publish npm packages.
+On 2026-10-07, the owner authorized removal of exactly these 21 backed-up
+artifacts. All 21 were deleted; each artifact ID returned 404, and the
+post-removal inventory confirmed their absence. Run logs, unrelated artifacts,
+and the final notice-bearing CI artifact were retained. The verified original
+ZIPs, supplemental license archive, exact IDs, and cleanup checks remain in the
+private preparation receipt. GitHub visibility remains private and npm
+publication remains disabled. Changing visibility or publishing a package
+requires separate authorization.
 
 ## Credentials, history, and cloud identifiers
 
@@ -191,9 +192,9 @@ authorized publication. This review did not change repository settings.
 
 Before changing visibility:
 
-1. Verify the notice-bearing benchmark archive in the final CI result and
-   confirm that the 21 historical affected artifacts have expired or been
-   removed with authorization.
+1. Verify the notice-bearing benchmark archive in the final CI result and the
+   private receipt confirming completed, authorized removal of all 21
+   historical affected artifacts.
 2. Verify the final migrated revision with vendoring, package, SDK, workerd,
    emulator, and CI checks. Retain historical vulnerable-version results as
    historical evidence rather than treating them as current results.
