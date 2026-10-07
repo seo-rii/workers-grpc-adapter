@@ -37,6 +37,8 @@ const bindings = {
   WGA_ENDPOINTS_JSON: JSON.stringify(endpoints),
 };
 const suites = ['datastore-crud', 'datastore-transaction', 'firestore-crud', 'firestore-transaction', 'secret-manager-read'];
+const transactionSuites = ['datastore-conflict', 'firestore-conflict',
+  'datastore-commit-response-lost', 'firestore-commit-response-lost'];
 const headers = { authorization: `Bearer ${key}` };
 const temporaryBase = path.join(root, '.wga-build');
 fs.mkdirSync(temporaryBase, { recursive: true });
@@ -80,6 +82,10 @@ async function main() {
     { env: { WGA_TEST_KEY: 'short' }, status: 404 },
     { env: { WGA_RUN_GOOGLE_TESTS: '0' }, status: 403 },
     { env: { WGA_ALLOW_TEST_WRITES: '0' }, status: 403 },
+    ...transactionSuites.flatMap(suite => [
+      { route: `/gcp/cloudflare/${suite}`, status: 403 },
+      { route: `/gcp/cloudflare/${suite}`, env: { WGA_TRANSACTIONS_ENABLED: '1', WGA_ALLOW_TEST_WRITES: '0' }, status: 403 },
+    ]),
     { route: '/gcp/cloudflare/constructor', status: 404 },
     { route: '/gcp/invalid/firestore-crud', status: 404 },
     { route: '/gcp/grpc-web/firestore-crud', status: 404 },
@@ -136,8 +142,8 @@ async function main() {
   }
   let suitesChecked = 0;
   for (const mode of ['cloudflare', 'grpc-web']) {
-    const worker = runtime({ WGA_PROBE_MODE: mode });
-    try { for (const suite of suites) {
+    const worker = runtime({ WGA_PROBE_MODE: mode, WGA_TRANSACTIONS_ENABLED: '1' });
+    try { for (const suite of [...suites, ...transactionSuites]) {
       const firstRequest = requests.length;
       const response = await worker.dispatchFetch(`https://probe.test/gcp/${mode}/${suite}`, { method: 'POST', headers });
       assert.equal(response.status, 500);

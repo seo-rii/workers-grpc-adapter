@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const { parseSoakSeconds, parseSoakBurst } = require('../scripts/gcp-soak.cjs');
 const { parseAuthRenewalArgs } = require('../scripts/gcp-auth-renewal.cjs');
 const { parseWorkerHttpArgs } = require('../scripts/gcp-worker-http.cjs');
+const transactions = require('../scripts/gcp-transactions.cjs');
 const source = fs.readFileSync(path.join(__dirname, '../scripts/gcp-cloud-probe.cjs'), 'utf8');
 const start = source.indexOf('async function main() {');
 const end = source.indexOf('\nasync function cleanup()', start);
@@ -20,7 +21,7 @@ async function rejectBeforeCredentials(args, expected) {
   const run = vm.runInNewContext(`(${main})`, {
     process: { argv: ['node', 'gcp-cloud-probe.cjs', ...args], env: {},
       version: process.version, versions: { undici: process.versions.undici } },
-    report, root: '/fixture', parseSoakSeconds, parseSoakBurst, parseAuthRenewalArgs, parseWorkerHttpArgs,
+    report, root: '/fixture', parseSoakSeconds, parseSoakBurst, parseAuthRenewalArgs, parseWorkerHttpArgs, transactions,
     catalog: { sourceHashes: () => ({}) },
     secret() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
     gcloud() { credentialReads++; throw new Error('CREDENTIAL_BOUNDARY'); },
@@ -93,6 +94,17 @@ test('credential renewal requires exact opt-in and catalog before credential dis
   }
   await rejectBeforeCredentials(['--deploy-temporary', '--catalog', '--verify-auth-renewal'],
     /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+});
+
+test('live transaction validation requires an exact opt-in and explicit project before credential access', async () => {
+  await rejectBeforeCredentials(['--verify-transactions'], /EXPLICIT_DEPLOY_TEMPORARY_REQUIRED/);
+  for (const args of [['--verify-transactions=true'], ['--verify-transactions=false'],
+    ['--verify-transactions', '--verify-transactions'], ['--verify-transaction']]) {
+    await rejectBeforeCredentials(['--deploy-temporary', ...args], /INVALID_TRANSACTION_OPTION/);
+  }
+  const report = await rejectBeforeCredentials(['--deploy-temporary', '--verify-transactions'],
+    /EXPLICIT_PROJECT_AND_VALID_REGION_REQUIRED/);
+  assert.equal(report.transactionsRequested, true);
 });
 
 test('live IAM failures retain only a fixed step, HTTP status and mutation state', async () => {

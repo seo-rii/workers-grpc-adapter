@@ -28,7 +28,7 @@ const suites = [
 // Importing that Worker entry would load the adapter into the native baseline.
 const configurations = {
     'google.datastore.v1.Datastore': ['Lookup', 'RunQuery', 'RunAggregationQuery', 'BeginTransaction', 'Commit', 'Rollback'],
-    'google.firestore.v1.Firestore': ['BatchGetDocuments', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
+    'google.firestore.v1.Firestore': ['GetDocument', 'BatchGetDocuments', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
     'google.cloud.secretmanager.v1.SecretManagerService': ['GetSecret', 'AccessSecretVersion', 'ListSecrets'],
 };
 const probeClientConfig = { interfaces: Object.fromEntries(Object.entries(configurations).map(([service, methods]) => [service, {
@@ -71,8 +71,10 @@ function validateSuiteBindings(env) {
     }
 }
 
-async function runNativeSuites(env, { catalog = false } = {}) {
+async function runNativeSuites(env, { catalog = false, transactions = false } = {}) {
     validateSuiteBindings(env);
+    requireBinding(!transactions || env.WGA_TRANSACTIONS_ENABLED === '1');
+    requireBinding(!(catalog && transactions));
     const startedAt = new Date().toISOString();
     const { OAuth2Client } = nativeRequire('google-auth-library');
     const authClient = new OAuth2Client();
@@ -82,10 +84,16 @@ async function runNativeSuites(env, { catalog = false } = {}) {
     try {
         // Identical source modules resolve the native fixture's pinned SDK graph
         // because these copies live beneath fixtures/native, not fixtures/google.
-        for (const file of ['assert.mjs', 'datastore.mjs', 'firestore.mjs', 'secret-manager.mjs', ...(catalog ? ['cloud-catalog.mjs'] : [])]) {
+        for (const file of ['assert.mjs', 'datastore.mjs', 'firestore.mjs', 'secret-manager.mjs',
+            ...(catalog ? ['cloud-catalog.mjs'] : []), ...(transactions ? ['cloud-transactions.mjs'] : [])]) {
             await fs.copyFile(path.join(ROOT, 'fixtures/google/shared', file), path.join(directory, file));
         }
-        const selected = catalog ? [
+        const selected = transactions ? [
+            ['datastore-conflict', 'cloud-transactions.mjs', 'cloudDatastoreConflict'],
+            ['firestore-conflict', 'cloud-transactions.mjs', 'cloudFirestoreConflict'],
+            ['datastore-commit-response-lost', 'cloud-transactions.mjs', 'cloudDatastoreCommitResponseLost'],
+            ['firestore-commit-response-lost', 'cloud-transactions.mjs', 'cloudFirestoreCommitResponseLost'],
+        ] : catalog ? [
             ['datastore-typed', 'cloud-catalog.mjs', 'cloudDatastoreTyped'],
             ['datastore-aggregation', 'cloud-catalog.mjs', 'cloudDatastoreAggregation'],
             ['datastore-rollback', 'cloud-catalog.mjs', 'cloudDatastoreRollback'],
@@ -116,7 +124,7 @@ async function runNativeSuites(env, { catalog = false } = {}) {
                 if (suite.startsWith('datastore')) options.databaseId = env.WGA_DATASTORE_DATABASE;
                 const run = (await import(pathToFileURL(path.join(directory, file)).href))[exported];
                 const checks = await run({ options, allowedProjectId: projectId, runId: randomUUID(),
-                    allowWrites: true, secretName: env.WGA_SECRET_NAME,
+                    allowWrites: true, nativeCommitResponseLoss: transactions, secretName: env.WGA_SECRET_NAME,
                     secretVersion: env.WGA_SECRET_VERSION, secretPayload: env.WGA_SECRET_PAYLOAD,
                     secretNames: JSON.parse(env.WGA_SECRET_NAMES || '[]'), resourceLabel: env.WGA_RESOURCE_LABEL });
                 requireBinding(Array.isArray(checks) && checks.every(check => typeof check === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(check)));
@@ -132,7 +140,8 @@ async function runNativeSuites(env, { catalog = false } = {}) {
         status: results.every(result => result.status === 'passed') ? 'passed' : 'failed',
         startedAt, completedAt: new Date().toISOString(),
         nativeGrpcVersion: nativeRequire('@grpc/grpc-js/package.json').version,
-        scope: catalog ? 'Live catalog shared fixtures using native grpc-js and short-lived OAuth credentials'
+        scope: transactions ? 'Live optimistic conflicts and controlled accepted-Commit response loss; native SDK completion boundary'
+            : catalog ? 'Live catalog shared fixtures using native grpc-js and short-lived OAuth credentials'
             : 'The five unchanged Google fixtures using native grpc-js and explicit short-lived OAuth credentials',
         suites: results,
     };

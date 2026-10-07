@@ -17,6 +17,7 @@ const { grantOwnedServiceAccountTokenCreator } = require('./gcp-owned-iam.cjs');
 const { awaitOwnedRestrictedToken } = require('./gcp-restricted-token.cjs');
 const { parseAuthRenewalArgs, validateCredentialRenewal } = require('./gcp-auth-renewal.cjs');
 const { fetchWorkerHttp, parseWorkerHttpArgs } = require('./gcp-worker-http.cjs');
+const transactions = require('./gcp-transactions.cjs');
 const secrets = new Set();
 let project, region, accessToken, identityToken, cfToken, cfAccount, directory, workerKey, before;
 let interrupted = false;
@@ -306,6 +307,8 @@ async function main() {
   const soakSeconds = parseSoakSeconds(process.argv.slice(2));
   const soakBurst = parseSoakBurst(process.argv.slice(2));
   report.authRenewalRequested = parseAuthRenewalArgs(process.argv.slice(2));
+  report.transactionsRequested = transactions.parseTransactionArgs(process.argv.slice(2));
+  if (report.transactionsRequested) report.transactionSourceHashes = catalog.sourceHashes(root);
   if (report.authRenewalRequested) report.authRenewalSourceHashes = catalog.sourceHashes(root);
   report.soakRequested = soakSeconds !== undefined;
   if (soakBurst) report.soakBurstRequested = true;
@@ -394,7 +397,14 @@ async function main() {
   }
   for (const [kind, type] of [['datastore', 'DATASTORE_MODE'], ['firestore', 'FIRESTORE_NATIVE']]) {
     const url = `https://firestore.googleapis.com/v1/projects/${project}/databases/${ids[kind]}`;
-    await createResource({ kind: 'database', name: ids[kind], url, databaseType: type }, `https://firestore.googleapis.com/v1/projects/${project}/databases?databaseId=${ids[kind]}`, { locationId: region, type, deleteProtectionState: 'DELETE_PROTECTION_DISABLED', pointInTimeRecoveryEnablement: 'POINT_IN_TIME_RECOVERY_DISABLED' }, 'https://firestore.googleapis.com/v1');
+    const database = await createResource({ kind: 'database', name: ids[kind], url, databaseType: type }, `https://firestore.googleapis.com/v1/projects/${project}/databases?databaseId=${ids[kind]}`, { locationId: region, type,
+      ...(report.transactionsRequested ? { concurrencyMode: 'OPTIMISTIC' } : {}),
+      deleteProtectionState: 'DELETE_PROTECTION_DISABLED', pointInTimeRecoveryEnablement: 'POINT_IN_TIME_RECOVERY_DISABLED' }, 'https://firestore.googleapis.com/v1');
+    if (report.transactionsRequested) {
+      report.databaseConcurrency = { ...report.databaseConcurrency, [kind]: database.concurrencyMode };
+      save();
+      if (database.concurrencyMode !== 'OPTIMISTIC') throw new Error('TRANSACTION_CONCURRENCY_MODE_UNVERIFIED');
+    }
   }
   const secretName = `projects/${number}/secrets/${ids.secret}`;
   await createResource({ kind: 'secret', name: ids.secret, url: `https://secretmanager.googleapis.com/v1/${secretName}` }, `https://secretmanager.googleapis.com/v1/projects/${project}/secrets?secretId=${ids.secret}`, { replication: { automatic: {} }, labels: { 'wga-probe': report.run } });
@@ -423,6 +433,7 @@ async function main() {
   accessToken = secret(gcloud(['auth', 'print-access-token'], { sensitive: true }));
   identityToken = secret(gcloud(['auth', 'print-identity-token'], { sensitive: true }));
   const env = { ...catalogBindings, WGA_GCP_PROJECT: project, WGA_GCP_PROJECT_NUMBER: number, WGA_DATASTORE_DATABASE: ids.datastore, WGA_FIRESTORE_DATABASE: ids.firestore,
+    ...(report.transactionsRequested ? { WGA_TRANSACTIONS_ENABLED: '1' } : {}),
     ...(report.authRenewalRequested ? { WGA_AUTH_RENEWAL_ENABLED: '1', WGA_OWNED_SERVICE_ACCOUNT_UID: ownedAccount.uid } : {}),
     WGA_SECRET_NAME: secretName, WGA_GOOGLE_ACCESS_TOKEN: accessToken, WGA_GATEWAY_ID_TOKEN: identityToken,
     WGA_RUN_GOOGLE_TESTS: '1', WGA_ALLOW_TEST_WRITES: '1', WGA_NATIVE_ORIGIN: native.uri, WGA_GATEWAY_ORIGIN: gateway.uri,
@@ -432,6 +443,10 @@ async function main() {
   report.echoControls = await controls.runEchoControls({ origin: native.uri, idToken: identityToken }); save();
   report.nativeGoogle = await controls.runNativeSuites(env); save();
   if (report.catalogRequested) { report.nativeCatalog = await controls.runNativeSuites(env, { catalog: true }); save(); }
+  if (report.transactionsRequested) {
+    report.nativeTransactions = await controls.runNativeSuites(env, { transactions: true }); save();
+    if (report.nativeTransactions.status !== 'passed') throw new Error('NATIVE_TRANSACTIONS_FAILED');
+  }
   if (!report.echoControls.nativeGrpcPassed || report.nativeGoogle.status !== 'passed') throw new Error('NATIVE_BASELINE_FAILED');
   phase('deploy-cloudflare-worker');
   for (const mode of ['grpc-web', 'cloudflare']) await deployWorker(build, env, mode);
@@ -478,6 +493,18 @@ async function main() {
       }
       save();
     }
+  }
+  if (report.transactionsRequested) {
+    phase('deployed-transaction-suites');
+    for (const mode of ['grpc-web', 'cloudflare']) for (const suite of transactions.suites) {
+      if (interrupted) throw new Error('INTERRUPTED');
+      const route = `/gcp/${mode}/${suite}`;
+      try { report.results.push(await workerRequest(route)); }
+      catch (error) { report.results.push({ route, code: error.name }); }
+      save();
+    }
+    report.transactions = transactions.summarizeTransactions(report); save();
+    if (report.transactions.status !== 'passed') throw new Error('DEPLOYED_TRANSACTIONS_FAILED');
   }
   if (compareAutoGrpcConvert) {
     phase('deployed-flagged-echo-probes');

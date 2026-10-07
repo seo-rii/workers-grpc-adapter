@@ -10,6 +10,8 @@ import { secretManagerRead } from './shared/secret-manager.mjs';
 import { runGcpAuthRenewal } from './gcp-auth-renewal.mjs';
 import { cloudDatastoreTyped, cloudDatastoreAggregation, cloudDatastoreRollback,
   cloudDatastoreErrors, cloudSecretManager, cloudPermissionDenied } from './shared/cloud-catalog.mjs';
+import { cloudDatastoreConflict, cloudFirestoreConflict, cloudDatastoreCommitResponseLost,
+  cloudFirestoreCommitResponseLost, createCommitResponseLoss } from './shared/cloud-transactions.mjs';
 
 // Load pinned SDK modules during Worker startup. Datastore loads its built-in
 // Struct schema at import time; lazy SDK import inside a request requires eval.
@@ -20,13 +22,17 @@ const runners = {
   'datastore-typed': cloudDatastoreTyped, 'datastore-aggregation': cloudDatastoreAggregation,
   'datastore-rollback': cloudDatastoreRollback, 'datastore-errors': cloudDatastoreErrors,
   'secret-manager-catalog': cloudSecretManager, 'permission-denied': cloudPermissionDenied,
+  'datastore-conflict': cloudDatastoreConflict, 'firestore-conflict': cloudFirestoreConflict,
+  'datastore-commit-response-lost': cloudDatastoreCommitResponseLost,
+  'firestore-commit-response-lost': cloudFirestoreCommitResponseLost,
 };
-const writes = name => suites[name]?.writes ?? name.startsWith('datastore-');
+const transactionSuite = name => /^(?:datastore|firestore)-(?:conflict|commit-response-lost)$/.test(name);
+const writes = name => suites[name]?.writes ?? (name.startsWith('datastore-') || transactionSuite(name));
 
 const authorities = ['datastore.googleapis.com:443', 'firestore.googleapis.com:443', 'secretmanager.googleapis.com:443'];
 const configurations = {
   'google.datastore.v1.Datastore': ['Lookup', 'RunQuery', 'RunAggregationQuery', 'BeginTransaction', 'Commit', 'Rollback'],
-  'google.firestore.v1.Firestore': ['BatchGetDocuments', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
+  'google.firestore.v1.Firestore': ['GetDocument', 'BatchGetDocuments', 'RunQuery', 'BeginTransaction', 'Commit', 'Rollback'],
   'google.cloud.secretmanager.v1.SecretManagerService': ['GetSecret', 'AccessSecretVersion', 'ListSecrets'],
 };
 // Disable GAPIC retries during diagnostics so a missing conversion cannot consume
@@ -53,7 +59,10 @@ function contextFor(env, suiteName, mode) {
     requireBinding(endpointConfig.endpoints && !Array.isArray(endpointConfig.endpoints));
     requireBinding(Object.keys(endpointConfig.endpoints).every(authority => authorities.includes(authority)));
   }
-  const transport = createWorkersGrpcTransport({ ...endpointConfig, defaultTimeoutMs: 10000,
+  const commitResponseLoss = suiteName.endsWith('-commit-response-lost')
+    ? createCommitResponseLoss({ service: suiteName.startsWith('datastore-') ? 'datastore' : 'firestore' }) : undefined;
+  const transport = createWorkersGrpcTransport({ ...endpointConfig,
+    ...(commitResponseLoss ? { fetcher: commitResponseLoss.fetcher } : {}), defaultTimeoutMs: 10000,
     transportMaxSendBytes: 1024 * 1024, transportMaxReceiveBytes: 1024 * 1024 });
   // An access token without refresh credentials prevents accidental ADC or
   // refresh-token discovery. Root orchestration mints and removes this secret.
@@ -82,7 +91,7 @@ function contextFor(env, suiteName, mode) {
       env.WGA_SECRET_NAME.startsWith(`projects/${projectId}/secrets/wga-probe-`) &&
       /^projects\/[^/]+\/secrets\/wga-probe-[a-z0-9-]{4,52}$/.test(env.WGA_SECRET_NAME));
   }
-  return { options, allowedProjectId: projectId, runId: crypto.randomUUID(),
+  return { options, allowedProjectId: projectId, runId: crypto.randomUUID(), commitResponseLoss,
     allowWrites: env.WGA_ALLOW_TEST_WRITES === '1', secretName: env.WGA_SECRET_NAME,
     secretVersion: env.WGA_SECRET_VERSION, secretPayload: env.WGA_SECRET_PAYLOAD,
     secretNames: JSON.parse(env.WGA_SECRET_NAMES || '[]'), resourceLabel: env.WGA_RESOURCE_LABEL };
@@ -92,6 +101,7 @@ export async function runGcpSuite(env, suite, mode) {
   requireBinding(Object.hasOwn(runners, suite) && (mode === 'cloudflare' || mode === 'grpc-web'));
   requireBinding(env.WGA_PROBE_MODE === mode);
   requireBinding(env.WGA_RUN_GOOGLE_TESTS === '1' && (!writes(suite) || env.WGA_ALLOW_TEST_WRITES === '1'));
+  requireBinding(!transactionSuite(suite) || env.WGA_TRANSACTIONS_ENABLED === '1');
   const context = contextFor(env, suite, mode);
   return runners[suite](context);
 }
@@ -129,7 +139,8 @@ export default {
       }
     }
     if (!Object.hasOwn(runners, route[2])) return new Response('Not found', { status: 404 });
-    if (env.WGA_RUN_GOOGLE_TESTS !== '1' || (writes(route[2]) && env.WGA_ALLOW_TEST_WRITES !== '1')) {
+    if (env.WGA_RUN_GOOGLE_TESTS !== '1' || (writes(route[2]) && env.WGA_ALLOW_TEST_WRITES !== '1') ||
+      (transactionSuite(route[2]) && env.WGA_TRANSACTIONS_ENABLED !== '1')) {
       return new Response('Disabled', { status: 403 });
     }
     const [, mode, suite] = route;
