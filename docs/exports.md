@@ -1,6 +1,7 @@
 # Export and declaration contract
 
-The root API is a scoped client replacement for pinned `@grpc/grpc-js` 1.14.0.
+The root API is a scoped client replacement derived from `@grpc/grpc-js` 1.14.0
+sources and compared against the pinned native 1.14.5 package.
 It does not provide every native export, and matching function declarations do
 not establish identical transport behavior. The reviewed
 [export policy](https://github.com/seo-rii/workers-grpc-adapter/blob/main/compatibility/export-policy.json)
@@ -11,8 +12,8 @@ records the reviewed declarations and consumer imports. Running the contract gat
 also generates `compatibility/exports-contract.json` locally as a verification
 artifact; that report is not checked into Git.
 
-There are 96 native root declaration names and 83 adapter names: 56 common,
-40 native-only, and 27 adapter-only, for 123 reviewed names. The adapter has
+There are 95 native root declaration names and 83 adapter names: 55 common,
+40 native-only, and 28 adapter-only, for 123 reviewed names. The adapter has
 27 runtime root exports and 56 type-only root exports. These are inventory
 counts, not a compatibility percentage or a count of implemented features.
 
@@ -129,6 +130,13 @@ native shapes within the channel, credentials, parent, and option restrictions
 above. Adapter-only type exports include health contracts, `ParentCall`, Google
 credential forms, individual interceptor callbacks, `PackageDefinition`,
 `ServiceClient`, `ClientMethodDefinition`, `AuthContext`, and `UnaryCallback`.
+
+The adapter also retains the root type export `InterceptingCallInterface` from
+its original client API. Native grpc-js 1.14.5 no longer exports that name from
+the root, while its public `NextCall` still returns the same downstream
+interface. Shared consumers use `ReturnType<NextCall>` to obtain that interface
+without relying on the removed native root export. The adapter export remains
+available, including its optional cleanup hook.
 
 All 40 native-only names are graded `U`; an unavailable native type is not
 relabeled `T` merely because it would disappear from emitted JavaScript.

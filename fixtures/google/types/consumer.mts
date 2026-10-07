@@ -1,11 +1,14 @@
 import { Datastore } from '@google-cloud/datastore';
 import { Firestore } from '@google-cloud/firestore';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { Client, Metadata, credentials, Interceptor, InterceptorProvider, InterceptorOptions, InterceptingCallInterface, InterceptingCall, ListenerBuilder, RequesterBuilder, ClientOptions, CallOptions, CallProperties, CallInvocationTransformer, ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream, requestCallback, propagate } from '@grpc/grpc-js';
+import { Client, Metadata, credentials, Interceptor, InterceptorProvider, InterceptorOptions, NextCall, InterceptingCall, ListenerBuilder, RequesterBuilder, ClientOptions, CallOptions, CallProperties, CallInvocationTransformer, ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream, requestCallback, propagate } from '@grpc/grpc-js';
 import { Client as DeepClient, ClientOptions as DeepClientOptions, CallOptions as DeepCallOptions, CallProperties as DeepCallProperties, CallInvocationTransformer as DeepCallInvocationTransformer } from '@grpc/grpc-js/build/src/client.js';
 
 // Declaration-only consumers: the compiler does not execute these SDK/RPC calls.
 // Runtime ordering, transport behavior and unsupported streaming use separate tests.
+// grpc-js 1.14.5 keeps this interface in NextCall's signature but no longer
+// exports its name from the root. Both implementations expose public NextCall.
+type InterceptingCallInterface = ReturnType<NextCall>;
 
 const datastore = new Datastore({ projectId: 'local-test-project' });
 const key = datastore.key(['Compatibility', 'typed']);
