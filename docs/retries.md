@@ -41,6 +41,11 @@ Each attempt uses the same logical deadline, fresh credential metadata and a new
 request body. Later attempts send `grpc-previous-rpc-attempts`. Cancellation and
 channel closure stop the backoff and prevent another credential exchange or Fetch.
 Retries remain on the selected mode, endpoint and Fetcher; there is no failover.
+Every attempt checks the complete encoded header set against the 65,536-byte
+metadata budget, including refreshed credentials and `grpc-previous-rpc-attempts`.
+An over-budget attempt ends with `RESOURCE_EXHAUSTED` / `WGA_METADATA_SIZE` before
+Fetch, even if the initial attempt fit the budget. Accounting sums each header's
+name and value byte lengths plus 32 bytes per field; it is not an HTTP wire size.
 
 SDK/GAX retries are separate calls and can multiply this policy's attempts. Keep
 one retry owner where possible. `grpc.enable_retries` and native service-config

@@ -9,7 +9,7 @@ const req = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel, CoreHeaders } = req('miniflare');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const sourceBuild = process.argv.includes('--source-build');
-const report = { status: 'running', sourceBuild, cloudflareTranslation: false, liveGoogle: false, results: [], requests: [] };
+const report = { status: 'running', sourceBuild, cloudflareTranslation: false, liveGoogle: false, results: [], requests: [], headerBudgets: [] };
 function frame(bytes, flag = 0) { const head = Buffer.alloc(5); head[0] = flag; head.writeUInt32BE(bytes.length, 1); return Buffer.concat([head, bytes]); }
 async function main() {
   const banner = `import * as b from 'node:buffer';import * as e from 'node:events';import * as s from 'node:stream';import * as z from 'node:zlib';const modules={'node:buffer':b,'node:events':e,'node:stream':s,'node:zlib':z};const require=n=>{if(Object.hasOwn(modules,n))return modules[n];throw new Error('Unexpected builtin');};`;
@@ -43,6 +43,8 @@ async function main() {
       const response = await runtime.dispatchFetch(`https://fixture.test/${invocation}`, { signal: AbortSignal.timeout(15000) });
       const result = await response.json(); assert.equal(response.status, 200); assert.equal(result.status, 'passed');
       assert.equal(result.results.length, 14); assert.deepEqual(errors, []);
+      assert.equal(result.headerBudgets.length, 18);
+      report.headerBudgets.push({ invocation, results: result.headerBudgets });
       for (const row of result.results) assert.equal(attempts.get(`${invocation}/${row.mode}/${row.kind}`), row.attempts);
       report.results.push(...result.results);
     }

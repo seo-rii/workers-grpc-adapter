@@ -4,7 +4,7 @@ import { CallCredentials, ChannelCredentials } from './credentials';
 import { status, propagate, authErrorCode, TransportError, httpStatusToGrpc } from './status';
 import { WorkersGrpcConfigSnapshot, normalizeAuthority, retryThrottleFor } from './config-internal';
 import { ValidatedOptions } from './options';
-import { StatusObject, decodeFrames, encodeMessageFrame, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders, type FrameParserDiagnostics } from './wire';
+import { StatusObject, decodeFrames, encodeMessageFrame, headerBudget, metadataFromHeaders, parseTrailers, requestHeaders, responseCompression, statusFromHeaders, type FrameParserDiagnostics } from './wire';
 import type { Interceptor, InterceptorProvider } from './client-interceptors';
 import { retryDelay, type RetryPolicySnapshot, type RetryThrottle } from './retry';
 import { RequestStreamBody } from './request-stream';
@@ -541,7 +541,12 @@ export class WorkersCall {
                 return { ...previous, retryable: false, throttled: true };
             }
             const headers = requestHeaders(this.metadata!, remaining, c.limits.userAgent, c.config.mode, c.limits.compression);
-            if (attempt > 1) headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
+            if (attempt > 1) {
+                headers.set('grpc-previous-rpc-attempts', String(attempt - 1));
+                // The retry field belongs to the same budget as refreshed auth
+                // and all other headers in the actual Fetch request.
+                headerBudget(headers.entries());
+            }
             const init: RequestInit & { cf: { grpcWeb: 'convert' | 'passthrough' }; duplex?: 'half' } = {
                 method: 'POST', headers, body, redirect: 'manual', signal: this.aborter.signal,
                 ...(this.requestBody ? { duplex: 'half' as const } : {}),
