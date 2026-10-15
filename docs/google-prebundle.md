@@ -58,6 +58,8 @@ main().catch(error => { console.error(error.code || 'BUILD_FAILED', error.messag
 updating an artifact, validate it, and then replace the previous generated
 directory. Failed builds leave an existing artifact untouched. The helper never
 changes installed SDK files and does not execute the wrapper while building.
+Generated files use mode `0644` and the package directory uses `0755`, independent
+of the caller's umask, so packing the same artifact produces the same archive.
 
 The result contains `index.cjs`, an explicit `index.mjs` facade, `index.d.ts`,
 matching `index.d.mts`/`index.d.cts` declarations, `package.json`, `manifest.json`,

@@ -303,7 +303,12 @@ async function buildGoogleWorkerPrebundle(options) {
     fs.mkdirSync(path.dirname(outdir), { recursive: true });
     const staging = fs.mkdtempSync(path.join(path.dirname(outdir), '.wga-prebundle-output-'));
     try {
-      for (const [name, bytes] of Object.entries(files)) fs.writeFileSync(path.join(staging, name), bytes);
+      for (const [name, bytes] of Object.entries(files)) {
+        const file = path.join(staging, name);
+        fs.writeFileSync(file, bytes);
+        fs.chmodSync(file, 0o644);
+      }
+      fs.chmodSync(staging, 0o755);
       if (fs.existsSync(outdir)) {
         if (!fs.statSync(outdir).isDirectory() || fs.readdirSync(outdir).length) fail('WGA_PREBUNDLE_OUTPUT', 'outdir changed during the build; existing files were preserved');
         fs.rmdirSync(outdir);

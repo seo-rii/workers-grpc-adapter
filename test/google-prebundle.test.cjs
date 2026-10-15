@@ -6,6 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { pathToFileURL } = require('node:url');
 const { createHash } = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const ts = require('typescript');
 const esbuild = require('../fixtures/worker/node_modules/esbuild');
 const root = path.resolve(__dirname, '..');
@@ -87,6 +88,23 @@ test('PREBUNDLE records reproducible artifact hashes and invalidates changed wra
   const types = JSON.parse(fs.readFileSync((await fixture.build({ outdir: 'types', exports: ['createClient', 'configure', 'tag'] })).manifestPath));
   assert.notEqual(c.artifactSha256, types.artifactSha256);
   assert.equal(c.artifacts['index.cjs'].sha256, types.artifacts['index.cjs'].sha256);
+});
+test('PREBUNDLE file modes and npm archives are reproducible across caller umasks', async t => {
+  const fixture = synthetic(t), built = [], initial = process.umask();
+  try {
+    for (const mask of [0o022, 0o077]) {
+      process.umask(mask);
+      const result = await fixture.build({ outdir: `mask-${mask}` }), packedDirectory = temporary(t);
+      const [packed] = JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', packedDirectory], { cwd: result.outdir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
+      built.push({ result, archive: fs.readFileSync(path.join(packedDirectory, packed.filename)), files: packed.files });
+    }
+  } finally { process.umask(initial); }
+  assert.equal(hash(built[0].archive), hash(built[1].archive), 'the actual npm archives must have identical bytes');
+  for (const { result, files } of built) {
+    assert.equal(fs.statSync(result.outdir).mode & 0o777, 0o755);
+    for (const file of fs.readdirSync(result.outdir)) assert.equal(fs.statSync(path.join(result.outdir, file)).mode & 0o777, 0o644, file);
+    for (const file of files) assert.equal(file.mode, 0o644, file.path);
+  }
 });
 test('PREBUNDLE rejects export mismatch and does not execute wrapper code during a build', async t => {
   const fixture = synthetic(t);
