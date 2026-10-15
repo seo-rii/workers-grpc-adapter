@@ -62,7 +62,8 @@ test('BUILD profile diagnostics collect precise package, schema, source and code
   assert.equal(report.transformationsChecked, false);
   assert.deepEqual(report.diagnostics.map(item => item.kind), ['package-name', 'package-version', 'package-hash', 'source-hash', 'schema-hash', 'codegen-hash']);
   const version = report.diagnostics.find(item => item.kind === 'package-version');
-  assert.deepEqual(version, { kind: 'package-version', path: 'node_modules/example/package.json', expected: '1.0.0', actual: '2.0.0' });
+  assert.deepEqual(version, { kind: 'package-version', path: 'node_modules/example/package.json', expected: '1.0.0', actual: '2.0.0',
+    logicalPath: path.join(project, 'node_modules/example/package.json'), physicalPath: path.join(project, 'node_modules/example/package.json') });
   assert.equal(report.diagnostics.find(item => item.kind === 'schema-hash').actual, hash('{"nested":{}}'));
   assert.equal(report.diagnostics.find(item => item.kind === 'codegen-hash').reason, 'missing');
   assert.throws(() => fixture.prepare(), error => error.code === 'WGA_UNSUPPORTED_DEPENDENCY' && error.diagnostic.kind === 'package-name');

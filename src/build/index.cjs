@@ -14,6 +14,47 @@ function readProfile(id) {
 const transformerVersion = 1;
 const transformationRules = new Set(['static-root-from-json', 'datastore-struct', 'native-fetch-default',
   'firestore-watch-end', 'preserve-static-setup', 'legacy-buffer-base64', 'datastore-legacy-key', 'bundle-dirname']);
+// Profile paths name dependency roles, not a package manager's disk layout.
+// Resolve from each declared importer without importing any inspected module.
+function resolveProfileInputs(projectRoot, profile) {
+  const packages = new Map(), visiting = new Set(), diagnostics = [];
+  const byPath = new Map(profile.packages.map(pkg => [pkg.path, pkg]));
+  const physical = file => fs.existsSync(file) ? fs.realpathSync(file) : file;
+  function resolvePackage(pkg) {
+    if (packages.has(pkg.path)) return packages.get(pkg.path);
+    if (visiting.has(pkg.path)) fail('WGA_UNSUPPORTED_DEPENDENCY', `Cyclic profile importer: ${pkg.path}`);
+    visiting.add(pkg.path);
+    const parent = pkg.resolveFrom && byPath.get(pkg.resolveFrom);
+    if (pkg.resolveFrom && !parent) fail('WGA_UNSUPPORTED_DEPENDENCY', `Unknown profile importer: ${pkg.resolveFrom}`);
+    const importer = parent ? path.join(resolvePackage(parent), 'package.json') : path.join(projectRoot, 'package.json');
+    const req = createRequire(importer);
+    let manifest;
+    // package.json may be hidden by exports. These are Node's importer-specific
+    // lookup directories, including pnpm's physical dependency links.
+    for (const directory of req.resolve.paths(pkg.name) || []) {
+      const candidate = path.join(directory, pkg.name, 'package.json');
+      if (fs.existsSync(candidate)) { manifest = candidate; break; }
+    }
+    const logicalPath = path.join(projectRoot, pkg.path);
+    if (!manifest) {
+      diagnostics.push({ kind: 'package-resolution', path: `${pkg.path}/package.json`, expected: `${pkg.name}@${pkg.version}`, actual: null,
+        logicalPath, physicalPath: null, importer, reason: 'missing' });
+    }
+    const directory = manifest ? path.dirname(physical(manifest)) : logicalPath;
+    packages.set(pkg.path, directory); visiting.delete(pkg.path);
+    return directory;
+  }
+  for (const pkg of profile.packages) resolvePackage(pkg);
+  const owners = [...profile.packages].sort((a, b) => b.path.length - a.path.length);
+  const resolve = relative => {
+    const owner = owners.find(pkg => relative === pkg.path || relative.startsWith(pkg.path + '/'));
+    return physical(owner ? path.join(packages.get(owner.path), relative.slice(owner.path.length)) : path.join(projectRoot, relative));
+  };
+  const context = relative => ({ logicalPath: path.join(projectRoot, relative), physicalPath: resolve(relative) });
+  return { packages, resolve, context, diagnostics,
+    paths: [...new Set([...profile.packages.map(pkg => `${pkg.path}/package.json`), ...profile.files.map(file => file.path),
+      ...profile.schemas.map(file => file.path), ...profile.codegenInputs.map(file => file.path)])].map(relative => ({ path: relative, ...context(relative) })) };
+}
 function profileDiagnostics(projectRoot, profile) {
   const diagnostics = [];
   const add = (kind, file, expected, actual, extra = {}) => diagnostics.push({ kind, path: file, expected, actual, ...extra });
@@ -34,22 +75,26 @@ function profileDiagnostics(projectRoot, profile) {
     }
   }
   if (diagnostics.some(item => item.kind === 'manifest')) return diagnostics;
+  let resolution;
+  try { resolution = resolveProfileInputs(projectRoot, profile); }
+  catch (error) { add('manifest', 'packages.resolveFrom', 'acyclic declared importer paths', error.message); return diagnostics; }
+  diagnostics.push(...resolution.diagnostics);
   for (const pkg of profile.packages) {
-    const relative = `${pkg.path}/package.json`, file = path.join(projectRoot, relative);
+    const relative = `${pkg.path}/package.json`, file = resolution.resolve(relative);
     if (!fs.existsSync(file)) { add('package', relative, `${pkg.name}@${pkg.version}`, null, { reason: 'missing' }); continue; }
     let installed;
     try { installed = JSON.parse(fs.readFileSync(file, 'utf8')); }
     catch { add('package', relative, 'valid package.json', null, { reason: 'invalid-json' }); continue; }
-    if (installed.name !== pkg.name) add('package-name', relative, pkg.name, installed.name ?? null);
-    if (installed.version !== pkg.version) add('package-version', relative, pkg.version, installed.version ?? null);
+    if (installed.name !== pkg.name) add('package-name', relative, pkg.name, installed.name ?? null, resolution.context(relative));
+    if (installed.version !== pkg.version) add('package-version', relative, pkg.version, installed.version ?? null, resolution.context(relative));
     const actual = hash(fs.readFileSync(file));
-    if (actual !== pkg.packageJsonSha256) add('package-hash', relative, pkg.packageJsonSha256 ?? null, actual);
+    if (actual !== pkg.packageJsonSha256) add('package-hash', relative, pkg.packageJsonSha256 ?? null, actual, resolution.context(relative));
   }
   for (const [kind, files] of [['source-hash', profile.files], ['schema-hash', profile.schemas], ['codegen-hash', profile.codegenInputs]]) {
     for (const file of files) {
-      const absolute = path.join(projectRoot, file.path);
+      const absolute = resolution.resolve(file.path);
       const actual = fs.existsSync(absolute) ? hash(fs.readFileSync(absolute)) : null;
-      if (actual !== file.sha256) add(kind, file.path, file.sha256, actual, actual === null ? { reason: 'missing' } : {});
+      if (actual !== file.sha256) add(kind, file.path, file.sha256, actual, { ...resolution.context(file.path), ...(actual === null ? { reason: 'missing' } : {}) });
     }
   }
   for (const file of profile.files) {
@@ -66,7 +111,8 @@ function profileDiagnostics(projectRoot, profile) {
   return diagnostics;
 }
 function throwDiagnostic(diagnostic) {
-  const code = diagnostic.kind.startsWith('package') || diagnostic.kind === 'transformer' ? 'WGA_UNSUPPORTED_DEPENDENCY' : 'WGA_SCHEMA_MISMATCH';
+  const code = diagnostic.kind === 'source-identity' ? 'WGA_SOURCE_IDENTITY'
+    : diagnostic.kind.startsWith('package') || diagnostic.kind === 'transformer' ? 'WGA_UNSUPPORTED_DEPENDENCY' : 'WGA_SCHEMA_MISMATCH';
   const error = new Error(`${code}: ${diagnostic.path}${diagnostic.rule ? ` (${diagnostic.rule})` : ''}: expected ${JSON.stringify(diagnostic.expected)}, actual ${JSON.stringify(diagnostic.actual)}`);
   error.code = code;
   error.diagnostic = diagnostic;
@@ -103,14 +149,17 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   outdir = path.resolve(outdir);
   const profile = readProfile(profileId);
   validateProfile(projectRoot, profile);
+  const resolution = resolveProfileInputs(projectRoot, profile);
   const ts = typescript;
   if (!ts || typeof ts.createSourceFile !== 'function') fail('WGA_UNSUPPORTED_DEPENDENCY', 'Pass the installed TypeScript compiler as typescript');
+  const compiler = /^(\d+)\.(\d+)\./.exec(ts.version || '');
+  if (!compiler || Number(compiler[1]) !== 5 || Number(compiler[2]) < 8) fail('WGA_UNSUPPORTED_DEPENDENCY', 'Build profiles require TypeScript >=5.8 <6; use an isolated build workspace for other app compilers');
   fs.mkdirSync(outdir, { recursive: true });
   const registryFile = path.join(outdir, 'static-protobuf.cjs');
   const unique = new Map();
   let legacyKeySchema, datastoreStructSchema;
   for (const schema of profile.schemas) {
-    const file = path.join(projectRoot, schema.path);
+    const file = resolution.resolve(schema.path);
     const req = createRequire(file);
     const P = req('protobufjs');
     const json = schema.common ? P.common[schema.common] : file.endsWith('.proto') ? P.loadSync(file).toJSON() : JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -132,14 +181,96 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const registrySource = `const {createHash}=require('node:crypto');\nconst registry={${[...unique].map(([key, item]) => `${JSON.stringify(registryPrefix + key)}:${item.source}`).join(',\n')}};\nexports.fromJSON=function(P,json,options){if(options && (options.keepCase!==false || options.longs!==String || options.enums!==String || options.defaults!==true || options.oneofs!==true || Object.keys(options).some(key=>!['keepCase','longs','enums','defaults','oneofs','includeDirs'].includes(key)))){const error=new Error('WGA_SCHEMA_MISMATCH: unsupported loader options');error.code='WGA_SCHEMA_MISMATCH';throw error;}const key=${JSON.stringify(registryPrefix)}+createHash('sha256').update(JSON.stringify(json)).digest('hex');const hydrate=registry[key];if(!hydrate){const error=new Error('WGA_SCHEMA_MISMATCH: unknown static protobuf schema');error.code='WGA_SCHEMA_MISMATCH';throw error;}const root=new P.Root();if(json.options)root.setOptions(json.options);root.addJSON(json.nested);return hydrate(P,root);};\n`;
   fs.writeFileSync(registryFile, registrySource);
   const transformed = new Map();
-  const files = new Map(profile.files.map(file => [path.join(projectRoot, file.path), file]));
+  const moduleReceipts = new Map();
+  const moduleIdentity = (namespace, input, suffix = '') => JSON.stringify([namespace || 'file', path.resolve(projectRoot, input), suffix]);
+  const files = new Map(profile.files.map(file => [resolution.resolve(file.path), file]));
+  const logicalFiles = new Map(profile.files.map(file => [path.join(projectRoot, file.path), file]));
+  const targets = profile.files.map(file => {
+    const owner = [...profile.packages].sort((a, b) => b.path.length - a.path.length).find(pkg => file.path.startsWith(pkg.path + '/'));
+    return { file, owner, suffix: owner ? file.path.slice(owner.path.length + 1) : undefined };
+  });
+  let coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
+  function targetFor(input) {
+    const absolute = path.resolve(projectRoot, input);
+    // Doctor and callers can also name an importer-resolved profile role that
+    // is not a literal nested path in an isolated installation.
+    if (logicalFiles.has(absolute)) return logicalFiles.get(absolute);
+    const canonical = fs.existsSync(absolute) ? fs.realpathSync(absolute) : absolute;
+    if (files.has(canonical)) return files.get(canonical);
+    // Catch another installation of a transform target. Matching names or even
+    // bytes cannot substitute for the inspected physical source identity.
+    const candidates = targets.filter(target => target.suffix && canonical.endsWith(path.sep + target.suffix.split('/').join(path.sep)));
+    for (const target of candidates) {
+      const directory = canonical.slice(0, -(target.suffix.length + 1));
+      const manifest = path.join(directory, 'package.json');
+      if (!fs.existsSync(manifest)) continue;
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      if (pkg.name === target.owner.name) throwDiagnostic({ kind: 'source-identity', path: target.file.path,
+        expected: resolution.resolve(target.file.path), actual: canonical, logicalPath: path.join(projectRoot, target.file.path), physicalPath: canonical, reason: 'unverified-installation' });
+    }
+  }
+  function moduleFor(input, workingDirectory) {
+    function match(namespace, name) {
+      const absolute = path.resolve(workingDirectory, name), file = targetFor(absolute);
+      if (file) return { file, identity: moduleIdentity(namespace, absolute) };
+      // A real path can contain literal ?, # or :, including directory names.
+      // Only interpret a suffix or namespace after trying that complete path.
+      if (fs.existsSync(absolute)) return { existing: true };
+      for (let index = name.length - 1; index >= 0; index--) {
+        if (name[index] !== '?' && name[index] !== '#') continue;
+        const source = path.resolve(workingDirectory, name.slice(0, index));
+        const target = targetFor(source);
+        if (target) return { file: target, identity: moduleIdentity(namespace, source, name.slice(index)) };
+      }
+    }
+    const direct = match('file', input);
+    if (direct) return direct.file ? direct : undefined;
+    // Non-file namespace inputs retain their absolute logical path in the
+    // metafile. Keep it distinct from aliases of the same canonical source.
+    for (let separator = input.indexOf(':'); separator >= 0; separator = input.indexOf(':', separator + 1)) {
+      if (!separator) continue;
+      // A namespace may itself contain ':'. Select a boundary only when its
+      // remaining path identifies a known source, rather than guessing a name.
+      const custom = match(input.slice(0, separator), input.slice(separator + 1));
+      if (custom?.file) return custom;
+    }
+  }
+  function verifyBuild(metafile, workingDirectory = projectRoot) {
+    coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
+    if (!metafile || !metafile.inputs) fail('WGA_TRANSFORM_COVERAGE', 'Build requires an esbuild metafile');
+    validateProfile(projectRoot, profile);
+    // Re-resolution catches dependency-link changes after preparation.
+    const current = resolveProfileInputs(projectRoot, profile);
+    for (const item of resolution.paths) {
+      if (current.resolve(item.path) !== item.physicalPath) fail('WGA_SOURCE_IDENTITY', `${item.path}: inspected installation changed`);
+    }
+    const required = new Set(), missing = new Set(), missingInputs = [];
+    for (const input of Object.keys(metafile.inputs)) {
+      const module = moduleFor(input, workingDirectory);
+      if (!module) continue;
+      required.add(module.file.path);
+      if (moduleReceipts.get(module.identity) !== module.file.path) {
+        missing.add(module.file.path); missingInputs.push(input);
+      }
+    }
+    coverage = { required: required.size, applied: required.size - missing.size, unused: profile.files.length - required.size, passed: missing.size === 0 };
+    if (missing.size) fail('WGA_TRANSFORM_COVERAGE', `Required module transformations were bypassed: ${missingInputs.join(', ')}`);
+    return { ...coverage };
+  }
   const plugin = {
     name: 'wga-google-static-v1',
     setup(build) {
+      if (build.initialOptions) build.initialOptions.metafile = true;
+      build.onStart?.(() => { transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); });
+      build.onEnd?.(result => {
+        if (result.errors.length) return;
+        verifyBuild(result.metafile, path.resolve(build.initialOptions?.absWorkingDir || process.cwd()));
+      });
       build.onLoad({ filter: /\.js$/ }, args => {
-        const file = files.get(args.path);
+        const file = targetFor(args.path);
         if (!file) return;
-        const original = fs.readFileSync(args.path, 'utf8');
+        const sourcePath = resolution.resolve(file.path);
+        const original = fs.readFileSync(sourcePath, 'utf8');
         const actualHash = hash(original);
         if (actualHash !== file.sha256) throwDiagnostic({ kind: 'source-hash', path: file.path, expected: file.sha256, actual: actualHash });
         const ast = ts.createSourceFile(args.path, original, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -248,14 +379,16 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rules: file.transforms.map(item => ({ rule: item.rule, matches: matches[item.rule] })), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, nativeFetchDefaults,
           ...(firestoreInitializer ? { firestoreWatchEndDeferrals } : {}),
           ...(modernDatastoreEntity ? { precompiledSetups, legacyBufferConversions } : {}), anchors: edits.map(({ start, end }) => ({ start, end })) });
-        return { contents, loader: 'js', resolveDir: path.dirname(args.path) };
+        moduleReceipts.set(moduleIdentity(args.namespace, args.path, args.suffix || ''), file.path);
+        return { contents, loader: 'js', resolveDir: path.dirname(sourcePath) };
       });
     },
   };
   return {
     plugin,
     registryFile,
-    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), cacheKey, inputSha256, transformer, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks, packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count, ...(item.common ? { common: item.common } : {}) })), registrySha256: hash(registrySource), transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
+    verifyBuild,
+    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), cacheKey, inputSha256, transformer, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks, resolvedPaths: resolution.paths, transformCoverage: { ...coverage }, packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count, ...(item.common ? { common: item.common } : {}) })), registrySha256: hash(registrySource), transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
   };
 }
 /** Read-only checks; optional AST validation uses a disposable generated registry. */
@@ -268,10 +401,14 @@ function inspectGoogleWorkerProfile({ projectRoot, profile: profileId = 'google-
     const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'wga-profile-doctor-'));
     try {
       const preset = createGoogleWorkerBuild({ projectRoot, outdir: directory, profile: profileId, typescript });
+      const inspectionResolution = resolveProfileInputs(projectRoot, profile);
       let load;
       preset.plugin.setup({ onLoad(_options, callback) { load = callback; } });
       for (const file of profile.files) {
-        try { load({ path: path.join(projectRoot, file.path) }); }
+        try {
+          const loaded = load({ path: inspectionResolution.resolve(file.path) });
+          if (!loaded) fail('WGA_TRANSFORM_COVERAGE', `${file.path}: transformation was not inspected`);
+        }
         catch (error) { diagnostics.push(error.diagnostic ?? { kind: 'transformation', path: file.path, expected: 'matching AST anchors', actual: error.message, reason: 'anchor-shape' }); }
       }
       transformationsChecked = true;
@@ -281,6 +418,7 @@ function inspectGoogleWorkerProfile({ projectRoot, profile: profileId = 'google-
     finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
   return { profile: profile.id, revision: profile.revision, passed: diagnostics.length === 0,
+    resolvedPaths: diagnostics.some(item => item.kind === 'manifest') ? [] : resolveProfileInputs(projectRoot, profile).paths,
     scope: typescript ? 'package, source, schema, codegen and transformation checks' : 'package, source, schema and codegen checks; AST checks not requested',
     transformationsChecked, diagnostics, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks,
     ...(buildIdentity ? { buildIdentity } : {}) };
