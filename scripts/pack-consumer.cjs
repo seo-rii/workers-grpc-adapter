@@ -81,8 +81,10 @@ async function runtime() {
     const graph = req('@grpc/grpc-js/build').inspectGoogleWorkerGraph({ projectRoot: base });
     assert.equal(graph.passed, true);
     assert.equal(graph.identity.status, 'single-installation');
+    const doctorBinary = path.join(base, 'node_modules/.bin/wga-doctor');
+    assert.ok(fs.statSync(doctorBinary).isFile(), 'the installed package manager binary must exist');
     const doctor = require('node:child_process').spawnSync(process.execPath,
-        [path.join(adapterRoot, manifest.bin['wga-doctor']), base, '--profile=' + profile], { cwd: base, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
+        [doctorBinary, base, '--profile=' + profile], { cwd: base, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
     assert.equal(doctor.status, 0, doctor.stderr);
     const installedDoctor = JSON.parse(doctor.stdout);
     assert.equal(installedDoctor.buildProfile.transformationsChecked, true);

@@ -180,7 +180,7 @@ async function main() {
             for (const [location, entry] of esbuildEntries) lock.packages[location] = structuredClone(entry);
             const replacement = lock.packages['node_modules/@grpc/grpc-js'];
             Object.assign(replacement, { name: manifest.name, version: manifest.version, integrity: integrity(fs.readFileSync(actualTarball)) });
-            for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta']) {
+            for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta', 'bin']) {
                 if (manifest[key]) replacement[key] = manifest[key]; else delete replacement[key];
             }
             for (const [location, entry] of Object.entries(lock.packages)) {
