@@ -56,7 +56,7 @@ The same checks run in gateway mode and direct Cloudflare mode:
 | Secret Manager access | Exact synthetic binary payload and CRC32C verified inside the consumer; only byte length and verification booleans leave the consumer |
 | Secret Manager list | Two real paginated `ListSecrets` RPCs with ordered results |
 | Secret Manager denied/unavailable | Codes `7` and `14`, Unicode details, repeated text/binary trailing metadata, one rejection, one RPC |
-| Request signal cancellation | A synthetic Request's AbortSignal reaches `cancellableCall()` after the RPC and local response reader have started; code `1`, local reader cancellation, and same-client recovery |
+| Request signal cancellation | A synthetic Request's AbortSignal reaches `cancellableCall()` after the RPC and local response reader have started; code `1`, successful local reader cancellation and lock release before peer release, and same-client recovery |
 
 Adapter retries are left disabled. Secret Manager calls pass `retry: null`, and
 Firestore's read GAX method configuration has no retry codes. High-level
@@ -66,9 +66,15 @@ permanent code `7`; this gate does not exercise or disable the SDK's separate
 cursor-resumption behavior for transient stream failures. Exact RPC, attempt,
 and Fetch counts prevent hidden retry amplification in these cases.
 Adapter resources and the workerd-owned response readers must be idle before
-clients close. A test fetcher wraps the real workerd Fetch response to observe
-reader cancellation and lock release. Miniflare's Node peer is released through
-a separate control request after local cancellation is observed; this does not
+clients close. A test fetcher wraps the real workerd Fetch response and records
+`cancellationsStarted` on entry to cancellation, and `cancellationsCompleted`
+only after the native `reader.cancel()` promise fulfills. Its `finally` releases
+the source reader lock even on rejection; that alone does not count as success.
+Before releasing the peer, the Worker requires both counters to equal one,
+successful lock release, and unlocked source and wrapped response bodies. The
+host verifies that snapshot and requires one start/completion only for the
+cancelled reader, with zero for every other reader. Miniflare's Node peer is
+released through a separate control request after these checks; this does not
 prove cancellation of a deployed backend generator. Its readers must be released
 before the next case and before workerd disposal. All withheld peer gates are
 released on failure, and workerd disposal has its own timeout. A following

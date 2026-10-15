@@ -447,8 +447,17 @@ async function profileRun(profile, adapterArchive, npmCache) {
           }
           check(peer.active.size === 0 && peer.responses.every(item => item.closed && !item.body.locked), 'MATRIX_RESPONSE_READER_RELEASED');
           check(state.controls === (scenario === 'secret-cancel' ? 2 : scenario === 'firestore-stream-error' ? 1 : 0), 'MATRIX_CONTROL_COUNT');
-          check(result.responseReaders.reduce((sum, reader) => sum + reader.cancellations, 0)
-            === (scenario === 'secret-cancel' ? 1 : 0), 'MATRIX_READER_CANCELLED');
+          check(result.responseReaders.every((reader, index) => reader.cancellationsStarted
+            === (scenario === 'secret-cancel' && index === 0 ? 1 : 0)), 'MATRIX_READER_CANCEL_STARTED');
+          check(result.responseReaders.every((reader, index) => reader.cancellationsCompleted
+            === (scenario === 'secret-cancel' && index === 0 ? 1 : 0)), 'MATRIX_READER_CANCEL_COMPLETED');
+          if (scenario === 'secret-cancel') {
+            const beforeRelease = result.result.readerBeforePeerRelease;
+            check(result.result.localReaderCancelledBeforePeerRelease === true
+              && beforeRelease.cancellationsStarted === 1 && beforeRelease.cancellationsCompleted === 1
+              && beforeRelease.released === true && beforeRelease.sourceLocked === false
+              && beforeRelease.bodyLocked === false, 'MATRIX_READER_CANCEL_BEFORE_PEER_RELEASE');
+          }
           if (scenario === 'secret-access') check(previousScenario === 'secret-cancel', 'MATRIX_NEXT_REQUEST_AFTER_CANCEL');
           report.cases.push({ profile: profile.id, mode, scenario, status: 'passed', rpcCount: state.trace.length,
             requests: state.trace, result: result.result, calls: result.calls, fetchIntents: result.fetchIntents,

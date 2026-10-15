@@ -121,10 +121,24 @@ async function secretCase({ scenario, options, caseId, request, readers }) {
       abort.abort();
       const terminal = await observed;
       check(terminal.error?.code === 1, 'MATRIX_REQUEST_CANCEL_STATUS');
-      for (let turn = 0; turn < 100 && readers[0].cancellations !== 1; turn++) await new Promise(resolve => setTimeout(resolve, 5));
-      check(readers[0].cancellations === 1, 'MATRIX_LOCAL_READER_CANCELLED');
+      for (let turn = 0; turn < 100; turn++) {
+        const reader = readers[0];
+        if (reader.cancellationsStarted === 1 && reader.cancellationsCompleted === 1
+          && reader.released && !reader.source.locked && !reader.body.locked) break;
+        await new Promise(resolve => setTimeout(resolve, 5));
+      }
+      const readerBeforePeerRelease = {
+        cancellationsStarted: readers[0].cancellationsStarted, cancellationsCompleted: readers[0].cancellationsCompleted,
+        released: readers[0].released, sourceLocked: readers[0].source.locked, bodyLocked: readers[0].body.locked,
+      };
+      check(readerBeforePeerRelease.cancellationsStarted === 1
+        && readerBeforePeerRelease.cancellationsCompleted === 1
+        && readerBeforePeerRelease.released && !readerBeforePeerRelease.sourceLocked
+        && !readerBeforePeerRelease.bodyLocked, 'MATRIX_LOCAL_READER_CANCELLED');
       // Miniflare's Node outboundService is a separate boundary. Release its
-      // withheld body only after the actual workerd reader received cancel;
+      // withheld body only after native reader.cancel() fulfilled and both
+      // local reader locks were released. A rejection can still release locks
+      // through finally, but must never count as successful cancellation;
       // this does not establish cancellation of a deployed backend generator.
       const released = await fetch('https://sdk-control.fixture.invalid/release', { method: 'POST',
         headers: { 'x-wga-case': caseId } });
@@ -132,7 +146,7 @@ async function secretCase({ scenario, options, caseId, request, readers }) {
       const recovered = await access(`${secretParent}/secrets/recovery/versions/latest`);
       result = { errorCode: 1, requestSignalAborted: scopedRequest.signal.aborted,
         sameClientRecovery: true, recoveryByteLength: recovered.byteLength,
-        localReaderCancelledBeforePeerRelease: true, backendCancellationProven: false };
+        localReaderCancelledBeforePeerRelease: true, readerBeforePeerRelease, backendCancellationProven: false };
     } else {
       let failure, resolutions = 0, rejections = 0;
       try { await client.accessSecretVersion({ name: secretVersion }, callOptions); resolutions++; }
@@ -163,7 +177,7 @@ export default {
         const response = await fetch(input, init);
         if (!response.body) return response;
         const source = response.body, reader = source.getReader();
-        const lifetime = { source, body: null, released: false, cancellations: 0 };
+        const lifetime = { source, body: null, released: false, cancellationsStarted: 0, cancellationsCompleted: 0 };
         readers.push(lifetime);
         let finished = false;
         const release = () => { reader.releaseLock(); lifetime.released = true; };
@@ -180,8 +194,11 @@ export default {
             }
           },
           async cancel(reason) {
-            lifetime.cancellations++; finished = true;
-            try { await reader.cancel(reason); } finally { release(); }
+            lifetime.cancellationsStarted++; finished = true;
+            try {
+              await reader.cancel(reason);
+              lifetime.cancellationsCompleted++;
+            } finally { release(); }
           },
         }, { highWaterMark: 0 });
         return new Response(lifetime.body, { status: response.status, headers: response.headers });
@@ -207,7 +224,8 @@ export default {
       await close(); close = undefined;
       return Response.json({ status: 'passed', result: operation.result, calls, fetchIntents,
         responseReaders: readers.map(reader => ({ released: reader.released, sourceLocked: reader.source.locked,
-          bodyLocked: reader.body.locked, cancellations: reader.cancellations })),
+          bodyLocked: reader.body.locked, cancellationsStarted: reader.cancellationsStarted,
+          cancellationsCompleted: reader.cancellationsCompleted })),
         resourcesBeforeClose: { activeCalls: usage.activeCalls, queuedCalls: usage.queuedCalls, bufferedBytes: usage.bufferedBytes },
         clientClosed: true });
     } catch (error) {
