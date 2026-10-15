@@ -208,6 +208,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
     }
   }
   function verifyBuild(metafile, workingDirectory = projectRoot) {
+    coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
     if (!metafile || !metafile.inputs) fail('WGA_TRANSFORM_COVERAGE', 'Build requires an esbuild metafile');
     validateProfile(projectRoot, profile);
     // Re-resolution catches dependency-link changes after preparation.
@@ -217,7 +218,10 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
     }
     const required = new Set();
     for (const input of Object.keys(metafile.inputs)) {
-      const file = targetFor(path.resolve(workingDirectory, input));
+      // esbuild prefixes non-file namespaces in its metafile. A plugin cannot
+      // hide a known physical input merely by loading it under another namespace.
+      const namespace = !path.isAbsolute(input) && /^[^/\\:]+:(.+)$/.exec(input);
+      const file = targetFor(path.resolve(workingDirectory, namespace ? namespace[1] : input));
       if (file) required.add(file.path);
     }
     const missing = [...required].filter(file => !transformed.has(file));

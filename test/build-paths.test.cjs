@@ -91,6 +91,15 @@ test('BUILD same-version duplicate source identity fails instead of trusting equ
   await assert.rejects(f.bundle(preset), /WGA_SOURCE_IDENTITY/);
 });
 
+test('BUILD a custom namespace cannot conceal an untransformed physical target', async t => {
+  const f = fixture(t), preset = f.prepare();
+  const bypass = { name: 'namespaced-bypass', setup(build) {
+    build.onResolve({ filter: /^codec$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'bypass' }));
+    build.onLoad({ filter: /.*/, namespace: 'bypass' }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' }));
+  } };
+  await assert.rejects(f.bundle(preset, [bypass]), /WGA_TRANSFORM_COVERAGE/);
+});
+
 test('BUILD a second SDK version and source/hash drift remain rejected with physical resolution', async t => {
   const f = fixture(t);
   const file = path.join(f.codec, 'package.json');
