@@ -1,0 +1,13 @@
+import { inspectGoogleWorkerGraph } from '@grpc/grpc-js/build';
+import type { GoogleWorkerGraphInspection, GoogleWorkerGraphOptions } from '@grpc/grpc-js/build';
+import * as ts from 'typescript';
+const options: GoogleWorkerGraphOptions = { projectRoot: '.', profile: 'google-static-v1', typescript: ts };
+const report: GoogleWorkerGraphInspection = inspectGoogleWorkerGraph(options);
+const canonical: string | undefined = report.identity.installations[0]?.path;
+const compiler: string | undefined = report.buildProfile?.buildIdentity?.transformer.typescriptVersion;
+const manager: string | null = report.environment.packageManager;
+// @ts-expect-error native baseline is the only supported alternate implementation
+inspectGoogleWorkerGraph({ projectRoot: '.', expectedImplementation: 'other' });
+// @ts-expect-error a project root is mandatory
+inspectGoogleWorkerGraph({ sdks: ['@google-cloud/datastore'] });
+void canonical; void compiler; void manager;

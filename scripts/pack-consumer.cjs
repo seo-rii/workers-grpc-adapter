@@ -78,6 +78,15 @@ async function runtime() {
     const profile = process.argv[3];
     const diagnostics = req('@grpc/grpc-js/build').inspectGoogleWorkerProfile({ projectRoot: base, profile });
     assert.equal(diagnostics.passed, true, JSON.stringify(diagnostics.diagnostics));
+    const graph = req('@grpc/grpc-js/build').inspectGoogleWorkerGraph({ projectRoot: base });
+    assert.equal(graph.passed, true);
+    assert.equal(graph.identity.status, 'single-installation');
+    const doctor = require('node:child_process').spawnSync(process.execPath,
+        [path.join(adapterRoot, manifest.bin['wga-doctor']), base, '--profile=' + profile], { cwd: base, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
+    assert.equal(doctor.status, 0, doctor.stderr);
+    const installedDoctor = JSON.parse(doctor.stdout);
+    assert.equal(installedDoctor.buildProfile.transformationsChecked, true);
+    assert.equal(installedDoctor.identity.status, 'single-installation');
     const inventory = req('./expected-inventory.json');
     const files = inventory.map(({ path: name, sha256 }) => {
         const file = path.join(adapterRoot, name);
@@ -90,6 +99,7 @@ async function runtime() {
     for (const name of manifest.files) assert.ok(files.some(file => file === name || file.startsWith(name + '/')), `Missing published asset: ${name}`);
     return { consumers, gax, exports, packedFiles: files.length, inventorySha256: hash(JSON.stringify(inventory)),
         noNativeGrpcPackage: true, noWorkspaceResolution: true, esmCjsIdentity: true, credentialComposition: true, unsupportedDeepImportsRejected: true,
+        installedDoctor: { passed: installedDoctor.passed, profile: installedDoctor.buildProfile.profile, transformationsChecked: true },
         buildProfile: { id: diagnostics.profile, revision: diagnostics.revision, passed: diagnostics.passed, transformationsChecked: diagnostics.transformationsChecked } };
 }
 function types() {

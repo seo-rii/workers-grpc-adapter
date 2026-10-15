@@ -66,3 +66,6 @@ export declare function inspectGoogleWorkerProfile(options: {
   profile?: GoogleWorkerProfile;
   typescript?: typeof import('typescript');
 }): GoogleWorkerProfileInspection;
+
+export { inspectGoogleWorkerGraph } from './doctor.cjs';
+export type { GoogleWorkerGraphOptions, GoogleWorkerGraphInspection, GoogleWorkerGraphPackage } from './doctor.cjs';

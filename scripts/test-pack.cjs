@@ -218,7 +218,7 @@ async function main() {
             for (const extension of ['mts', 'cts']) {
                 for (const [name, source] of [['sdk-consumer', 'fixtures/google/types/consumer.mts'], ['sdk-contract', 'test/types-catalog-sdk.cts'],
                     ['adapter-config', 'test/types-catalog-config.cts'], ['adapter-server', 'test/types-server-streaming.cts'],
-                    ['adapter-sdk-cancellation', 'test/types-sdk-cancellation.cts'],
+                    ['adapter-sdk-cancellation', 'test/types-sdk-cancellation.cts'], ['build-doctor', 'test/types-build-doctor.cts'],
                     ['sdk-cancellation-google', 'test/types-sdk-cancellation-google.cts']]) {
                     fs.copyFileSync(path.join(root, source), path.join(fresh, `${name}.${extension}`));
                 }

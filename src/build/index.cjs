@@ -424,3 +424,6 @@ function inspectGoogleWorkerProfile({ projectRoot, profile: profileId = 'google-
     ...(buildIdentity ? { buildIdentity } : {}) };
 }
 module.exports = { createGoogleWorkerBuild, inspectGoogleWorkerProfile };
+
+// Lazy forwarding keeps standalone profile inspection independent of graph tools.
+module.exports.inspectGoogleWorkerGraph = options => require('./doctor.cjs').inspectGoogleWorkerGraph(options);
