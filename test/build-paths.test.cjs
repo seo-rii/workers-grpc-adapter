@@ -100,6 +100,94 @@ test('BUILD a custom namespace cannot conceal an untransformed physical target',
   await assert.rejects(f.bundle(preset, [bypass]), /WGA_TRANSFORM_COVERAGE/);
 });
 
+test('BUILD one transformed namespace cannot cover an untransformed module of the same source', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare();
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec-bypass")];');
+  const bypass = { name: 'mixed-namespace', setup(build) {
+    build.onResolve({ filter: /^codec-bypass$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'bypass' }));
+    build.onLoad({ filter: /.*/, namespace: 'bypass' }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' }));
+  } };
+  await assert.rejects(f.bundle(preset, [bypass]), /WGA_TRANSFORM_COVERAGE/);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
+});
+
+test('BUILD one transformed path cannot cover an untransformed preserved symlink alias', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare();
+  f.link(f.codec, path.join(f.project, 'node_modules/codec-alias'));
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec-alias")];');
+  const bypass = { name: 'mixed-file-alias', setup(build) {
+    build.onLoad({ filter: /codec-alias[/\\]index\.js$/ }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' }));
+  } };
+  await assert.rejects(f.bundle(preset, [bypass], { preserveSymlinks: true }), /WGA_TRANSFORM_COVERAGE/);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
+});
+
+for (const suffix of ['?raw', '#fragment', '?raw#fragment']) {
+  test(`BUILD an untransformed namespaced input with suffix ${suffix} remains required`, async t => {
+    const f = fixture(t, 'hoisted'), preset = f.prepare();
+    f.write(path.join(f.project, 'entry.cjs'), 'module.exports = require("codec-suffixed");');
+    const bypass = { name: 'suffixed-namespace', setup(build) {
+      build.onResolve({ filter: /^codec-suffixed$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'bypass', suffix }));
+      build.onLoad({ filter: /.*/, namespace: 'bypass' }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' }));
+    } };
+    await assert.rejects(f.bundle(preset, [bypass]), /WGA_TRANSFORM_COVERAGE/);
+    assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
+  });
+}
+
+test('BUILD one transformed suffix cannot cover another suffix in the same namespace', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare();
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("codec-good"), require("codec-bad")];');
+  const mixed = { name: 'mixed-suffixes', setup(build) {
+    build.onResolve({ filter: /^codec-(good|bad)$/ }, args => ({ path: path.join(f.codec, 'index.js'), namespace: 'virtual',
+      suffix: args.path === 'codec-good' ? '?good' : '?bad' }));
+    build.onLoad({ filter: /.*/, namespace: 'virtual' }, args => args.suffix === '?bad'
+      ? { contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' } : undefined);
+  } };
+  await assert.rejects(f.bundle(preset, [mixed]), /WGA_TRANSFORM_COVERAGE/);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
+});
+
+test('BUILD namespace separators cannot hide a suffixed transform target', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare();
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = require("codec-nested-namespace");');
+  const bypass = { name: 'namespace-separators', setup(build) {
+    build.onResolve({ filter: /^codec-nested-namespace$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'loader:original', suffix: '?raw' }));
+    build.onLoad({ filter: /.*/, namespace: 'loader:original' }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' }));
+  } };
+  await assert.rejects(f.bundle(preset, [bypass]), /WGA_TRANSFORM_COVERAGE/);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
+});
+
+test('BUILD all transformed aliases and namespaces share one aggregate profile target', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare();
+  f.link(f.codec, path.join(f.project, 'node_modules/codec-alias'));
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec-alias"), require("codec-suffixed")];');
+  const namespaced = { name: 'transformed-namespace', setup(build) {
+    build.onResolve({ filter: /^codec-suffixed$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'verified', suffix: '?checked#v1' }));
+  } };
+  const result = await f.bundle(preset, [namespaced], { preserveSymlinks: true });
+  assert.ok(Object.keys(result.metafile.inputs).some(file => file.includes('codec-alias/index.js')));
+  assert.ok(Object.keys(result.metafile.inputs).some(file => file.startsWith('verified:') && file.endsWith('?checked#v1')));
+  assert.doesNotMatch(result.outputFiles[0].text, /Proto\.Root\.fromJSON\(/);
+  assert.equal(preset.manifest().transformed.length, 1);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
+});
+
+test('BUILD literal question marks and hashes in source directories are not module suffixes', async t => {
+  const f = fixture(t, 'hoisted');
+  const physical = path.join(f.project, 'store?literal#directory/codec');
+  fs.mkdirSync(path.dirname(physical), { recursive: true });
+  fs.renameSync(f.codec, physical); f.link(physical, f.codec);
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec-suffixed")];');
+  const namespaced = { name: 'literal-path-and-suffix', setup(build) {
+    build.onResolve({ filter: /^codec-suffixed$/ }, () => ({ path: path.join(physical, 'index.js'), namespace: 'verified', suffix: '?checked#v1' }));
+  } };
+  const preset = f.prepare(), result = await f.bundle(preset, [namespaced]);
+  assert.doesNotMatch(result.outputFiles[0].text, /Proto\.Root\.fromJSON\(/);
+  assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
+});
+
 test('BUILD a second SDK version and source/hash drift remain rejected with physical resolution', async t => {
   const f = fixture(t);
   const file = path.join(f.codec, 'package.json');
@@ -119,10 +207,32 @@ test('BUILD empty bundles report unused targets and rebuilds cannot reuse stale 
   try {
     await context.rebuild();
     assert.equal(preset.manifest().transformCoverage.applied, 1);
+    await context.rebuild();
+    assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
     f.write(path.join(f.project, 'entry.cjs'), 'module.exports = 1;');
     await context.rebuild();
     assert.deepEqual(preset.manifest().transformed, []);
     assert.deepEqual(preset.manifest().transformCoverage, { required: 0, applied: 0, unused: 1, passed: true });
+  } finally { await context.dispose(); }
+});
+
+test('BUILD unchanged rebuilds cannot reuse a previous module instance receipt after bypass', async t => {
+  const f = fixture(t, 'hoisted'), preset = f.prepare(); let bypass = false;
+  f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec-rebuild")];');
+  const namespaced = { name: 'rebuild-namespace', setup(build) {
+    build.onResolve({ filter: /^codec-rebuild$/ }, () => ({ path: path.join(f.codec, 'index.js'), namespace: 'rebuild' }));
+    build.onLoad({ filter: /.*/, namespace: 'rebuild' }, args => bypass
+      ? { contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' } : undefined);
+  } };
+  const context = await esbuild.context({ absWorkingDir: f.project, entryPoints: ['entry.cjs'], bundle: true,
+    platform: 'node', write: false, logLevel: 'silent', plugins: [namespaced, preset.plugin] });
+  try {
+    await context.rebuild();
+    await context.rebuild();
+    assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
+    bypass = true;
+    await assert.rejects(context.rebuild(), /WGA_TRANSFORM_COVERAGE/);
+    assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 0, unused: 0, passed: false });
   } finally { await context.dispose(); }
 });
 

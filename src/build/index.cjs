@@ -181,6 +181,8 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const registrySource = `const {createHash}=require('node:crypto');\nconst registry={${[...unique].map(([key, item]) => `${JSON.stringify(registryPrefix + key)}:${item.source}`).join(',\n')}};\nexports.fromJSON=function(P,json,options){if(options && (options.keepCase!==false || options.longs!==String || options.enums!==String || options.defaults!==true || options.oneofs!==true || Object.keys(options).some(key=>!['keepCase','longs','enums','defaults','oneofs','includeDirs'].includes(key)))){const error=new Error('WGA_SCHEMA_MISMATCH: unsupported loader options');error.code='WGA_SCHEMA_MISMATCH';throw error;}const key=${JSON.stringify(registryPrefix)}+createHash('sha256').update(JSON.stringify(json)).digest('hex');const hydrate=registry[key];if(!hydrate){const error=new Error('WGA_SCHEMA_MISMATCH: unknown static protobuf schema');error.code='WGA_SCHEMA_MISMATCH';throw error;}const root=new P.Root();if(json.options)root.setOptions(json.options);root.addJSON(json.nested);return hydrate(P,root);};\n`;
   fs.writeFileSync(registryFile, registrySource);
   const transformed = new Map();
+  const moduleReceipts = new Map();
+  const moduleIdentity = (namespace, input, suffix = '') => JSON.stringify([namespace || 'file', path.resolve(projectRoot, input), suffix]);
   const files = new Map(profile.files.map(file => [resolution.resolve(file.path), file]));
   const logicalFiles = new Map(profile.files.map(file => [path.join(projectRoot, file.path), file]));
   const targets = profile.files.map(file => {
@@ -207,6 +209,32 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         expected: resolution.resolve(target.file.path), actual: canonical, logicalPath: path.join(projectRoot, target.file.path), physicalPath: canonical, reason: 'unverified-installation' });
     }
   }
+  function moduleFor(input, workingDirectory) {
+    function match(namespace, name) {
+      const absolute = path.resolve(workingDirectory, name), file = targetFor(absolute);
+      if (file) return { file, identity: moduleIdentity(namespace, absolute) };
+      // A real path can contain literal ?, # or :, including directory names.
+      // Only interpret a suffix or namespace after trying that complete path.
+      if (fs.existsSync(absolute)) return { existing: true };
+      for (let index = name.length - 1; index >= 0; index--) {
+        if (name[index] !== '?' && name[index] !== '#') continue;
+        const source = path.resolve(workingDirectory, name.slice(0, index));
+        const target = targetFor(source);
+        if (target) return { file: target, identity: moduleIdentity(namespace, source, name.slice(index)) };
+      }
+    }
+    const direct = match('file', input);
+    if (direct) return direct.file ? direct : undefined;
+    // Non-file namespace inputs retain their absolute logical path in the
+    // metafile. Keep it distinct from aliases of the same canonical source.
+    for (let separator = input.indexOf(':'); separator >= 0; separator = input.indexOf(':', separator + 1)) {
+      if (!separator) continue;
+      // A namespace may itself contain ':'. Select a boundary only when its
+      // remaining path identifies a known source, rather than guessing a name.
+      const custom = match(input.slice(0, separator), input.slice(separator + 1));
+      if (custom?.file) return custom;
+    }
+  }
   function verifyBuild(metafile, workingDirectory = projectRoot) {
     coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
     if (!metafile || !metafile.inputs) fail('WGA_TRANSFORM_COVERAGE', 'Build requires an esbuild metafile');
@@ -216,24 +244,24 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
     for (const item of resolution.paths) {
       if (current.resolve(item.path) !== item.physicalPath) fail('WGA_SOURCE_IDENTITY', `${item.path}: inspected installation changed`);
     }
-    const required = new Set();
+    const required = new Set(), missing = new Set(), missingInputs = [];
     for (const input of Object.keys(metafile.inputs)) {
-      // esbuild prefixes non-file namespaces in its metafile. A plugin cannot
-      // hide a known physical input merely by loading it under another namespace.
-      const namespace = !path.isAbsolute(input) && /^[^/\\:]+:(.+)$/.exec(input);
-      const file = targetFor(path.resolve(workingDirectory, namespace ? namespace[1] : input));
-      if (file) required.add(file.path);
+      const module = moduleFor(input, workingDirectory);
+      if (!module) continue;
+      required.add(module.file.path);
+      if (moduleReceipts.get(module.identity) !== module.file.path) {
+        missing.add(module.file.path); missingInputs.push(input);
+      }
     }
-    const missing = [...required].filter(file => !transformed.has(file));
-    coverage = { required: required.size, applied: required.size - missing.length, unused: profile.files.length - required.size, passed: missing.length === 0 };
-    if (missing.length) fail('WGA_TRANSFORM_COVERAGE', `Required transformations were bypassed: ${missing.join(', ')}`);
+    coverage = { required: required.size, applied: required.size - missing.size, unused: profile.files.length - required.size, passed: missing.size === 0 };
+    if (missing.size) fail('WGA_TRANSFORM_COVERAGE', `Required module transformations were bypassed: ${missingInputs.join(', ')}`);
     return { ...coverage };
   }
   const plugin = {
     name: 'wga-google-static-v1',
     setup(build) {
       if (build.initialOptions) build.initialOptions.metafile = true;
-      build.onStart?.(() => { transformed.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); });
+      build.onStart?.(() => { transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); });
       build.onEnd?.(result => {
         if (result.errors.length) return;
         verifyBuild(result.metafile, path.resolve(build.initialOptions?.absWorkingDir || process.cwd()));
@@ -351,6 +379,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         transformed.set(file.path, { path: file.path, upstreamSha256: file.sha256, replacementSha256: hash(contents), rules: file.transforms.map(item => ({ rule: item.rule, matches: matches[item.rule] })), rootFromJSONCalls: rootCalls, wellKnownSchemaLoads: wellKnownLoads, nativeFetchDefaults,
           ...(firestoreInitializer ? { firestoreWatchEndDeferrals } : {}),
           ...(modernDatastoreEntity ? { precompiledSetups, legacyBufferConversions } : {}), anchors: edits.map(({ start, end }) => ({ start, end })) });
+        moduleReceipts.set(moduleIdentity(args.namespace, args.path, args.suffix || ''), file.path);
         return { contents, loader: 'js', resolveDir: path.dirname(sourcePath) };
       });
     },

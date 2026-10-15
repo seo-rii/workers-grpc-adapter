@@ -161,14 +161,22 @@ TypeScript 6 support or require disabling peer/profile checks.
 ## Inspecting transformations and proving bundle coverage
 
 The esbuild preset enables `metafile` and audits it at the end of every successful
-build. Each imported profile target must have passed the guarded transform in
-that build. Another plugin swallowing `onLoad`, an unverified physical source,
-or dependency-link drift fails the build. Rebuilds clear previous transformation
+build. Every imported module instance of a profile target must have passed the
+guarded transform in that build. Receipts distinguish its esbuild namespace,
+absolute logical path and query/fragment suffix. A transformed instance cannot
+cover an untransformed namespace, symlink alias or suffix of the same physical
+file. Real paths containing literal `?` or `#` take precedence over suffix parsing.
+Another plugin swallowing `onLoad`, an unverified physical source, or
+dependency-link drift fails the build. Rebuilds clear all target and module
 receipts. Package/source/schema/codegen checks run again before completion.
 
 `manifest().transformCoverage` reports `required`, `applied`, `unused` and
-`passed`. Required targets are those present in the actual metafile; an unused
-SDK or the unselected Gaxios ESM/CJS alternative need not be bundled. Inspection
+`passed`. These counts describe distinct profile targets, rather than module
+instances. `required` counts targets present in the actual metafile; `applied`
+counts required targets whose every module instance has a matching receipt.
+One bypassed instance makes that target unapplied and `passed: false`. `unused`
+counts profile targets absent from the metafile. An unused SDK or the unselected
+Gaxios ESM/CJS alternative need not be bundled. Inspection
 alone leaves coverage unproven. `transformationsChecked: true` means that doctor
 checked the declared AST shapes, not that a consuming bundle used them.
 
