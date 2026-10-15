@@ -3,6 +3,7 @@ import { createWorkersGrpcTransport } from '@grpc/grpc-js/adapter';
 import { cancellableCall, cancellableQueryStream } from '@grpc/grpc-js/sdk';
 import { Datastore, v1 } from '@google-cloud/datastore';
 import { OAuth2Client } from 'google-auth-library';
+import { Transform } from 'node:stream';
 
 export const cancellationScenarios = [
   'query-complete', 'query-destroy-first', 'query-break-first', 'query-destroy-inflight',
@@ -20,6 +21,46 @@ async function bounded(promise) {
   try { return await Promise.race([promise, new Promise((_, reject) => {
     timer = setTimeout(() => reject(new Error('SDK_CANCEL_TIMEOUT')), 10000);
   })]); } finally { clearTimeout(timer); }
+}
+
+// A controlled source tests installed-helper lifecycle behavior separately from
+// the real SDK scenarios below, using the same code in Node and workerd.
+export async function runSdkSourceTermination() {
+  const results = [];
+  for (const delayed of [false, true]) for (const failed of [false, true]) {
+    const cleanup = defer(), subscriptions = new Set();
+    const cleanupError = new Error('SDK_SOURCE_CLEANUP');
+    const signal = { aborted: false,
+      addEventListener(_event, listener) { subscriptions.add(listener); },
+      removeEventListener(_event, listener) { subscriptions.delete(listener); } };
+    let source, parent, originalDestroy, destroys = 0, cancellations = 0, closes = 0, ends = 0;
+    const errors = [];
+    const stream = cancellableQueryStream(options => {
+      parent = options.otherArgs.options.parent;
+      parent.on('cancelled', () => { cancellations++; });
+      source = new Transform({ objectMode: true, emitClose: false, read() {}, destroy(_error, callback) {
+        destroys++;
+        const finish = () => { callback(failed ? cleanupError : null); cleanup.resolve(); };
+        if (delayed) setTimeout(finish, 0); else finish();
+      } });
+      originalDestroy = source._destroy;
+      return source;
+    }, { signal });
+    stream.on('error', error => errors.push(error));
+    stream.on('close', () => { closes++; }); stream.on('end', () => { ends++; });
+    try {
+      stream.resume(); source.destroy();
+      await bounded(cleanup.promise); await new Promise(resolve => setTimeout(resolve, 0));
+      check(stream.destroyed, 'SOURCE_TERMINATION');
+      results.push({ delayed, failed, destroyed: stream.destroyed, parentCancelled: parent.cancelled,
+        cancellations, closes, ends, errors: errors.map(error => error.message),
+        cleanupErrorPreserved: failed ? errors[0] === cleanupError : null,
+        destroys, destroyRestored: source._destroy === originalDestroy,
+        sourceListeners: ['data', 'end', 'info', 'metadata', 'status', 'error', 'close']
+          .reduce((sum, event) => sum + source.listenerCount(event), 0), signalListeners: subscriptions.size });
+    } finally { stream.destroy(); source.destroy(); }
+  }
+  return results;
 }
 
 // Fixture-only channel/observer instrumentation, including calls cancelled

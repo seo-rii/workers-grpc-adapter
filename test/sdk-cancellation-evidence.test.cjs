@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { validateSdkCancellationReport: validate, sources, profiles, scenarios, installedForProfile, extensionCases,
-  expectedBusiness, expectedTrace } = require('../scripts/sdk-cancellation-evidence.cjs');
+  expectedBusiness, expectedTrace, expectedSourceTermination } = require('../scripts/sdk-cancellation-evidence.cjs');
 
 // Synthetic validator inputs only. The executable integration separately calls
 // both real installed SDK graphs with identical Node/workerd business code.
@@ -15,7 +15,7 @@ function fixture() {
     instrumentation: { channelDiagnostics: true, observer: true, localAbortSignal: true,
       projectIdResolutionBarrier: true, resourcesBeforeSdkClose: true },
     evidence: Object.fromEntries(sources.map(file => [file, hash])), installedInputs: {}, profiles: [],
-    results: [], unhandledRejections: [], unexpectedRequests: [], scenarioCount: 136, fetchCount: 664, signalAbortCount: 56 };
+    results: [], sourceTerminations: [], unhandledRejections: [], unexpectedRequests: [], scenarioCount: 136, fetchCount: 664, signalAbortCount: 56 };
   let nextId = 0;
   for (const profile of profiles) {
     const installed = installedForProfile(profile);
@@ -24,6 +24,8 @@ function fixture() {
       copiedHashes: { 'fixtures/google/shared/sdk-cancellation.mjs': hash, 'fixtures/worker/sdk-cancellation.mjs': hash },
       sharedSourceSha256: hash, bundleSha256: hash,
       build: { profile: profile.id, revision: profile.revision, profileSha256: hash, registrySha256: hash } });
+    for (const runtime of ['node', 'workerd']) report.sourceTerminations.push({ profile: profile.id, runtime,
+      status: 'passed', results: expectedSourceTermination() });
     for (const runtime of ['node', 'workerd']) for (const mode of ['grpc-web', 'cloudflare']) for (const scenario of scenarios) {
       const trace = expectedTrace(scenario).map(call => ({ ...call, logicalCallId: `wga-${++nextId}`,
         requestSha256: hash, responseSha256: hash, contentType: mode === 'cloudflare' ? 'application/grpc-web' : 'application/grpc-web+proto' }));
@@ -123,4 +125,18 @@ test('EVIDENCE SDK cancellation rejects stale resource and observer receipts', (
   ['canceled response delivered', report => { row(report).result.accounting.calls[0].responseMessages = 1; }],
   ['fetch total drift', report => { report.fetchCount++; }],
   ['abort total drift', report => { report.signalAbortCount--; }],
+]));
+test('EVIDENCE SDK cancellation rejects incomplete source-driven termination receipts', () => rejectMutations([
+  ['missing runtime', report => { report.sourceTerminations.pop(); }],
+  ['duplicate runtime', report => { report.sourceTerminations[1] = structuredClone(report.sourceTerminations[0]); }],
+  ['wrapper remains open', report => { report.sourceTerminations[0].results[0].destroyed = false; }],
+  ['asynchronous source omitted', report => { report.sourceTerminations[0].results.pop(); }],
+  ['cleanup failure omitted', report => { report.sourceTerminations[0].results.splice(1, 1); }],
+  ['cleanup error replaced', report => { report.sourceTerminations[0].results[1].errors = ['WGA_SDK_STREAM_CLOSED']; }],
+  ['cleanup error identity lost', report => { report.sourceTerminations[0].results[1].cleanupErrorPreserved = false; }],
+  ['cancellation omitted', report => { report.sourceTerminations[0].results[0].cancellations = 0; }],
+  ['double close', report => { report.sourceTerminations[0].results[0].closes = 2; }],
+  ['source listener retained', report => { report.sourceTerminations[0].results[0].sourceListeners = 1; }],
+  ['signal listener retained', report => { report.sourceTerminations[0].results[0].signalListeners = 1; }],
+  ['destroy method not restored', report => { report.sourceTerminations[0].results[0].destroyRestored = false; }],
 ]));

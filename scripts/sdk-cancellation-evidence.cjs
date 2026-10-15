@@ -81,6 +81,12 @@ function expectedTrace(scenario) {
   }
   query('Recovery', 3, true); return result;
 }
+function expectedSourceTermination() {
+  return [false, true].flatMap(delayed => [false, true].map(failed => ({ delayed, failed,
+    destroyed: true, parentCancelled: true, cancellations: 1, closes: 1, ends: 0,
+    errors: [failed ? 'SDK_SOURCE_CLEANUP' : 'WGA_SDK_STREAM_CLOSED'], cleanupErrorPreserved: failed ? true : null,
+    destroys: 1, destroyRestored: true, sourceListeners: 0, signalListeners: 0 })));
+}
 function validateSdkCancellationReport(report) {
   need(report?.status === 'passed' && report.runtimeDisposed === true, 'completed execution and disposal');
   need(report.liveCloud === false && report.cloudflareTranslation === false && report.officialEmulator === false
@@ -113,6 +119,12 @@ function validateSdkCancellationReport(report) {
     need(profile.sharedSourceSha256 === report.evidence['fixtures/google/shared/sdk-cancellation.mjs'], 'same Node/workerd business source');
   }
   need(Object.keys(report.installedInputs ?? {}).length === profiles.reduce((sum, profile) => sum + installedForProfile(profile).length, 0), 'exact installed source manifest');
+  need(Array.isArray(report.sourceTerminations) && report.sourceTerminations.length === 4, 'source termination runtime matrix');
+  for (const profile of profiles) for (const runtime of ['node', 'workerd']) {
+    const matches = report.sourceTerminations.filter(row => row.profile === profile.id && row.runtime === runtime);
+    need(matches.length === 1 && matches[0].status === 'passed'
+      && same(matches[0].results, expectedSourceTermination()), 'installed helper source termination and cleanup');
+  }
   need(same(report.unhandledRejections, []) && same(report.unexpectedRequests, []), 'no unhandled rejection or unknown peer traffic');
   need(Array.isArray(report.results) && report.results.length === 136 && report.scenarioCount === 136, 'complete scenario matrix');
   need(same(report.extensionCases, extensionCases(report.results)) && report.extensionCases[0].scenarioCount === 64
@@ -168,4 +180,5 @@ function validateSdkCancellationReport(report) {
     && totalAborts === 56, 'aggregate physical RPC and cancellation counts');
   return report;
 }
-module.exports = { validateSdkCancellationReport, sources, profiles, scenarios, installedForProfile, extensionCases, expectedBusiness, expectedTrace };
+module.exports = { validateSdkCancellationReport, sources, profiles, scenarios, installedForProfile, extensionCases,
+  expectedBusiness, expectedTrace, expectedSourceTermination };
