@@ -13,7 +13,7 @@ function readProfile(id) {
 // Increment when transformation semantics or generated codec conventions change.
 const transformerVersion = 1;
 const transformationRules = new Set(['static-root-from-json', 'datastore-struct', 'native-fetch-default',
-  'firestore-watch-end', 'preserve-static-setup', 'legacy-buffer-base64', 'datastore-legacy-key', 'bundle-dirname']);
+  'firestore-watch-end', 'preserve-static-setup', 'legacy-buffer-base64', 'datastore-legacy-key', 'bundle-dirname', 'gax-package-metadata']);
 // Profile paths name dependency roles, not a package manager's disk layout.
 // Resolve from each declared importer without importing any inspected module.
 function resolveProfileInputs(projectRoot, profile) {
@@ -106,6 +106,17 @@ function profileDiagnostics(projectRoot, profile) {
       if (!Number.isSafeInteger(transform.expectedMatches) || transform.expectedMatches < 1) add('transformation', file.path, 'positive integer', transform.expectedMatches, { rule: transform.rule, reason: 'invalid-count' });
       if (seen.has(transform.rule)) add('transformation', file.path, 'unique rule', transform.rule, { rule: transform.rule, reason: 'duplicate-rule' });
       seen.add(transform.rule);
+      if (transform.rule === 'gax-package-metadata') {
+        const owner = profile.packages.find(pkg => pkg.name === 'google-gax' && file.path === `${pkg.path}/build/src/observability/metadataResolver.js`);
+        const candidate = path.resolve(path.dirname(resolution.resolve(file.path)), '../../package.json');
+        const fallback = path.resolve(path.dirname(resolution.resolve(file.path)), '../../../package.json');
+        const verifiedRoot = owner && fs.existsSync(fallback) && fs.realpathSync(fallback) === resolution.resolve(`${owner.path}/package.json`);
+        // The reviewed source first tries build/package.json, then its package
+        // root. Redirecting that first lookup is valid only while it is absent.
+        // Check again at onStart/onEnd so a changed layout cannot reuse receipts.
+        if (!verifiedRoot || fs.existsSync(candidate)) add('transformation', file.path, 'verified GAX package root with no build/package.json',
+          verifiedRoot ? 'build/package.json exists' : 'unexpected package root', { rule: transform.rule, reason: 'package-layout', ...resolution.context(file.path) });
+      }
     }
   }
   return diagnostics;
@@ -283,6 +294,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         let firestoreWatchEndDeferrals = 0;
         let legacyKeyLoads = 0;
         let dirnameReplacements = 0;
+        let gaxPackageMetadataLoads = 0;
         const declared = new Set(file.transforms.map(item => item.rule));
         const ruleFailure = (rule, actual) => throwDiagnostic({ kind: 'transformation', path: file.path, rule,
           expected: 'supported AST shape', actual, reason: 'anchor-shape' });
@@ -290,6 +302,38 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         const modernDatastoreEntity = declared.has('preserve-static-setup') || declared.has('legacy-buffer-base64');
         const gaxiosTransport = declared.has('native-fetch-default');
         function visit(node) {
+          if (declared.has('gax-package-metadata') && ts.isTryStatement(node)) {
+            const first = node.tryBlock.statements[0];
+            if (first && ts.isExpressionStatement(first) && ts.isBinaryExpression(first.expression)
+              && first.expression.left.getText(ast) === 'fallbackVersion') {
+              function versionImport(block) {
+                if (block.statements.length !== 1 || !ts.isExpressionStatement(block.statements[0])) return;
+                const assignment = block.statements[0].expression;
+                if (!ts.isBinaryExpression(assignment) || assignment.operatorToken.kind !== ts.SyntaxKind.EqualsToken
+                  || !ts.isIdentifier(assignment.left) || assignment.left.text !== 'fallbackVersion'
+                  || !ts.isPropertyAccessExpression(assignment.right) || assignment.right.name.text !== 'version') return;
+                const call = assignment.right.expression;
+                if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression) || call.expression.text !== 'require'
+                  || call.arguments.length !== 1 || !ts.isStringLiteral(call.arguments[0])) return;
+                return call.arguments[0];
+              }
+              const primary = versionImport(node.tryBlock), fallback = node.catchClause?.block.statements[0];
+              const secondary = fallback && ts.isTryStatement(fallback) ? versionImport(fallback.tryBlock) : undefined;
+              const previous = ts.isSourceFile(node.parent) ? node.parent.statements[node.parent.statements.indexOf(node) - 1] : undefined;
+              const declaration = previous && ts.isVariableStatement(previous) ? previous.declarationList : undefined;
+              if (!declaration || (declaration.flags & ts.NodeFlags.BlockScoped) !== ts.NodeFlags.Let || declaration.declarations.length !== 1
+                || declaration.declarations[0].name.getText(ast) !== 'fallbackVersion' || declaration.declarations[0].initializer
+                || primary?.text !== '../../package.json' || secondary?.text !== '../../../package.json'
+                || node.finallyBlock || node.catchClause.variableDeclaration || node.catchClause.block.statements.length !== 1
+                || fallback.finallyBlock || !fallback.catchClause || fallback.catchClause.variableDeclaration
+                || fallback.catchClause.block.statements.length !== 0) ruleFailure('gax-package-metadata', 'unexpected GAX package version fallback');
+              // Both candidates now statically name the verified package root.
+              // Keep the SDK's assignment, catch behavior and header precedence.
+              edits.push({ start: primary.getStart(ast), end: primary.getEnd(), text: JSON.stringify('../../../package.json') });
+              gaxPackageMetadataLoads++;
+              return;
+            }
+          }
           if (firestoreInitializer && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
             && node.expression.name.text === 'pipe' && node.expression.expression.getText(ast) === 'backendStream') {
             let method = node.parent;
@@ -368,7 +412,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         const matches = { 'static-root-from-json': rootCalls, 'datastore-struct': wellKnownLoads,
           'native-fetch-default': nativeFetchDefaults, 'firestore-watch-end': firestoreWatchEndDeferrals,
           'preserve-static-setup': precompiledSetups, 'legacy-buffer-base64': legacyBufferConversions,
-          'datastore-legacy-key': legacyKeyLoads, 'bundle-dirname': dirnameReplacements };
+          'datastore-legacy-key': legacyKeyLoads, 'bundle-dirname': dirnameReplacements, 'gax-package-metadata': gaxPackageMetadataLoads };
         for (const transform of file.transforms) {
           if (matches[transform.rule] !== transform.expectedMatches) throwDiagnostic({ kind: 'transformation', path: file.path,
             rule: transform.rule, expected: transform.expectedMatches, actual: matches[transform.rule], reason: 'anchor-count' });
@@ -423,7 +467,8 @@ function inspectGoogleWorkerProfile({ projectRoot, profile: profileId = 'google-
     transformationsChecked, diagnostics, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks,
     ...(buildIdentity ? { buildIdentity } : {}) };
 }
-module.exports = { createGoogleWorkerBuild, inspectGoogleWorkerProfile };
+module.exports = { createGoogleWorkerBuild, inspectGoogleWorkerProfile,
+  buildGoogleWorkerPrebundle: options => require('./prebundle.cjs').buildGoogleWorkerPrebundle(options) };
 
 // Lazy forwarding keeps standalone profile inspection independent of graph tools.
 module.exports.inspectGoogleWorkerGraph = options => require('./doctor.cjs').inspectGoogleWorkerGraph(options);

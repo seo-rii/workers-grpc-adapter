@@ -29,7 +29,8 @@ support for arbitrary Miniflare versions.
 the new package, source, schema and code-generator hashes and the deduplicated
 physical protobuf installation. Source checks, transform counts and schema
 validation remain strict. The migration does not broaden supported dependency
-versions. `google-modern-v1` remains revision 2.
+versions. That migration left `google-modern-v1` at revision 2. Its later
+revision 3 metadata resolution correction is described in [Build profiles](profiles.md).
 
 The static profile also applies the existing scoped Datastore legacy-key
 guards to the pinned 10.1.1 source. Its import-time `setup()` calls preserve

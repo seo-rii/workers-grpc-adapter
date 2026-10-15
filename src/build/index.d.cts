@@ -1,4 +1,5 @@
 export type GoogleWorkerProfile = 'google-static-v1' | 'google-modern-v1';
+export { buildGoogleWorkerPrebundle, type GoogleWorkerPrebundleOptions, type GoogleWorkerPrebundleResult } from './prebundle.cjs';
 export interface GoogleWorkerBuildOptions {
   projectRoot: string;
   outdir: string;

@@ -779,7 +779,7 @@
       "entry": "./build",
       "scope": "Opt-in Node-only SDK build tooling and diagnostics for two exact pinned dependency and schema profiles.",
       "documentation": "docs/profiles.md",
-      "signatureNotes": "createGoogleWorkerBuild requires the installed TypeScript module and returns an esbuild plugin, registry path, and manifest; inspectGoogleWorkerProfile returns structured diagnostics. The literal GoogleWorkerProfile union is intentionally closed. This entry is excluded from Worker runtime imports and native root parity."
+      "signatureNotes": "createGoogleWorkerBuild requires the installed TypeScript module and returns an esbuild plugin, registry path, and manifest; inspectGoogleWorkerProfile returns structured diagnostics. The literal GoogleWorkerProfile union is intentionally closed. This entry is excluded from Worker runtime imports and native root parity. buildGoogleWorkerPrebundle accepts an explicit wrapper, export list and declarations and returns a checked server package with one owned runtime and artifact manifest."
     },
     {
       "entry": "./build/src/client",

@@ -215,6 +215,46 @@
       "reason": "Explicit temporary cloud deployment with an optional owned-account IAM grant; requires separate authorization and is not executed by local documentation tests."
     },
     {
+      "id": "docs/google-prebundle.md#fence-1",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "b982c462489ec4c59f28af140bde5e13fbd20c75d3bc78d970def3cbe2c9a6ab",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-2",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "b982c462489ec4c59f28af140bde5e13fbd20c75d3bc78d970def3cbe2c9a6ab",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-3",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 3,
+      "language": "js",
+      "sha256": "9921b30922f09e6ea1ff5e053fced2ae0bcfb6646e6426d5222e46f9dc9b8ac6",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-4",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 4,
+      "language": "js",
+      "sha256": "23da7e9703f3dbb804737926a90510c8e514d5475b8d479304f86890d619a21a",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
       "id": "docs/google-tests.md#fence-1",
       "file": "docs/google-tests.md",
       "ordinal": 1,
