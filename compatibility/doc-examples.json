@@ -285,6 +285,16 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/hono.md#fence-1",
+      "file": "docs/hono.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "464e7ccddb4ff6bb4b1f7d92e26230564f3a3d15d797359ed8431f4cf3d66e6b",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
       "id": "docs/interceptors.md#fence-1",
       "file": "docs/interceptors.md",
       "ordinal": 1,

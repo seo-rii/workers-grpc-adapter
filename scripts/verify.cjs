@@ -107,6 +107,7 @@ function main() {
     run('datastore-mutations', ['scripts/test-datastore-mutations.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
+    run('hono-prebundle', ['scripts/test-hono-prebundle.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
     run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
     run('gcp-probe-conversion', ['scripts/test-gcp-conversion-probe.cjs']);
