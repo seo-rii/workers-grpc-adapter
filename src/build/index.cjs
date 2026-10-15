@@ -423,4 +423,5 @@ function inspectGoogleWorkerProfile({ projectRoot, profile: profileId = 'google-
     transformationsChecked, diagnostics, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks,
     ...(buildIdentity ? { buildIdentity } : {}) };
 }
-module.exports = { createGoogleWorkerBuild, inspectGoogleWorkerProfile };
+module.exports = { createGoogleWorkerBuild, inspectGoogleWorkerProfile,
+  buildGoogleWorkerPrebundle: options => require('./prebundle.cjs').buildGoogleWorkerPrebundle(options) };
