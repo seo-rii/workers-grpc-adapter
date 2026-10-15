@@ -66,8 +66,10 @@ share the same owned runtime. The generated package has no SDK runtime imports;
 its declaration re-exports still require the corresponding exact SDK/adapter
 types at type-check time. Keep those dependencies installed as build or
 development dependencies. The helper checks explicit declaration value exports
-against the wrapper and rejects relative import/reference paths, because
-additional declaration resources are not copied. Use `export type` for
+against the wrapper and rejects relative import/reference paths and module
+augmentation targets, because additional declaration resources are not copied.
+This includes relative `/// <reference types="..." />` directives; references to
+external type packages remain available. Use `export type` for
 additional type-only exports. The application's ordinary TypeScript check must
 verify signatures and external type dependencies.
 

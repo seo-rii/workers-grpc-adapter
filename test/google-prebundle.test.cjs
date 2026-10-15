@@ -227,6 +227,27 @@ test('PREBUNDLE requires portable declarations and an explicit matching value co
     assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
   }
 });
+test('PREBUNDLE rejects valid declaration companions that are not copied', async t => {
+  for (const kind of ['types reference', 'module augmentation']) await t.test(kind, async t => {
+    const fixture = synthetic(t), declaration = path.join(fixture.projectRoot, 'wrapper.d.ts');
+    const original = fs.readFileSync(declaration, 'utf8'), local = path.join(fixture.projectRoot, 'local-types.d.ts');
+    const source = kind === 'types reference'
+      ? `/// <reference types="./local-types" />\n${original.replace('{ timeout: number }', 'LocalClient')}`
+      : `${original}\ndeclare module './local-types' { interface LocalClient { extra?: boolean } }`;
+    write(local, kind === 'types reference' ? 'interface LocalClient { timeout: number }\n' : 'export interface LocalClient { timeout: number }\n');
+    write(declaration, source);
+    const program = ts.createProgram([declaration, local], { strict: true, noEmit: true, skipLibCheck: false, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext, types: [] });
+    assert.deepEqual(ts.getPreEmitDiagnostics(program).map(item => ts.flattenDiagnosticMessageText(item.messageText, '\n')), [], 'the original declaration and its local companion must be valid');
+    await assert.rejects(fixture.build(), { code: 'WGA_PREBUNDLE_DECLARATIONS' });
+    assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
+  });
+});
+test('PREBUNDLE permits external package type-reference directives', async t => {
+  const fixture = synthetic(t), declaration = path.join(fixture.projectRoot, 'wrapper.d.ts');
+  write(declaration, `/// <reference types="external-types" />\n${fs.readFileSync(declaration, 'utf8')}`);
+  const result = await fixture.build();
+  assert.match(fs.readFileSync(result.typesPath, 'utf8'), /reference types="external-types"/);
+});
 test('PREBUNDLE validates options and preserves existing artifacts on failure', async t => {
   const fixture = synthetic(t), result = await fixture.build();
   const before = fs.readFileSync(result.bundlePath);
