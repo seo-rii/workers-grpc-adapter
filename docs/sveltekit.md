@@ -53,7 +53,7 @@ boundary](https://svelte.dev/docs/kit/server-only-modules).
 
 Vite's `ssr.external: ['@wga-fixture/google-workers']` makes development SSR load
 the linked package through Node. Importing its CommonJS closure as source code
-under `src/lib` fails in Vite's ESM module runner. Production SSR keeps the same
+under `./src/lib` fails in Vite's ESM module runner. Production SSR keeps the same
 package reference until Wrangler bundles it into the Worker. Explicit
 `workerd`/`worker` package export conditions precede the browser blocker.
 Do not import the original SDK from routes or add the esbuild preset to Vite's
