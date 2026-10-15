@@ -129,15 +129,18 @@ function checkArtifact(ts, source, expected) {
     fail('WGA_PREBUNDLE_EXPORTS', 'The wrapper must expose exactly the declared named exports', { expected: [...expected].sort(), actual: actual || [] });
   }
 }
+function bindSources(ts, sources) {
+  const options = { allowJs: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
+  host.getSourceFile = file => sources.get(file);
+  return ts.createProgram([...sources.keys()], options, host).getTypeChecker();
+}
 function checkModuleLoaders(ts, projectRoot, metafile) {
   // Inspect original module scopes: esbuild renames the CommonJS `module`
   // parameter, so a spelling-only check of the minified artifact misses it.
   const files = [...new Set(Object.keys(metafile.inputs).map(file => fs.realpathSync(path.resolve(projectRoot, file))))]
     .filter(file => /\.[cm]?[jt]sx?$/.test(file));
   const sources = new Map(files.map(file => [file, ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)]));
-  const options = { allowJs: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
-  host.getSourceFile = file => sources.get(file);
-  const program = ts.createProgram(files, options, host), checker = program.getTypeChecker(), values = new Map();
+  const checker = bindSources(ts, sources), values = new Map();
   const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) ? unwrap(node.expression) : node;
   const key = node => ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
@@ -201,6 +204,90 @@ function checkModuleLoaders(ts, projectRoot, metafile) {
     ts.forEachChild(node, visit);
   }
   for (const source of sources.values()) visit(source);
+}
+function checkExportStability(ts, entryPoint, source, expected) {
+  const reject = name => fail('WGA_PREBUNDLE_EXPORT_STABILITY', 'Public export bindings must be stable; expose a factory or a stable object for changing state', { export: name });
+  const wrapper = ts.createSourceFile(entryPoint, fs.readFileSync(entryPoint, 'utf8'), ts.ScriptTarget.Latest, true), mutable = new Set();
+  function names(node, into) {
+    if (ts.isIdentifier(node)) into.add(node.text);
+    else for (const element of node.elements) if (ts.isBindingElement(element)) names(element.name, into);
+  }
+  for (const statement of wrapper.statements) {
+    if (ts.isVariableStatement(statement) && !(statement.declarationList.flags & ts.NodeFlags.Const)) {
+      const declared = new Set();
+      for (const declaration of statement.declarationList.declarations) names(declaration.name, declared);
+      for (const name of declared) mutable.add(name);
+      if (statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)) reject([...declared].join(', '));
+    }
+  }
+  for (const statement of wrapper.statements) {
+    if (ts.isExportDeclaration(statement) && !statement.moduleSpecifier && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+      for (const item of statement.exportClause.elements) if (!item.isTypeOnly && mutable.has((item.propertyName || item.name).text)) reject(item.name.text);
+    }
+  }
+  // Follow esbuild's actual export getters instead of guessing where a wrapper
+  // re-export originated. The facade may snapshot stable bindings only.
+  const file = `${entryPoint}.wga-artifact.cjs`, ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const checker = bindSources(ts, new Map([[file, ast]])), namespaces = new Set(), bindings = [];
+  const unwrap = node => ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
+  function target(expression) {
+    const node = unwrap(expression);
+    if (ts.isIdentifier(node)) {
+      const symbol = checker.getSymbolAtLocation(node);
+      return symbol && { symbol, keys: [] };
+    }
+    if (ts.isPropertyAccessExpression(node)) {
+      const base = target(node.expression);
+      return base && { symbol: base.symbol, keys: [...base.keys, node.name.text] };
+    }
+    if (ts.isElementAccessExpression(node) && node.argumentExpression && (ts.isStringLiteral(node.argumentExpression) || ts.isNumericLiteral(node.argumentExpression))) {
+      const base = target(node.expression);
+      return base && { symbol: base.symbol, keys: [...base.keys, node.argumentExpression.text] };
+    }
+  }
+  function namespace(node) {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && node.left.getText(ast) === 'module.exports'
+      && ts.isCallExpression(node.right) && node.right.arguments.length === 1 && ts.isIdentifier(node.right.arguments[0])) {
+      namespaces.add(checker.getSymbolAtLocation(node.right.arguments[0]));
+    }
+    ts.forEachChild(node, namespace);
+  }
+  namespace(ast);
+  function getters(node) {
+    if (ts.isCallExpression(node) && node.arguments.length === 2 && ts.isIdentifier(node.arguments[0])
+      && namespaces.has(checker.getSymbolAtLocation(node.arguments[0])) && ts.isObjectLiteralExpression(node.arguments[1])) {
+      for (const property of node.arguments[1].properties) {
+        if (!ts.isPropertyAssignment(property) || !expected.includes(property.name.text) || !ts.isArrowFunction(property.initializer)) continue;
+        const binding = !ts.isBlock(property.initializer.body) && target(property.initializer.body);
+        if (!binding) reject(property.name.text);
+        bindings.push({ ...binding, name: property.name.text });
+      }
+    }
+    ts.forEachChild(node, getters);
+  }
+  getters(ast);
+  if (JSON.stringify(bindings.map(binding => binding.name).sort()) !== JSON.stringify([...expected].sort())) reject('unrecognized export getter');
+  function write(expression) {
+    const node = unwrap(expression), assigned = target(node);
+    if (assigned) {
+      for (const binding of bindings) if (binding.symbol === assigned.symbol && JSON.stringify(binding.keys) === JSON.stringify(assigned.keys)) reject(binding.name);
+    } else if (ts.isArrayLiteralExpression(node)) {
+      for (const element of node.elements) if (!ts.isOmittedExpression(element)) write(ts.isSpreadElement(element) ? element.expression : element);
+    } else if (ts.isObjectLiteralExpression(node)) {
+      for (const property of node.properties) {
+        if (ts.isPropertyAssignment(property)) write(property.initializer);
+        else if (ts.isShorthandPropertyAssignment(property)) write(property.name);
+        else if (ts.isSpreadAssignment(property)) write(property.expression);
+      }
+    } else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) write(node.left);
+  }
+  function mutations(node) {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) write(node.left);
+    if ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(node.operator)) write(node.operand);
+    if ((ts.isForOfStatement(node) || ts.isForInStatement(node)) && !ts.isVariableDeclarationList(node.initializer)) write(node.initializer);
+    ts.forEachChild(node, mutations);
+  }
+  mutations(ast);
 }
 function checkDeclarations(ts, source, expected) {
   const ast = ts.createSourceFile('index.d.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS), names = new Set();
@@ -280,6 +367,7 @@ async function buildGoogleWorkerPrebundle(options) {
     checkArtifact(ts, source, names);
     const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest);
     checkModuleLoaders(ts, projectRoot, built.metafile);
+    checkExportStability(ts, entryPoint, source, names);
     const declaration = fs.readFileSync(declarationFile);
     checkDeclarations(ts, declaration.toString('utf8'), names);
     const facade = `import owned from './index.cjs';\n${names.map((name, index) => `const value${index} = owned[${JSON.stringify(name)}];\nexport { value${index} as ${name} };\n`).join('')}`;

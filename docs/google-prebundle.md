@@ -63,8 +63,15 @@ of the caller's umask, so packing the same artifact produces the same archive.
 
 The result contains `index.cjs`, an explicit `index.mjs` facade, `index.d.ts`,
 matching `index.d.mts`/`index.d.cts` declarations, `package.json`, `manifest.json`,
-and a browser rejection stub. CJS and ESM imports
-share the same owned runtime. The generated package has no SDK runtime imports;
+and a browser rejection stub. CJS and ESM imports share the same owned runtime.
+Public export bindings must remain stable: expose constructors, factory
+functions, or a `const` object whose properties hold changing state. The ESM
+facade captures these exported values once; it does not emulate arbitrary live
+bindings across CJS. Exported `let`/`var` bindings, local aliases of those
+bindings, and detected reassignment of an exported binding, including through
+bundled re-exports, fail with `WGA_PREBUNDLE_EXPORT_STABILITY`. Private variables
+and properties on a stable exported object may still change.
+The generated package has no SDK runtime imports;
 its declaration re-exports still require the corresponding exact SDK/adapter
 types at type-check time. Keep those dependencies installed as build or
 development dependencies. The helper checks explicit declaration value exports

@@ -72,6 +72,40 @@ test('PREBUNDLE owns one adapter/config closure through both CJS and ESM exports
   fs.cpSync(result.outdir, path.join(independent, 'portable'), { recursive: true });
   assert.equal(require(path.join(independent, 'portable')).createClient().timeout, 1000, 'the runtime package has no source SDK dependency');
 });
+test('PREBUNDLE rejects mutable public bindings instead of snapshotting ESM state', async t => {
+  const cases = [
+    ['exported let', 'export let activeClient; export function initialize() { activeClient = createClient(); }'],
+    ['exported var', 'export var activeClient = createClient(); export function initialize() {}'],
+    ['local mutable export alias', 'let local; export {local as activeClient}; export function initialize() { local = createClient(); }'],
+    ['function reassignment', 'export function activeClient() { return createClient(); } export function initialize() { activeClient = () => ({timeout: 2}); }'],
+    ['re-export assignment', 'export {activeClient, initialize} from "./mutable.mjs";', 'export let activeClient; export function initialize() { activeClient = {timeout: 2}; }'],
+    ['re-export destructuring', 'export {activeClient, initialize} from "./mutable.mjs";', 'export let activeClient; export function initialize() { ({value: activeClient} = {value: {timeout: 2}}); }'],
+    ['re-export update', 'export {activeClient, initialize} from "./mutable.mjs";', 'export let activeClient = 0; export function initialize() { activeClient++; }'],
+    ['re-export class reassignment', 'export {activeClient, initialize} from "./mutable.mjs";', 'export class activeClient {} export function initialize() { activeClient = class {}; }'],
+  ];
+  for (const [name, body, dependency] of cases) await t.test(name, async t => {
+    const fixture = synthetic(t);
+    fixture.writeEntry(`import {createClient} from "example-sdk"; export {createClient}; export {configure} from "@grpc/grpc-js/config"; ${body}`);
+    if (dependency) write(path.join(fixture.projectRoot, 'mutable.mjs'), dependency);
+    fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare const activeClient: unknown;\nexport declare function initialize(): void;\n');
+    await assert.rejects(fixture.build({ exports: ['createClient', 'configure', 'activeClient', 'initialize'] }), { code: 'WGA_PREBUNDLE_EXPORT_STABILITY' });
+    assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
+  });
+});
+test('PREBUNDLE shares stable public objects while allowing their private state to change', async t => {
+  const fixture = synthetic(t);
+  fixture.writeEntry('import {createClient} from "example-sdk"; export {createClient}; export {configure} from "@grpc/grpc-js/config"; let current; export const activeClient = {current: null}; export function initialize() { current = createClient(); activeClient.current = current; }');
+  fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare const activeClient: { current: {timeout: number} | null };\nexport declare function initialize(): void;\n');
+  const result = await fixture.build({ exports: ['createClient', 'configure', 'activeClient', 'initialize'] });
+  const cjs = require(result.bundlePath), esm = await import(pathToFileURL(path.join(result.outdir, 'index.mjs')).href);
+  assert.strictEqual(cjs.activeClient, esm.activeClient);
+  cjs.configure({timeout: 17});
+  cjs.initialize();
+  assert.equal(esm.activeClient.current.timeout, 17);
+  esm.configure({timeout: 23});
+  esm.initialize();
+  assert.equal(cjs.activeClient.current.timeout, 23);
+});
 test('PREBUNDLE records reproducible artifact hashes and invalidates changed wrappers/types', async t => {
   const fixture = synthetic(t), first = await fixture.build();
   const second = await fixture.build({ outdir: 'elsewhere' });
