@@ -137,8 +137,9 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
     }
     if (!routes.size || Object.keys(handlers).some(key => !Object.hasOwn(definition, key))) invalid();
     return async request => {
-        const early = async (response: Response) => {
-            await request.body?.cancel().catch(() => {});
+        const early = (response: Response) => {
+            // Start external cleanup without delaying the already selected response.
+            void request.body?.cancel().catch(() => {});
             return response;
         };
         if (request.method !== 'POST') return early(new Response('Method not allowed', { status: 405, headers: { allow: 'POST' } }));

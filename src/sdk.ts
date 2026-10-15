@@ -145,7 +145,7 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
         source?.removeListener('status', onStatus);
     };
     const removeListeners = () => {
-        removeDataListeners(); source?.removeListener('error', onError); source?.removeListener('close', onClose);
+        removeDataListeners(); source?.removeListener('error', onError); source?.removeListener('close', onSourceClosed);
         restoreDestroy();
     };
     const stopSource = () => {
@@ -178,7 +178,7 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
     // EOF commits success. The owned source may still report a later cleanup
     // error from _destroy; keep handling it without producing a second outcome.
     const onError = (error: Error) => { if (!complete && !stream.destroyed) stream.destroy(error); };
-    const onClose = () => {
+    const onSourceClosed = () => {
         removeListeners();
         if (!complete && !stream.destroyed) stream.destroy(new Error('WGA_SDK_STREAM_CLOSED'));
     };
@@ -191,7 +191,7 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
         const candidate = start(gaxOptions);
         if (!(candidate instanceof Readable)) throw new TypeError('WGA_SDK_QUERY_SOURCE');
         source = candidate;
-        source.on('error', onError); source.on('close', onClose);
+        source.on('error', onError); source.on('close', onSourceClosed);
         if (!source.destroyed) {
             // The helper owns this one source. Observe its standard _destroy
             // callback as well as events: emitClose:false sources otherwise
@@ -205,7 +205,13 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
                     if (called) return;
                     called = true;
                     try { callback(cleanupError); }
-                    finally { restoreDestroy(); nextTick(removeListeners); }
+                    finally {
+                        restoreDestroy();
+                        // Node queues the source error before this callback.
+                        // Preserve that error, then settle even when emitClose
+                        // suppresses the event that normally ends the wrapper.
+                        nextTick(onSourceClosed);
+                    }
                 };
                 try { original.call(this, error, done); }
                 catch (failure) { done(failure instanceof Error ? failure : new Error('WGA_SDK_STREAM_CLEANUP')); }

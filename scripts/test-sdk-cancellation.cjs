@@ -22,7 +22,7 @@ const report = { status: 'running', startedAt: new Date().toISOString(), runtime
   instrumentation: { channelDiagnostics: true, observer: true, localAbortSignal: true,
     projectIdResolutionBarrier: true, resourcesBeforeSdkClose: true },
   evidence: Object.fromEntries(sources.map(file => [file, digest(fs.readFileSync(path.join(root, file)))])),
-  installedInputs: {}, profiles: [], results: [], unhandledRejections: [], unexpectedRequests: [] };
+  installedInputs: {}, profiles: [], results: [], sourceTerminations: [], unhandledRejections: [], unexpectedRequests: [] };
 const onUnhandled = error => report.unhandledRejections.push(error?.name ?? 'unknown');
 process.on('unhandledRejection', onUnhandled);
 function defer() { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; }
@@ -219,6 +219,17 @@ async function main() {
           log: new Log(LogLevel.NONE), outboundService: request => peer.fetch(request),
         })) : null;
         try {
+          if (mode === 'grpc-web') {
+            let results;
+            if (worker) {
+              const response = await bounded(worker.dispatchFetch('https://fixture.test/source-termination', { method: 'POST',
+                body: JSON.stringify({ sourceTermination: true }) }), `${expected.id}-source-termination`);
+              const body = await bounded(response.json(), `${expected.id}-source-termination-body`);
+              assert.equal(response.status, 200, JSON.stringify(body)); assert.equal(body.status, 'passed');
+              assert.deepEqual(body.unhandledRejections, []); results = body.result;
+            } else results = await bounded(shared.runSdkSourceTermination(), `${expected.id}-source-termination`);
+            report.sourceTerminations.push({ profile: expected.id, runtime, status: 'passed', results });
+          }
           for (const scenario of scenarios) {
             const namespace = `${expected.fixture}-${runtime}-${mode}-${scenario}`;
             const state = peer.setup(namespace, scenario), beforeUnhandled = report.unhandledRejections.length;

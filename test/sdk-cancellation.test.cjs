@@ -227,6 +227,61 @@ test('SDK query releases cleanup listeners after delayed destroy with emitClose 
     }
 });
 
+test('SDK query termination follows source and wrapper destruction before and after EOF', async t => {
+    for (const eof of [false, true]) for (const owner of ['source', 'wrapper']) {
+        for (const emitClose of [false, true]) for (const delayed of [false, true]) for (const failed of [false, true]) {
+            await t.test(`${owner}, ${eof ? 'after' : 'before'} EOF, emitClose=${emitClose}, delayed=${delayed}, failed=${failed}`, async () => {
+                const aborter = new AbortController(), cleanup = deferred();
+                const cleanupFailure = new Error('SDK_SOURCE_CLEANUP'), wrapperFailure = new Error('SDK_WRAPPER_STOP');
+                let source, parent, originalDestroy, destroys = 0, sourceEnds = 0, cancellations = 0, ends = 0, closes = 0;
+                const errors = [], rows = [];
+                const stream = cancellableQueryStream(options => {
+                    parent = parentOptions(options).parent;
+                    parent.on('cancelled', () => { cancellations++; });
+                    source = new Transform({ objectMode: true, emitClose, read() {}, destroy(_error, callback) {
+                        destroys++;
+                        const finish = () => { callback(failed ? cleanupFailure : null); cleanup.resolve(); };
+                        if (delayed) setImmediate(finish); else finish();
+                    } });
+                    originalDestroy = source._destroy;
+                    const originalEnd = source.end;
+                    source.end = function(...args) { sourceEnds++; return originalEnd.apply(this, args); };
+                    return source;
+                }, { signal: aborter.signal });
+                stream.on('data', value => rows.push(value));
+                stream.on('error', error => errors.push(error));
+                stream.on('end', () => { ends++; }); stream.on('close', () => { closes++; });
+                try {
+                    stream.resume();
+                    if (eof) {
+                        const ended = once(stream, 'end');
+                        source.push('row'); source.push(null);
+                        await ended;
+                    }
+                    if (owner === 'source') source.destroy(); else stream.destroy(wrapperFailure);
+                    await cleanup.promise; await immediate();
+                    assert.equal(stream.destroyed, true, 'Source cleanup must terminate its wrapper even without close');
+                    assert.equal(closes, 1); assert.equal(ends, eof ? 1 : 0);
+                    assert.deepEqual(rows, eof ? ['row'] : []);
+                    assert.equal(parent.cancelled, !eof); assert.equal(cancellations, eof ? 0 : 1);
+                    if (eof) assert.deepEqual(errors, [], 'Cleanup cannot reverse successful EOF');
+                    else if (owner === 'wrapper') assert.deepEqual(errors, [wrapperFailure]);
+                    else if (failed) assert.deepEqual(errors, [cleanupFailure]);
+                    else { assert.equal(errors.length, 1); assert.equal(errors[0].message, 'WGA_SDK_STREAM_CLOSED'); }
+                    assert.equal(destroys, 1); assert.equal(sourceEnds, 1); assert.equal(source.closed, true);
+                    assert.equal(source._destroy, originalDestroy);
+                    assert.equal(getEventListeners(aborter.signal, 'abort').length, 0);
+                    for (const name of ['data', 'end', 'info', 'metadata', 'status', 'error', 'close']) {
+                        assert.equal(source.listenerCount(name), 0, name);
+                    }
+                    aborter.abort(); source.destroy(); stream.destroy(); await immediate();
+                    assert.equal(cancellations, eof ? 0 : 1); assert.equal(closes, 1); assert.equal(destroys, 1);
+                } finally { stream.destroy(); source.destroy(); await immediate(); }
+            });
+        }
+    }
+});
+
 test('SDK query pre-abort skips factory and source startup throw reaches a single stream error', async () => {
     let starts = 0;
     const aborter = new AbortController(); aborter.abort('not copied');

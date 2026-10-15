@@ -43,6 +43,45 @@ function service(state, compression = 0) {
         },
     }, { compression, maxReceiveMessageBytes: 512, maxSendMessageBytes: 512, maxWireMessageBytes: 1024 });
 }
+async function earlyResponses(invocation) {
+    const results = [];
+    const rejections = [
+        { kind: '405', method: 'PUT', path: unary.path, type: 'application/grpc-web+proto', status: 405 },
+        { kind: '415', method: 'POST', path: unary.path, type: 'application/json', status: 415 },
+        { kind: 'unknown RPC', method: 'POST', path: '/fixture.Server/Missing', type: 'application/grpc-web+proto', status: 200 },
+    ];
+    for (const rejection of rejections) for (const cancellation of ['resolve', 'reject', 'pending']) for (const aborted of [false, true]) {
+        let cancelled = 0, handled = 0;
+        const handler = createGrpcWebHandler({ echo: unary }, { echo(value) { handled++; return value; } });
+        const body = new ReadableStream({ cancel() {
+            cancelled++;
+            if (cancellation === 'reject') return Promise.reject(new Error('private cleanup failure'));
+            if (cancellation === 'pending') return new Promise(() => {});
+            return Promise.resolve();
+        } });
+        const controller = new AbortController();
+        if (aborted) controller.abort();
+        const request = new Request(`https://server.test${rejection.path}`, {
+            method: rejection.method, headers: { 'content-type': rejection.type }, body, signal: controller.signal,
+        });
+        const pending = Symbol('pending response');
+        const response = await Promise.race([handler(request), nextTurn().then(() => pending)]);
+        assert.notEqual(response, pending, 'Body cleanup must not hold the early response open');
+        assert.equal(response.status, rejection.status);
+        assert.equal(cancelled, 1);
+        assert.equal(handled, 0);
+        if (rejection.status === 405) assert.equal(response.headers.get('allow'), 'POST');
+        if (rejection.kind === 'unknown RPC') {
+            assert.equal(response.headers.get('content-type'), 'application/grpc-web+proto');
+            const bytes = Buffer.from(await response.arrayBuffer());
+            assert.equal(bytes[0], 0x80);
+            assert.equal(bytes.readUInt32BE(1), bytes.length - 5);
+            assert.equal(bytes.subarray(5).toString(), 'grpc-status: 12\r\ngrpc-message: WGA_SERVER_METHOD\r\n');
+        }
+        results.push({ invocation, kind: rejection.kind, cancellation, aborted, status: response.status, cancelled });
+    }
+    return results;
+}
 async function run(invocation) {
     const state = { handled: 0, active: 0, aborted: 0, finalized: 0, requests: 0 };
     const results = [];
@@ -103,7 +142,7 @@ async function run(invocation) {
     assert.equal(state.requests, 60);
     assert.equal(state.finalized, 24);
     assert.equal(state.active, 0);
-    return { status: 'passed', results, state };
+    return { status: 'passed', results, state, earlyResponses: await earlyResponses(invocation) };
 }
 export default {
     async fetch(request) {

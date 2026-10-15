@@ -27,6 +27,8 @@ Each service-definition entry uses the existing `ServerMethodDefinition` shape: 
 
 The handler accepts `POST` with binary `application/grpc-web` or `application/grpc-web+proto`. For non-streaming requests, it reads and validates exactly one message before deserialization and application invocation. Missing or extra messages are rejected. A request-streaming handler instead receives a lazy `AsyncIterable<Request>` and may accept zero or more messages. Each iterator read validates and deserializes one frame. Request trailer frames, truncated framing and malformed compression are rejected when consumed. Native `application/grpc`, gRPC-Web text, CORS preflight and native listening sockets are outside this API. Authentication and authorization belong in the surrounding Worker or application handler.
 
+Rejected methods, unsupported content types and unregistered RPCs start request-body cancellation without waiting for it; cleanup failure or an unresolved cancellation cannot delay the error response.
+
 ## Request streaming and handler types
 
 ```ts

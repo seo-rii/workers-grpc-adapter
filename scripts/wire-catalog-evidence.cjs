@@ -122,7 +122,9 @@ function expectedPublic(mode) {
   add(26, 'request-budget-limit', 0, '', payload, { budgets: { header: null, trailer: null, request: 65536 } });
   add(26, 'request-budget-limit-plus-one', 8, 'WGA_METADATA_SIZE', [], { fetchCount: 0, initial: [],
     source: { pulls: 0, chunks: 0, bytes: 0, cancels: 0 } });
-  for (const variant of ['html', 'json', 'grpc-web-text']) add(27, variant, 2, 'WGA_NOT_GRPC_WEB', [], { ...stream, initial: [] });
+  for (const variant of ['html', 'json', 'grpc-web-text', 'html-status-ok', 'json-status-ok', 'grpc-web-text-status-ok']) {
+    add(27, variant, 2, 'WGA_NOT_GRPC_WEB', [], { ...stream, initial: [] });
+  }
   // Exact demand receipts also prove that rejecting headers disposes the body
   // before reading it; an unlocked, abandoned stream is not sufficient.
   const fixedSources = [
@@ -168,7 +170,7 @@ function expectedPublic(mode) {
     }
     need(spec.source && integer(spec.source.bytes), `${spec.id}/${variant} reviewed source demand`);
   }
-  need(specs.size === 369, 'reviewed public manifest count');
+  need(specs.size === 372, 'reviewed public manifest count');
   return specs;
 }
 
@@ -307,10 +309,10 @@ function validateWireCatalogReport(report, { allowSourceBuild = false } = {}) {
     need(hash(report.installedInputs[`fixtures/worker/node_modules/@grpc/grpc-js/dist/${file}`]), `installed ${file}`);
   }
   allocation(report.allocation, report.sourceBuild);
-  need(report.runs?.length === 4 && report.caseCount === 1476, 'exact runtime matrix count');
+  need(report.runs?.length === 4 && report.caseCount === 1488, 'exact runtime matrix count');
   for (const runtime of runtimes) for (const mode of modes) {
     const matches = report.runs.filter(run => run.runtime === runtime && run.mode === mode);
-    need(matches.length === 1 && matches[0].status === 'passed' && matches[0].rows?.length === 369, `${runtime}/${mode} complete matrix`);
+    need(matches.length === 1 && matches[0].status === 'passed' && matches[0].rows?.length === 372, `${runtime}/${mode} complete matrix`);
     const seen = new Set();
     for (const row of matches[0].rows) {
       const key = `${row.id}/${row.variant}`, spec = publicSpecs.get(mode).get(key);

@@ -9905,7 +9905,7 @@
             },
             {
               "pointer": "/scenarioCount",
-              "equals": 12
+              "equals": 24
             },
             {
               "pointer": "/allocationScenarioCount",

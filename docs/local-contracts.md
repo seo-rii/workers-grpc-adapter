@@ -141,8 +141,8 @@ An independent HTTP/2 consuming control verifies both frames and OK trailers.
 
 ## Wire boundaries and allocation measurement
 
-`npm run test:wire:catalog` executes 1,476 public calls using the installed
-adapter: 369 vectors in each Node/workerd and transport-mode combination. The
+`npm run test:wire:catalog` executes 1,488 public calls using the installed
+adapter: 372 vectors in each Node/workerd and transport-mode combination. The
 peer supplies independently encoded bytes through a controlled Fetcher. This
 checks local framing and routing, not native HTTP/2 or the deployed Cloudflare
 translator. Reports record exact message lengths and SHA-256 digests, initial
@@ -170,7 +170,8 @@ sizes, all allocator APIs, total JS heap or workerd heap usage.
 
 Metadata checks include repeated request values, comma-combined padded/unpadded
 binary fields, exact `grpc-status-details-bin`, percent-encoded Korean details,
-malformed escapes, all HTTP fallback codes and HTML/JSON/text-mode rejection.
+malformed escapes, all HTTP fallback codes and HTML/JSON/text-mode rejection,
+including invalid content types accompanied by `grpc-status: 0`.
 Request, header and trailer boundary fixtures count the final encoded fields
 including controls; 65,536 bytes pass and the next byte fails. An overbudget
 request has no Fetch attempt. Headers-only errors preserve custom metadata in
