@@ -12151,6 +12151,29 @@
           ]
         },
         {
+          "name": "GoogleWorkerPrebundleOptions",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface GoogleWorkerPrebundleOptions {\n    projectRoot: string;\n    outdir: string;\n    typescript: typeof import('typescript');\n    esbuild: typeof import('esbuild');\n    entryPoint: string;\n    exports: string[];\n    declarationFile: string;\n    packageName?: string;\n    profile?: GoogleWorkerProfile;\n}",
+          "sha256": "5067bec67b550931afed9a89f07135251e9f83c1615861d5ab95fea7a2a72549",
+          "dependencies": [
+            "372f9272d768bbfe8eedaa8dd59b69137910b122ec20229c1257c6774e68915a",
+            "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec"
+          ]
+        },
+        {
+          "name": "GoogleWorkerPrebundleResult",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface GoogleWorkerPrebundleResult {\n    outdir: string;\n    packageJsonPath: string;\n    manifestPath: string;\n    bundlePath: string;\n    typesPath: string;\n    profileId: GoogleWorkerProfile;\n    exports: string[];\n}",
+          "sha256": "40867ffb58914e401425a27561defa2e39ee72e136549f4becc6699fa74502f5",
+          "dependencies": [
+            "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec"
+          ]
+        },
+        {
           "name": "GoogleWorkerProfile",
           "type": true,
           "value": false,
@@ -12201,6 +12224,21 @@
           "dependencies": []
         },
         {
+          "name": "buildGoogleWorkerPrebundle",
+          "type": false,
+          "value": true,
+          "kind": "FunctionDeclaration",
+          "signature": "function buildGoogleWorkerPrebundle(options: GoogleWorkerPrebundleOptions): Promise<GoogleWorkerPrebundleResult>;",
+          "sha256": "cc7890d029815449e81bf8ad29834ff0039aa7f273c733cf220dc0108943a121",
+          "dependencies": [
+            "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9",
+            "372f9272d768bbfe8eedaa8dd59b69137910b122ec20229c1257c6774e68915a",
+            "85db80bcf2c84a69b3bdd4372d68cd624c763f43128b5bd7cc2fd1927e3f97c1",
+            "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec",
+            "f615415b58bcefa0f3d6717a95ff8ec8e311ba117e65295f9a5988a9c695dfaa"
+          ]
+        },
+        {
           "name": "createGoogleWorkerBuild",
           "type": false,
           "value": true,
@@ -12234,6 +12272,11 @@
         }
       ],
       "declarations": {
+        "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9": {
+          "name": "typescript/lib/lib.es5.d.ts#Promise",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es5.d.ts#Promise"
+        },
         "372f9272d768bbfe8eedaa8dd59b69137910b122ec20229c1257c6774e68915a": {
           "name": "typescript/lib/typescript.d.ts#ts",
           "kind": "external",
@@ -12254,6 +12297,11 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface GoogleWorkerBuildIdentity {\n    cacheKey: string;\n    inputSha256: string;\n    transformer: {\n        version: number;\n        sha256: string;\n        typescriptVersion: string;\n    };\n}"
         },
+        "85db80bcf2c84a69b3bdd4372d68cd624c763f43128b5bd7cc2fd1927e3f97c1": {
+          "name": "dist/build/prebundle.d.cts#GoogleWorkerPrebundleOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface GoogleWorkerPrebundleOptions {\n    projectRoot: string;\n    outdir: string;\n    typescript: typeof import('typescript');\n    esbuild: typeof import('esbuild');\n    entryPoint: string;\n    exports: string[];\n    declarationFile: string;\n    packageName?: string;\n    profile?: GoogleWorkerProfile;\n}"
+        },
         "a4ce6133e1e5d873eed7344fc395f10123d5736012b5c70511042cbaa03ba6f1": {
           "name": "dist/build/index.d.cts#GoogleWorkerProfileDiagnostic",
           "kind": "InterfaceDeclaration",
@@ -12273,6 +12321,11 @@
           "name": "dist/build/index.d.cts#GoogleWorkerProfile",
           "kind": "TypeAliasDeclaration",
           "signature": "type GoogleWorkerProfile = 'google-static-v1' | 'google-modern-v1';"
+        },
+        "f615415b58bcefa0f3d6717a95ff8ec8e311ba117e65295f9a5988a9c695dfaa": {
+          "name": "dist/build/prebundle.d.cts#GoogleWorkerPrebundleResult",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface GoogleWorkerPrebundleResult {\n    outdir: string;\n    packageJsonPath: string;\n    manifestPath: string;\n    bundlePath: string;\n    typesPath: string;\n    profileId: GoogleWorkerProfile;\n    exports: string[];\n}"
         }
       }
     },

@@ -158,7 +158,7 @@ relabeled `T` merely because it would disappear from emitted JavaScript.
 | `/server` | Typed Fetch gRPC-Web handlers, lazy request streams, context, and explicit server errors. |
 | `/status-details` | Bounded optional rich-status decoding that preserves the original status object. |
 | `/sdk` | Scoped Promise cancellation and Datastore query-stream cleanup; optional helpers that preserve shared-client isolation and do not roll back accepted writes. |
-| `/build` | Node-only exact-profile SDK build plugin and diagnostics; excluded from Worker runtime imports. |
+| `/build` | Node-only exact-profile SDK build plugin, diagnostics, and `buildGoogleWorkerPrebundle()` server package builder; excluded from Worker runtime imports. |
 | `/build/src/client`, `/build/src/client.js` | Explicit aliases of the same client module, preserving root constructor/helper identity. Also expose `callErrorFromStatus` and the type-only `SurfaceCall`; readiness still fails as described above. |
 | `/package.json` | Package metadata. |
 
