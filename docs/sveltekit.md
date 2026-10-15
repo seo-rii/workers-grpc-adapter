@@ -51,6 +51,11 @@ package through a thin `$lib/server/google-workers.js` facade so [SvelteKit
 enforces its server-only import
 boundary](https://svelte.dev/docs/kit/server-only-modules).
 
+If publication fails, the script restores the previous artifact. When a concurrent
+output prevents restoration, it retains the backup under `.prebundle-*/previous`
+and leaves the current output untouched. The error identifies both paths for
+manual recovery; cleanup preserves that recovery directory.
+
 Vite's `ssr.external: ['@wga-fixture/google-workers']` makes development SSR load
 the linked package through Node. Importing its CommonJS closure as source code
 under `./src/lib` fails in Vite's ESM module runner. Production SSR keeps the same

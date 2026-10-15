@@ -10,6 +10,7 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const outdir = path.join(projectRoot, 'packages/google-workers/generated');
 const temporary = fs.mkdtempSync(path.join(projectRoot, '.prebundle-'));
 const previous = path.join(temporary, 'previous');
+let retainBackup = false;
 try {
   const result = await buildGoogleWorkerPrebundle({
     projectRoot,
@@ -37,8 +38,17 @@ try {
   fs.mkdirSync(path.dirname(outdir), { recursive: true });
   try { fs.renameSync(result.outdir, outdir); }
   catch (error) {
-    if (fs.existsSync(previous)) fs.renameSync(previous, outdir);
+    if (fs.existsSync(previous)) {
+      try { fs.renameSync(previous, outdir); }
+      catch (restoreError) {
+        retainBackup = true;
+        throw new Error(`Prebundle publication and restoration failed. Previous artifact preserved at ${previous}; current output preserved at ${outdir}.`,
+          { cause: new AggregateError([error, restoreError], 'Prebundle publication and restoration errors') });
+      }
+    }
     throw error;
   }
   console.log(JSON.stringify({ status: 'prebundled', manifest: path.relative(projectRoot, path.join(outdir, 'manifest.json')) }));
-} finally { fs.rmSync(temporary, { recursive: true, force: true }); }
+} finally {
+  if (!retainBackup) fs.rmSync(temporary, { recursive: true, force: true });
+}
