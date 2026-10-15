@@ -88,6 +88,12 @@ Install optional dependencies that would otherwise remain as unresolved
 graph needs an installed `supports-color` peer for a self-contained CJS artifact;
 the installed integration fixture pins `supports-color` to `8.1.1`. Missing
 dependencies are reported by module specifier with `WGA_PREBUNDLE_EXTERNAL`.
+Node's `module.require()`, `createRequire()`, and module loader hooks cannot
+remain in the input graph, including direct aliases of those APIs. They fail
+with `WGA_PREBUNDLE_DYNAMIC_IMPORT`; use explicit static imports instead.
+Ordinary objects may still have a `require` method, and non-loader APIs such as
+`node:module`'s `isBuiltin()` remain available. This source and artifact audit
+checks module-loading boundaries; it does not sandbox arbitrary wrapper code.
 
 For SvelteKit, pack the generated directory and install its tarball as a server
 dependency. Import that package from routes, hooks, or a module under the

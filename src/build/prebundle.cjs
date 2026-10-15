@@ -129,6 +129,79 @@ function checkArtifact(ts, source, expected) {
     fail('WGA_PREBUNDLE_EXPORTS', 'The wrapper must expose exactly the declared named exports', { expected: [...expected].sort(), actual: actual || [] });
   }
 }
+function checkModuleLoaders(ts, projectRoot, metafile) {
+  // Inspect original module scopes: esbuild renames the CommonJS `module`
+  // parameter, so a spelling-only check of the minified artifact misses it.
+  const files = [...new Set(Object.keys(metafile.inputs).map(file => fs.realpathSync(path.resolve(projectRoot, file))))]
+    .filter(file => /\.[cm]?[jt]sx?$/.test(file));
+  const sources = new Map(files.map(file => [file, ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)]));
+  const options = { allowJs: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
+  host.getSourceFile = file => sources.get(file);
+  const program = ts.createProgram(files, options, host), checker = program.getTypeChecker(), values = new Map();
+  const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
+  const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) ? unwrap(node.expression) : node;
+  const key = node => ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
+  const member = (origin, name) => {
+    let result = 0;
+    if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0;
+    if (origin & NAMESPACE) result |= ['createRequire', '_load', 'register', 'registerHooks'].includes(name) ? LOADER
+      : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0;
+    return result;
+  };
+  function bind(name, value, keys = []) {
+    if (ts.isIdentifier(name)) {
+      const symbol = checker.getSymbolAtLocation(name);
+      if (symbol) { if (!values.has(symbol)) values.set(symbol, []); values.get(symbol).push({ value, keys }); }
+    } else if (ts.isObjectBindingPattern(name)) {
+      for (const element of name.elements) bind(element.name, value, [...keys, key(element.propertyName || element.name)]);
+    }
+  }
+  function collect(node) {
+    if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && ['module', 'node:module'].includes(node.moduleSpecifier.text)) {
+      const clause = node.importClause;
+      if (clause?.name) bind(clause.name, NAMESPACE);
+      if (clause?.namedBindings) {
+        if (ts.isNamespaceImport(clause.namedBindings)) bind(clause.namedBindings.name, NAMESPACE);
+        else for (const item of clause.namedBindings.elements) bind(item.name, member(NAMESPACE, (item.propertyName || item.name).text));
+      }
+    }
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)
+      && node.moduleReference.expression && ts.isStringLiteral(node.moduleReference.expression)
+      && ['module', 'node:module'].includes(node.moduleReference.expression.text)) bind(node.name, NAMESPACE);
+    ts.forEachChild(node, collect);
+  }
+  for (const source of sources.values()) collect(source);
+  function origin(expression, seen = new Set()) {
+    if (typeof expression === 'number') return expression;
+    const node = unwrap(expression);
+    if (ts.isIdentifier(node)) {
+      const symbol = checker.getSymbolAtLocation(node);
+      // TypeScript can attach synthetic Identifier/BinaryExpression declarations
+      // to the implicit CommonJS globals. Lexical declarations still shadow them.
+      const local = symbol?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration));
+      if (!local && node.text === 'module') return MODULE;
+      if (!local && node.text === 'require') return REQUIRE;
+      if (!symbol || seen.has(symbol)) return 0;
+      const next = new Set(seen); next.add(symbol);
+      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0);
+    }
+    if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
+    if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression));
+    if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
+      && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
+    if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
+    return 0;
+  }
+  function visit(node) {
+    if ((ts.isIdentifier(node) || ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) && origin(node) & LOADER) {
+      fail('WGA_PREBUNDLE_DYNAMIC_IMPORT', 'Node module loading APIs cannot remain in a self-contained prebundle; use explicit static imports', { path: node.getSourceFile().fileName });
+    }
+    ts.forEachChild(node, visit);
+  }
+  for (const source of sources.values()) visit(source);
+}
 function checkDeclarations(ts, source, expected) {
   const ast = ts.createSourceFile('index.d.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS), names = new Set();
   const reject = message => fail('WGA_PREBUNDLE_DECLARATIONS', message);
@@ -168,7 +241,7 @@ async function buildGoogleWorkerPrebundle(options) {
   const supported = new Set(['projectRoot', 'outdir', 'typescript', 'esbuild', 'entryPoint', 'exports', 'declarationFile', 'packageName', 'profile']);
   if (Object.keys(options).some(key => !supported.has(key))) fail('WGA_PREBUNDLE_OPTIONS', 'Unknown prebundle option');
   const { typescript: ts, esbuild } = options;
-  if (!ts || typeof ts.createSourceFile !== 'function') fail('WGA_PREBUNDLE_OPTIONS', 'Pass the installed TypeScript compiler as typescript');
+  if (!ts || typeof ts.createSourceFile !== 'function' || typeof ts.createProgram !== 'function' || typeof ts.createCompilerHost !== 'function') fail('WGA_PREBUNDLE_OPTIONS', 'Pass the installed TypeScript compiler as typescript');
   if (!esbuild || typeof esbuild.build !== 'function' || typeof esbuild.version !== 'string') fail('WGA_PREBUNDLE_OPTIONS', 'Pass the installed esbuild module as esbuild');
   if (typeof options.projectRoot !== 'string' || !options.projectRoot || typeof options.outdir !== 'string' || !options.outdir) fail('WGA_PREBUNDLE_OPTIONS', 'projectRoot and outdir are required');
   const projectRoot = fs.realpathSync(path.resolve(options.projectRoot)), outdir = path.resolve(projectRoot, options.outdir);
@@ -204,6 +277,7 @@ async function buildGoogleWorkerPrebundle(options) {
     const source = built.outputFiles[0].text;
     checkArtifact(ts, source, names);
     const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest);
+    checkModuleLoaders(ts, projectRoot, built.metafile);
     const declaration = fs.readFileSync(declarationFile);
     checkDeclarations(ts, declaration.toString('utf8'), names);
     const facade = `import owned from './index.cjs';\n${names.map((name, index) => `const value${index} = owned[${JSON.stringify(name)}];\nexport { value${index} as ${name} };\n`).join('')}`;

@@ -135,6 +135,44 @@ test('PREBUNDLE rejects native grpc and variable runtime imports before creating
   await assert.rejects(fixture.build({ exports: ['createClient', 'configure', 'load'] }), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
   assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
 });
+test('PREBUNDLE rejects Node module loaders and their direct aliases', async t => {
+  const cases = [
+    'export const load = name => module.require(name);',
+    'export const load = name => module["require"](name);',
+    'const current = module; export const load = name => current.require(name);',
+    'const {require: loader} = module; export const load = name => loader(name);',
+    'let current; current = module; export const load = name => current.require(name);',
+    'import {createRequire as makeLoader} from "node:module"; export const load = name => makeLoader("/wrapper.cjs")(name);',
+    'import * as builtins from "module"; const alias = builtins; export const load = name => alias.createRequire("/wrapper.cjs")(name);',
+    'const {createRequire: makeLoader} = require("node:module"); export const load = name => makeLoader("/wrapper.cjs")(name);',
+    'import Module from "node:module"; export const load = name => Module.prototype.require.call(module, name);',
+  ];
+  for (const [index, loader] of cases.entries()) await t.test(`loader ${index + 1}`, async t => {
+    const fixture = synthetic(t);
+    fixture.writeEntry(`export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ${loader}`);
+    fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare function load(name: string): unknown;\n');
+    await assert.rejects(fixture.build({ exports: ['createClient', 'configure', 'load'] }), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
+    assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
+  });
+  await t.test('CommonJS dependency module parameter', async t => {
+    const fixture = synthetic(t);
+    fs.appendFileSync(path.join(fixture.sdkRoot, 'index.js'), 'const current = module; exports.load = name => current.require(name);\n');
+    fixture.writeEntry('export {createClient, load} from "example-sdk"; export {configure} from "@grpc/grpc-js/config";');
+    fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare function load(name: string): unknown;\n');
+    await assert.rejects(fixture.build({ exports: ['createClient', 'configure', 'load'] }), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
+    assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
+  });
+});
+test('PREBUNDLE permits ordinary require methods and non-loader Node module APIs', async t => {
+  const fixture = synthetic(t);
+  fixture.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; import {isBuiltin} from "node:module"; const ordinary = {require: name => name}; export const load = name => ordinary.require(name); export const check = module => module.require("value"); export {isBuiltin};');
+  fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare function load(name: string): string;\nexport declare function check(module: { require(name: string): string }): string;\nexport declare function isBuiltin(name: string): boolean;\n');
+  const result = await fixture.build({ exports: ['createClient', 'configure', 'load', 'check', 'isBuiltin'] });
+  const api = require(result.bundlePath);
+  assert.equal(api.load('value'), 'value');
+  assert.equal(api.check({ require: value => value }), 'value');
+  assert.equal(api.isBuiltin('node:fs'), true);
+});
 test('PREBUNDLE preserves strict profile checks and never inlines environment credentials', async t => {
   const fixture = synthetic(t), marker = 'wga-private-credential-must-not-be-built';
   const previous = process.env.WGA_PREBUNDLE_TEST_TOKEN;
