@@ -74,7 +74,7 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 | --- | --- |
 | `schemaVersion`, `transformerVersion` | Recognized manifest format and required transformer semantics |
 | `id`, `revision` | Reviewed SDK graph and transform revision |
-| `packages` | Exact installed paths, package names, versions and `package.json` SHA256 hashes |
+| `packages` | Dependency role paths, optional `resolveFrom` importer role, exact package names, versions and `package.json` SHA256 hashes |
 | `files` | Exact source SHA256 hashes and enabled transform rules with expected match counts |
 | `schemas` | Exact protobuf JSON, proto or well-known schema input hashes |
 | `codegenInputs` | Exact protobuf generator implementation hashes |
@@ -132,3 +132,48 @@ bundle cache contract.
 5. Review doctor output and the generated build manifest. Publish measured
    results with their runtime and profile; do not broaden support based only on
    matching package versions.
+
+## Importer paths and package managers
+
+A profile path identifies a reviewed dependency role. `resolveFrom` identifies
+another declared package role whose Node dependency resolution selects that
+package; a role without it resolves from the application root. Inspection reads
+manifests through the actual importer, then canonicalizes files with `realpath`.
+It never substitutes a similarly named package found elsewhere in the store.
+This supports npm hoisting, pnpm's isolated store and linked workspace packages
+without weakening version, content or AST checks. pnpm consumers must still
+install and lock the exact reviewed graph; a compatible semver range is not a
+profile.
+
+Both the inspection report and build manifest include `resolvedPaths` with
+profile `path`, `logicalPath` and canonical `physicalPath`. Hash diagnostics also
+carry those paths. A second physical installation of an imported transform
+target fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte
+copies. Use the graph doctor for adapter identity as well. Normal Node/esbuild
+symlink resolution is the tested path; custom loaders and `preserveSymlinks`
+can change dependency lookup and need separate validation.
+
+Build profiles currently require TypeScript `>=5.8 <6`. An application using
+another compiler can run the SDK transformation in an isolated build workspace
+with TypeScript 5.8.3, then consume its JavaScript artifact. This does not claim
+TypeScript 6 support or require disabling peer/profile checks.
+
+## Inspecting transformations and proving bundle coverage
+
+The esbuild preset enables `metafile` and audits it at the end of every successful
+build. Each imported profile target must have passed the guarded transform in
+that build. Another plugin swallowing `onLoad`, an unverified physical source,
+or dependency-link drift fails the build. Rebuilds clear previous transformation
+receipts. Package/source/schema/codegen checks run again before completion.
+
+`manifest().transformCoverage` reports `required`, `applied`, `unused` and
+`passed`. Required targets are those present in the actual metafile; an unused
+SDK or the unselected Gaxios ESM/CJS alternative need not be bundled. Inspection
+alone leaves coverage unproven. `transformationsChecked: true` means that doctor
+checked the declared AST shapes, not that a consuming bundle used them.
+
+A custom build driver can explicitly audit an esbuild result using
+`preset.verifyBuild(result.metafile, absWorkingDir)`. Preserve the returned
+metafile and manifest with the build receipt. A failed build must not be
+deployed, even if a caller's output directory contains a previous artifact;
+the prebundle driver owns artifact invalidation for its generated package.
