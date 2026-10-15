@@ -355,6 +355,26 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/profiles.md#fence-3",
+      "file": "docs/profiles.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "4a97d11321dbb598a0330d242e6d5bc40a23231d281ff21bd8d6c8a7d89f23d4",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Installed doctor usage with a caller-owned build workspace; exact CLI and graph behavior is verified separately by the packaging and installed-doctor tests."
+    },
+    {
+      "id": "docs/profiles.md#fence-4",
+      "file": "docs/profiles.md",
+      "ordinal": 4,
+      "language": "js",
+      "sha256": "844b3b063b4faf0a63588b8db4a438e5e18ba20b5085cb4e2242f952086cbe53",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Installed doctor usage with a caller-owned build workspace; exact CLI and graph behavior is verified separately by the packaging and installed-doctor tests."
+    },
+    {
       "id": "docs/request-streaming.md#fence-1",
       "file": "docs/request-streaming.md",
       "ordinal": 1,
