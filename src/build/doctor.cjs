@@ -135,6 +135,6 @@ function inspectGoogleWorkerGraph(options) {
         throw new TypeError('WGA_DOCTOR_OPTIONS');
     }
     return inspect(options.projectRoot, options.sdks, options.expectedImplementation,
-        options.profile ? { profile: options.profile, typescript: options.typescript } : undefined);
+        options.profile === undefined ? undefined : { profile: options.profile, typescript: options.typescript });
 }
 module.exports = { inspect, inspectGoogleWorkerGraph };

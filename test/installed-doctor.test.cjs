@@ -55,6 +55,10 @@ test('DOCTOR fails closed for invalid options and unsupported CLI flags', t => {
     { projectRoot: f.directory, sdks: [null] }, { projectRoot: f.directory, expectedImplementation: 'anything' }]) {
     assert.throws(() => inspectGoogleWorkerGraph(options), /WGA_DOCTOR_OPTIONS/);
   }
+  for (const profile of ['', null, false, 'unreviewed-sdk']) {
+    assert.throws(() => inspectGoogleWorkerGraph({ projectRoot: f.directory, sdks: ['example-sdk'], profile }),
+      { code: 'WGA_UNSUPPORTED_DEPENDENCY' }, 'an explicitly supplied profile cannot become graph-only inspection');
+  }
   const result = spawnSync(process.execPath, [cli, '--no-check-hashes'], { cwd: f.directory, encoding: 'utf8' });
   assert.equal(result.status, 2); assert.match(result.stderr, /Usage:/);
 });
