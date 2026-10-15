@@ -284,7 +284,7 @@ async function main() {
       assert.equal(response.headers.get('x-hono-middleware'), 'before,route,after'); idle(result);
       if (id === 'denied') { assert.equal(response.status, 502); assert.equal(result.code, 7); assert.deepEqual(result.trailingStatus, ['denied']); assert.deepEqual(result.terminalStatuses, [7]); }
       else { assert.equal(response.status, 200, JSON.stringify(result)); assert.deepEqual(result.key, { id: '9007199254740993', parent: 'parent', namespace: id }); assert.equal(result.count, 2); assert.equal(result.commitMutations, 1); assert.deepEqual(result.terminalStatuses, Array(7).fill(0)); }
-      report.cases.push({ id, ...result, responseStatus: result.status, status: 'passed' });
+      report.cases.push({ id, ...result, applicationStatus: result.status, responseStatus: response.status, status: 'passed' });
     }
     const controller = new AbortController();
     const streaming = await request('/probe/cancel', 'cancel', { signal: controller.signal });
@@ -315,12 +315,12 @@ async function main() {
     await until(() => peer.activeHeld === 0, 'HONO_BACKEND_READER_CANCELLED');
     assert.equal(peer.receipts.find(value => value.namespace === 'cancel').cancelled, true);
     assert.equal(peer.socketDisconnected, true);
-    report.cases.push({ id: 'cancel', status: 'passed', ...cancelled, httpClientAborted: true, backendReaderCancelled: true });
+    report.cases.push({ id: 'cancel', status: 'passed', ...cancelled, responseStatus: streaming.status, httpClientAborted: true, backendReaderCancelled: true });
     const response = await request('/probe/success', 'following'), result = await response.json();
     assert.equal(response.status, 200, JSON.stringify(result)); assert.equal(result.count, 2); idle(result);
     assert.deepEqual(result.terminalStatuses, Array(7).fill(0));
     assert.equal(response.headers.get('x-hono-middleware'), 'before,route,after');
-    report.cases.push({ id: 'following', ...result, status: 'passed' });
+    report.cases.push({ id: 'following', ...result, applicationStatus: result.status, responseStatus: response.status, status: 'passed' });
     assert.equal(peer.receipts.length, 16); assert.equal(peer.receipts.filter(value => value.transactional).length, 4);
     report.receipts = peer.receipts; report.backendIdleBeforeDispose = peer.activeHeld === 0; report.peerControlRequests = peer.controlRequests;
     report.unexpectedOutboundRequests = unexpectedOutboundRequests; assert.equal(unexpectedOutboundRequests, 0);
