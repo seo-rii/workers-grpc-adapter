@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "transformerVersion": 1,
   "id": "google-modern-v1",
-  "revision": 2,
+  "revision": 3,
   "packages": [
     {
       "path": "node_modules/gaxios",
@@ -226,6 +226,16 @@
       ]
     },
     {
+      "path": "node_modules/google-gax/build/src/observability/metadataResolver.js",
+      "sha256": "11fdd1c085b3e14990881c20aa39501ab49e4f72ea5bc0287716ab19405efe0d",
+      "transforms": [
+        {
+          "rule": "gax-package-metadata",
+          "expectedMatches": 1
+        }
+      ]
+    },
+    {
       "path": "node_modules/google-gax/build/src/grpc.js",
       "sha256": "a13226a9fc3625261e951e7759131a815a69d10f1959d12060b05c2f25a60f1c",
       "transforms": [
@@ -390,10 +400,11 @@
     "datastore-legacy-keys",
     "datastore-struct",
     "native-fetch-auth",
+    "static-gax-package-metadata",
     "firestore-listen-error-order"
   ],
   "requiredChecks": [
-    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs",
+    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs test/build-gax-metadata.test.cjs",
     "node scripts/test-modern-sdk.cjs",
     "node scripts/test-modern-firestore-watch.cjs",
     "node scripts/test-modern-firestore-recovery.cjs"
