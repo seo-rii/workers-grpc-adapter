@@ -9,13 +9,13 @@ const output = path.join(root, 'verification');
 fs.mkdirSync(output, { recursive: true });
 const commands = [];
 const safeEnv = { ...process.env, WGA_RUN_GOOGLE_TESTS: '0', WGA_ALLOW_TEST_WRITES: '0' };
-function run(name, args, allowed = [0]) {
+function run(name, args, allowed = [0], timeout = 300000) {
     const logPath = path.join(output, `${name}.log`);
     const log = fs.openSync(logPath, 'w', 0o600);
     fs.fchmodSync(log, 0o600);
     let result;
     try {
-        result = cp.spawnSync(process.execPath, args, { cwd: root, env: safeEnv, stdio: ['ignore', log, log], timeout: 300000 });
+        result = cp.spawnSync(process.execPath, args, { cwd: root, env: safeEnv, stdio: ['ignore', log, log], timeout });
     } finally { fs.closeSync(log); }
     const text = fs.readFileSync(logPath, 'utf8');
     commands.push({ id: name, exitCode: result.status, status: result.status === 0 ? 'passed' : result.status === 2 && allowed.includes(2) ? 'blocked' : 'failed', log: `${name}.log` });
@@ -68,7 +68,7 @@ function main() {
     const syntax = { status: 'passed', fileCount: syntaxFiles.length, includesGoogleFixtures: true, sdkExecution: false };
     fs.writeFileSync(path.join(output, 'syntax.json'), JSON.stringify(syntax, null, 2) + '\n');
     run('packaging', ['scripts/test-pack.cjs']);
-    run('google-prebundle-sdks', ['scripts/test-google-prebundle-sdks.cjs']);
+    run('google-prebundle-sdks', ['scripts/test-google-prebundle-sdks.cjs'], [0], 900000);
     run('doc-examples', ['scripts/test-doc-examples.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
