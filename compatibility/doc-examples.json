@@ -665,6 +665,46 @@
       "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
     },
     {
+      "id": "docs/sveltekit.md#fence-1",
+      "file": "docs/sveltekit.md",
+      "ordinal": 1,
+      "language": "text",
+      "sha256": "99484c8a948da424fb78a824a054a4b69810bba1c23fc214e5e0e74c4c87b8ea",
+      "classification": "expected",
+      "category": "diagram",
+      "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-2",
+      "file": "docs/sveltekit.md",
+      "ordinal": 2,
+      "language": "js",
+      "sha256": "cefad7375b81aef14fcb944219ba649f19bb5785629d7456b2c53b52124321b5",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-3",
+      "file": "docs/sveltekit.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "6bd6dec82cec43676f76fa20aee41e83d2c7cdf712551f2c722dd568a285a3c8",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-4",
+      "file": "docs/sveltekit.md",
+      "ordinal": 4,
+      "language": "sh",
+      "sha256": "8660c3f7fbb0e71cfec1dda5c96a8b3b30fc0c794bff9e34692abb8da82506be",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
       "id": "docs/testing.md#fence-1",
       "file": "docs/testing.md",
       "ordinal": 1,

@@ -107,6 +107,7 @@ function main() {
     run('datastore-mutations', ['scripts/test-datastore-mutations.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
+    run('sveltekit-prebundle', ['scripts/test-sveltekit-prebundle.cjs']);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
     run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
     run('gcp-probe-conversion', ['scripts/test-gcp-conversion-probe.cjs']);
@@ -181,6 +182,7 @@ function main() {
         workerdServerStreaming: read('workerd-server-streaming.json'), workerdTransportExtensions: read('workerd-transport-extensions.json'), transportBenchmark: read('benchmark.json'), sdkBenchmark: read('sdk-benchmark.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
+        sveltekitPrebundle: read('sveltekit-prebundle.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
         datastorePagination, datastoreLookup, datastoreTransactions, datastoreMutations, workersResilience: read('workers-resilience.json'),
         sdkCancellation: read('sdk-cancellation.json'),
