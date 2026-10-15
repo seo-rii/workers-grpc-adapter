@@ -9,13 +9,13 @@ const output = path.join(root, 'verification');
 fs.mkdirSync(output, { recursive: true });
 const commands = [];
 const safeEnv = { ...process.env, WGA_RUN_GOOGLE_TESTS: '0', WGA_ALLOW_TEST_WRITES: '0' };
-function run(name, args, allowed = [0]) {
+function run(name, args, allowed = [0], timeout = 300000) {
     const logPath = path.join(output, `${name}.log`);
     const log = fs.openSync(logPath, 'w', 0o600);
     fs.fchmodSync(log, 0o600);
     let result;
     try {
-        result = cp.spawnSync(process.execPath, args, { cwd: root, env: safeEnv, stdio: ['ignore', log, log], timeout: 300000 });
+        result = cp.spawnSync(process.execPath, args, { cwd: root, env: safeEnv, stdio: ['ignore', log, log], timeout });
     } finally { fs.closeSync(log); }
     const text = fs.readFileSync(logPath, 'utf8');
     commands.push({ id: name, exitCode: result.status, status: result.status === 0 ? 'passed' : result.status === 2 && allowed.includes(2) ? 'blocked' : 'failed', log: `${name}.log` });
@@ -68,6 +68,7 @@ function main() {
     const syntax = { status: 'passed', fileCount: syntaxFiles.length, includesGoogleFixtures: true, sdkExecution: false };
     fs.writeFileSync(path.join(output, 'syntax.json'), JSON.stringify(syntax, null, 2) + '\n');
     run('packaging', ['scripts/test-pack.cjs']);
+    run('google-prebundle-sdks', ['scripts/test-google-prebundle-sdks.cjs'], [0], 900000);
     run('doc-examples', ['scripts/test-doc-examples.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
@@ -172,6 +173,7 @@ function main() {
         build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
         declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), docReferences: read('doc-references.json'), documentationSupport: read('documentation-support.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
+        googlePrebundleSdks: read('google-prebundle-sdks.json'),
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),

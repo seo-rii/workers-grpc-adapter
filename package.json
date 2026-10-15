@@ -31,7 +31,7 @@
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md", "docs/google-prebundle-sdks.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:firestore-watch-errors": "node scripts/test-firestore-watch-errors.cjs",
@@ -64,6 +64,7 @@
     "test:api:contracts": "node scripts/test-api-contracts.cjs",
     "test:workerd:fuzz": "node scripts/test-workerd-fuzz.cjs",
     "test:pack": "node scripts/test-pack.cjs",
+    "test:prebundle:sdks": "node scripts/test-google-prebundle-sdks.cjs",
     "test:types": "node scripts/test-types.cjs",
     "test:google": "node scripts/google-test.cjs",
     "test:request-streaming": "node scripts/test-request-streaming.cjs",
