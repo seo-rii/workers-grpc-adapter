@@ -52,6 +52,7 @@ async function main() {
             assert.equal(response.status, 200, data.diagnostic);
             assert.equal(data.status, 'passed');
             assert.equal(data.results.length, 60);
+            assert.equal(data.earlyResponses.length, 18);
             assert.equal(data.state.active, 0);
             assert.equal(data.state.finalized, 24);
             report.invocations.push({ invocation, ...data });
