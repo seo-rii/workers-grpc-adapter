@@ -257,6 +257,22 @@ test('EVIDENCE wire accepts the complete 1488 public and 286 parser receipts wit
     runtimes: ['node', 'workerd'], modes: ['cloudflare', 'grpc-web'], scenarioCount: 96, allocationScenarioCount: 7 });
 });
 
+test('EVIDENCE wire catalog mapping agrees with the reviewed runtime receipts', () => {
+  const { pointer } = require('../scripts/test-evidence.cjs');
+  const mapping = require('../compatibility/test-evidence.json');
+  const report = fixture();
+  for (const item of mapping.cases.filter(item => item.id.startsWith('WIRE-'))) {
+    const reference = item.references.find(ref => ref.report === 'verification/wire-catalog.json');
+    assert.ok(reference, `${item.id} has wire execution evidence`);
+    const matches = pointer(report, reference.array).filter(row =>
+      Object.entries(reference.where).every(([key, value]) => row[key] === value));
+    assert.equal(matches.length, 1, `${item.id} selects one receipt`);
+    for (const assertion of reference.assertions) {
+      assert.deepEqual(pointer(matches[0], assertion.pointer), assertion.equals, `${item.id}${assertion.pointer}`);
+    }
+  }
+});
+
 test('EVIDENCE wire rejects incomplete, relabelled or duplicate execution matrices and invented catalog coverage', () => {
   for (const mutate of [
     r => { r.runs.pop(); }, r => { r.runs[0].rows.pop(); }, r => { r.runs[1] = r.runs[0]; },
