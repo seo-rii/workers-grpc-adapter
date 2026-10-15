@@ -180,7 +180,7 @@ async function main() {
             for (const [location, entry] of esbuildEntries) lock.packages[location] = structuredClone(entry);
             const replacement = lock.packages['node_modules/@grpc/grpc-js'];
             Object.assign(replacement, { name: manifest.name, version: manifest.version, integrity: integrity(fs.readFileSync(actualTarball)) });
-            for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta']) {
+            for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta', 'bin']) {
                 if (manifest[key]) replacement[key] = manifest[key]; else delete replacement[key];
             }
             for (const [location, entry] of Object.entries(lock.packages)) {
@@ -218,7 +218,7 @@ async function main() {
             for (const extension of ['mts', 'cts']) {
                 for (const [name, source] of [['sdk-consumer', 'fixtures/google/types/consumer.mts'], ['sdk-contract', 'test/types-catalog-sdk.cts'],
                     ['adapter-config', 'test/types-catalog-config.cts'], ['adapter-server', 'test/types-server-streaming.cts'],
-                    ['adapter-sdk-cancellation', 'test/types-sdk-cancellation.cts'],
+                    ['adapter-sdk-cancellation', 'test/types-sdk-cancellation.cts'], ['build-doctor', 'test/types-build-doctor.cts'],
                     ['sdk-cancellation-google', 'test/types-sdk-cancellation-google.cts']]) {
                     fs.copyFileSync(path.join(root, source), path.join(fresh, `${name}.${extension}`));
                 }

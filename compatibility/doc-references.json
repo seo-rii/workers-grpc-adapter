@@ -23,6 +23,7 @@
     "docs/firestore-watch.md": "maintained",
     "docs/gcp-cloud-probe.md": "historical",
     "docs/google-prebundle.md": "maintained",
+    "docs/google-prebundle-sdks.md": "maintained",
     "docs/google-tests.md": "maintained",
     "docs/health.md": "maintained",
     "docs/interceptors.md": "maintained",

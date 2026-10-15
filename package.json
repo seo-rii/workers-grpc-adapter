@@ -19,6 +19,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "bin": { "wga-doctor": "./dist/build/doctor-cli.cjs" },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.js" },
     "./config": { "types": "./dist/config.d.ts", "import": "./dist/config.mjs", "require": "./dist/config.js" },
@@ -31,7 +32,7 @@
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md", "docs/sveltekit.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md", "docs/google-prebundle-sdks.md", "docs/sveltekit.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:sveltekit:prebundle": "node scripts/test-sveltekit-prebundle.cjs",
@@ -65,6 +66,7 @@
     "test:api:contracts": "node scripts/test-api-contracts.cjs",
     "test:workerd:fuzz": "node scripts/test-workerd-fuzz.cjs",
     "test:pack": "node scripts/test-pack.cjs",
+    "test:prebundle:sdks": "node scripts/test-google-prebundle-sdks.cjs",
     "test:types": "node scripts/test-types.cjs",
     "test:google": "node scripts/google-test.cjs",
     "test:request-streaming": "node scripts/test-request-streaming.cjs",
