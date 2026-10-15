@@ -68,6 +68,7 @@ function main() {
     const syntax = { status: 'passed', fileCount: syntaxFiles.length, includesGoogleFixtures: true, sdkExecution: false };
     fs.writeFileSync(path.join(output, 'syntax.json'), JSON.stringify(syntax, null, 2) + '\n');
     run('packaging', ['scripts/test-pack.cjs']);
+    run('google-prebundle-sdks', ['scripts/test-google-prebundle-sdks.cjs']);
     run('doc-examples', ['scripts/test-doc-examples.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
@@ -172,6 +173,7 @@ function main() {
         build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
         declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), docReferences: read('doc-references.json'), documentationSupport: read('documentation-support.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
+        googlePrebundleSdks: read('google-prebundle-sdks.json'),
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
