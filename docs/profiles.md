@@ -84,11 +84,21 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 
 Rules select guarded transformations: static `Root.fromJSON`, Datastore
 `Struct` and legacy key loads, static legacy setup, Buffer base64 conversion,
-Gaxios native Fetch defaults, Firestore Listen completion ordering, and bundled
-directory constants. Expected counts are enforced per rule and file. Updating
-a source hash alone cannot authorize a different AST shape or match count.
-Existing transform behavior and profile revisions remain unchanged by this
-manifest-format update.
+Gaxios native Fetch defaults, Firestore Listen completion ordering, bundled
+directory constants, and GAX package metadata resolution. Expected counts are
+enforced per rule and file. Updating a source hash alone cannot authorize a
+different AST shape or match count.
+
+Modern profile revision 3 pins `google-gax@6.7.0`'s metadata resolver. Its reviewed
+nested try/catch first reads a missing `build/package.json`, then the package
+root. The guarded transform redirects the first read to that same root, allowing
+esbuild to include the pinned version without retaining an unresolved runtime
+`require`. It checks both assignments, catch blocks and the absence of the
+alternate metadata file. Imported metadata resolvers require a transformation
+receipt in the final build audit. Source, AST or package-layout drift still
+fails the build. The focused regression verifies static bundling and metadata
+fallback precedence; it does not establish Google service or authentication
+support.
 
 Capabilities and required commands are declarations, not evidence of completed
 validation. Refer to the CI run and its reports for executed results. Package
