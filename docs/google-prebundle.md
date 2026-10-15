@@ -90,8 +90,8 @@ the installed integration fixture pins `supports-color` to `8.1.1`. Missing
 dependencies are reported by module specifier with `WGA_PREBUNDLE_EXTERNAL`.
 
 For SvelteKit, pack the generated directory and install its tarball as a server
-dependency. Import that package from routes, hooks, or a module under
-`src/lib/server`:
+dependency. Import that package from routes, hooks, or a module under the
+application's `./src/lib/server` directory:
 
 ```js
 import { Datastore, createWorkersGrpcTransport } from '@example/google-workers';
