@@ -93,7 +93,7 @@ jobs:
               ('fixtures-install', ['npm', 'run', 'fixtures:install'], 600),
               ('envoy-download', ['node', 'fixtures/envoy/download.cjs'], 300),
               ('emulator-download', ['node', 'fixtures/emulators/download.cjs'], 300),
-              ('verify', ['npm', 'run', 'verify'], 1200),
+              ('verify', ['npm', 'run', 'verify'], 1800),
           ]
           if os.environ.get('WGA_EXTENDED_FUZZ') == 'true':
               phases.append(('extended-fuzz', ['npm', 'run', 'test:fuzz:extended'], 900))

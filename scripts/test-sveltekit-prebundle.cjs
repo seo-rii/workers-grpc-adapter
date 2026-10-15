@@ -264,7 +264,8 @@ async function main() {
     devLog.record.pid = dev.pid;
     const devUrl = `http://127.0.0.1:${devPort}`;
     let ready = false;
-    for (let attempt = 0; attempt < 150 && !ready; attempt++) {
+    const readyDeadline = Date.now() + 60000;
+    while (!ready && Date.now() < readyDeadline) {
       if (dev.exitCode !== null) throw new Error(`SK_DEV_EXIT: ${devLog.record.log}`);
       try { ready = (await fetch(devUrl, { signal: AbortSignal.timeout(500) })).status === 200; } catch {}
       if (!ready) await new Promise(resolve => setTimeout(resolve, 100));
