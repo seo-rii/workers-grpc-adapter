@@ -585,7 +585,10 @@ export class WorkersCall {
             const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
             if (contentType !== 'application/grpc-web+proto' && contentType !== 'application/grpc-web') {
                 void response.body?.cancel().catch(() => {});
-                return { result: headerStatus ?? { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
+                // Preserve explicit remote failures, but a status header alone
+                // cannot turn an unsupported response representation into OK.
+                return { result: headerStatus && headerStatus.code !== status.OK ? headerStatus
+                    : { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
             }
             let pendingInitial: Metadata | undefined = policy ? initial : undefined;
             if (!policy) notify(() => this.listener!.onReceiveMetadata(initial));

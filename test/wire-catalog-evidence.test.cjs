@@ -129,6 +129,9 @@ const publicReceipts = [
   [27,"html","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
   [27,"json","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
   [27,"grpc-web-text","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
+  [27,"html-status-ok","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
+  [27,"json-status-ok","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
+  [27,"grpc-web-text-status-ok","stream",true,2,"WGA_NOT_GRPC_WEB",[],[],{},[0,0,0,1],[0,0],8,[null,null,null]],
 ];
 
 // Parser columns: id, scenario, code, error, frames, allocations, setCalls,
@@ -227,7 +230,7 @@ function fixture() {
   const report = { status: 'passed', development: false, sourceBuild: false, liveCloud: false,
     incomingCloudflareTranslation: false, nativeHttp2: false, controlledPeer: true, externalRequests: 0,
     compatibilityDate: '2026-09-21', node: 'v24.1.0', miniflare: '5.20260921.0-alpha', workerd: '1.20260921.1',
-    bundleSha256: 'a'.repeat(64), cleanupVerifiedBeforeDispose: true, runtimeDisposed: true, caseCount: 1476,
+    bundleSha256: 'a'.repeat(64), cleanupVerifiedBeforeDispose: true, runtimeDisposed: true, caseCount: 1488,
     runs: ['node', 'workerd'].flatMap(runtime => ['cloudflare', 'grpc-web'].map(mode => ({ runtime, mode, status: 'passed', rows: publicRows(mode) }))),
     allocation: { status: 'passed', runtime: 'node', layer: 'internal-parser', sourceBuild: false, nodeVersion: '24.1.0', spyRestored: true,
       positiveControl: { allocUnsafeSizes: [7, 4], allocUnsafeBytes: 11, setCalls: 1, setBytes: 3, concatCalls: 1, concatBytes: 4,
@@ -246,7 +249,7 @@ function reject(mutate, label = 'receipt mutation') {
   assert.throws(() => validateWireCatalogReport(report), /WGA_EVIDENCE_INVALID/, label);
 }
 
-test('EVIDENCE wire accepts the complete 1476 public and 286 parser receipts with two recorded policy differences', () => {
+test('EVIDENCE wire accepts the complete 1488 public and 286 parser receipts with two recorded policy differences', () => {
   const report = fixture(); validateWireCatalogReport(report);
   assert.equal(report.catalogCases.length, 27);
   assert.deepEqual(report.catalogCases.filter(value => !value.catalogMatch).map(value => value.id), ['WIRE-013', 'WIRE-016']);
@@ -313,7 +316,7 @@ test('EVIDENCE wire rejects metadata, encoded budget and request ownership mutat
 test('EVIDENCE wire requires actual source disposal, bounded owners and pre-close resource recovery', () => {
   for (const key of Object.keys(empty)) reject(r => { row(r, 'normal-unary').execution[key] = 1; }, key);
   for (const key of ['activeCalls', 'queuedCalls', 'bufferedBytes']) reject(r => { row(r, 'normal-unary').resources[key] = 1; }, key);
-  for (const variant of ['html', 'json', 'grpc-web-text', 'headers-alphabet', 'headers-budget-limit-plus-one']) {
+  for (const variant of ['html', 'json', 'grpc-web-text', 'html-status-ok', 'json-status-ok', 'grpc-web-text-status-ok', 'headers-alphabet', 'headers-budget-limit-plus-one']) {
     reject(r => { row(r, variant).source.cancels = 0; }, variant);
     reject(r => { row(r, variant).source.pulls = 1; }, variant);
   }

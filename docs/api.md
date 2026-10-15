@@ -32,6 +32,11 @@ Import configuration from the `/config` subpath before constructing clients. Bot
 | `grpc-web` | `application/grpc-web+proto` | `passthrough` |
 
 Both binary response content types are accepted. The protobuf framing is the same in either mode.
+Missing or unsupported response content types cannot succeed, including an empty
+server stream with `grpc-status: 0`. An explicit non-OK gRPC header status retains
+its code, details and metadata; otherwise the response uses the HTTP-to-gRPC error
+mapping with `WGA_NOT_GRPC_WEB` (`UNKNOWN` for HTTP 200). These responses are not
+retried, and their body cleanup does not delay the terminal result.
 
 ### Cloudflare automatic outgoing conversion
 

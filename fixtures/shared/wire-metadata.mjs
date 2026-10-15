@@ -164,5 +164,8 @@ export function* metadataCases(mode) {
     ['grpc-web-text', 'application/grpc-web-text+proto', Buffer.concat([frame(payload), trailer()]).toString('base64')]]) {
     yield { id: 'WIRE-027', variant: name, kind: 'stream', headers: [['content-type', type]], chunks: chunks(Buffer.from(body)),
       expected: { code: 2, details: 'WGA_NOT_GRPC_WEB', messages: [] }, expectInitial: [], expectTrailing: {} };
+    yield { id: 'WIRE-027', variant: `${name}-status-ok`, kind: 'stream',
+      headers: [['content-type', type], ['grpc-status', '0']], chunks: chunks(Buffer.from(body)),
+      expected: { code: 2, details: 'WGA_NOT_GRPC_WEB', messages: [] }, expectInitial: [], expectTrailing: {} };
   }
 }
