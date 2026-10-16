@@ -12,7 +12,7 @@ const client = new Client('service.example', credentials.createSsl(), {
 });
 ```
 
-The enum values match grpc-js: `identity = 0`, `deflate = 1`, `gzip = 2`. Identity remains the default. Generated Google clients can pass the same option through `gaxOptions()`. Metadata cannot override adapter-owned encoding headers.
+The enum values match grpc-js: `identity = 0`, `deflate = 1`, `gzip = 2`. Identity remains the default. Generated Google clients can pass the same option through `gaxOptions()`. Metadata cannot override adapter-owned encoding headers. User and credential metadata containing HTTP `Content-Encoding` are rejected with `WGA_RESERVED_METADATA` before Fetch, because the adapter does not encode the enclosing HTTP body.
 
 Requests advertise `grpc-accept-encoding: identity,deflate,gzip`; `grpc-encoding` identifies the configured request codec. The grpc-js `NoCompress` write flag preserves an individual message without compression while retaining that header, as native grpc-js does. The supported client API still accepts only one request message.
 
