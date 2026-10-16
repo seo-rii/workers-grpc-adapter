@@ -220,10 +220,14 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             if (request.signal.aborted) callerAbort();
             armTimer();
             const metadata = metadataFromHeaders(request.headers);
-            if (!request.body) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
+            const requestBody = request.body;
+            if (!requestBody && !route.definition.requestStream) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
             const requestEncoding = responseCompression(request.headers);
             const decoded = (async function* () {
-                for await (const value of decodeFrames(request.body!, receiveLimit, inputAborter.signal,
+                // A missing Fetch body represents the same zero-message upload
+                // as an empty stream for client- and bidi-streaming methods.
+                if (!requestBody) return;
+                for await (const value of decodeFrames(requestBody, receiveLimit, inputAborter.signal,
                     { encoding: requestEncoding, maxWireBytes: wireLimit })) {
                     if (value.trailer) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
                     yield value.payload;
