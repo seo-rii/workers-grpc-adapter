@@ -24,7 +24,7 @@ function refreshLock(fixture) {
     // The development artifact keeps its version; bind the existing graph to these exact bytes.
     entry.version = manifest.version;
     entry.integrity = integrity;
-    for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta']) {
+    for (const key of ['license', 'engines', 'dependencies', 'peerDependencies', 'peerDependenciesMeta', 'bin']) {
         if (manifest[key]) entry[key] = manifest[key];
         else delete entry[key];
     }

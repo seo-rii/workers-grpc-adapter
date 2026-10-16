@@ -1,0 +1,17 @@
+packages:
+  - .
+  - packages/*
+
+overrides:
+  '@grpc/grpc-js': 'file:../../artifacts/workers-grpc-adapter-0.0.1.tgz'
+  '@google-cloud/secret-manager>google-gax': 6.5.0
+  'google-gax@5.0.8>google-auth-library': 10.9.1
+  'google-gax@6.5.0>google-auth-library': 11.1.0
+  gaxios: 7.3.1
+  protobufjs: 7.6.6
+  '@grpc/proto-loader': 0.8.1
+  sharp: 0.35.5
+
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

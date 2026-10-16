@@ -1,0 +1,15 @@
+{
+  "name": "@wga-fixture/google-workers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "workerd": { "types": "./generated/index.d.mts", "default": "./generated/index.mjs" },
+      "worker": { "types": "./generated/index.d.mts", "default": "./generated/index.mjs" },
+      "browser": "./generated/server-only.cjs",
+      "import": { "types": "./generated/index.d.mts", "default": "./generated/index.mjs" },
+      "require": { "types": "./generated/index.d.cts", "default": "./generated/index.cjs" }
+    }
+  }
+}
