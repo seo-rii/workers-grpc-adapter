@@ -166,7 +166,6 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const compiler = /^(\d+)\.(\d+)\./.exec(ts.version || '');
   if (!compiler || Number(compiler[1]) !== 5 || Number(compiler[2]) < 8) fail('WGA_UNSUPPORTED_DEPENDENCY', 'Build profiles require TypeScript >=5.8 <6; use an isolated build workspace for other app compilers');
   fs.mkdirSync(outdir, { recursive: true });
-  const registryFile = path.join(outdir, 'static-protobuf.cjs');
   const unique = new Map();
   let legacyKeySchema, datastoreStructSchema;
   for (const schema of profile.schemas) {
@@ -190,7 +189,34 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const cacheKey = hash(JSON.stringify({ profileSha256: hash(JSON.stringify(profile)), transformer, inputSha256 }));
   const registryPrefix = `${profile.id}:${profile.revision}:${cacheKey}:`;
   const registrySource = `const {createHash}=require('node:crypto');\nconst registry={${[...unique].map(([key, item]) => `${JSON.stringify(registryPrefix + key)}:${item.source}`).join(',\n')}};\nexports.fromJSON=function(P,json,options){if(options && (options.keepCase!==false || options.longs!==String || options.enums!==String || options.defaults!==true || options.oneofs!==true || Object.keys(options).some(key=>!['keepCase','longs','enums','defaults','oneofs','includeDirs'].includes(key)))){const error=new Error('WGA_SCHEMA_MISMATCH: unsupported loader options');error.code='WGA_SCHEMA_MISMATCH';throw error;}const key=${JSON.stringify(registryPrefix)}+createHash('sha256').update(JSON.stringify(json)).digest('hex');const hydrate=registry[key];if(!hydrate){const error=new Error('WGA_SCHEMA_MISMATCH: unknown static protobuf schema');error.code='WGA_SCHEMA_MISMATCH';throw error;}const root=new P.Root();if(json.options)root.setOptions(json.options);root.addJSON(json.nested);return hydrate(P,root);};\n`;
-  fs.writeFileSync(registryFile, registrySource);
+  const registrySha256 = hash(registrySource);
+  const registryFile = path.join(outdir, `static-protobuf-${registrySha256}.cjs`);
+  // Different prepared profiles may share an output directory. Publish each
+  // identity completely before exposing its path, without replacing a registry
+  // already owned by another preset (including a concurrent preparation).
+  if (!fs.existsSync(registryFile)) {
+    const staging = fs.mkdtempSync(path.join(outdir, '.wga-registry-'));
+    try {
+      const temporaryFile = path.join(staging, 'registry.cjs');
+      fs.writeFileSync(temporaryFile, registrySource);
+      try { fs.linkSync(temporaryFile, registryFile); }
+      catch (error) { if (error.code !== 'EEXIST') throw error; }
+    } finally { fs.rmSync(staging, { recursive: true, force: true }); }
+  }
+  function validateRegistry() {
+    let actual = null;
+    try { actual = hash(fs.readFileSync(registryFile)); } catch { /* Report a missing or unreadable generated input consistently. */ }
+    if (actual !== registrySha256) fail('WGA_REGISTRY_INTEGRITY', `${registryFile}: expected ${registrySha256}, actual ${actual}`);
+  }
+  validateRegistry();
+  const registryPhysicalFile = fs.realpathSync(registryFile);
+  const registryTarget = { path: registryFile };
+  function registryFor(input) {
+    const absolute = path.resolve(projectRoot, input);
+    if (absolute === registryFile) return registryTarget;
+    const canonical = fs.existsSync(absolute) ? fs.realpathSync(absolute) : absolute;
+    if (canonical === registryPhysicalFile) return registryTarget;
+  }
   const transformed = new Map();
   const moduleReceipts = new Map();
   const moduleIdentity = (namespace, input, suffix = '') => JSON.stringify([namespace || 'file', path.resolve(projectRoot, input), suffix]);
@@ -220,9 +246,9 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         expected: resolution.resolve(target.file.path), actual: canonical, logicalPath: path.join(projectRoot, target.file.path), physicalPath: canonical, reason: 'unverified-installation' });
     }
   }
-  function moduleFor(input, workingDirectory) {
+  function moduleFor(input, workingDirectory, lookup = targetFor) {
     function match(namespace, name) {
-      const absolute = path.resolve(workingDirectory, name), file = targetFor(absolute);
+      const absolute = path.resolve(workingDirectory, name), file = lookup(absolute);
       if (file) return { file, identity: moduleIdentity(namespace, absolute) };
       // A real path can contain literal ?, # or :, including directory names.
       // Only interpret a suffix or namespace after trying that complete path.
@@ -230,7 +256,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
       for (let index = name.length - 1; index >= 0; index--) {
         if (name[index] !== '?' && name[index] !== '#') continue;
         const source = path.resolve(workingDirectory, name.slice(0, index));
-        const target = targetFor(source);
+        const target = lookup(source);
         if (target) return { file: target, identity: moduleIdentity(namespace, source, name.slice(index)) };
       }
     }
@@ -250,13 +276,19 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
     coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
     if (!metafile || !metafile.inputs) fail('WGA_TRANSFORM_COVERAGE', 'Build requires an esbuild metafile');
     validateProfile(projectRoot, profile);
+    validateRegistry();
     // Re-resolution catches dependency-link changes after preparation.
     const current = resolveProfileInputs(projectRoot, profile);
     for (const item of resolution.paths) {
       if (current.resolve(item.path) !== item.physicalPath) fail('WGA_SOURCE_IDENTITY', `${item.path}: inspected installation changed`);
     }
-    const required = new Set(), missing = new Set(), missingInputs = [];
+    const required = new Set(), missing = new Set(), missingInputs = [], missingRegistries = [];
     for (const input of Object.keys(metafile.inputs)) {
+      const registry = moduleFor(input, workingDirectory, registryFor);
+      if (registry) {
+        if (moduleReceipts.get(registry.identity) !== registryFile) missingRegistries.push(input);
+        continue;
+      }
       const module = moduleFor(input, workingDirectory);
       if (!module) continue;
       required.add(module.file.path);
@@ -264,20 +296,26 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
         missing.add(module.file.path); missingInputs.push(input);
       }
     }
-    coverage = { required: required.size, applied: required.size - missing.size, unused: profile.files.length - required.size, passed: missing.size === 0 };
+    coverage = { required: required.size, applied: required.size - missing.size, unused: profile.files.length - required.size, passed: missing.size === 0 && missingRegistries.length === 0 };
     if (missing.size) fail('WGA_TRANSFORM_COVERAGE', `Required module transformations were bypassed: ${missingInputs.join(', ')}`);
+    if (missingRegistries.length) fail('WGA_REGISTRY_INTEGRITY', `Generated registry loading was bypassed: ${missingRegistries.join(', ')}`);
     return { ...coverage };
   }
   const plugin = {
     name: 'wga-google-static-v1',
     setup(build) {
       if (build.initialOptions) build.initialOptions.metafile = true;
-      build.onStart?.(() => { transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); });
+      build.onStart?.(() => { transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); validateRegistry(); });
       build.onEnd?.(result => {
-        if (result.errors.length) return;
+        if (result.errors.length) { validateRegistry(); return; }
         verifyBuild(result.metafile, path.resolve(build.initialOptions?.absWorkingDir || process.cwd()));
       });
-      build.onLoad({ filter: /\.js$/ }, args => {
+      build.onLoad({ filter: /\.(?:c?js)$/ }, args => {
+        if (registryFor(args.path)) {
+          validateRegistry();
+          moduleReceipts.set(moduleIdentity(args.namespace, args.path, args.suffix || ''), registryFile);
+          return { contents: registrySource, loader: 'js', resolveDir: path.dirname(registryFile) };
+        }
         const file = targetFor(args.path);
         if (!file) return;
         const sourcePath = resolution.resolve(file.path);
@@ -432,7 +470,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
     plugin,
     registryFile,
     verifyBuild,
-    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), cacheKey, inputSha256, transformer, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks, resolvedPaths: resolution.paths, transformCoverage: { ...coverage }, packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count, ...(item.common ? { common: item.common } : {}) })), registrySha256: hash(registrySource), transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
+    manifest() { return { profile: profile.id, revision: profile.revision, profileSha256: hash(JSON.stringify(profile)), cacheKey, inputSha256, transformer, capabilities: profile.capabilities, requiredChecks: profile.requiredChecks, resolvedPaths: resolution.paths, transformCoverage: { ...coverage }, packages: profile.packages, loaderOptions: profile.loaderOptions, loaderOptionsSha256: hash(JSON.stringify(profile.loaderOptions)), schemas: [...unique].map(([jsonSha256, item]) => ({ path: item.schema, sourceSha256: item.sha256, jsonSha256, types: item.count, ...(item.common ? { common: item.common } : {}) })), registrySha256, transformed: [...transformed.values()].sort((a,b)=>a.path.localeCompare(b.path)), nodeModulesModified: false, globalPrototypePatched: false }; },
   };
 }
 /** Read-only checks; optional AST validation uses a disposable generated registry. */

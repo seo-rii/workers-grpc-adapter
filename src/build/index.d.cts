@@ -47,6 +47,7 @@ export interface GoogleWorkerProfileInspection {
 }
 export declare function createGoogleWorkerBuild(options: GoogleWorkerBuildOptions): {
   plugin: import('esbuild').Plugin;
+  /** Opaque content-addressed path; distinct build identities can share outdir. */
   registryFile: string;
   /** Verify actual bundle inputs; inspection alone never establishes coverage. */
   verifyBuild(metafile: import('esbuild').Metafile, workingDirectory?: string): GoogleWorkerTransformCoverage;
