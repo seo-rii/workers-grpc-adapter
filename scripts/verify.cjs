@@ -68,6 +68,7 @@ function main() {
     const syntax = { status: 'passed', fileCount: syntaxFiles.length, includesGoogleFixtures: true, sdkExecution: false };
     fs.writeFileSync(path.join(output, 'syntax.json'), JSON.stringify(syntax, null, 2) + '\n');
     run('packaging', ['scripts/test-pack.cjs']);
+    run('google-prebundle-sdks', ['scripts/test-google-prebundle-sdks.cjs'], [0], 900000);
     run('doc-examples', ['scripts/test-doc-examples.cjs']);
     run('workers-preflight', ['scripts/workers-test.cjs']);
     run('workers-sdk', ['scripts/workers-sdk-test.cjs']);
@@ -107,6 +108,7 @@ function main() {
     run('datastore-mutations', ['scripts/test-datastore-mutations.cjs']);
     run('workers-resilience', ['scripts/test-workers-resilience.cjs']);
     run('google-worker-build', ['scripts/test-google-worker-build.cjs']);
+    run('sveltekit-prebundle', ['scripts/test-sveltekit-prebundle.cjs'], [0], 900000);
     run('hono-prebundle', ['scripts/test-hono-prebundle.cjs'], [0], 900000);
     run('gcp-probe-build', ['scripts/test-gcp-probe.cjs']);
     run('gcp-probe-readiness', ['scripts/test-gcp-readiness.cjs']);
@@ -173,6 +175,7 @@ function main() {
         build: read('build.json'), vendorProvenance: read('vendor-provenance.json'), tests: { ...totals, sdkTestsIncluded: false, googleHarnessOnlyTestsIncluded: true, actualLoopbackHttp2InteropIncluded: true, upstreamGrpcJsOracle: true },
         declarations: read('types.json'), packaging: read('packaging.json'), docExamples: read('doc-examples.json'), documentationPolicy: read('documentation-policy.json'), docReferences: read('doc-references.json'), documentationSupport: read('documentation-support.json'), syntax,
         googleSdk: { graph: sdkGraph, declarations: sdkTypes, local: sdkLocal },
+        googlePrebundleSdks: read('google-prebundle-sdks.json'),
         googleAuth: read('google-auth.json'),
         googleEmulators, firestoreWatch, firestoreRecovery, firestoreWatchErrors, firestoreReadErrors, modernFirestoreRecovery: read('modern-firestore-recovery.json'), parentCalls: read('parent-calls.json'), modernFirestoreWatch: read('modern-firestore-watch.json'), emulatorLifecycle: read('emulator-lifecycle.json'),
         nativeDifferential: read('native-differential.json'),
@@ -182,6 +185,7 @@ function main() {
         workerdServerStreaming: read('workerd-server-streaming.json'), workerdTransportExtensions: read('workerd-transport-extensions.json'), transportBenchmark: read('benchmark.json'), sdkBenchmark: read('sdk-benchmark.json'),
         workers: read('workers.json'), workersSdk: read('workers-sdk.json'), workersGaxModes: read('workers-gax-modes.json'),
         workersLazySdk: read('workers-lazy-sdk.json'), workersAuth: read('workers-auth.json'),
+        sveltekitPrebundle: read('sveltekit-prebundle.json'),
         honoPrebundle: read('hono-prebundle.json'),
         workersFederatedAuth: read('workers-federated-auth.json'), workersLegacyAuth: read('workers-legacy-auth.json'), workersFetcher: read('workers-fetcher.json'), workersCompression: read('workers-compression.json'), workersRetries: read('workers-retries.json'), health: read('health.json'), workersServer: read('workers-server.json'), modernSdk: read('modern-sdk.json'), requestStreaming: read('request-streaming.json'), streamingFeasibility: read('streaming-feasibility.json'), secretManagerExtended,
         datastorePagination, datastoreLookup, datastoreTransactions, datastoreMutations, workersResilience: read('workers-resilience.json'),

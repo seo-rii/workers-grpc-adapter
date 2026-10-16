@@ -13,6 +13,9 @@ Start with the project [README](../README.md), then use these guides for the cur
 | [Fetch server](server.md) | All four RPC shapes, typed handlers and service-binding lifecycle |
 | [Structured status details](status-details.md) | Optional bounded error envelopes and isolated detail decoders |
 | [SDK profiles](profiles.md) | Declarative pins, diagnostics and transformer-aware generation identity |
+| [Google SDK prebundles](google-prebundle.md) | Server-only artifacts with explicit exports and one owned adapter runtime |
+| [Installed SDK prebundle matrix](google-prebundle-sdks.md) | Firestore and Secret Manager value, error, typing and cancellation boundaries in workerd |
+| [Installed SvelteKit integration](sveltekit.md) | Frozen pnpm install, prebundle, development SSR, production build and local workerd evidence |
 | [Hono installed application](hono.md) | Pinned pnpm prebundle, real middleware, local workerd RPCs and request cancellation |
 | [SDK performance](sdk-performance.md) | Actual SDK Worker bundle, startup, latency and sampled heap baselines |
 | [Call and stream lifetime](call-lifecycle.md) | Cancellation, destruction, iterator exit and pending writes |
