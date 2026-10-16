@@ -266,7 +266,7 @@ test('SDK query termination follows source and wrapper destruction before and af
                     assert.equal(parent.cancelled, !eof); assert.equal(cancellations, eof ? 0 : 1);
                     if (eof) assert.deepEqual(errors, [], 'Cleanup cannot reverse successful EOF');
                     else if (owner === 'wrapper') assert.deepEqual(errors, [wrapperFailure]);
-                    else if (failed) assert.deepEqual(errors, [cleanupFailure]);
+                    else if (failed && !delayed) assert.deepEqual(errors, [cleanupFailure]);
                     else { assert.equal(errors.length, 1); assert.equal(errors[0].message, 'WGA_SDK_STREAM_CLOSED'); }
                     assert.equal(destroys, 1); assert.equal(sourceEnds, 1); assert.equal(source.closed, true);
                     assert.equal(source._destroy, originalDestroy);

@@ -33,14 +33,18 @@ export async function runSdkSourceTermination() {
     const signal = { aborted: false,
       addEventListener(_event, listener) { subscriptions.add(listener); },
       removeEventListener(_event, listener) { subscriptions.delete(listener); } };
-    let source, parent, originalDestroy, destroys = 0, cancellations = 0, closes = 0, ends = 0;
+    let source, parent, originalDestroy, beforeCleanup = null, destroys = 0, cancellations = 0, closes = 0, ends = 0;
     const errors = [];
     const stream = cancellableQueryStream(options => {
       parent = options.otherArgs.options.parent;
       parent.on('cancelled', () => { cancellations++; });
       source = new Transform({ objectMode: true, emitClose: false, read() {}, destroy(_error, callback) {
         destroys++;
-        const finish = () => { callback(failed ? cleanupError : null); cleanup.resolve(); };
+        const finish = () => {
+          if (delayed) beforeCleanup = { destroyed: stream.destroyed, parentCancelled: parent.cancelled,
+            signalListeners: subscriptions.size };
+          callback(failed ? cleanupError : null); cleanup.resolve();
+        };
         if (delayed) setTimeout(finish, 0); else finish();
       } });
       originalDestroy = source._destroy;
@@ -52,7 +56,7 @@ export async function runSdkSourceTermination() {
       stream.resume(); source.destroy();
       await bounded(cleanup.promise); await new Promise(resolve => setTimeout(resolve, 0));
       check(stream.destroyed, 'SOURCE_TERMINATION');
-      results.push({ delayed, failed, destroyed: stream.destroyed, parentCancelled: parent.cancelled,
+      results.push({ delayed, failed, beforeCleanup, destroyed: stream.destroyed, parentCancelled: parent.cancelled,
         cancellations, closes, ends, errors: errors.map(error => error.message),
         cleanupErrorPreserved: failed ? errors[0] === cleanupError : null,
         destroys, destroyRestored: source._destroy === originalDestroy,

@@ -244,6 +244,15 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
                 };
                 try { original.call(this, error, done); }
                 catch (failure) { done(failure instanceof Error ? failure : new Error('WGA_SDK_STREAM_CLEANUP')); }
+                // Destruction has already ended readable delivery. Cleanup may
+                // wait for a scoped RPC which only wrapper cancellation stops,
+                // or never finish at all. Let synchronous source errors run
+                // first, then end local waiting independently of that cleanup.
+                nextTick(() => {
+                    if (!complete && !stream.destroyed) {
+                        stream.destroy(error ?? this.errored ?? new Error('WGA_SDK_STREAM_CLOSED'));
+                    }
+                });
             };
             source._destroy = observedDestroy;
             restoreDestroy = () => {
