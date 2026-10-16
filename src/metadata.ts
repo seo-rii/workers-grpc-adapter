@@ -85,6 +85,9 @@ export interface MetadataOptions {
   corked?: boolean;
 }
 
+/** Internal admission snapshot, including context consumed by interceptors. */
+export let snapshotMetadata: (metadata: Metadata) => Metadata;
+
 /**
  * A class for storing metadata. Keys are normalized to lowercase ASCII.
  */
@@ -92,6 +95,17 @@ export class Metadata {
   protected internalRepr: MetadataObject = new Map<string, MetadataValue[]>();
   private options: MetadataOptions;
   private opaqueData: Map<string, unknown> = new Map();
+
+  static {
+    snapshotMetadata = metadata => {
+      const result = metadata.clone();
+      result.options = { ...metadata.options };
+      // Opaque values may have application-specific identity. Isolate their
+      // key assignments without cloning the arbitrary values themselves.
+      result.opaqueData = new Map(metadata.opaqueData);
+      return result;
+    };
+  }
 
   constructor(options: MetadataOptions = {}) {
     this.options = options;

@@ -38,6 +38,8 @@ Waiting calls enter a FIFO queue before outgoing interceptor startup, authentica
 
 Supplying `maxConcurrentCalls` makes outgoing startup asynchronous even when a slot is immediately available. Omitting it preserves synchronous requester startup. A slot counts the whole admitted logical call, including adapter retry backoff. An SDK retry creates a new call and obtains its own admission. Slots count logical calls, not sockets, responses awaiting headers, or Cloudflare connection allowances.
 
+With `maxConcurrentCalls`, each call snapshots its supplied metadata before admission: headers and binary values, metadata options, and opaque key assignments. Reusing or editing the caller's `Metadata` while a call waits cannot replace that call's authorization or interceptor context. Outgoing interceptors receive the call's own snapshot and can rewrite it normally. Opaque values retain their application-defined object identity; the adapter does not clone arbitrary objects stored with `setOpaque()`.
+
 Cancelling an admitted RPC returns its admission slot. Buffer ownership is independent: a custom Fetch implementation that ignores `AbortSignal` can retain an encoded request body until it settles. Those leases remain charged even after the local RPC has terminated, so another call may still encounter the byte budget.
 
 ## Byte ownership and diagnostics

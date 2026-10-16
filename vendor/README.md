@@ -67,9 +67,10 @@ The patch boundary follows P-01 through P-06 of the
 - Factory, metadata, typed stream surfaces, error stacks, and StatusBuilder reuse
   the upstream implementations with the recorded patches. Async interceptor
   ordering and stream-destroy cancellation have explicit adapter corrections.
-  Metadata adds only
-  a transport iterator and substitutes the default error logger to avoid native
-  process/environment tracing initialization.
+  Metadata adds a transport iterator and an internal admission snapshot that
+  preserves interceptor context while isolating headers, options and opaque key
+  assignments. Public `clone()` semantics remain unchanged. It substitutes the
+  default error logger to avoid native process/environment tracing initialization.
 - HTTP/2 and TLS references are type-only. Parent calls use the adapter's structural
   deadline/cancellation contract; native channel, resolver, retry, server and
   transport code is excluded.

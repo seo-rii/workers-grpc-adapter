@@ -1,4 +1,4 @@
-import { Metadata } from './metadata';
+import { Metadata, snapshotMetadata } from './metadata';
 import { status, propagate, TransportError } from './status';
 import type { ResourceBudget } from './resources';
 import type { CallObservation } from './observer';
@@ -62,6 +62,12 @@ export class CallLifetime implements InterceptingCallInterface {
         if (!this.attachParent(flags)) return;
         this.armTimer();
         if (this.terminal) return;
+        // Admission can defer even an immediately available slot. Own the
+        // caller's headers and interceptor context before yielding to it.
+        if (this.resources?.limits.maxConcurrentCalls !== undefined) {
+            try { metadata = snapshotMetadata(metadata); }
+            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); return; }
+        }
         const begin = () => {
             if (this.terminal) return;
             this.chainStarted = true;
