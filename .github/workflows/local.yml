@@ -83,8 +83,12 @@ jobs:
           npm_pin = json.loads(Path('package.json').read_text())['packageManager']
           if not re.fullmatch(r'npm@\d+\.\d+\.\d+', npm_pin):
               raise ValueError('packageManager must pin an exact npm version')
+          pnpm_pin = json.loads(Path('fixtures/sveltekit/package.json').read_text())['packageManager']
+          if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', pnpm_pin):
+              raise ValueError('SvelteKit fixture must pin an exact pnpm version')
           phases = [
               ('npm-setup', ['npm', 'install', '--global', npm_pin, '--ignore-scripts', '--no-audit', '--no-fund'], 300),
+              ('pnpm-setup', ['npm', 'install', '--global', pnpm_pin, '--ignore-scripts', '--no-audit', '--no-fund'], 300),
               ('root-install', ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], 600),
               ('fixtures-install', ['npm', 'run', 'fixtures:install'], 600),
               ('envoy-download', ['node', 'fixtures/envoy/download.cjs'], 300),
