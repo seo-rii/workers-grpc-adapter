@@ -87,11 +87,19 @@ export class CallLifetime implements InterceptingCallInterface {
     private startChain(metadata: Metadata): void {
         try {
             this.nextCall!.start(metadata, {
-                onReceiveMetadata: value => { if (!this.terminal) this.listener?.onReceiveMetadata?.(value); },
-                onReceiveMessage: value => { if (!this.terminal) this.listener?.onReceiveMessage?.(value); },
-                onReceiveStatus: value => this.finish(value, true),
+                onReceiveMetadata: value => { if (!this.stopIfExpired()) this.listener?.onReceiveMetadata?.(value); },
+                onReceiveMessage: value => { if (!this.stopIfExpired()) this.listener?.onReceiveMessage?.(value); },
+                onReceiveStatus: value => { if (!this.stopIfExpired()) this.finish(value, true); },
             });
         } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); }
+    }
+    private stopIfExpired(): boolean {
+        if (this.terminal) return true;
+        if (this.deadline === Infinity || this.deadline > Date.now()) return false;
+        // An interceptor continuation can arrive after expiry before the
+        // deadline timer gets a turn. Check the logical delivery boundary too.
+        this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+        return true;
     }
     private attachParent(flags: number): boolean {
         const parent = this.options.parent;
