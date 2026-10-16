@@ -72,6 +72,8 @@ Each helper installs a private, non-plain parent object at `otherArgs.options.pa
 
 The factory must pass the supplied options through to every SDK operation it starts, and return the complete operation's promise or query source. Using an SDK method that discards those options cannot provide underlying RPC cancellation. This API does not apply to arbitrary Firestore high-level methods, REST fallbacks, native grpc-js transports, or SDK versions outside the tested profiles.
 
+If a query factory returns a source whose destruction already started, the helper terminates without retaining helper listeners on that source. The outstanding `_destroy` callback cannot be observed retroactively. One shared guard each for `error` and `close` handles a late cleanup error; either event removes both guards. Repeated wrappers do not add more guards, and the guards retain no helper, parent, signal or deadline. A source with `emitClose: false` that finishes cleanup silently keeps these two source-owned guards because there is no completion event; no polling timer is added.
+
 Cancellation and the total deadline belong only to one helper invocation. Concurrent operations on the same client keep their own scopes; cancelling or expiring a helper never closes the client or cancels unrelated calls. Reuse immutable client/transport configuration, and create a new helper for each request-owned operation; do not retain its GAX options or `AbortSignal` for later requests. Credentials, authentication token refresh and durable background work remain responsibilities of their respective client/application layers.
 
 ## Verification

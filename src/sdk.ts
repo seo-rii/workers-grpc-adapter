@@ -108,6 +108,14 @@ function subscribe(signal: AbortSignal | undefined, cancel: () => void): () => v
     return () => signal.removeEventListener('abort', cancel);
 }
 
+// An already-running _destroy callback cannot be observed retroactively, and
+// emitClose:false can finish without an event. These shared source-owned guards
+// handle a late error without retaining a helper, parent, signal or deadline.
+function releasePendingSourceGuards(this: Readable): void {
+    this.removeListener('error', releasePendingSourceGuards);
+    this.removeListener('close', releasePendingSourceGuards);
+}
+
 /** Opt-in cancellation and a total deadline for an SDK promise whose RPC options reach this adapter. */
 export function cancellableCall<T, Options extends object = object>(
     start: (gaxOptions: Options & SdkGaxOptions) => PromiseLike<T>,
@@ -220,7 +228,15 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
         const candidate = start(gaxOptions);
         if (!(candidate instanceof Readable)) throw new TypeError('WGA_SDK_QUERY_SOURCE');
         source = candidate;
-        source.on('error', onError); source.on('close', onSourceClosed);
+        if (source.destroyed && !source.closed) {
+            // Repeated wrappers of the same source share one guard per event.
+            if (!source.listeners('error').includes(releasePendingSourceGuards)) {
+                source.once('error', releasePendingSourceGuards);
+                source.once('close', releasePendingSourceGuards);
+            }
+        } else {
+            source.on('error', onError); source.on('close', onSourceClosed);
+        }
         if (!source.destroyed) {
             // The helper owns this one source. Observe its standard _destroy
             // callback as well as events: emitClose:false sources otherwise
