@@ -127,6 +127,20 @@ needs application files, bundler options/version and other dependency inputs in
 its key. Absolute output paths in transformed imports are not a relocatable
 bundle cache contract.
 
+Generated registries use content-addressed filenames inside `outdir`. Distinct
+profiles or build identities can share that directory without replacing each
+other's registry. Identical inputs reuse an existing file after checking its
+hash. Treat the returned `registryFile` as an opaque path rather than constructing
+its filename. Clean old registries only after the presets that reference them
+are no longer in use.
+
+The preset checks registry bytes during preparation, at build startup, when
+loading the generated module, and at final verification. A missing or changed
+registry fails with `WGA_REGISTRY_INTEGRITY`; it is never silently regenerated
+behind a prepared preset. Another plugin bypassing the registry's loader also
+fails verification. The generated-module check does not increase the profile
+target counts in `transformCoverage`.
+
 ## Add or revise a profile
 
 1. Install a deliberate SDK graph in an isolated fixture and lock its dependencies.
