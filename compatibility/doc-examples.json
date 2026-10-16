@@ -469,7 +469,7 @@
       "file": "docs/sdk-cancellation.md",
       "ordinal": 1,
       "language": "ts",
-      "sha256": "4ea0cf7e10ce8cc10be19cb0c1d90c8da293f6df0d67a22db947e3fdb0dbd19c",
+      "sha256": "886fd23ce295c769a5473a6aed81209c4c9dadeb6aff70d36d9b0ccd0abfaa7b",
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
@@ -479,7 +479,7 @@
       "file": "docs/sdk-cancellation.md",
       "ordinal": 2,
       "language": "ts",
-      "sha256": "688671eba5a3cdda9b0f6d5fbb720dca7735cad62cd150923bc317270bc2338d",
+      "sha256": "115c8864e097c15855dcef14fb7b578771738baa68de6067398225a9bec90713",
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."

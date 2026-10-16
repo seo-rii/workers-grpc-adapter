@@ -87,10 +87,8 @@ jobs:
           if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', pnpm_pin):
               raise ValueError('SvelteKit fixture must pin an exact pnpm version')
           hono_pnpm_pin = json.loads(Path('fixtures/hono/package.json').read_text())['packageManager']
-          if not re.fullmatch(r'pnpm@\d+\.\d+\.\d+', hono_pnpm_pin):
-              raise ValueError('Hono fixture must pin an exact pnpm version')
           if hono_pnpm_pin != pnpm_pin:
-              raise ValueError('Hono and SvelteKit fixtures must pin the same pnpm version')
+              raise ValueError('Framework fixtures must use the same pinned pnpm version')
           phases = [
               ('npm-setup', ['npm', 'install', '--global', npm_pin, '--ignore-scripts', '--no-audit', '--no-fund'], 300),
               ('pnpm-setup', ['npm', 'install', '--global', pnpm_pin, '--ignore-scripts', '--no-audit', '--no-fund'], 300),

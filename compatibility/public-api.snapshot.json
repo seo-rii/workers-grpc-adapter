@@ -11985,9 +11985,10 @@
           "type": true,
           "value": false,
           "kind": "InterfaceDeclaration",
-          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n}",
-          "sha256": "aab8654fd25698254628258d8ad4e366a41f80f0529068a2aa220ad740f4e738",
+          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n    deadline?: number | Date;\n}",
+          "sha256": "4965532e59e2c5d2e906c3f045762f2726ea97c8d47c8d4d48e9e9df6ecfddf9",
           "dependencies": [
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
             "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec"
           ]
         },
@@ -12027,10 +12028,11 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface SdkQueryStreamOptions<Options extends object = object> extends SdkCancellationOptions<Options> {\n    highWaterMark?: number;\n}",
-          "sha256": "8491bb43424209cdacd274adc1d12507547a55bf507cf8d608cf93237e1c9a70",
+          "sha256": "e7634e076e2ae18384dde39e639cc8cc81c9ae9b20aa577cfdf80d710861f46f",
           "dependencies": [
-            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
-            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+            "203e0a3bd654cfcd8cf857cd334f1674820a58767b6084bd0690dcf31a4af77f",
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec"
           ]
         },
         {
@@ -12039,14 +12041,15 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function cancellableCall<T, Options extends object = object>(start: (gaxOptions: Options & SdkGaxOptions) => PromiseLike<T>, options?: SdkCancellationOptions<Options>): CancellableCall<T>;",
-          "sha256": "7c645fcad74b2769fa6604deff3830cc2a26b91dab45272eb2fffcafad6a334e",
+          "sha256": "c04be9d48c6317e501657480bade9a690c303685dfc9ef6bab6999c0aff18aa8",
           "dependencies": [
+            "203e0a3bd654cfcd8cf857cd334f1674820a58767b6084bd0690dcf31a4af77f",
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
             "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9",
             "380447314601c822a684a306d7cf60ffb79bfd9c36048146789ff62cac04d197",
             "3a1ec206087f9b9e420fc188e26a7d78df32cd7df53ee7893cd2cf002a42685f",
             "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
-            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
-            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162"
           ]
         },
         {
@@ -12055,16 +12058,17 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function cancellableQueryStream<T = unknown, Options extends object = object>(start: (gaxOptions: Options & SdkGaxOptions) => SdkQuerySource, options?: SdkQueryStreamOptions<Options>): SdkQueryStream<T>;",
-          "sha256": "f772fdad988f7191adea8373ca53e793fe298fd9f9038b2c1e5497bac7eac760",
+          "sha256": "16effb4f83565633fbff2b29f6afec12869bb71a0ae4c31228ac19ee0186d451",
           "dependencies": [
             "0bc65e3e01a6078f39e46fb28b24c0c9d42ec15155058b322079aa357fe25fd5",
             "0f25890f31b2962fd9908f27cd605d182d2ceec49758e026d698b0ed4650fb34",
+            "203e0a3bd654cfcd8cf857cd334f1674820a58767b6084bd0690dcf31a4af77f",
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
             "7f0282d14427556e094a1a635c60d765a4983ebd627ca4d8f644468ba2852798",
             "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
             "a3a8acb93ab41c6cb4e94f2835a6bb6a82df2024fe15600c34638ca64c080d1c",
             "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
-            "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca",
-            "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996"
+            "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca"
           ]
         }
       ],
@@ -12078,6 +12082,16 @@
           "name": "dist/sdk.d.ts#SdkQueryStreamOptions",
           "kind": "InterfaceDeclaration",
           "signature": "interface SdkQueryStreamOptions<Options extends object = object> extends SdkCancellationOptions<Options> {\n    highWaterMark?: number;\n}"
+        },
+        "203e0a3bd654cfcd8cf857cd334f1674820a58767b6084bd0690dcf31a4af77f": {
+          "name": "dist/sdk.d.ts#SdkCancellationOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n    deadline?: number | Date;\n}"
+        },
+        "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64": {
+          "name": "typescript/lib/lib.es5.d.ts#Date",
+          "kind": "external",
+          "signature": "typescript/lib/lib.es5.d.ts#Date"
         },
         "2d1b709ce6ba108c39a9055b0f5d95364252421ec17845eed4b19406577716d9": {
           "name": "typescript/lib/lib.es5.d.ts#Promise",
@@ -12118,11 +12132,6 @@
           "name": "typescript/lib/lib.es5.d.ts#Symbol",
           "kind": "external",
           "signature": "typescript/lib/lib.es5.d.ts#Symbol"
-        },
-        "b61ee4248efa30b5d29a64d8610d7beda378f0c9c2cab2d5557fc89975d93996": {
-          "name": "dist/sdk.d.ts#SdkCancellationOptions",
-          "kind": "InterfaceDeclaration",
-          "signature": "interface SdkCancellationOptions<Options extends object = object> {\n    gaxOptions?: Options;\n    signal?: AbortSignal;\n}"
         }
       }
     },

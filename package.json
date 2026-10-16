@@ -32,7 +32,7 @@
     "./build/src/client.js": { "types": "./dist/client.d.ts", "import": "./dist/client.mjs", "require": "./dist/client.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md", "docs/google-prebundle-sdks.md", "docs/sveltekit.md", "docs/hono.md"],
+  "files": ["dist", "vendor", "README.md", "LICENSE", "NOTICE", "docs/api.md", "docs/exports.md", "docs/limitations.md", "docs/resources.md", "docs/observability.md", "docs/retries.md", "docs/server.md", "docs/status-details.md", "docs/sdk-cancellation.md", "docs/profiles.md", "docs/sdk-performance.md", "docs/local-contracts.md", "docs/google-prebundle.md", "docs/sveltekit.md", "docs/hono.md", "docs/google-prebundle-sdks.md"],
   "engines": {"node": ">=22"},
   "scripts": {
     "test:sveltekit:prebundle": "node scripts/test-sveltekit-prebundle.cjs",
