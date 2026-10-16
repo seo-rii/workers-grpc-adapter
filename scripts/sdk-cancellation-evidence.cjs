@@ -83,8 +83,9 @@ function expectedTrace(scenario) {
 }
 function expectedSourceTermination() {
   return [false, true].flatMap(delayed => [false, true].map(failed => ({ delayed, failed,
+    beforeCleanup: delayed ? { destroyed: true, parentCancelled: true, signalListeners: 0 } : null,
     destroyed: true, parentCancelled: true, cancellations: 1, closes: 1, ends: 0,
-    errors: [failed ? 'SDK_SOURCE_CLEANUP' : 'WGA_SDK_STREAM_CLOSED'], cleanupErrorPreserved: failed ? true : null,
+    errors: [failed && !delayed ? 'SDK_SOURCE_CLEANUP' : 'WGA_SDK_STREAM_CLOSED'], cleanupErrorPreserved: failed ? !delayed : null,
     destroys: 1, destroyRestored: true, sourceListeners: 0, signalListeners: 0 })));
 }
 function validateSdkCancellationReport(report) {
