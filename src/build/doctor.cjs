@@ -72,7 +72,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
                 const full = path.join(current, entry.name);
                 if (entry.isDirectory()) pending.push(full);
-                else if (entry.isFile() && /\.(?:[cm]?js|d\.ts)$/.test(entry.name)) {
+                else if (entry.isFile() && /\.(?:[cm]?js|d\.[cm]?ts)$/.test(entry.name)) {
                     const source = fs.readFileSync(full, 'utf8');
                     const imports = new Set([...source.matchAll(/(?:require\s*\(\s*|from\s+|import\s*\(\s*|import\s*)['"](@grpc\/grpc-js(?:\/[^'"]*)?)['"]/g)].map(match => match[1]));
                     for (const specifier of imports) {

@@ -34,6 +34,39 @@ test('DOCTOR public API fingerprints non-npm lockfiles and declared package mana
   assert.equal(report.lockfileSha256, null, 'legacy field describes npm package-lock only');
   assert.equal(report.buildProfile, undefined, 'graph inspection does not claim AST or bundle validation');
 });
+for (const extension of ['js', 'cjs', 'mjs', 'd.ts', 'd.mts', 'd.cts']) {
+  test(`DOCTOR API and CLI inspect installed .${extension} grpc-js imports`, t => {
+    const f = fixture(t), file = `node_modules/example-sdk/nested/imports.${extension}`;
+    const source = specifier => ['js', 'cjs'].includes(extension)
+      ? `module.exports = require("${specifier}");`
+      : `export { Metadata } from "${specifier}";`;
+    const args = [cli, '.', '--sdk=example-sdk'];
+    f.write(file, source('@grpc/grpc-js/unsupported-private-path'));
+    const rejected = inspectGoogleWorkerGraph({ projectRoot: f.directory, sdks: ['example-sdk'] });
+    const rejectedCli = spawnSync(process.execPath, args, { cwd: f.directory, encoding: 'utf8' });
+    f.write(file, source('@grpc/grpc-js'));
+    const accepted = inspectGoogleWorkerGraph({ projectRoot: f.directory, sdks: ['example-sdk'] });
+    const acceptedCli = spawnSync(process.execPath, args, { cwd: f.directory, encoding: 'utf8' });
+
+    assert.equal(rejected.passed, false, 'an unresolved import in any scanned extension must fail the graph');
+    assert.equal(rejected.results[0].status, 'wrong-implementation');
+    assert.equal(rejected.results[0].grpcImportCount, 2, 'includes the SDK import and existing GAX runtime import');
+    assert.deepEqual(rejected.results[0].graph.flatMap(pkg => pkg.grpcImports).filter(item => item.status === 'resolution-failed'), [
+      { file, specifier: '@grpc/grpc-js/unsupported-private-path', status: 'resolution-failed' },
+    ]);
+    assert.equal(rejectedCli.status, 2, rejectedCli.stderr);
+    assert.deepEqual(JSON.parse(rejectedCli.stdout), rejected, 'CLI reports the same failing graph as the public API');
+
+    assert.equal(accepted.passed, true, 'a resolvable import of the replacement passes');
+    assert.equal(accepted.results[0].grpcImportCount, 2);
+    assert.deepEqual(accepted.results[0].graph.flatMap(pkg => pkg.grpcImports).filter(item => item.file === file), [
+      { file, specifier: '@grpc/grpc-js', resolved: 'node_modules/@grpc/grpc-js/index.js',
+        implementation: 'workers-grpc-adapter', version: '1.0.0', status: 'resolved-to-replacement' },
+    ]);
+    assert.equal(acceptedCli.status, 0, acceptedCli.stderr);
+    assert.deepEqual(JSON.parse(acceptedCli.stdout), accepted, 'CLI reports the same passing graph as the public API');
+  });
+}
 test('DOCTOR installed CLI uses the current project, writes full reports, and exits 2 for duplicates', t => {
   const f = fixture(t), args = [cli, '.', 'report.json', '--sdk=example-sdk'];
   const first = spawnSync(process.execPath, args, { cwd: f.directory, encoding: 'utf8' });

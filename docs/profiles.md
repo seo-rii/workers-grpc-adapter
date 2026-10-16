@@ -247,7 +247,9 @@ The report records the declared package manager and hashes existing npm, pnpm,
 Yarn or Bun text lockfiles. npm package-level integrity records retain their
 original scope; another lockfile's presence is fingerprinted without claiming
 its full lock graph was parsed. The graph check reads manifests and source
-files without importing SDK, auth or adapter modules. Profile AST checks also
-load the installed compiler and hash-checked protobuf generators. Neither check
+files without importing SDK, auth or adapter modules. It checks grpc-js imports
+in `.js`, `.cjs`, `.mjs`, `.d.ts`, `.d.cts` and `.d.mts` files throughout each
+dependency; an unresolved root or deep import fails the graph check. Profile AST
+checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.
