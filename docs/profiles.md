@@ -74,7 +74,7 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 | --- | --- |
 | `schemaVersion`, `transformerVersion` | Recognized manifest format and required transformer semantics |
 | `id`, `revision` | Reviewed SDK graph and transform revision |
-| `packages` | Exact installed paths, package names, versions and `package.json` SHA256 hashes |
+| `packages` | Dependency role paths, optional `resolveFrom` importer role, exact package names, versions and `package.json` SHA256 hashes |
 | `files` | Exact source SHA256 hashes and enabled transform rules with expected match counts |
 | `schemas` | Exact protobuf JSON, proto or well-known schema input hashes |
 | `codegenInputs` | Exact protobuf generator implementation hashes |
@@ -84,11 +84,21 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 
 Rules select guarded transformations: static `Root.fromJSON`, Datastore
 `Struct` and legacy key loads, static legacy setup, Buffer base64 conversion,
-Gaxios native Fetch defaults, Firestore Listen completion ordering, and bundled
-directory constants. Expected counts are enforced per rule and file. Updating
-a source hash alone cannot authorize a different AST shape or match count.
-Existing transform behavior and profile revisions remain unchanged by this
-manifest-format update.
+Gaxios native Fetch defaults, Firestore Listen completion ordering, bundled
+directory constants, and GAX package metadata resolution. Expected counts are
+enforced per rule and file. Updating a source hash alone cannot authorize a
+different AST shape or match count.
+
+Modern profile revision 3 pins `google-gax@6.7.0`'s metadata resolver. Its reviewed
+nested try/catch first reads a missing `build/package.json`, then the package
+root. The guarded transform redirects the first read to that same root, allowing
+esbuild to include the pinned version without retaining an unresolved runtime
+`require`. It checks both assignments, catch blocks and the absence of the
+alternate metadata file. Imported metadata resolvers require a transformation
+receipt in the final build audit. Source, AST or package-layout drift still
+fails the build. The focused regression verifies static bundling and metadata
+fallback precedence; it does not establish Google service or authentication
+support.
 
 Capabilities and required commands are declarations, not evidence of completed
 validation. Refer to the CI run and its reports for executed results. Package
@@ -132,3 +142,98 @@ bundle cache contract.
 5. Review doctor output and the generated build manifest. Publish measured
    results with their runtime and profile; do not broaden support based only on
    matching package versions.
+
+## Importer paths and package managers
+
+A profile path identifies a reviewed dependency role. `resolveFrom` identifies
+another declared package role whose Node dependency resolution selects that
+package; a role without it resolves from the application root. Inspection reads
+manifests through the actual importer, then canonicalizes files with `realpath`.
+It never substitutes a similarly named package found elsewhere in the store.
+This supports npm hoisting, pnpm's isolated store and linked workspace packages
+without weakening version, content or AST checks. pnpm consumers must still
+install and lock the exact reviewed graph; a compatible semver range is not a
+profile.
+
+Both the inspection report and build manifest include `resolvedPaths` with
+profile `path`, `logicalPath` and canonical `physicalPath`. Hash diagnostics also
+carry those paths. A second physical installation of an imported transform
+target fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte
+copies. Use the graph doctor for adapter identity as well. Normal Node/esbuild
+symlink resolution is the tested path; custom loaders and `preserveSymlinks`
+can change dependency lookup and need separate validation.
+
+Build profiles currently require TypeScript `>=5.8 <6`. An application using
+another compiler can run the SDK transformation in an isolated build workspace
+with TypeScript 5.8.3, then consume its JavaScript artifact. This does not claim
+TypeScript 6 support or require disabling peer/profile checks.
+
+## Inspecting transformations and proving bundle coverage
+
+The esbuild preset enables `metafile` and audits it at the end of every successful
+build. Every imported module instance of a profile target must have passed the
+guarded transform in that build. Receipts distinguish its esbuild namespace,
+absolute logical path and query/fragment suffix. A transformed instance cannot
+cover an untransformed namespace, symlink alias or suffix of the same physical
+file. Real paths containing literal `?` or `#` take precedence over suffix parsing.
+Another plugin swallowing `onLoad`, an unverified physical source, or
+dependency-link drift fails the build. Rebuilds clear all target and module
+receipts. Package/source/schema/codegen checks run again before completion.
+
+`manifest().transformCoverage` reports `required`, `applied`, `unused` and
+`passed`. These counts describe distinct profile targets, rather than module
+instances. `required` counts targets present in the actual metafile; `applied`
+counts required targets whose every module instance has a matching receipt.
+One bypassed instance makes that target unapplied and `passed: false`. `unused`
+counts profile targets absent from the metafile. An unused SDK or the unselected
+Gaxios ESM/CJS alternative need not be bundled. Inspection
+alone leaves coverage unproven. `transformationsChecked: true` means that doctor
+checked the declared AST shapes, not that a consuming bundle used them.
+
+A custom build driver can explicitly audit an esbuild result using
+`preset.verifyBuild(result.metafile, absWorkingDir)`. Preserve the returned
+metafile and manifest with the build receipt. A failed build must not be
+deployed, even if a caller's output directory contains a previous artifact;
+the prebundle driver owns artifact invalidation for its generated package.
+
+## Doctor from an installed package
+
+The package ships the Node-only `wga-doctor` binary. It works for both the
+`workers-grpc-adapter` package name and the `@grpc/grpc-js` installation alias:
+
+```sh
+pnpm exec wga-doctor . doctor-report.json --profile=google-static-v1
+# Or with npm:
+npx --no-install wga-doctor . doctor-report.json --profile=google-static-v1
+```
+
+The default project is the current directory. Without `--profile`, the CLI
+performs graph/physical-identity inspection only. With a profile, it resolves
+the inspected project's installed TypeScript compiler and requires the supported
+version; a missing compiler cannot silently turn an AST check into a hash-only
+success. Repeated `--sdk=package-name` flags select specific SDK entry points.
+The default selects Datastore, Firestore and Secret Manager. Exit `0` means the
+reported checks passed; `2` means a failed check, missing dependency or invalid
+invocation. A report filename writes the complete graph with restrictive file
+permissions and prints a compact summary.
+
+The same graph check is available without shelling out:
+
+```js
+const { inspectGoogleWorkerGraph } = require('@grpc/grpc-js/build');
+const report = inspectGoogleWorkerGraph({
+  projectRoot: process.cwd(),
+  sdks: ['@google-cloud/datastore'],
+});
+if (!report.passed) console.error(report.diagnostics);
+```
+
+Add `profile` and `typescript` for optional profile/AST checks through this API.
+The report records the declared package manager and hashes existing npm, pnpm,
+Yarn or Bun text lockfiles. npm package-level integrity records retain their
+original scope; another lockfile's presence is fingerprinted without claiming
+its full lock graph was parsed. The graph check reads manifests and source
+files without importing SDK, auth or adapter modules. Profile AST checks also
+load the installed compiler and hash-checked protobuf generators. Neither check
+performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
+coverage and artifact receipts for that evidence.

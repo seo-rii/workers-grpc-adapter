@@ -145,6 +145,7 @@ Node/workerd execution and strict compiler results.
 - Optional [observer events](docs/observability.md) report call and attempt status, timing and traffic without metadata or payloads. Adapter retries retain a logical call identifier; SDK retries create new calls.
 - Optional [shared retry throttling](docs/retries.md#shared-retry-throttling) limits replay during endpoint failures. The separate [structured-status helper](docs/status-details.md) decodes bounded rich errors while preserving the original RPC result.
 - [Declarative profiles](docs/profiles.md) provide precise build diagnostics and transformer-aware cache identities. [Actual SDK Worker benchmarks](docs/sdk-performance.md) measure bundle sizes, fresh startup, authenticated and warm calls, concurrent slow streams and sampled V8 heap under local CI budgets.
+- [Google SDK server prebundles](docs/google-prebundle.md) connect the exact esbuild transform to SvelteKit and other server bundlers through one owned SDK/adapter runtime and an auditable artifact manifest.
 - Emulator tests do not establish production IAM, quota, index, transaction-concurrency, or deployed Cloudflare behavior.
 - Two exact SDK graphs are supported: the original `google-static-v1` and [modern `google-modern-v1`](docs/modern-sdk.md) (Datastore 11.1.0, Firestore 9.2.0, Secret Manager 7.1.0). Other graphs require separate profiles and verification.
 

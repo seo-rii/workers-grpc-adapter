@@ -1,4 +1,5 @@
 export type GoogleWorkerProfile = 'google-static-v1' | 'google-modern-v1';
+export { buildGoogleWorkerPrebundle, type GoogleWorkerPrebundleOptions, type GoogleWorkerPrebundleResult } from './prebundle.cjs';
 export interface GoogleWorkerBuildOptions {
   projectRoot: string;
   outdir: string;
@@ -12,6 +13,20 @@ export interface GoogleWorkerProfileDiagnostic {
   actual: unknown;
   rule?: string;
   reason?: string;
+  logicalPath?: string;
+  physicalPath?: string | null;
+  importer?: string;
+}
+export interface GoogleWorkerResolvedPath {
+  path: string;
+  logicalPath: string;
+  physicalPath: string;
+}
+export interface GoogleWorkerTransformCoverage {
+  required: number;
+  applied: number;
+  unused: number;
+  passed: boolean;
 }
 export interface GoogleWorkerBuildIdentity {
   cacheKey: string;
@@ -28,16 +43,21 @@ export interface GoogleWorkerProfileInspection {
   capabilities: string[];
   requiredChecks: string[];
   buildIdentity?: GoogleWorkerBuildIdentity;
+  resolvedPaths: GoogleWorkerResolvedPath[];
 }
 export declare function createGoogleWorkerBuild(options: GoogleWorkerBuildOptions): {
   plugin: import('esbuild').Plugin;
   registryFile: string;
+  /** Verify actual bundle inputs; inspection alone never establishes coverage. */
+  verifyBuild(metafile: import('esbuild').Metafile, workingDirectory?: string): GoogleWorkerTransformCoverage;
   manifest(): GoogleWorkerBuildIdentity & {
     profile: GoogleWorkerProfile;
     revision: number;
     profileSha256: string;
     capabilities: string[];
     requiredChecks: string[];
+    resolvedPaths: GoogleWorkerResolvedPath[];
+    transformCoverage: GoogleWorkerTransformCoverage;
     [field: string]: unknown;
   };
 };
@@ -47,3 +67,6 @@ export declare function inspectGoogleWorkerProfile(options: {
   profile?: GoogleWorkerProfile;
   typescript?: typeof import('typescript');
 }): GoogleWorkerProfileInspection;
+
+export { inspectGoogleWorkerGraph } from './doctor.cjs';
+export type { GoogleWorkerGraphOptions, GoogleWorkerGraphInspection, GoogleWorkerGraphPackage } from './doctor.cjs';

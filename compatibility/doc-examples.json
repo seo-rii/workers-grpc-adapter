@@ -215,6 +215,46 @@
       "reason": "Explicit temporary cloud deployment with an optional owned-account IAM grant; requires separate authorization and is not executed by local documentation tests."
     },
     {
+      "id": "docs/google-prebundle.md#fence-1",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 1,
+      "language": "js",
+      "sha256": "b982c462489ec4c59f28af140bde5e13fbd20c75d3bc78d970def3cbe2c9a6ab",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-2",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "b982c462489ec4c59f28af140bde5e13fbd20c75d3bc78d970def3cbe2c9a6ab",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-3",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 3,
+      "language": "js",
+      "sha256": "9921b30922f09e6ea1ff5e053fced2ae0bcfb6646e6426d5222e46f9dc9b8ac6",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-4",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 4,
+      "language": "js",
+      "sha256": "23da7e9703f3dbb804737926a90510c8e514d5475b8d479304f86890d619a21a",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative prebundle setup requiring an application dependency graph and runtime configuration; this exact block is not executed by the documentation gate."
+    },
+    {
       "id": "docs/google-tests.md#fence-1",
       "file": "docs/google-tests.md",
       "ordinal": 1,
@@ -243,6 +283,16 @@
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/hono.md#fence-1",
+      "file": "docs/hono.md",
+      "ordinal": 1,
+      "language": "sh",
+      "sha256": "464e7ccddb4ff6bb4b1f7d92e26230564f3a3d15d797359ed8431f4cf3d66e6b",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
     },
     {
       "id": "docs/interceptors.md#fence-1",
@@ -355,6 +405,26 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/profiles.md#fence-3",
+      "file": "docs/profiles.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "4a97d11321dbb598a0330d242e6d5bc40a23231d281ff21bd8d6c8a7d89f23d4",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Installed doctor usage with a caller-owned build workspace; exact CLI and graph behavior is verified separately by the packaging and installed-doctor tests."
+    },
+    {
+      "id": "docs/profiles.md#fence-4",
+      "file": "docs/profiles.md",
+      "ordinal": 4,
+      "language": "js",
+      "sha256": "844b3b063b4faf0a63588b8db4a438e5e18ba20b5085cb4e2242f952086cbe53",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Installed doctor usage with a caller-owned build workspace; exact CLI and graph behavior is verified separately by the packaging and installed-doctor tests."
+    },
+    {
       "id": "docs/request-streaming.md#fence-1",
       "file": "docs/request-streaming.md",
       "ordinal": 1,
@@ -399,7 +469,7 @@
       "file": "docs/sdk-cancellation.md",
       "ordinal": 1,
       "language": "ts",
-      "sha256": "4ea0cf7e10ce8cc10be19cb0c1d90c8da293f6df0d67a22db947e3fdb0dbd19c",
+      "sha256": "886fd23ce295c769a5473a6aed81209c4c9dadeb6aff70d36d9b0ccd0abfaa7b",
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
@@ -409,7 +479,7 @@
       "file": "docs/sdk-cancellation.md",
       "ordinal": 2,
       "language": "ts",
-      "sha256": "688671eba5a3cdda9b0f6d5fbb720dca7735cad62cd150923bc317270bc2338d",
+      "sha256": "115c8864e097c15855dcef14fb7b578771738baa68de6067398225a9bec90713",
       "classification": "expected",
       "category": "illustrative-code",
       "reason": "Illustrative scoped SDK cancellation with application-owned client/query/transaction/controller values; actual SDK behavior is verified by the separate installed cancellation integration gate."
@@ -623,6 +693,46 @@
       "classification": "expected",
       "category": "diagram",
       "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-1",
+      "file": "docs/sveltekit.md",
+      "ordinal": 1,
+      "language": "text",
+      "sha256": "99484c8a948da424fb78a824a054a4b69810bba1c23fc214e5e0e74c4c87b8ea",
+      "classification": "expected",
+      "category": "diagram",
+      "reason": "Explanatory diagram or protocol sketch; expected documentation, not executable test evidence."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-2",
+      "file": "docs/sveltekit.md",
+      "ordinal": 2,
+      "language": "js",
+      "sha256": "cefad7375b81aef14fcb944219ba649f19bb5785629d7456b2c53b52124321b5",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-3",
+      "file": "docs/sveltekit.md",
+      "ordinal": 3,
+      "language": "sh",
+      "sha256": "6bd6dec82cec43676f76fa20aee41e83d2c7cdf712551f2c722dd568a285a3c8",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
+    },
+    {
+      "id": "docs/sveltekit.md#fence-4",
+      "file": "docs/sveltekit.md",
+      "ordinal": 4,
+      "language": "sh",
+      "sha256": "8660c3f7fbb0e71cfec1dda5c96a8b3b30fc0c794bff9e34692abb8da82506be",
+      "classification": "expected",
+      "category": "shell-command",
+      "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
     },
     {
       "id": "docs/testing.md#fence-1",

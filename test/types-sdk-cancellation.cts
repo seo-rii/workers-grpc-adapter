@@ -10,7 +10,7 @@ declare const sdk: {
 };
 const controller = new AbortController();
 const options: CallOptions = { timeout: 1000, otherArgs: { headers: { 'x-example': 'kept' } } };
-const call = cancellableCall(gaxOptions => sdk.commit({ id: 'example' }, gaxOptions), { gaxOptions: options, signal: controller.signal });
+const call = cancellableCall(gaxOptions => sdk.commit({ id: 'example' }, gaxOptions), { gaxOptions: options, signal: controller.signal, deadline: Date.now() + 1000 });
 const same: CancellableCall<[{ applied: boolean }, { requestId: string }]> = call;
 const exact: Promise<[{ applied: boolean }, { requestId: string }]> = call.promise;
 type ResultIsTyped = Assert<NotAny<Awaited<typeof call.promise>>>;
@@ -18,8 +18,8 @@ call.promise.then(([result, info]) => { const applied: boolean = result.applied;
 call.cancel();
 const noOptions = cancellableCall(gaxOptions => sdk.commit({ id: 'default-options' }, gaxOptions));
 const literalOptions = cancellableCall(gaxOptions => sdk.commit({ id: 'literal-options' }, gaxOptions), { gaxOptions: { timeout: 10 } });
-const structural: SdkCancellationOptions<CallOptions> = { gaxOptions: options };
-const stream = cancellableQueryStream<{ name: string }>(gaxOptions => sdk.query({ gaxOptions }), { signal: controller.signal, highWaterMark: 2 });
+const structural: SdkCancellationOptions<CallOptions> = { gaxOptions: options, deadline: new Date() };
+const stream = cancellableQueryStream<{ name: string }>(gaxOptions => sdk.query({ gaxOptions }), { signal: controller.signal, highWaterMark: 2, deadline: new Date() });
 const explicitItemWithOptions = cancellableQueryStream<{ name: string }>(gaxOptions => sdk.query({ gaxOptions }), {
     gaxOptions: { timeout: 1000, retry: null },
 });
@@ -48,6 +48,10 @@ cancellableQueryStream(() => Readable.from([]));
 cancellableCall(() => 42);
 // @ts-expect-error signal must be an AbortSignal
 cancellableCall(() => Promise.resolve(), { signal: {} });
+// @ts-expect-error deadline is absolute Unix milliseconds or a Date
+cancellableCall(() => Promise.resolve(), { deadline: '1000' });
+// @ts-expect-error query deadline uses the same absolute deadline contract
+cancellableQueryStream(() => new Transform(), { deadline: {} });
 // @ts-expect-error queue is a numeric object count
 cancellableQueryStream(() => new Transform(), { highWaterMark: '2' });
 void [same, exact, noOptions, literalOptions, structural, explicitItemWithOptions, typed, readable, value, consume];

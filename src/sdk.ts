@@ -13,6 +13,8 @@ export interface SdkCancellationOptions<Options extends object = object> {
     /** Forward the options passed to start to every SDK operation in that scope. */
     gaxOptions?: Options;
     signal?: AbortSignal;
+    /** Absolute Unix milliseconds (or Date) for the entire operation, including SDK startup and pages. */
+    deadline?: number | Date;
 }
 export interface SdkQueryStreamOptions<Options extends object = object> extends SdkCancellationOptions<Options> {
     /** Wrapper queue in objects, 1..1024 (default 1); excludes SDK-owned buffers. */
@@ -37,8 +39,9 @@ export interface SdkQueryStream<T> extends Readable {
 class CancellationParent implements ParentCall {
     #cancelled = false;
     #listeners = new Set<() => void>();
+    constructor(private readonly deadline: number) {}
     get cancelled(): boolean { return this.#cancelled; }
-    getDeadline(): number { return Infinity; }
+    getDeadline(): number { return this.deadline; }
     on(_event: 'cancelled', listener: () => void): this { this.#listeners.add(listener); return this; }
     removeListener(_event: 'cancelled', listener: () => void): this { this.#listeners.delete(listener); return this; }
     cancel(): void {
@@ -56,11 +59,17 @@ function cancelledError(): ServiceError {
     const details = 'Cancelled by SDK helper';
     return Object.assign(new Error(`1 CANCELLED: ${details}`), { code: status.CANCELLED, details, metadata: new Metadata() });
 }
+function deadlineError(): ServiceError {
+    const details = 'Deadline exceeded by SDK helper';
+    return Object.assign(new Error(`4 DEADLINE_EXCEEDED: ${details}`), { code: status.DEADLINE_EXCEEDED, details, metadata: new Metadata() });
+}
 function record(value: unknown): Record<string, unknown> {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('WGA_SDK_OPTIONS');
     return value as Record<string, unknown>;
 }
-function prepare<Options extends object>(options: SdkCancellationOptions<Options>, parent: CancellationParent): Options & SdkGaxOptions {
+function prepare<Options extends object>(options: SdkCancellationOptions<Options>): {
+    parent: CancellationParent; gaxOptions: Options & SdkGaxOptions;
+} {
     record(options);
     const gax = options.gaxOptions === undefined ? {} : record(options.gaxOptions);
     const other = gax.otherArgs === undefined ? {} : record(gax.otherArgs);
@@ -70,7 +79,24 @@ function prepare<Options extends object>(options: SdkCancellationOptions<Options
         || typeof options.signal.addEventListener !== 'function' || typeof options.signal.removeEventListener !== 'function')) {
         throw new TypeError('WGA_SDK_SIGNAL');
     }
-    return { ...gax, otherArgs: { ...other, options: { ...call, parent, propagate_flags: propagate.CANCELLATION } } } as Options & SdkGaxOptions;
+    const deadline = options.deadline === undefined ? Infinity : options.deadline instanceof Date ? options.deadline.getTime() : options.deadline;
+    if (typeof deadline !== 'number' || Number.isNaN(deadline) || deadline === -Infinity) throw new TypeError('WGA_SDK_DEADLINE');
+    const parent = new CancellationParent(deadline);
+    const flags = propagate.CANCELLATION | (options.deadline === undefined ? 0 : propagate.DEADLINE);
+    return { parent, gaxOptions: { ...gax, otherArgs: { ...other, options: { ...call, parent, propagate_flags: flags } } } as Options & SdkGaxOptions };
+}
+/** One operation timer also bounds periods before/between actual adapter calls. */
+function watchDeadline(deadline: number, expire: () => void): () => void {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+        timer = undefined;
+        if (deadline === Infinity) return;
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) { expire(); return; }
+        timer = setTimeout(arm, Math.min(remaining, 2147483647));
+    };
+    arm();
+    return () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
 }
 function subscribe(signal: AbortSignal | undefined, cancel: () => void): () => void {
     if (!signal) return () => {};
@@ -82,18 +108,18 @@ function subscribe(signal: AbortSignal | undefined, cancel: () => void): () => v
     return () => signal.removeEventListener('abort', cancel);
 }
 
-/** Opt-in cancellation for an SDK promise whose RPC options reach this adapter. */
+/** Opt-in cancellation and a total deadline for an SDK promise whose RPC options reach this adapter. */
 export function cancellableCall<T, Options extends object = object>(
     start: (gaxOptions: Options & SdkGaxOptions) => PromiseLike<T>,
     options: SdkCancellationOptions<Options> = {},
 ): CancellableCall<T> {
     if (typeof start !== 'function') throw new TypeError('WGA_SDK_START');
-    const parent = new CancellationParent(), gaxOptions = prepare(options, parent);
-    let active = true, cancelled = false, detach = () => {};
+    const { parent, gaxOptions } = prepare(options);
+    let active = true, cancelled = false, detach = () => {}, clearDeadline = () => {};
     let pending: PromiseLike<T> | undefined, cancelledPending = false;
     let resolve!: (value: T) => void, reject!: (error: unknown) => void;
     const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
-    const release = () => { detach(); parent.release(); };
+    const release = () => { detach(); clearDeadline(); parent.release(); };
     const cancelPending = () => {
         if (!pending || cancelledPending) return;
         cancelledPending = true;
@@ -102,12 +128,14 @@ export function cancellableCall<T, Options extends object = object>(
             if (typeof cancellable.cancel === 'function') cancellable.cancel();
         } catch { /* Local cancellation is final even if an SDK cancel hook fails. */ }
     };
-    const cancel = () => {
+    const stop = (error: ServiceError) => {
         if (!active) return;
         active = false; cancelled = true;
-        parent.cancel(); release(); reject(cancelledError()); cancelPending();
+        parent.cancel(); release(); reject(error); cancelPending();
     };
+    const cancel = () => stop(cancelledError());
     detach = subscribe(options.signal, cancel);
+    if (active) clearDeadline = watchDeadline(parent.getDeadline(), () => stop(deadlineError()));
     if (!active) { release(); return Object.freeze({ promise, cancel }); }
     try {
         pending = start(gaxOptions);
@@ -132,11 +160,11 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
     options: SdkQueryStreamOptions<Options> = {},
 ): SdkQueryStream<T> {
     if (typeof start !== 'function') throw new TypeError('WGA_SDK_START');
-    const parent = new CancellationParent(), gaxOptions = prepare(options, parent);
+    const { parent, gaxOptions } = prepare(options);
     const highWaterMark = options.highWaterMark ?? 1;
     if (!Number.isSafeInteger(highWaterMark) || highWaterMark < 1 || highWaterMark > 1024) throw new TypeError('WGA_SDK_QUEUE_LIMIT');
-    let source: Readable | undefined, complete = false, stopped = false, reading = false, detach = () => {}, restoreDestroy = () => {};
-    const release = () => { detach(); parent.release(); };
+    let source: Readable | undefined, complete = false, stopped = false, reading = false, detach = () => {}, restoreDestroy = () => {}, clearDeadline = () => {};
+    const release = () => { detach(); clearDeadline(); parent.release(); };
     const removeDataListeners = () => {
         source?.removeListener('data', onData);
         source?.removeListener('end', onEnd);
@@ -186,6 +214,7 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
     const onMetadata = (...args: unknown[]) => { if (!stream.destroyed) stream.emit('metadata', ...args); };
     const onStatus = (...args: unknown[]) => { if (!stream.destroyed) stream.emit('status', ...args); };
     detach = subscribe(options.signal, () => stream.destroy(cancelledError()));
+    if (!stream.destroyed) clearDeadline = watchDeadline(parent.getDeadline(), () => stream.destroy(deadlineError()));
     if (stream.destroyed) { release(); return stream; }
     try {
         const candidate = start(gaxOptions);

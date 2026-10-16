@@ -2,25 +2,28 @@
   "schemaVersion": 1,
   "transformerVersion": 1,
   "id": "google-modern-v1",
-  "revision": 2,
+  "revision": 3,
   "packages": [
     {
       "path": "node_modules/gaxios",
       "name": "gaxios",
       "version": "7.3.1",
-      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad"
+      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad",
+      "resolveFrom": "node_modules/google-auth-library"
     },
     {
       "path": "node_modules/google-auth-library",
       "name": "google-auth-library",
       "version": "11.1.0",
-      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a"
+      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a",
+      "resolveFrom": "node_modules/google-gax"
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-auth-library",
       "name": "google-auth-library",
       "version": "10.9.1",
-      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9"
+      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9",
+      "resolveFrom": "node_modules/@google-cloud/firestore-api/node_modules/google-gax"
     },
     {
       "path": "node_modules/@google-cloud/datastore",
@@ -32,7 +35,8 @@
       "path": "node_modules/@google-cloud/datastore-api",
       "name": "@google-cloud/datastore-api",
       "version": "0.3.0",
-      "packageJsonSha256": "c03cebbafcac9fbb954515c5f078c599f7f029c9e7a5f382c3d47052f435d2e4"
+      "packageJsonSha256": "c03cebbafcac9fbb954515c5f078c599f7f029c9e7a5f382c3d47052f435d2e4",
+      "resolveFrom": "node_modules/@google-cloud/datastore"
     },
     {
       "path": "node_modules/@google-cloud/firestore",
@@ -44,7 +48,8 @@
       "path": "node_modules/@google-cloud/firestore-api",
       "name": "@google-cloud/firestore-api",
       "version": "0.2.0",
-      "packageJsonSha256": "f49e2a61f07eb6067447157e1375fb3d3b9b7daef4672a866fbc89ca0d7dee16"
+      "packageJsonSha256": "f49e2a61f07eb6067447157e1375fb3d3b9b7daef4672a866fbc89ca0d7dee16",
+      "resolveFrom": "node_modules/@google-cloud/firestore"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager",
@@ -56,25 +61,29 @@
       "path": "node_modules/@grpc/proto-loader",
       "name": "@grpc/proto-loader",
       "version": "0.8.1",
-      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9"
+      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9",
+      "resolveFrom": "node_modules/google-gax"
     },
     {
       "path": "node_modules/google-gax",
       "name": "google-gax",
       "version": "6.7.0",
-      "packageJsonSha256": "466ef50f04f368b45c18cfab8932158433d9158e84489bc7b33427b560529676"
+      "packageJsonSha256": "466ef50f04f368b45c18cfab8932158433d9158e84489bc7b33427b560529676",
+      "resolveFrom": "node_modules/@google-cloud/datastore-api"
     },
     {
       "path": "node_modules/@google-cloud/firestore-api/node_modules/google-gax",
       "name": "google-gax",
       "version": "5.0.8",
-      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc"
+      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc",
+      "resolveFrom": "node_modules/@google-cloud/firestore-api"
     },
     {
       "path": "node_modules/protobufjs",
       "name": "protobufjs",
       "version": "7.6.6",
-      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a",
+      "resolveFrom": "node_modules/google-gax"
     }
   ],
   "files": [
@@ -212,6 +221,16 @@
       "transforms": [
         {
           "rule": "static-root-from-json",
+          "expectedMatches": 1
+        }
+      ]
+    },
+    {
+      "path": "node_modules/google-gax/build/src/observability/metadataResolver.js",
+      "sha256": "11fdd1c085b3e14990881c20aa39501ab49e4f72ea5bc0287716ab19405efe0d",
+      "transforms": [
+        {
+          "rule": "gax-package-metadata",
           "expectedMatches": 1
         }
       ]
@@ -381,10 +400,11 @@
     "datastore-legacy-keys",
     "datastore-struct",
     "native-fetch-auth",
+    "static-gax-package-metadata",
     "firestore-listen-error-order"
   ],
   "requiredChecks": [
-    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs",
+    "node --test test/build-auth.test.cjs test/build-watch.test.cjs test/build-profiles.test.cjs test/build-gax-metadata.test.cjs",
     "node scripts/test-modern-sdk.cjs",
     "node scripts/test-modern-firestore-watch.cjs",
     "node scripts/test-modern-firestore-recovery.cjs"

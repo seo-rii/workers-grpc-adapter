@@ -8,19 +8,22 @@
       "path": "node_modules/gaxios",
       "name": "gaxios",
       "version": "7.3.1",
-      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad"
+      "packageJsonSha256": "6d8ac1fadd9a3e890a0407f04f49dd8b919e418e46d10e65df9cba295ce319ad",
+      "resolveFrom": "node_modules/google-auth-library"
     },
     {
       "path": "node_modules/google-auth-library",
       "name": "google-auth-library",
       "version": "10.9.1",
-      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9"
+      "packageJsonSha256": "d502e0b8f9b83f97f5f78aaee9ba5e7cd7067a81d2f8f0215c47b2877814a9c9",
+      "resolveFrom": "node_modules/google-gax"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-auth-library",
       "name": "google-auth-library",
       "version": "11.1.0",
-      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a"
+      "packageJsonSha256": "48feb13b30aafd79961de3b72d1a279963ad0232be596cf024ee59c2b401d48a",
+      "resolveFrom": "node_modules/@google-cloud/secret-manager/node_modules/google-gax"
     },
     {
       "path": "node_modules/@google-cloud/datastore",
@@ -38,7 +41,8 @@
       "path": "node_modules/protobufjs",
       "name": "protobufjs",
       "version": "7.6.6",
-      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a"
+      "packageJsonSha256": "0e56b70de03bffc143e74311b42ae22b557370a4a1f4b5066568fbc77857639a",
+      "resolveFrom": "node_modules/google-gax"
     },
     {
       "path": "node_modules/@google-cloud/secret-manager",
@@ -50,19 +54,22 @@
       "path": "node_modules/@google-cloud/secret-manager/node_modules/google-gax",
       "name": "google-gax",
       "version": "6.5.0",
-      "packageJsonSha256": "336f7359dd0fbc57472b14794817772c09d56642a7e2cde03f213f3c579bb348"
+      "packageJsonSha256": "336f7359dd0fbc57472b14794817772c09d56642a7e2cde03f213f3c579bb348",
+      "resolveFrom": "node_modules/@google-cloud/secret-manager"
     },
     {
       "path": "node_modules/@grpc/proto-loader",
       "name": "@grpc/proto-loader",
       "version": "0.8.1",
-      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9"
+      "packageJsonSha256": "04fc16d6ba1496e29f0919c9c9438e19156153988b4a4776c9139365bd6650a9",
+      "resolveFrom": "node_modules/google-gax"
     },
     {
       "path": "node_modules/google-gax",
       "name": "google-gax",
       "version": "5.0.8",
-      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc"
+      "packageJsonSha256": "db7ece475812534db7fc1790059c7be583f5201aadc40f0ba4b4a161758cecfc",
+      "resolveFrom": "node_modules/@google-cloud/datastore"
     }
   ],
   "files": [
