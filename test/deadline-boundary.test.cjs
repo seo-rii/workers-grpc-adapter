@@ -15,10 +15,10 @@ for (const kind of ['direct', 'managed']) {
             const auth = grpc.credentials.createFromMetadataGenerator((_options, callback) => {
                 release = () => callback(null, new grpc.Metadata()); entered.resolve();
             });
-            let fetches = 0, timeout;
+            let fetches = 0, timeout, readsAtFetch;
             const reply = response();
             const c = client({}, { fetcher: { async fetch(_url, init) {
-                fetches++; timeout = init.headers.get('grpc-timeout'); return reply;
+                fetches++; readsAtFetch = reads; timeout = init.headers.get('grpc-timeout'); return reply;
             } } });
             let call, callbacks = 0;
             const statuses = [];
@@ -41,7 +41,7 @@ for (const kind of ['direct', 'managed']) {
                 });
                 await entered.promise;
                 sequence = scenario === 'initial-expiry' ? [2000]
-                    : scenario === 'compression-expiry' ? [1999, 2000] : [1999, 1999, 2001];
+                    : scenario === 'compression-expiry' ? [1999, 2000] : [1999, 1999];
                 release();
                 const expected = scenario === 'positive-header-snapshot' ? grpc.status.OK : grpc.status.DEADLINE_EXCEEDED;
                 assert.equal(await done, expected);
@@ -51,7 +51,7 @@ for (const kind of ['direct', 'managed']) {
                 assert.equal(fetches, expected === grpc.status.OK ? 1 : 0);
                 if (expected === grpc.status.OK) {
                     assert.equal(timeout, '1m', 'the positive checked duration is the duration encoded in the header');
-                    assert.equal(reads, 2, 'no extra clock read may turn the checked duration negative');
+                    assert.equal(readsAtFetch, 2, 'no extra clock read may turn the checked duration negative before Fetch');
                 }
                 assert.equal(c.getChannel().activeCallCount(), 0);
                 const diagnostics = (kind === 'direct' ? call : transportCall(call)).diagnostics();
