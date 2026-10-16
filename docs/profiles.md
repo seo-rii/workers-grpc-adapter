@@ -195,3 +195,45 @@ A custom build driver can explicitly audit an esbuild result using
 metafile and manifest with the build receipt. A failed build must not be
 deployed, even if a caller's output directory contains a previous artifact;
 the prebundle driver owns artifact invalidation for its generated package.
+
+## Doctor from an installed package
+
+The package ships the Node-only `wga-doctor` binary. It works for both the
+`workers-grpc-adapter` package name and the `@grpc/grpc-js` installation alias:
+
+```sh
+pnpm exec wga-doctor . doctor-report.json --profile=google-static-v1
+# Or with npm:
+npx --no-install wga-doctor . doctor-report.json --profile=google-static-v1
+```
+
+The default project is the current directory. Without `--profile`, the CLI
+performs graph/physical-identity inspection only. With a profile, it resolves
+the inspected project's installed TypeScript compiler and requires the supported
+version; a missing compiler cannot silently turn an AST check into a hash-only
+success. Repeated `--sdk=package-name` flags select specific SDK entry points.
+The default selects Datastore, Firestore and Secret Manager. Exit `0` means the
+reported checks passed; `2` means a failed check, missing dependency or invalid
+invocation. A report filename writes the complete graph with restrictive file
+permissions and prints a compact summary.
+
+The same graph check is available without shelling out:
+
+```js
+const { inspectGoogleWorkerGraph } = require('@grpc/grpc-js/build');
+const report = inspectGoogleWorkerGraph({
+  projectRoot: process.cwd(),
+  sdks: ['@google-cloud/datastore'],
+});
+if (!report.passed) console.error(report.diagnostics);
+```
+
+Add `profile` and `typescript` for optional profile/AST checks through this API.
+The report records the declared package manager and hashes existing npm, pnpm,
+Yarn or Bun text lockfiles. npm package-level integrity records retain their
+original scope; another lockfile's presence is fingerprinted without claiming
+its full lock graph was parsed. The graph check reads manifests and source
+files without importing SDK, auth or adapter modules. Profile AST checks also
+load the installed compiler and hash-checked protobuf generators. Neither check
+performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
+coverage and artifact receipts for that evidence.

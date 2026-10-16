@@ -19,6 +19,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "bin": { "wga-doctor": "./dist/build/doctor-cli.cjs" },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.js" },
     "./config": { "types": "./dist/config.d.ts", "import": "./dist/config.mjs", "require": "./dist/config.js" },
