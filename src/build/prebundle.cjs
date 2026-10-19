@@ -687,6 +687,10 @@ async function buildGoogleWorkerPrebundle(options) {
       const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
       throw cause || error;
     }
+    const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
+    if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
+      path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
+    });
     const coverage = preset.verifyBuild(built.metafile);
     const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
     if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
