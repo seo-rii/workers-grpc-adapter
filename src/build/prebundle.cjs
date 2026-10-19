@@ -201,15 +201,19 @@ function checkArtifact(ts, source, expected) {
   }
 }
 function bindSources(ts, sources) {
-  const options = { allowJs: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
+  const options = { allowJs: true, allowNonTsExtensions: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
   host.getSourceFile = file => sources.get(file);
   return ts.createProgram([...sources.keys()], options, host).getTypeChecker();
 }
 function checkModuleLoaders(ts, captured) {
   // Inspect original module scopes: esbuild renames the CommonJS `module`
   // parameter, so a spelling-only check of the minified artifact misses it.
-  const sources = new Map(captured.filter(({ source }) => /\.[cm]?[jt]sx?$/.test(source.physical))
-    .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true)]));
+  // The default esbuild loader accepts extensionless JavaScript, including
+  // side-effect scripts that have no ESM/CJS format in the metafile.
+  const sources = new Map(captured.filter(({ source, info }) => ['cjs', 'esm'].includes(info.format)
+    || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
+    .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
+      path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
   const checker = bindSources(ts, sources), values = new Map();
   const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
@@ -252,9 +256,17 @@ function checkModuleLoaders(ts, captured) {
         ? keys : [...keys, key(element.propertyName || element.name)]);
     }
   }
+  function objectAssign(node) {
+    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)
+      || node.expression.name.text !== 'assign' || !ts.isIdentifier(node.expression.expression)
+      || node.expression.expression.text !== 'Object') return false;
+    // A lexical Object binding may implement an unrelated application method.
+    return !checker.getSymbolAtLocation(node.expression.expression)?.declarations?.length;
+  }
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
+    if (objectAssign(node) && node.arguments.length && ts.isIdentifier(node.arguments[0])) bind(node.arguments[0], node);
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && ['module', 'node:module'].includes(node.moduleSpecifier.text)) {
       const clause = node.importClause;
       if (clause?.name) bind(clause.name, NAMESPACE);
@@ -285,6 +297,9 @@ function checkModuleLoaders(ts, captured) {
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
+    if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
+      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0), 0);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0);
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
@@ -621,6 +636,7 @@ function checkDeclarations(ts, source, expected) {
   const reject = message => fail('WGA_PREBUNDLE_DECLARATIONS', message);
   if (ast.parseDiagnostics.length) reject('declarationFile contains invalid TypeScript syntax');
   const specifier = name => {
+    if (name.startsWith('#')) reject('Package-private declaration imports require an imports map and resources that are not copied');
     if (name.startsWith('.') || name.startsWith('/') || name.startsWith('\\') || /^[a-z]:[/\\]|^file:/i.test(name)) reject('Declarations must use external package imports; relative declaration resources are not copied');
   };
   if (ast.referencedFiles.length) reject('Declaration reference paths are not copied into the generated package');
@@ -687,6 +703,10 @@ async function buildGoogleWorkerPrebundle(options) {
       const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
       throw cause || error;
     }
+    const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
+    if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
+      path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
+    });
     const coverage = preset.verifyBuild(built.metafile);
     const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
     if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');

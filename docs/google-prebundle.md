@@ -64,6 +64,9 @@ of the caller's umask, so packing the same artifact produces the same archive.
 The result contains `index.cjs`, an explicit `index.mjs` facade, `index.d.ts`,
 matching `index.d.mts`/`index.d.cts` declarations, `package.json`, `manifest.json`,
 and a browser rejection stub. CJS and ESM imports share the same owned runtime.
+Inputs that use `import.meta` fail with `WGA_PREBUNDLE_IMPORT_META`, because the
+CommonJS artifact cannot preserve that ES module value. Use explicit portable
+configuration instead of relying on the original module's URL after bundling.
 Public export bindings must remain stable: expose constructors, factory
 functions, or a `const` object whose properties hold changing state. The ESM
 facade captures these exported values once; it does not emulate arbitrary live

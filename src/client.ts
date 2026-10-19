@@ -694,6 +694,6 @@ export type { StatusObject } from './call-interface';
 export type { ClientMethodDefinition } from './factory';
 export type { ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream, ServiceError, SurfaceCall } from './call-surface';
 export { callErrorFromStatus } from './call-surface';
-export function closeClient(client: Client): void { client.close(); }
+export function closeClient(client: Client): void { Client.prototype.close.call(client); }
 export function getClientChannel(client: Client): Channel { return Client.prototype.getChannel.call(client); }
-export function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void { client.waitForReady(deadline, callback); }
+export function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void { Client.prototype.waitForReady.call(client, deadline, callback); }
