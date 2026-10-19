@@ -114,6 +114,15 @@ Ordinary objects may still have a `require` method, and non-loader APIs such as
 `node:module`'s `isBuiltin()` remain available. This source and artifact audit
 checks module-loading boundaries; it does not sandbox arbitrary wrapper code.
 
+The export audit follows CommonJS namespace re-exports as well as ES module
+bindings. It rejects values that can be reassigned through `exports`, aliases,
+property descriptors or mutation helpers after initialization. A stable shared
+object whose fields change remains supported. Unproven namespace escapes or
+getters fail with `WGA_PREBUNDLE_EXPORT_STABILITY`; expose an explicit factory
+or a stable state object instead. Getters returning arbitrary object properties
+are conservatively rejected, since aliases and mutation helpers can change
+those properties. Getters returning a stable object binding remain supported.
+
 For SvelteKit, pack the generated directory and install its tarball as a server
 dependency. Import that package from routes, hooks, or a module under the
 application's `./src/lib/server` directory:
