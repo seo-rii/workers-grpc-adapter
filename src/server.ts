@@ -160,9 +160,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         const route = !url.search && routes.get(url.pathname);
         if (!route) return early(new Response(trailer(status.UNIMPLEMENTED, 'WGA_SERVER_METHOD'), { headers: baseHeaders }));
         const aborter = new AbortController(), inputAborter = new AbortController();
-        let rejectAbort: (error: TransportError) => void = () => {};
-        const interruption = new Promise<never>((_, reject) => { rejectAbort = reject; });
-        void interruption.catch(() => {});
+        const pendingInterruptions = new Set<(error: TransportError) => void>();
         let timer: ReturnType<typeof setTimeout> | undefined, cleaned = false, headersSent = false, closed = false;
         let deadline = Infinity, interruptionError: TransportError | undefined;
         let iterator: AsyncIterator<unknown> | undefined, returnStarted = false;
@@ -197,7 +195,8 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 const error = new TransportError(code, details);
                 interruptionError = error;
                 aborter.abort();
-                rejectAbort(error);
+                for (const interrupt of pendingInterruptions) interrupt(error);
+                pendingInterruptions.clear();
             }
             cleanup();
             disposeIterator();
@@ -216,7 +215,23 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             catch (interrupted) { return interrupted; }
             return error;
         };
-        const race = <T>(operation: PromiseLike<T> | T): Promise<T> => Promise.race([Promise.resolve(operation), interruption]);
+        const race = <T>(operation: PromiseLike<T> | T): Promise<T> => new Promise((resolve, reject) => {
+            // Only in-flight work owns a cancellation subscription. Racing every
+            // message against one pending Promise would retain all settled
+            // results until the call ends, even after downstream consumption.
+            const interrupt = (error: TransportError) => reject(error);
+            if (interruptionError) interrupt(interruptionError);
+            else pendingInterruptions.add(interrupt);
+            // Keep both handlers attached after cancellation so a late failure
+            // from application work remains observed without delaying cleanup.
+            void Promise.resolve(operation).then(value => {
+                pendingInterruptions.delete(interrupt);
+                resolve(value);
+            }, error => {
+                pendingInterruptions.delete(interrupt);
+                reject(error);
+            });
+        });
         const errorResponse = (error: unknown): Response => {
             error = terminalError(error);
             const result = failure(error);
@@ -337,7 +352,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 }
             }).catch(() => {});
             const output = await race(producing);
-            if (aborter.signal.aborted) await interruption;
+            if (interruptionError) throw interruptionError;
             if (inputFailure !== undefined) throw inputFailure;
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
