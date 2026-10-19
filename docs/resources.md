@@ -32,6 +32,8 @@ The numbers above are examples, not workload recommendations or platform connect
 
 The configuration is copied and frozen. All channels created from one factory's `grpcOptions()` or `gaxOptions()` share its budget, including different service targets. Separate factories remain independent even when their settings match. Globally configured channels share the global snapshot's budget. Reuse the factory when the application needs a common limit; creating a factory for every request creates separate budgets.
 
+When a `callInvocationTransformer` selects a different adapter channel, the adapter-created stream uses that channel's `readableHighWaterMark`. A replacement stream supplied by the transformer keeps its own queue settings.
+
 ## Admission and cancellation
 
 Waiting calls enter a FIFO queue before outgoing interceptor startup, authentication, serialization, and Fetch. The whole-call deadline and parent cancellation remain active while waiting. Cancellation and channel close remove waiting calls, prevent later startup, and preserve one final result. Interceptor constructors still execute synchronously while the call is constructed.

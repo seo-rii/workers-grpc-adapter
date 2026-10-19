@@ -156,16 +156,30 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -561,7 +532,7 @@
+@@ -558,10 +529,11 @@
+         requestSerialize: serialize,
+         responseDeserialize: deserialize,
+       };
++    const defaultStream = new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit());
      let callProperties: CallProperties<RequestType, ResponseType> = {
        argument: argument,
        metadata: checkedArguments.metadata,
 -      call: new ClientReadableStreamImpl<ResponseType>(deserialize),
-+      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
++      call: defaultStream,
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -606,8 +577,9 @@
+@@ -573,6 +545,9 @@
+     }
+     const stream: ClientReadableStream<ResponseType> =
+       callProperties.call as ClientReadableStream<ResponseType>;
++    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
++      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
++    }
+     const interceptorArgs: InterceptorArguments = {
+       clientInterceptors: this[INTERCEPTOR_SYMBOL],
+       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
+@@ -606,8 +581,9 @@
            return;
          }
          receivedStatus = true;
@@ -176,7 +190,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +589,7 @@
+@@ -617,7 +593,7 @@
          stream.emit('status', status);
        },
      });
@@ -185,17 +199,34 @@
      call.halfClose();
      return stream;
    }
-@@ -655,7 +627,8 @@
+@@ -651,12 +627,12 @@
+         requestSerialize: serialize,
+         responseDeserialize: deserialize,
+       };
++    const defaultStream = new ClientDuplexStreamImpl<RequestType, ResponseType>(
++      serialize, deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()
++    );
+     let callProperties: CallProperties<RequestType, ResponseType> = {
        metadata: checkedArguments.metadata,
-       call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
-         serialize,
+-      call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
+-        serialize,
 -        deserialize
-+        deserialize,
-+        this[CHANNEL_SYMBOL].getReadQueueLimit()
-       ),
+-      ),
++      call: defaultStream,
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
-@@ -700,8 +673,9 @@
+       callOptions: checkedArguments.options,
+@@ -668,6 +644,9 @@
+     }
+     const stream: ClientDuplexStream<RequestType, ResponseType> =
+       callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
++    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
++      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
++    }
+     const interceptorArgs: InterceptorArguments = {
+       clientInterceptors: this[INTERCEPTOR_SYMBOL],
+       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
+@@ -700,8 +679,9 @@
            return;
          }
          receivedStatus = true;
@@ -206,7 +237,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +688,12 @@
+@@ -714,3 +694,12 @@
      return stream;
    }
  }

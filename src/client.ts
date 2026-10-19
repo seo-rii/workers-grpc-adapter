@@ -529,10 +529,11 @@ export class Client {
         requestSerialize: serialize,
         responseDeserialize: deserialize,
       };
+    const defaultStream = new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit());
     let callProperties: CallProperties<RequestType, ResponseType> = {
       argument: argument,
       metadata: checkedArguments.metadata,
-      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
+      call: defaultStream,
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,
       callOptions: checkedArguments.options,
@@ -544,6 +545,9 @@ export class Client {
     }
     const stream: ClientReadableStream<ResponseType> =
       callProperties.call as ClientReadableStream<ResponseType>;
+    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
+      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
+    }
     const interceptorArgs: InterceptorArguments = {
       clientInterceptors: this[INTERCEPTOR_SYMBOL],
       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
@@ -623,13 +627,12 @@ export class Client {
         requestSerialize: serialize,
         responseDeserialize: deserialize,
       };
+    const defaultStream = new ClientDuplexStreamImpl<RequestType, ResponseType>(
+      serialize, deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()
+    );
     let callProperties: CallProperties<RequestType, ResponseType> = {
       metadata: checkedArguments.metadata,
-      call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
-        serialize,
-        deserialize,
-        this[CHANNEL_SYMBOL].getReadQueueLimit()
-      ),
+      call: defaultStream,
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,
       callOptions: checkedArguments.options,
@@ -641,6 +644,9 @@ export class Client {
     }
     const stream: ClientDuplexStream<RequestType, ResponseType> =
       callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
+    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
+      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
+    }
     const interceptorArgs: InterceptorArguments = {
       clientInterceptors: this[INTERCEPTOR_SYMBOL],
       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],

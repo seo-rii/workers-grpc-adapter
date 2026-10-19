@@ -1,14 +1,15 @@
 --- a/src/call-surface.ts
 +++ b/src/call-surface.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2019 gRPC authors.
-+ *
+  *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-  *
++ *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
 @@ -15,11 +18,11 @@
   *
   */
@@ -24,11 +25,18 @@
  import { EmitterAugmentation1 } from './events';
  import { Metadata } from './metadata';
  import { ObjectReadable, ObjectWritable, WriteCallback } from './object-stream';
-@@ -86,6 +89,67 @@
+@@ -86,6 +89,74 @@
    return Object.assign(new Error(message), status, { stack });
  }
  
 +const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
++
++function setReadableQueueLimit(stream: Readable, limit: number): void {
++  // Node and Workers nodejs_compat streams expose this state but no public
++  // setter. Update only our own surface, before starting its transport, so a
++  // transformer can keep the stream identity and listeners it received.
++  (stream as unknown as { _readableState: { highWaterMark: number } })._readableState.highWaterMark = limit;
++}
 +
 +/** Mark the RPC terminal before invoking user callbacks or stream events. */
 +export function markCallSurfaceTerminal(surface: SurfaceCall): void {
@@ -92,22 +100,25 @@
  export class ClientUnaryCallImpl
    extends EventEmitter
    implements ClientUnaryCall
-@@ -113,12 +177,17 @@
+@@ -113,12 +184,24 @@
    implements ClientReadableStream<ResponseType>
  {
    public call?: InterceptingCallInterface;
 -  constructor(readonly deserialize: (chunk: Buffer) => ResponseType) {
--    super({ objectMode: true });
--  }
--
--  cancel(): void {
--    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +  private readonly lifecycle = new ClientStreamLifecycle(this);
++  private readonly defaultReadQueueLimit: number;
 +  constructor(readonly deserialize: (chunk: Buffer) => ResponseType, readableHighWaterMark?: number) {
-+    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { highWaterMark: readableHighWaterMark }) });
+     super({ objectMode: true });
++    this.defaultReadQueueLimit = this.readableHighWaterMark;
++    this.setReadQueueLimit(readableHighWaterMark);
 +  }
 +
-+  cancel(): void {
++  setReadQueueLimit(limit: number | undefined): void {
++    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
+   }
+ 
+   cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    this.lifecycle.cancel();
 +  }
 +
@@ -116,21 +127,18 @@
    }
  
    getPeer(): string {
-@@ -139,12 +208,17 @@
+@@ -139,12 +222,17 @@
    implements ClientWritableStream<RequestType>
  {
    public call?: InterceptingCallInterface;
 +  private readonly lifecycle = new ClientStreamLifecycle(this, true);
    constructor(readonly serialize: (value: RequestType) => Buffer) {
 -    super({ objectMode: true });
--  }
--
--  cancel(): void {
--    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    super({ objectMode: true, autoDestroy: false });
-+  }
-+
-+  cancel(): void {
+   }
+ 
+   cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    this.lifecycle.cancel();
 +  }
 +
@@ -139,7 +147,7 @@
    }
  
    getPeer(): string {
-@@ -157,7 +231,7 @@
+@@ -157,7 +245,7 @@
  
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {
@@ -148,26 +156,29 @@
      };
      const flags = Number(encoding);
      if (!Number.isNaN(flags)) {
-@@ -177,15 +251,21 @@
+@@ -177,15 +265,28 @@
    implements ClientDuplexStream<RequestType, ResponseType>
  {
    public call?: InterceptingCallInterface;
 +  private readonly lifecycle = new ClientStreamLifecycle(this);
++  private readonly defaultReadQueueLimit: number;
    constructor(
      readonly serialize: (value: RequestType) => Buffer,
 -    readonly deserialize: (chunk: Buffer) => ResponseType
 +    readonly deserialize: (chunk: Buffer) => ResponseType,
 +    readableHighWaterMark?: number
    ) {
--    super({ objectMode: true });
--  }
--
--  cancel(): void {
--    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
-+    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { readableHighWaterMark }) });
+     super({ objectMode: true });
++    this.defaultReadQueueLimit = this.readableHighWaterMark;
++    this.setReadQueueLimit(readableHighWaterMark);
 +  }
 +
-+  cancel(): void {
++  setReadQueueLimit(limit: number | undefined): void {
++    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
+   }
+ 
+   cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    this.lifecycle.cancel();
 +  }
 +
@@ -176,7 +187,7 @@
    }
  
    getPeer(): string {
-@@ -202,7 +282,7 @@
+@@ -202,7 +303,7 @@
  
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {
