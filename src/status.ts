@@ -56,9 +56,9 @@ export function httpStatusToGrpc(code: number): status {
         503: status.UNAVAILABLE, 504: status.UNAVAILABLE } as Record<number, status>)[code] ?? status.UNKNOWN;
 }
 export function authErrorCode(error: unknown): status {
-    const code = (error as {
-        code?: unknown;
-    } | null)?.code;
+    let code: unknown;
+    try { code = (error as { code?: unknown } | null)?.code; }
+    catch { return status.UNKNOWN; }
     if (typeof code !== 'number') {
         return status.UNKNOWN;
     }

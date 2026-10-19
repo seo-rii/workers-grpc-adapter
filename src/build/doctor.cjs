@@ -39,7 +39,7 @@ function resolveImports(imports) {
         process.stdout.write(JSON.stringify(results));
     `;
     const result = spawnSync(process.execPath, ['--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
-        encoding: 'utf8', input: JSON.stringify(imports.map(({ full, entry }) => [entry.specifier, pathToFileURL(full).href, entry.kind])),
+        encoding: 'utf8', input: JSON.stringify(imports.map(({ parent, entry }) => [entry.specifier, parent, entry.kind])),
         env: { ...process.env, NODE_OPTIONS: '' }, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
     });
     // A resolver failure leaves every import unresolved. Never fall back to
@@ -62,6 +62,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         .map(file => ({ path: file, sha256: hash(fs.readFileSync(path.join(base, file))) }));
     const projectManifest = fs.existsSync(path.join(base, 'package.json')) ? JSON.parse(fs.readFileSync(path.join(base, 'package.json'))) : {};
     const allPackages = new Map();
+    const packageFailures = new Map();
     const pendingImports = [];
     const adapterInstallations = new Map();
     const recordResolution = (manifestPath, consumer, specifier) => {
@@ -85,8 +86,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         try { recordResolution(packageFor(rootRequire, specifier), '.', specifier); }
         catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
     }
-    const resolvedImport = (entry, full, resolved) => {
-        const grpcManifestPath = packageFor(createRequire(full), '@grpc/grpc-js');
+    const resolvedImport = (entry, full, resolved, parent) => {
+        const grpcManifestPath = packageFor(createRequire(parent), '@grpc/grpc-js');
         recordResolution(grpcManifestPath, rel(full), entry.specifier);
         const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
@@ -94,20 +95,31 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
     };
     const readPackage = manifestPath => {
         const directory = path.dirname(manifestPath);
+        if (packageFailures.has(directory)) throw packageFailures.get(directory);
+        try { return inspectPackage(manifestPath); }
+        catch (error) { packageFailures.set(directory, error); throw error; }
+    };
+    const inspectPackage = manifestPath => {
+        const directory = path.dirname(manifestPath);
         if (allPackages.has(directory)) return allPackages.get(directory);
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
         const record = { name: manifest.name, version: manifest.version, path: rel(directory), integrity: lock?.packages?.[rel(directory)]?.integrity ?? null, dependencies: [], grpcImports: [] };
         allPackages.set(directory, record);
         const req = createRequire(manifestPath);
         for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
+            let dependencyManifest;
             try {
-                const dependencyManifest = packageFor(req, name);
-                recordResolution(dependencyManifest, rel(directory), name);
-                const child = readPackage(dependencyManifest);
-                record.dependencies.push({ name, path: child.path });
+                dependencyManifest = packageFor(req, name);
             } catch (error) {
+                if (error.code !== 'MODULE_NOT_FOUND') throw error;
                 record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name] });
+                continue;
             }
+            // Optional means the package may be absent. An installed package
+            // still has to pass manifest parsing and the complete source walk.
+            recordResolution(dependencyManifest, rel(directory), name);
+            const child = readPackage(dependencyManifest);
+            record.dependencies.push({ name, path: child.path });
         }
         // Inspect all installed runtime and declaration imports, not only one GAX selected at the root.
         const pending = [directory];
@@ -128,10 +140,17 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                     if (visitedFiles.has(full)) continue;
                     visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
-                    for (const { kind, specifier } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
-                        const imported = { file: rel(full), specifier, kind, status: 'resolution-failed' };
+                    for (const { kind, specifier, base: loaderBase } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
+                        let parent = pathToFileURL(full).href;
+                        if (loaderBase === null) parent = null;
+                        else if (loaderBase?.kind === 'literal') parent = loaderBase.value;
+                        else if (loaderBase?.kind === 'url') {
+                            try { parent = new URL(loaderBase.value, loaderBase.relative ? parent : undefined).href; }
+                            catch { parent = null; }
+                        }
+                        const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
                         record.grpcImports.push(imported);
-                        pendingImports.push({ full, entry: imported });
+                        pendingImports.push({ full, entry: imported, parent });
                     }
                 }
             }
@@ -147,6 +166,10 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
             const closure = new Map();
             const visit = node => {
                 if (!node || closure.has(node.path)) return;
+                // A completed member of a cycle can refer to another member
+                // whose later source walk failed. Do not reuse that partial graph.
+                const failure = packageFailures.get(path.resolve(base, node.path));
+                if (failure) throw failure;
                 closure.set(node.path, node);
                 for (const dependency of node.dependencies) if (dependency.path) visit(byPath.get(dependency.path));
             };
@@ -163,8 +186,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
     }
     const resolved = resolveImports(pendingImports);
     for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
-        const { full, entry } = pendingImports[index];
-        try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
+        const { full, entry, parent } = pendingImports[index];
+        try { resolvedImport(entry, full, resolved[index], parent); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {
         const passed = result.gax.length > 0 && result.grpc.length > 0 && result.grpc.every(item => item.implementation === expected)

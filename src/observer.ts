@@ -1,4 +1,5 @@
 import { status } from './status';
+import { observeRejection } from './observe-rejection';
 
 /** All counters are local observations, never proof of remote delivery. */
 export interface WorkersGrpcTraffic {
@@ -66,7 +67,7 @@ export class CallObservation {
         const observer = this.observer;
         // Capture only primitives and the callback, not the call, buffers or SDK.
         queueMicrotask(() => {
-            try { const result = observer(event); if (result !== undefined) void Promise.resolve(result).catch(() => {}); }
+            try { observeRejection(observer(event), () => {}); }
             catch { /* Instrumentation cannot change RPC status or cleanup. */ }
         });
     }

@@ -294,7 +294,11 @@ specifiers, including comments between tokens, string escapes and static
 template literals in `require()` or `import()`. It ignores comment/string/regex
 contents, property calls, and ordinary locally bound `require` functions. A
 `require` initialized directly by an imported `node:module`/`module`
-`createRequire` factory remains a CommonJS loader. This is static module-site
+`createRequire` factory remains a CommonJS loader. Its literal absolute path or
+file URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
+are resolved from that declared location. An unproven base is reported as
+`resolution-base-unverified`; it never falls back to the source directory.
+This is static module-site
 inspection, not arbitrary loader-alias or computed-specifier data-flow analysis.
 
 Declaration files retain the graph check's package-entry availability check
