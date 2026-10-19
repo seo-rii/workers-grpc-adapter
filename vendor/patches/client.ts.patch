@@ -1,14 +1,15 @@
 --- a/src/client.ts
 +++ b/src/client.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2019 gRPC authors.
-+ *
+  *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-  *
++ *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
 @@ -26,17 +29,18 @@
    ClientWritableStreamImpl,
    ServiceError,
@@ -25,7 +26,7 @@
 -import { ChannelCredentials } from './channel-credentials';
 -import { ChannelOptions } from './channel-options';
 -import { Status } from './constants';
-+import { Channel } from './channel';
++import { Channel, isWorkersChannel } from './channel';
 +import { WorkersGrpcConfigurationError } from './status';
 +import { ChannelCredentials } from './credentials';
 +import { ChannelOptions } from './options';
@@ -85,10 +86,9 @@
 -        credentials,
 -        options
 -      );
--    }
 +    if (options.channelOverride !== undefined || options.channelFactoryOverride !== undefined) {
 +      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
-+    }
+     }
 +    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
    }
  
@@ -146,16 +146,30 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -561,7 +519,7 @@
+@@ -558,10 +516,11 @@
+         requestSerialize: serialize,
+         responseDeserialize: deserialize,
+       };
++    const defaultStream = new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit());
      let callProperties: CallProperties<RequestType, ResponseType> = {
        argument: argument,
        metadata: checkedArguments.metadata,
 -      call: new ClientReadableStreamImpl<ResponseType>(deserialize),
-+      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
++      call: defaultStream,
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -606,8 +564,9 @@
+@@ -573,6 +532,9 @@
+     }
+     const stream: ClientReadableStream<ResponseType> =
+       callProperties.call as ClientReadableStream<ResponseType>;
++    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
++      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
++    }
+     const interceptorArgs: InterceptorArguments = {
+       clientInterceptors: this[INTERCEPTOR_SYMBOL],
+       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
+@@ -606,8 +568,9 @@
            return;
          }
          receivedStatus = true;
@@ -166,7 +180,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +576,7 @@
+@@ -617,7 +580,7 @@
          stream.emit('status', status);
        },
      });
@@ -175,17 +189,34 @@
      call.halfClose();
      return stream;
    }
-@@ -655,7 +614,8 @@
+@@ -651,12 +614,12 @@
+         requestSerialize: serialize,
+         responseDeserialize: deserialize,
+       };
++    const defaultStream = new ClientDuplexStreamImpl<RequestType, ResponseType>(
++      serialize, deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()
++    );
+     let callProperties: CallProperties<RequestType, ResponseType> = {
        metadata: checkedArguments.metadata,
-       call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
-         serialize,
+-      call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
+-        serialize,
 -        deserialize
-+        deserialize,
-+        this[CHANNEL_SYMBOL].getReadQueueLimit()
-       ),
+-      ),
++      call: defaultStream,
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
-@@ -700,8 +660,9 @@
+       callOptions: checkedArguments.options,
+@@ -668,6 +631,9 @@
+     }
+     const stream: ClientDuplexStream<RequestType, ResponseType> =
+       callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
++    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
++      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
++    }
+     const interceptorArgs: InterceptorArguments = {
+       clientInterceptors: this[INTERCEPTOR_SYMBOL],
+       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
+@@ -700,8 +666,9 @@
            return;
          }
          receivedStatus = true;
@@ -196,7 +227,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +675,12 @@
+@@ -714,3 +681,12 @@
      return stream;
    }
  }
