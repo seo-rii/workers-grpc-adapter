@@ -272,11 +272,14 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   let coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
   function targetFor(input) {
     const absolute = path.resolve(projectRoot, input);
-    // Doctor and callers can also name an importer-resolved profile role that
-    // is not a literal nested path in an isolated installation.
-    if (logicalFiles.has(absolute)) return logicalFiles.get(absolute);
     const canonical = fs.existsSync(absolute) ? fs.realpathSync(absolute) : absolute;
     if (files.has(canonical)) return files.get(canonical);
+    // An esbuild input is an actual module, not a symbolic dependency role.
+    // A logical role may resolve elsewhere through its declared SDK importer;
+    // never substitute that SDK's bytes for another installation at this path.
+    const logical = logicalFiles.get(absolute);
+    if (logical) throwDiagnostic({ kind: 'source-identity', path: logical.path,
+      expected: resolution.resolve(logical.path), actual: canonical, logicalPath: absolute, physicalPath: canonical, reason: 'unverified-installation' });
     // Catch another installation of a transform target. Matching names or even
     // bytes cannot substitute for the inspected physical source identity.
     const candidates = targets.filter(target => target.suffix && canonical.endsWith(path.sep + target.suffix.split('/').join(path.sep)));

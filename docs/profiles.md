@@ -183,7 +183,11 @@ Both the inspection report and build manifest include `resolvedPaths` with
 profile `path`, `logicalPath` and canonical `physicalPath`. Hash diagnostics also
 carry those paths. A second physical installation of an imported transform
 target fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte
-copies. Use the graph doctor for adapter identity as well. Normal Node/esbuild
+copies, even when its path equals a profile's symbolic role. The loader and
+metafile audit always check the actual module's physical source; doctor first
+resolves the symbolic role through its declared importer. A missing symbolic
+path cannot substitute for a loaded file. Use the graph doctor for adapter
+identity as well. Normal Node/esbuild
 symlink resolution is the tested path; custom loaders and `preserveSymlinks`
 can change dependency lookup and need separate validation.
 
