@@ -123,6 +123,33 @@ runtime. The build also rejects different esbuild module identities for the
 same adapter source, including query/hash suffix copies. Import adapter entry
 points without suffixes; ordinary aliases that resolve to one module are valid.
 
+The export audit follows CommonJS namespace re-exports as well as ES module
+bindings. It rejects values that can be reassigned through `exports`, aliases,
+property descriptors or mutation helpers after initialization. A stable shared
+object whose fields change remains supported. Unproven namespace escapes or
+getters fail with `WGA_PREBUNDLE_EXPORT_STABILITY`; expose an explicit factory
+or a stable state object instead. Getters returning arbitrary object properties
+are conservatively rejected, since aliases and mutation helpers can change
+those properties. Getters returning a stable object binding remain supported.
+Namespace copies during CommonJS initialization and getters returning a cached
+CommonJS namespace are supported. Initialization helpers may follow an
+unconditionally defined, non-configurable getter without a setter; the getter's
+backing binding is still audited. Conditional descriptors, later namespace
+replacement, and getters that construct fresh objects remain rejected.
+
+For a complex or mutable SDK getter, the wrapper can explicitly own the value
+selected during initialization instead of re-exporting the live property. The
+Firestore 9 fixture uses this contract for its lazily memoized `v1` namespace:
+
+```js
+import { v1 } from '@google-cloud/firestore';
+export const firestoreV1 = v1;
+```
+
+Both package formats then expose the same selected object. Later replacement
+of the SDK property does not change this wrapper-owned binding; mutation of
+the selected object's fields remains visible in both formats.
+
 For SvelteKit, pack the generated directory and install its tarball as a server
 dependency. Import that package from routes, hooks, or a module under the
 application's `./src/lib/server` directory:
