@@ -240,6 +240,7 @@ function validateProfileManifest(profile, build) {
     need(build.transformer?.version === profile.transformerVersion && /^[a-f0-9]{64}$/.test(build.transformer?.sha256)
         && /^\d+\.\d+\.\d+/.test(build.transformer?.typescriptVersion), 'transformer identity missing');
     const inputs = digest(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+        generators: profile.schemas.map(schema => [schema.path, 'node_modules/protobufjs/index.js']),
         sources: [...profile.files, ...profile.schemas, ...profile.codegenInputs].map(file => [file.path, file.sha256]) }));
     need(build.inputSha256 === inputs && build.cacheKey === digest(JSON.stringify({ profileSha256: build.profileSha256,
         transformer: build.transformer, inputSha256: inputs })), 'transformer/input cache identity drift');

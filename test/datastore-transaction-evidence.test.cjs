@@ -10,8 +10,8 @@ const envoyPin = require('../fixtures/envoy/binary.json');
 function fixture() {
   const hash = 'a'.repeat(64), results = [], wire = [], sources = {}, evidence = {}, installedInputs = {}, nativeInputs = {};
   const profiles = [
-    { id: 'google-static-v1', version: '10.1.1', fixture: 'google', native: 'native', revision: 5 },
-    { id: 'google-modern-v1', version: '11.1.0', fixture: 'modern', native: 'modern-native', revision: 3 },
+    { id: 'google-static-v1', version: '10.1.1', fixture: 'google', native: 'native', revision: 6 },
+    { id: 'google-modern-v1', version: '11.1.0', fixture: 'modern', native: 'modern-native', revision: 4 },
   ];
   const one = '00ff0180', two = '00ff0280';
   const commit = { mutationCount: 1, versions: ['2'], indexUpdates: 1 };

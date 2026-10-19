@@ -12,8 +12,8 @@ const { execFileSync } = require('node:child_process');
 const { createWatchErrorServer } = require('./firestore-watch-error-server.cjs');
 const scenarios = ['permission', 'unavailable', 'end'];
 const profiles = [
-    { id: 'google-static-v1', revision: 5, fixture: 'google', native: 'native', version: '8.3.0' },
-    { id: 'google-modern-v1', revision: 3, fixture: 'modern', native: 'modern-native', version: '9.2.0' },
+    { id: 'google-static-v1', revision: 6, fixture: 'google', native: 'native', version: '8.3.0' },
+    { id: 'google-modern-v1', revision: 4, fixture: 'modern', native: 'modern-native', version: '9.2.0' },
 ];
 const { startEmulatorEnvoy } = require('./emulator-envoy.cjs');
 const root = path.resolve(__dirname, '..');

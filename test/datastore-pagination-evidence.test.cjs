@@ -65,7 +65,7 @@ function fixture() {
     instrumentation: { syntheticCallIdHeader: true, internalCallDiagnostics: true, oauthNetworkGuard: true, sdkCloseAfterSnapshot: true },
     installedInputs, evidence: Object.fromEntries(sources.map(source => [source, hash])), bundleSha256: hash,
     sharedSourceHashes: helpers, sourceHashes: Object.fromEntries(['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd'].map(runtime => [runtime, { ...helpers }])),
-    buildProfile: { name: 'google-static-v1', revision: 5, sha256: hash, registrySha256: hash },
+    buildProfile: { name: 'google-static-v1', revision: 6, sha256: hash, registrySha256: hash },
     results, rpcCount: 310, grpcWebRequests: 248, authNetworkRequests: 0, controlRequests: 30 };
 }
 function row(report, scenario = 'stream-error', runtime = 'workerd-cloudflare') {

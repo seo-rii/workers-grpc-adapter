@@ -8,9 +8,9 @@ const scenarios = [
   'transaction-cancel-inflight', 'transaction-completion-first',
 ];
 const profiles = [
-  { id: 'google-static-v1', fixture: 'google', sdkVersion: '10.1.1', revision: 5,
+  { id: 'google-static-v1', fixture: 'google', sdkVersion: '10.1.1', revision: 6,
     generatedPackage: '@google-cloud/datastore', generatedVersion: '10.1.1' },
-  { id: 'google-modern-v1', fixture: 'modern', sdkVersion: '11.1.0', revision: 3,
+  { id: 'google-modern-v1', fixture: 'modern', sdkVersion: '11.1.0', revision: 4,
     generatedPackage: '@google-cloud/datastore-api', generatedVersion: '0.3.0' },
 ];
 const sources = ['scripts/test-sdk-cancellation.cjs', 'scripts/sdk-cancellation-evidence.cjs',

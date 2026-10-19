@@ -77,7 +77,7 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 | `packages` | Dependency role paths, optional `resolveFrom` importer role, exact package names, versions and `package.json` SHA256 hashes |
 | `files` | Exact source SHA256 hashes and enabled transform rules with expected match counts |
 | `schemas` | Exact protobuf JSON, proto or well-known schema input hashes |
-| `codegenInputs` | Exact protobuf generator implementation hashes |
+| `codegenInputs` | Exact protobuf generator entry, bootstrap and implementation hashes |
 | `loaderOptions` | Supported loader configuration |
 | `capabilities` | Features this profile is intended to support |
 | `requiredChecks` | Repository commands required when changing the profile |
@@ -107,6 +107,15 @@ listed source/schema/codegen files are content-pinned, not every file in every
 transitive package. The import-graph doctor separately checks replacement
 resolution throughout the installed dependency closure.
 
+Static profile revision 6 and modern profile revision 4 also pin the protobuf
+entry and bootstrap files. Before loading any generator, every schema's
+importer-resolved `protobufjs` entry must identify the same physical installation
+as a declared, hash-checked protobuf role. An additional SDK-local installation
+fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte copies;
+symlinks to the inspected installation remain valid. Hash-only inspection
+performs this identity check without executing a generator. Build startup and
+completion repeat it. These revisions keep the existing dependency versions.
+
 ## Generated artifact identity
 
 `createGoogleWorkerBuild(...).manifest()` exposes `cacheKey`, `inputSha256` and
@@ -116,6 +125,7 @@ resolution throughout the installed dependency closure.
 - Transformer semantic version **and the SHA256 of its implementation bytes**.
 - The supplied TypeScript compiler's version.
 - All validated package-manifest, source, schema and code-generator hashes.
+- The mapping from each schema to its validated generator role and entry.
 
 Identical inputs generate the same registry identity regardless of output
 directory. Changes to any of those inputs select another registry namespace,
