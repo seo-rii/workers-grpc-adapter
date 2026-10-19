@@ -361,6 +361,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 checkActive();
                 first = await race(iterator!.next());
+                if (!first || typeof first !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
             } else {
                 checkActive();
                 if (output && typeof output[Symbol.asyncIterator] === 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
