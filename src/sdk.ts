@@ -141,6 +141,10 @@ export function cancellableCall<T, Options extends object = object>(
         active = false; cancelled = true;
         parent.cancel(); release(); reject(error); cancelPending();
     };
+    const stopIfExpired = () => {
+        if (active && parent.getDeadline() <= Date.now()) stop(deadlineError());
+        return !active;
+    };
     const cancel = () => stop(cancelledError());
     detach = subscribe(options.signal, cancel);
     if (active) clearDeadline = watchDeadline(parent.getDeadline(), () => stop(deadlineError()));
@@ -149,15 +153,19 @@ export function cancellableCall<T, Options extends object = object>(
         pending = start(gaxOptions);
         if (pending === null || pending === undefined || typeof pending.then !== 'function') throw new TypeError('WGA_SDK_PROMISE_REQUIRED');
         Promise.resolve(pending).then(value => {
-            if (!active) return;
+            if (stopIfExpired()) return;
             active = false; release(); resolve(value);
         }, error => {
-            if (!active) return;
+            if (stopIfExpired()) return;
             active = false; parent.cancel(); release(); reject(error);
         });
+        // Synchronous SDK startup and ready promise continuations can cross
+        // expiry before the timer runs. Observe the returned promise first so
+        // cancellation also consumes any eventual rejection.
+        stopIfExpired();
         if (cancelled) cancelPending();
     } catch (error) {
-        if (active) { active = false; parent.cancel(); release(); reject(error); }
+        if (!stopIfExpired()) { active = false; parent.cancel(); release(); reject(error); }
     }
     return Object.freeze({ promise, cancel });
 }
@@ -200,23 +208,27 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
         if (source.closed) nextTick(removeListeners);
     };
     const stream = new Readable({ objectMode: true, highWaterMark,
-        read() { reading = true; source?.resume(); },
+        read() { if (!stopIfExpired()) { reading = true; source?.resume(); } },
         destroy(error, callback) {
             if (!complete) { parent.cancel(); stopSource(); }
             release(); callback(error);
         },
     }) as SdkQueryStream<T>;
-    const onData = (value: T) => { if (!stream.destroyed && !stream.push(value)) source?.pause(); };
+    const stopIfExpired = () => {
+        if (!complete && !stream.destroyed && parent.getDeadline() <= Date.now()) stream.destroy(deadlineError());
+        return complete || stream.destroyed;
+    };
+    const onData = (value: T) => { if (!stopIfExpired() && !stream.push(value)) source?.pause(); };
     const onEnd = () => {
-        if (stream.destroyed) return;
+        if (stopIfExpired()) return;
         complete = true; release(); stream.push(null); stopSource();
     };
     // EOF commits success. The owned source may still report a later cleanup
     // error from _destroy; keep handling it without producing a second outcome.
-    const onError = (error: Error) => { if (!complete && !stream.destroyed) stream.destroy(error); };
+    const onError = (error: Error) => { if (!stopIfExpired()) stream.destroy(error); };
     const onSourceClosed = () => {
         removeListeners();
-        if (!complete && !stream.destroyed) stream.destroy(new Error('WGA_SDK_STREAM_CLOSED'));
+        if (!stopIfExpired()) stream.destroy(new Error('WGA_SDK_STREAM_CLOSED'));
     };
     const onInfo = (...args: unknown[]) => { if (!stream.destroyed) stream.emit('info', ...args); };
     const onMetadata = (...args: unknown[]) => { if (!stream.destroyed) stream.emit('metadata', ...args); };
@@ -265,7 +277,7 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
                 // or never finish at all. Let synchronous source errors run
                 // first, then end local waiting independently of that cleanup.
                 nextTick(() => {
-                    if (!complete && !stream.destroyed) {
+                    if (!stopIfExpired()) {
                         stream.destroy(error ?? this.errored ?? new Error('WGA_SDK_STREAM_CLOSED'));
                     }
                 });
@@ -278,13 +290,13 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
             };
         }
         if (typeof candidate.end !== 'function') throw new TypeError('WGA_SDK_QUERY_SOURCE');
-        if (stream.destroyed) { stopSource(); return stream; }
+        if (stopIfExpired()) { stopSource(); return stream; }
         source.pause();
         source.on('data', onData); source.on('end', onEnd);
         source.on('info', onInfo); source.on('metadata', onMetadata); source.on('status', onStatus);
         if (source.readableEnded) onEnd();
         else if (source.destroyed) stream.destroy(source.errored ?? new Error('WGA_SDK_STREAM_CLOSED'));
         else if (reading) source.resume();
-    } catch (error) { stream.destroy(error instanceof Error ? error : new Error('WGA_SDK_QUERY_START')); }
+    } catch (error) { if (!stopIfExpired()) stream.destroy(error instanceof Error ? error : new Error('WGA_SDK_QUERY_START')); }
     return stream;
 }
