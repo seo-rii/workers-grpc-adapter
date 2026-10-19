@@ -47,8 +47,15 @@ with tarfile.open(archive, 'w:gz') as output:
             if file.is_file() and not file.is_symlink():
                 output.add(file, arcname=str(file.relative_to(root)), recursive=False)
     logs = args.log_dir
-    if logs.is_dir():
-        for file in sorted(logs.glob('wga-*')):
-            if file.is_file() and not file.is_symlink() and file.name.endswith(('.log', '.exit', '.exit.json', '.access.jsonl')):
-                output.add(file, arcname='logs/' + file.name, recursive=False)
+    if logs.is_dir() and not logs.is_symlink():
+        # Only the SDK matrix owns a nested log directory. Do not recursively
+        # archive unrelated developer logs or traverse directory symlinks.
+        for directory, pattern in ((logs, 'wga-*'),
+                                   (logs / 'wga-prebundle-sdks', 'wga-prebundle-sdks-*')):
+            if not directory.is_dir() or directory.is_symlink():
+                continue
+            for file in sorted(directory.glob(pattern)):
+                if file.is_file() and not file.is_symlink() and file.name.endswith(
+                        ('.log', '.exit', '.exit.json', '.access.jsonl', '.status', '.status.json')):
+                    output.add(file, arcname='logs/' + file.relative_to(logs).as_posix(), recursive=False)
 print(f'Collected local verification receipts: {archive.name}')
