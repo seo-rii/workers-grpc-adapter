@@ -67,6 +67,19 @@ async function localRequest(port, method, pathname, timeout = 2000) {
   });
 }
 
+function childEndpointReady(log, port) {
+  // The pinned emulator prints these only after its API listener starts. A
+  // foreign HTTP service on the released reservation must not satisfy readiness.
+  // Inspect a bounded startup prefix; request logs cannot grow this allocation.
+  const fd = fs.openSync(log, 'r');
+  try {
+    const bytes = Buffer.alloc(16384);
+    const text = bytes.subarray(0, fs.readSync(fd, bytes, 0, bytes.length, 0)).toString('utf8');
+    return text.split(/\r?\n/).includes(`API endpoint: http://127.0.0.1:${port}`)
+      && text.split(/\r?\n/).includes('Dev App Server is now running.');
+  } finally { fs.closeSync(fd); }
+}
+
 async function startOne(toolchain, name, projectId, scratch, logDirectory) {
   const mode = name === 'firestore' ? 'firestore-native' : 'datastore-mode';
   const port = await unusedPort();
@@ -125,8 +138,8 @@ async function startOne(toolchain, name, projectId, scratch, logDirectory) {
   async function stop() {
     if (stopping) return stopping;
     stopping = (async () => {
-      if (!outcome) await localRequest(port, 'POST', '/shutdown').catch(() => {});
-      for (let i = 0; i < 100 && !outcome; i++) await delay(50);
+      // Address the owned process group, never whoever currently answers on
+      // its former port. SIGTERM runs the JVM's graceful shutdown hooks.
       if (!outcome) signal('SIGTERM');
       for (let i = 0; i < 100 && !outcome; i++) await delay(50);
       if (!outcome) signal('SIGKILL');
@@ -138,15 +151,19 @@ async function startOne(toolchain, name, projectId, scratch, logDirectory) {
   activeEmulators.add(registration);
   try {
     const until = Date.now() + 45000;
+    let listening = false;
     while (Date.now() < until) {
       if (outcome) throw new Error(`${name} emulator exited during startup (${outcome.code ?? outcome.signal ?? outcome.errorCode}); see ${log}`);
-      const ready = await localRequest(port, 'GET', '/').catch(() => false);
+      listening ||= childEndpointReady(log, port);
+      const ready = listening && await localRequest(port, 'GET', '/').catch(() => false);
+      if (outcome) throw new Error(`${name} emulator exited during startup (${outcome.code ?? outcome.signal ?? outcome.errorCode}); see ${log}`);
       if (ready) {
         metadata.status = 'running';
         metadata.readyAt = new Date().toISOString();
         return {
           endpoint: metadata.endpoint, port, projectId, metadata, stop,
           async reset() {
+            if (outcome || stopping) throw new Error(`${name} emulator is no longer running`);
             const code = await localRequest(port, name === 'datastore' ? 'POST' : 'DELETE', name === 'datastore'
               ? '/reset' : `/emulator/v1/projects/${projectId}/databases/(default)/documents`, 30000);
             if (code < 200 || code >= 300) throw new Error(`${name} emulator reset returned HTTP ${code}`);

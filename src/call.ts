@@ -111,6 +111,7 @@ export class WorkersCall {
             this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
                 maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
                 budget: context.resources,
+                beforeFrame: () => { this.stopIfExpired(); },
                 onFrame: this.observation ? bytes => this.observation!.sent(bytes) : undefined,
                 // Fetch can cancel an upload after an early server response.
                 // Stop producers, but let that response (or the logical call
@@ -348,7 +349,7 @@ export class WorkersCall {
             this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             return;
         }
-        if (this.terminal) {
+        if (this.stopIfExpired()) {
             if (callback) {
                 queueMicrotask(() => notify(() => callback!(new Error('WGA_CALL_TERMINATED'))));
             }
@@ -620,6 +621,12 @@ export class WorkersCall {
                         final = parseTrailers(frame.payload);
                         if (final) this.closeUploadFromResponse();
                         continue;
+                    }
+                    // Unary response cardinality belongs to the wire reader.
+                    // Async interceptors may hold or discard delivery, so the
+                    // surface callback cannot reliably count received frames.
+                    if (!c.responseStream && committed) {
+                        throw new TransportError(status.UNIMPLEMENTED, 'Too many responses received');
                     }
                     committed = true;
                     this.observation?.message(frame.payload.length);

@@ -145,7 +145,7 @@ export class CallLifetime implements InterceptingCallInterface {
         this.timer = setTimeout(() => { this.timer = undefined; this.armTimer(); }, Math.min(remaining, 2147483647));
     }
     sendMessageWithContext(context: MessageContext, message: unknown): void {
-        if (this.terminal) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
+        if (this.stopIfExpired()) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
         let settled = false;
         const done = (error?: Error | null) => {
             if (settled) return;
@@ -159,7 +159,7 @@ export class CallLifetime implements InterceptingCallInterface {
         if (this.chainStarted) send(); else this.pending.push(send);
     }
     sendMessage(message: unknown): void {
-        if (this.terminal) return;
+        if (this.stopIfExpired()) return;
         // Preserve the public entry point: custom InterceptingCall subclasses
         // may override sendMessage to supply flags such as NoCompress.
         const send = () => {

@@ -208,6 +208,11 @@ Another plugin swallowing `onLoad`, an unverified physical source, or
 dependency-link drift fails the build. Rebuilds clear all target and module
 receipts. Package/source/schema/codegen checks run again before completion.
 
+Use a separate prepared preset for concurrent builds or esbuild contexts.
+Overlapping use of one preset fails with `WGA_BUILD_CONCURRENT`, so one build
+cannot borrow another build's transformation receipts. Sequential builds and
+context rebuilds may reuse a preset after its previous build finishes.
+
 `manifest().transformCoverage` reports `required`, `applied`, `unused` and
 `passed`. These counts describe distinct profile targets, rather than module
 instances. `required` counts targets present in the actual metafile; `applied`
@@ -245,7 +250,7 @@ reported checks passed; `2` means a failed check, missing dependency or invalid
 invocation. A report filename writes the complete graph with restrictive file
 permissions and prints a compact summary.
 
-The same graph check is available without shelling out:
+The same graph check is available through the Node API:
 
 ```js
 const { inspectGoogleWorkerGraph } = require('@grpc/grpc-js/build');
@@ -263,8 +268,12 @@ original scope; another lockfile's presence is fingerprinted without claiming
 its full lock graph was parsed. The graph check reads manifests and source
 files without importing SDK, auth or adapter modules. It checks grpc-js imports
 in `.js`, `.cjs`, `.mjs`, `.d.ts`, `.d.cts` and `.d.mts` files throughout each
-dependency; an unresolved root or deep import fails the graph check. Profile AST
-checks also load the installed compiler and hash-checked protobuf generators. Neither check
+dependency; an unresolved root or deep import fails the graph check.
+Hidden runtime directories and source symlinks are included. Symlink imports
+resolve from the physical source location, and repeated physical files and
+directory cycles are visited once per package. Dependency `node_modules` trees
+are followed through package dependencies; version-control internals are skipped.
+Profile AST checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.
 
@@ -273,8 +282,10 @@ import records `kind`: `require`, `import`, or `declaration`.
 Runtime static imports, re-exports and dynamic `import()` use Node's ESM
 conditions, including dynamic imports inside CommonJS files. `require()` uses
 CommonJS conditions; using both forms for one specifier checks both targets.
-The ESM check batches Node's parent-aware resolver in a separate process without
-loading inspected modules. Missing files and directory targets fail, even when
+Each check batches Node's import and CommonJS resolvers in a fresh process without
+loading inspected modules. This also avoids stale CommonJS paths and package
+metadata when the API re-inspects an installation after dependency changes.
+Missing files and directory targets fail, even when
 Node's resolver can construct their URLs. User preload scripts, loader hooks and
 custom conditions are excluded; validate those environments separately.
 

@@ -27,9 +27,9 @@
       "source": "vendor/client/make-client.ts",
       "sha256": "53acc4fa9e851d4644341913d45d1d5cfe9e071f14191aabaf48716543669fdf",
       "target": "src/factory.ts",
-      "patchedSha256": "f7fe10185940bae8af9328eb0bdca210ee55c85cf3dc0eb1487cf904dd768794",
+      "patchedSha256": "49ec3c32decc19d830221968ff637cc49d175e955335d8e0cdd7a4bdf07e812b",
       "patch": "vendor/patches/factory.ts.patch",
-      "patchSha256": "b41653dd04f1977c13beb34458338dfdbce7d888dbcd5f11fe75568ba9001268"
+      "patchSha256": "fce9501c475210e0e0018324aad8eaa0275753cafabd6d5885003835a0bfd3ea"
     },
     {
       "upstreamPath": "src/metadata.ts",

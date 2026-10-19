@@ -262,6 +262,7 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   }
   const transformed = new Map();
   const moduleReceipts = new Map();
+  let activeBuild;
   const moduleIdentity = (namespace, input, suffix = '') => JSON.stringify([namespace || 'file', path.resolve(projectRoot, input), suffix]);
   const files = new Map(profile.files.map(file => [resolution.resolve(file.path), file]));
   const logicalFiles = new Map(profile.files.map(file => [path.join(projectRoot, file.path), file]));
@@ -350,13 +351,29 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const plugin = {
     name: 'wga-google-static-v1',
     setup(build) {
+      const owner = Symbol('build');
+      let rejected = false;
       if (build.initialOptions) build.initialOptions.metafile = true;
-      build.onStart?.(() => { transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false }; validateProfile(projectRoot, profile); validateRegistry(); });
+      build.onStart?.(() => {
+        // Receipts describe one build. A second build must not clear or borrow
+        // them while the first is still awaiting an earlier onEnd callback.
+        if (activeBuild !== undefined) { rejected = true; fail('WGA_BUILD_CONCURRENT', 'Prepare a separate preset for concurrent builds or contexts'); }
+        rejected = false;
+        activeBuild = owner;
+        transformed.clear(); moduleReceipts.clear(); coverage = { required: 0, applied: 0, unused: profile.files.length, passed: false };
+        validateProfile(projectRoot, profile); validateRegistry();
+      });
       build.onEnd?.(result => {
-        if (result.errors.length) { validateRegistry(); return; }
-        verifyBuild(result.metafile, path.resolve(build.initialOptions?.absWorkingDir || process.cwd()));
+        if (activeBuild !== owner) return;
+        try {
+          if (result.errors.length) { validateRegistry(); return; }
+          verifyBuild(result.metafile, path.resolve(build.initialOptions?.absWorkingDir || process.cwd()));
+        } finally { activeBuild = undefined; }
       });
       build.onLoad({ filter: /\.(?:c?js)$/ }, args => {
+        // esbuild can still run load hooks after an onStart error. A rejected
+        // contender must never add receipts to the active owner's build.
+        if (rejected || activeBuild !== undefined && activeBuild !== owner) fail('WGA_BUILD_CONCURRENT', 'Another build owns this preset');
         if (registryFor(args.path)) {
           validateRegistry();
           moduleReceipts.set(moduleIdentity(args.namespace, args.path, args.suffix || ''), registryFile);

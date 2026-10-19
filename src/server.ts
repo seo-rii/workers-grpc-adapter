@@ -8,6 +8,7 @@ import { decodeFrames, encodeFrame, encodeMessageFrame, headerBudget, metadataFr
 
 export interface GrpcWebServerContext extends ParentCall {
     readonly method: string;
+    /** Application request metadata, excluding HTTP/gRPC transport control fields. */
     readonly metadata: Metadata;
     readonly signal: AbortSignal;
     /** Absolute milliseconds since the epoch, or Infinity. */
@@ -160,9 +161,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         const route = !url.search && routes.get(url.pathname);
         if (!route) return early(new Response(trailer(status.UNIMPLEMENTED, 'WGA_SERVER_METHOD'), { headers: baseHeaders }));
         const aborter = new AbortController(), inputAborter = new AbortController();
-        let rejectAbort: (error: TransportError) => void = () => {};
-        const interruption = new Promise<never>((_, reject) => { rejectAbort = reject; });
-        void interruption.catch(() => {});
+        const pendingInterruptions = new Set<(error: TransportError) => void>();
         let timer: ReturnType<typeof setTimeout> | undefined, cleaned = false, headersSent = false, closed = false;
         let deadline = Infinity, interruptionError: TransportError | undefined;
         let iterator: AsyncIterator<unknown> | undefined, returnStarted = false;
@@ -197,7 +196,8 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 const error = new TransportError(code, details);
                 interruptionError = error;
                 aborter.abort();
-                rejectAbort(error);
+                for (const interrupt of pendingInterruptions) interrupt(error);
+                pendingInterruptions.clear();
             }
             cleanup();
             disposeIterator();
@@ -216,7 +216,23 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             catch (interrupted) { return interrupted; }
             return error;
         };
-        const race = <T>(operation: PromiseLike<T> | T): Promise<T> => Promise.race([Promise.resolve(operation), interruption]);
+        const race = <T>(operation: PromiseLike<T> | T): Promise<T> => new Promise((resolve, reject) => {
+            // Only in-flight work owns a cancellation subscription. Racing every
+            // message against one pending Promise would retain all settled
+            // results until the call ends, even after downstream consumption.
+            const interrupt = (error: TransportError) => reject(error);
+            if (interruptionError) interrupt(interruptionError);
+            else pendingInterruptions.add(interrupt);
+            // Keep both handlers attached after cancellation so a late failure
+            // from application work remains observed without delaying cleanup.
+            void Promise.resolve(operation).then(value => {
+                pendingInterruptions.delete(interrupt);
+                resolve(value);
+            }, error => {
+                pendingInterruptions.delete(interrupt);
+                reject(error);
+            });
+        });
         const errorResponse = (error: unknown): Response => {
             error = terminalError(error);
             const result = failure(error);
@@ -234,7 +250,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             request.signal.addEventListener('abort', callerAbort, { once: true });
             if (request.signal.aborted) callerAbort();
             armTimer();
-            const metadata = metadataFromHeaders(request.headers);
+            const metadata = metadataFromHeaders(request.headers, 'request');
             const requestBody = request.body;
             if (!requestBody && !route.definition.requestStream) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
             const requestEncoding = responseCompression(request.headers);
@@ -327,24 +343,22 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             const producing = Promise.resolve().then(() => {
                 checkActive();
                 return route.handler(input, context);
-            });
-            // A handler may finish after its deadline and return an iterator that
-            // already owns resources. Dispose it even though race has settled.
-            void producing.then(output => {
-                if (aborter.signal.aborted && !iterator && output && typeof output[Symbol.asyncIterator] === 'function') {
+            }).then(output => {
+                // Own the iterator as part of handler completion, before any
+                // awaiting continuation can observe cancellation. The same
+                // owner also disposes a handler that resolves after race ended.
+                if (output && typeof output[Symbol.asyncIterator] === 'function') {
                     iterator = output[Symbol.asyncIterator]();
-                    disposeIterator();
+                    if (aborter.signal.aborted) disposeIterator();
                 }
-            }).catch(() => {});
+                return output;
+            });
             const output = await race(producing);
-            if (aborter.signal.aborted) await interruption;
+            if (interruptionError) throw interruptionError;
             if (inputFailure !== undefined) throw inputFailure;
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
-                // Acquire the returned iterator before checking so expiration
-                // also disposes resources owned by an already completed handler.
-                iterator = output[Symbol.asyncIterator]();
                 checkActive();
                 first = await race(iterator!.next());
             } else {

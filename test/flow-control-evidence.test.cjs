@@ -59,7 +59,7 @@ function wireRows(runtime, mode) {
   const rows = [false, true].map(duplicate => ({ id: 'FLOW-006', scenario: duplicate ? 'unary-duplicate' : 'unary-one',
     runtime, mode, status: 'passed', peer: 'controlled-binary-response', fetchCount: 1, readDemands: 1,
     callbacks: [{ code: duplicate ? 12 : 0, value: duplicate ? null : 'one' }], statuses: [duplicate ? 12 : 0],
-    decoded: duplicate ? ['one', 'two'] : ['one'], maxExecution: { ...empty, activePumps: 1, parserAssemblies: 1,
+    decoded: ['one'], maxExecution: { ...empty, activePumps: 1, parserAssemblies: 1,
       parserAssemblyBytes: 8, runtimeChunkBytes: duplicate ? 37 : 29 }, readerUnlocked: true, cleanup: cleanup() }));
   const owners = { ...empty, activePumps: 1, pendingMessages: 1, pendingMessageBytes: 256,
     parserAssemblies: 1, parserAssemblyBytes: 261, runtimeChunkBytes: 33447 };
@@ -204,7 +204,7 @@ test('EVIDENCE flow control requires positive pressure and genuine owner cleanup
 test('EVIDENCE flow control rejects unary parity relabelling and unmeasured coalesced frame ownership', () => {
   for (const mutate of [
     r => { row(r, 'unary-one').readDemands = 2; }, r => { row(r, 'unary-one').callbacks = []; },
-    r => { row(r, 'unary-duplicate').statuses = [4]; }, r => { row(r, 'unary-duplicate').decoded = ['one']; },
+    r => { row(r, 'unary-duplicate').statuses = [4]; }, r => { row(r, 'unary-duplicate').decoded = ['one', 'two']; },
     r => { row(r, 'unary-duplicate').cleanup.execution.activePumps = 1; },
     r => { r.native.wire.nativeParity = true; }, r => { r.native.wire.rows[1].statuses = [12]; },
     r => { r.native.wire.rawControl.messages = 1; }, r => { r.native.wire.rawControl.endStream = false; },

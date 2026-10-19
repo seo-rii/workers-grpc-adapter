@@ -19,16 +19,18 @@ function packageFor(req, name) {
 }
 function resolveImports(imports) {
     if (!imports.length) return [];
-    // Node's synchronous parent-aware ESM resolver requires this flag on Node
-    // 22+. Run one batch in a clean Node process: no inspected modules, user
-    // preload scripts, loader hooks, or inherited custom conditions execute.
+    // Resolve each inspection in a clean process. CommonJS caches paths and
+    // package metadata across createRequire instances, so a long-lived doctor
+    // must not reuse the previous installation's resolution results.
     const source = `
         import { readFileSync, realpathSync, statSync } from 'node:fs';
         import { fileURLToPath } from 'node:url';
+        import { createRequire } from 'node:module';
         const requests = JSON.parse(readFileSync(0, 'utf8'));
-        const results = requests.map(([specifier, parent]) => {
+        const results = requests.map(([specifier, parent, kind]) => {
             try {
-                const file = fileURLToPath(import.meta.resolve(specifier, parent));
+                const file = kind === 'import' ? fileURLToPath(import.meta.resolve(specifier, parent))
+                    : createRequire(parent).resolve(specifier);
                 // import.meta.resolve can return URLs for missing files and
                 // directories. Neither is a loadable ESM file.
                 return statSync(file).isFile() ? realpathSync(file) : null;
@@ -37,7 +39,7 @@ function resolveImports(imports) {
         process.stdout.write(JSON.stringify(results));
     `;
     const result = spawnSync(process.execPath, ['--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
-        encoding: 'utf8', input: JSON.stringify(imports.map(({ full, entry }) => [entry.specifier, pathToFileURL(full).href])),
+        encoding: 'utf8', input: JSON.stringify(imports.map(({ full, entry }) => [entry.specifier, pathToFileURL(full).href, entry.kind])),
         env: { ...process.env, NODE_OPTIONS: '' }, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
     });
     // A resolver failure leaves every import unresolved. Never fall back to
@@ -60,7 +62,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         .map(file => ({ path: file, sha256: hash(fs.readFileSync(path.join(base, file))) }));
     const projectManifest = fs.existsSync(path.join(base, 'package.json')) ? JSON.parse(fs.readFileSync(path.join(base, 'package.json'))) : {};
     const allPackages = new Map();
-    const esmImports = [];
+    const pendingImports = [];
     const adapterInstallations = new Map();
     const recordResolution = (manifestPath, consumer, specifier) => {
         // Module identity follows physical paths, not package names or matching versions.
@@ -109,23 +111,27 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         }
         // Inspect all installed runtime and declaration imports, not only one GAX selected at the root.
         const pending = [directory];
+        const visitedDirectories = new Set(), visitedFiles = new Set();
         while (pending.length) {
-            const current = pending.pop();
+            const current = fs.realpathSync(pending.pop());
+            if (visitedDirectories.has(current)) continue;
+            visitedDirectories.add(current);
             for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-                if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-                const full = path.join(current, entry.name);
-                if (entry.isDirectory()) pending.push(full);
-                else if (entry.isFile() && /\.(?:[cm]?js|d\.[cm]?ts)$/.test(entry.name)) {
+                if (['node_modules', '.git', '.hg', '.svn'].includes(entry.name)) continue;
+                // Node follows source symlinks before resolving their imports.
+                // Track physical directories/files to bound cycles and aliases,
+                // but do not discard generated dot-directories or dot-files.
+                const full = fs.realpathSync(path.join(current, entry.name));
+                const info = entry.isSymbolicLink() ? fs.statSync(full) : entry;
+                if (info.isDirectory()) pending.push(full);
+                else if (info.isFile() && [full, entry.name].some(name => /\.(?:[cm]?js|d\.[cm]?ts)$/.test(name))) {
+                    if (visitedFiles.has(full)) continue;
+                    visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
-                    for (const { kind, specifier } of literalImports(source, /\.d\.[cm]?ts$/.test(entry.name))) {
+                    for (const { kind, specifier } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
                         const imported = { file: rel(full), specifier, kind, status: 'resolution-failed' };
                         record.grpcImports.push(imported);
-                        if (kind === 'import') { esmImports.push({ full, entry: imported }); continue; }
-                        try {
-                            // Declarations retain their existing package-entry
-                            // availability check; this is not TypeScript checking.
-                            resolvedImport(imported, full, createRequire(full).resolve(specifier));
-                        } catch { /* Keep the unresolved diagnostic. */ }
+                        pendingImports.push({ full, entry: imported });
                     }
                 }
             }
@@ -155,9 +161,9 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
             results.push({ sdk, status: 'blocked', reason: error.code === 'MODULE_NOT_FOUND' ? 'dependency-not-installed' : 'resolution-failed' });
         }
     }
-    const resolved = resolveImports(esmImports);
-    for (let index = 0; index < esmImports.length; index++) if (resolved[index]) {
-        const { full, entry } = esmImports[index];
+    const resolved = resolveImports(pendingImports);
+    for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
+        const { full, entry } = pendingImports[index];
         try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {

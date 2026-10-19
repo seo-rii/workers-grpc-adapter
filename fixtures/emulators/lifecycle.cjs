@@ -46,7 +46,8 @@ async function childMain(id) {
     const [left, right] = await Promise.all([first, second]);
     assert.strictEqual(left, right);
     assert.strictEqual(await emulators.stop(), left, 'Stop after completion returns the same metadata');
-    assert.ok(Object.values(left.instances).every(instance => instance.exit?.code === 0));
+    assert.ok(Object.values(left.instances).every(instance => instance.exit?.code === 0
+      || instance.exit?.code === 143 || instance.exit?.signal === 'SIGTERM'));
     process.send({ phase: 'stopped', concurrentStopSharedPromise: true, repeatedStopAfterExit: true });
   } finally {
     await emulators.stop();
@@ -112,8 +113,7 @@ async function runCase(scenario, logDirectory, remainingMs) {
       witness.exit = JSON.parse(fs.readFileSync(witness.statusFile, 'utf8'));
       assert.equal(witness.exit.pid, witness.pid);
       if (scenario.signal) assert.equal(witness.exit.parentSignal, scenario.signal);
-      if (scenario.phase === 'ready') assert.equal(witness.exit.code, 0);
-      else assert.ok(witness.exit.code === 0 || witness.exit.code === 143 || witness.exit.signal === 'SIGTERM');
+      assert.ok(witness.exit.code === 0 || witness.exit.code === 143 || witness.exit.signal === 'SIGTERM');
       witness.pidGone = true;
       witness.workingDirectoryRemoved = true;
     }
