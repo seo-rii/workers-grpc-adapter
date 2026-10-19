@@ -142,5 +142,6 @@ test('SDK doctor inspects without credentials or network and executes zero depen
     const report = JSON.parse(result.stdout);
     assert.equal(report.passed, true);
     assert.deepEqual(report.counters, { network: 0, fetch: 0, auth: 0, runtimeImports: 0, credentialReads: 0 });
-    assert.match(report.scope, /no runtime imports, authentication or network requests/);
+    assert.match(report.scope, /default Node import\/require resolution, declaration package-entry availability/);
+    assert.match(report.scope, /no TypeScript semantic checks, inspected module execution, authentication or network requests/);
 });
