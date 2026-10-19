@@ -201,15 +201,19 @@ function checkArtifact(ts, source, expected) {
   }
 }
 function bindSources(ts, sources) {
-  const options = { allowJs: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
+  const options = { allowJs: true, allowNonTsExtensions: true, noResolve: true, noLib: true, types: [] }, host = ts.createCompilerHost(options);
   host.getSourceFile = file => sources.get(file);
   return ts.createProgram([...sources.keys()], options, host).getTypeChecker();
 }
 function checkModuleLoaders(ts, captured) {
   // Inspect original module scopes: esbuild renames the CommonJS `module`
   // parameter, so a spelling-only check of the minified artifact misses it.
-  const sources = new Map(captured.filter(({ source }) => /\.[cm]?[jt]sx?$/.test(source.physical))
-    .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true)]));
+  // The default esbuild loader accepts extensionless JavaScript, including
+  // side-effect scripts that have no ESM/CJS format in the metafile.
+  const sources = new Map(captured.filter(({ source, info }) => ['cjs', 'esm'].includes(info.format)
+    || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
+    .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
+      path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
   const checker = bindSources(ts, sources), values = new Map();
   const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
