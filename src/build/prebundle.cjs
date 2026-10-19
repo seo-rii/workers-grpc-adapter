@@ -203,10 +203,32 @@ function checkModuleLoaders(ts, captured) {
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true)]));
   const checker = bindSources(ts, sources), values = new Map();
   const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
-  const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) ? unwrap(node.expression) : node;
-  const key = node => ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
+  const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
+    || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
+  function key(expression, computed = false, seen = new Set()) {
+    const node = unwrap(expression);
+    if (ts.isComputedPropertyName(node)) return key(node.expression, true, seen);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isNumericLiteral(node)
+      || !computed && ts.isIdentifier(node)) return node.text;
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      const left = key(node.left, true, seen), right = key(node.right, true, seen);
+      if (left !== undefined && right !== undefined) return left + right;
+    }
+    if (ts.isIdentifier(node)) {
+      const symbol = checker.getSymbolAtLocation(node);
+      if (!symbol || seen.has(symbol) || symbol.declarations?.length !== 1) return;
+      const declaration = symbol.declarations[0];
+      if (ts.isVariableDeclaration(declaration) && declaration.initializer
+        && ts.isVariableDeclarationList(declaration.parent) && declaration.parent.flags & ts.NodeFlags.Const) {
+        return key(declaration.initializer, true, new Set([...seen, symbol]));
+      }
+    }
+  }
   const member = (origin, name) => {
     let result = 0;
+    // Unknown computed access on a known module object could select a loader.
+    // Ordinary application objects have no module provenance and stay valid.
+    if (name === undefined && origin & (MODULE | NAMESPACE)) return LOADER;
     if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0;
     if (origin & NAMESPACE) result |= ['createRequire', '_load', 'register', 'registerHooks'].includes(name) ? LOADER
       : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0;
@@ -217,7 +239,8 @@ function checkModuleLoaders(ts, captured) {
       const symbol = checker.getSymbolAtLocation(name);
       if (symbol) { if (!values.has(symbol)) values.set(symbol, []); values.get(symbol).push({ value, keys }); }
     } else if (ts.isObjectBindingPattern(name)) {
-      for (const element of name.elements) bind(element.name, value, [...keys, key(element.propertyName || element.name)]);
+      for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
+        ? keys : [...keys, key(element.propertyName || element.name)]);
     }
   }
   function collect(node) {
@@ -252,7 +275,9 @@ function checkModuleLoaders(ts, captured) {
       return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0);
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
-    if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression));
+    if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
+      && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
       && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
