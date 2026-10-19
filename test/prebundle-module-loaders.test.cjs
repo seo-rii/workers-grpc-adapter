@@ -65,12 +65,12 @@ for (const [name, body] of unsafe) test(`PREBUNDLE rejects ${name} module loader
   await assert.rejects(f.build({ exports: ['createClient', 'configure', 'load'] }), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
   assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
 });
-for (const body of [
-  'export async function probe() { const m = await import("node:module", {}); return m.isBuiltin("node:fs"); }',
-  'const ordinary = {createRequire: () => 7}; export function probe() { return ordinary["create" + "Require"](); }',
-  'import m from "node:module"; const key = "is" + "Builtin"; export function probe() { return m[key]("node:fs"); }',
-  'export async function probe() { const {isBuiltin} = await import("node:module"); return isBuiltin("node:fs"); }',
-]) test('PREBUNDLE preserves ordinary objects and non-loading builtin APIs', async t => {
+for (const [name, body] of [
+  ['dynamic import options', 'export async function probe() { const m = await import("node:module", {}); return m.isBuiltin("node:fs"); }'],
+  ['ordinary object method', 'const ordinary = {createRequire: () => 7}; export function probe() { return ordinary["create" + "Require"](); }'],
+  ['computed builtin property', 'import m from "node:module"; const key = "is" + "Builtin"; export function probe() { return m[key]("node:fs"); }'],
+  ['destructured builtin', 'export async function probe() { const {isBuiltin} = await import("node:module"); return isBuiltin("node:fs"); }'],
+]) test(`PREBUNDLE preserves ordinary objects and non-loading builtin APIs: ${name}`, async t => {
   const f = synthetic(t);
   f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ' + body);
   fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare function probe(): unknown;');
