@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { Client, CallOptions, Deadline } from './client';
 import { ClientReadableStream, ClientUnaryCall, ServiceError } from './call-surface';
-import { Metadata } from './metadata';
+import { Metadata, snapshotMetadata } from './metadata';
 import { status } from './status';
 
 /** Application health reported by grpc.health.v1; not connection readiness. */
@@ -123,7 +123,7 @@ export class HealthClient {
                 encodeRequest(service);
                 signal?.addEventListener('abort', abort, { once: true });
                 call = this.client.makeUnaryRequest('/grpc.health.v1.Health/Check', encodeRequest, decodeResponse,
-                    service, metadata?.clone() ?? new Metadata(), callOptions, finish);
+                    service, metadata ? snapshotMetadata(metadata) : new Metadata(), callOptions, finish);
                 if (signal?.aborted) abort();
             } catch (error) { finish(error as Error); }
         });
@@ -133,7 +133,7 @@ export class HealthClient {
         encodeRequest(service);
         const { metadata, ...callOptions } = options;
         return this.client.makeServerStreamRequest('/grpc.health.v1.Health/Watch', encodeRequest, decodeResponse,
-            service, metadata?.clone() ?? new Metadata(), callOptions);
+            service, metadata ? snapshotMetadata(metadata) : new Metadata(), callOptions);
     }
     /** Starts a managed Watch without taking ownership of the underlying client. */
     monitor(service = '', options: HealthWatchOptions = {}): HealthWatch {
@@ -164,7 +164,7 @@ export class HealthWatch {
         this.jitter = requireNumber(backoffJitter, 0, 1, 'WGA_HEALTH_INVALID_BACKOFF');
         this.attemptTimeout = attemptTimeoutMs === undefined ? undefined
             : requireNumber(attemptTimeoutMs, 1, maxTimerMs, 'WGA_HEALTH_INVALID_ATTEMPT_TIMEOUT');
-        this.callOptions = { ...callOptions, metadata: metadata?.clone() };
+        this.callOptions = { ...callOptions, metadata: metadata ? snapshotMetadata(metadata) : undefined };
         this.nextDelay = this.initialDelay;
         queueMicrotask(() => this.start());
     }

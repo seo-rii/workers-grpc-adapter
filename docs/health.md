@@ -36,6 +36,15 @@ for managed retries and `waitForServing`. The managed monitor consumes the raw
 stream and owns its cancellation, retry timer and pending waiters. It does not
 close the underlying client.
 
+Health helpers snapshot supplied metadata before starting a call. Headers,
+binary values, metadata options and `setOpaque()` key assignments are isolated
+from later caller or interceptor changes. Opaque values retain their original
+identity so existing authentication interceptors can consume request context;
+the helper does not deep-copy arbitrary context objects. A monitor snapshots at
+creation and gives each Watch attempt a fresh copy, so interceptor changes from
+one attempt do not affect later retries. Replace the monitor to use new metadata
+assignments. The public `Metadata.clone()` behavior is unchanged.
+
 A monitor's `getState()` returns an immutable snapshot with `phase`,
 `servingStatus`, `attempt` and `lastErrorCode`. Phases are `connecting`, `serving`,
 `not-serving`, `reconnecting`, `disabled` and `closed`. Only enum value `SERVING`
