@@ -113,6 +113,13 @@ Identity, deflate and gzip request messages are accepted. The optional response 
 
 `grpc-timeout` accepts the standard one-to-eight-digit `H`, `M`, `S`, `m`, `u` and `n` forms. Extreme values are clamped safely. `defaultTimeoutMs` applies when no timeout header is present. Completed calls remove their deadline timers and request-abort listeners.
 
+The absolute deadline is checked before starting application work and at input,
+iteration, serialization and response-delivery boundaries, even when an overdue
+timer has not run yet. An expired call stops new reads and handlers and discards
+late results; it cannot publish a late message or successful terminal status.
+Messages already delivered remain delivered. An already observed cancellation
+or input failure retains its original status when the deadline later expires.
+
 Request streams retain the current Fetch chunk and one decoded frame; they do not collect all requests. Output streams retain at most one application item ahead of consumer demand. The response reader controls further iteration. Cancelling it aborts the context and invokes the iterator's `return()` when available. Pending handlers and iterator operations are raced against cancellation and deadlines; late failures remain handled. Application code must cooperate with `context.signal` to stop its own I/O or side effects. The adapter cannot forcibly interrupt an unresolved application promise or synchronous computation, and `return()` cannot bypass an async generator that ignores cancellation while awaiting work.
 
 The local suite compares responses against a pinned native grpc-js server, runs both client modes against this handler inside workerd, and sends independently framed native-codec requests through Miniflare's incoming Fetch boundary. These checks do not establish deployment routing, inbound Cloudflare automatic conversion, IAM, production load or full native grpc-js server equivalence.

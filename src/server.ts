@@ -164,6 +164,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         const interruption = new Promise<never>((_, reject) => { rejectAbort = reject; });
         void interruption.catch(() => {});
         let timer: ReturnType<typeof setTimeout> | undefined, cleaned = false, headersSent = false, closed = false;
+        let deadline = Infinity, interruptionError: TransportError | undefined;
         let iterator: AsyncIterator<unknown> | undefined, returnStarted = false;
         let inputIterator: AsyncIterator<unknown> | undefined, inputClosed = false, inputReading = false;
         let inputFailure: unknown;
@@ -194,6 +195,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         const stop = (code: status, details: string) => {
             if (!aborter.signal.aborted) {
                 const error = new TransportError(code, details);
+                interruptionError = error;
                 aborter.abort();
                 rejectAbort(error);
             }
@@ -202,14 +204,27 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             disposeInput();
         };
         const callerAbort = () => stop(status.CANCELLED, 'WGA_SERVER_CANCELLED');
+        const checkActive = () => {
+            // Timers cannot interrupt synchronous application work or run ahead
+            // of a ready promise chain. Enforce the absolute budget at boundaries,
+            // keeping the first observed cancellation or input failure terminal.
+            if (!interruptionError && !cleaned && deadline <= Date.now()) stop(status.DEADLINE_EXCEEDED, 'WGA_SERVER_DEADLINE');
+            if (interruptionError) throw interruptionError;
+        };
+        const terminalError = (error: unknown): unknown => {
+            try { checkActive(); }
+            catch (interrupted) { return interrupted; }
+            return error;
+        };
         const race = <T>(operation: PromiseLike<T> | T): Promise<T> => Promise.race([Promise.resolve(operation), interruption]);
         const errorResponse = (error: unknown): Response => {
+            error = terminalError(error);
             const result = failure(error);
             stop(result.code, result.details);
             return new Response(errorTrailer(error, trailing), { headers: responseHeaders(initial) });
         };
         try {
-            const deadline = deadlineFor(request.headers.get('grpc-timeout'), timeout);
+            deadline = deadlineFor(request.headers.get('grpc-timeout'), timeout);
             const armTimer = () => {
                 if (deadline === Infinity || cleaned) return;
                 const remaining = deadline - Date.now();
@@ -228,7 +243,8 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 // as an empty stream for client- and bidi-streaming methods.
                 if (!requestBody) return;
                 for await (const value of decodeFrames(requestBody, receiveLimit, inputAborter.signal,
-                    { encoding: requestEncoding, maxWireBytes: wireLimit })) {
+                    { encoding: requestEncoding, maxWireBytes: wireLimit, onChunk: checkActive })) {
+                    checkActive();
                     if (value.trailer) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
                     yield value.payload;
                 }
@@ -238,7 +254,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 [Symbol.asyncIterator]() { return this; },
                 async next() {
                     if (inputFailure !== undefined) throw inputFailure;
-                    if (aborter.signal.aborted) return interruption;
+                    checkActive();
                     if (inputClosed) return { done: true, value: undefined };
                     if (inputReading) {
                         inputFailure = new TransportError(status.INTERNAL, 'WGA_SERVER_REQUEST_CONCURRENT_READ');
@@ -248,11 +264,16 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                     inputReading = true;
                     try {
                         const value = await race(decoded.next());
+                        checkActive();
                         if (value.done) { inputClosed = true; return value; }
                         if (!route.definition.requestStream) return value;
-                        try { return { done: false, value: route.definition.requestDeserialize(value.value) }; }
+                        let deserialized: unknown;
+                        try { deserialized = route.definition.requestDeserialize(value.value); }
                         catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
+                        checkActive();
+                        return { done: false, value: deserialized };
                     } catch (error) {
+                        error = terminalError(error);
                         const wasClosed = inputClosed;
                         inputFailure ??= error;
                         disposeInput();
@@ -272,6 +293,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             if (!route.definition.requestStream) {
                 const first = await requests.next();
                 if (first.done || !(await requests.next()).done) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
+                checkActive();
                 try { input = route.definition.requestDeserialize(first.value as Buffer); }
                 catch { throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_DESERIALIZE'); }
             }
@@ -303,7 +325,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 },
             };
             const producing = Promise.resolve().then(() => {
-                if (aborter.signal.aborted) throw new TransportError(status.CANCELLED, 'WGA_SERVER_CANCELLED');
+                checkActive();
                 return route.handler(input, context);
             });
             // A handler may finish after its deadline and return an iterator that
@@ -320,15 +342,21 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                // Acquire the returned iterator before checking so expiration
+                // also disposes resources owned by an already completed handler.
                 iterator = output[Symbol.asyncIterator]();
+                checkActive();
                 first = await race(iterator!.next());
             } else {
+                checkActive();
                 if (output && typeof output[Symbol.asyncIterator] === 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 first = { done: false, value: output };
                 iterator = { next: async () => ({ done: true, value: undefined }) };
             }
+            checkActive();
             if (inputFailure !== undefined) throw inputFailure;
             const headers = responseHeaders(initial);
+            checkActive();
             headersSent = true;
             let buffered: IteratorResult<unknown> | undefined = first;
             const body = new ReadableStream<Uint8Array>({
@@ -337,15 +365,17 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                     try {
                         // Caller abort may already have disposed the iterator
                         // while the consumer was not requesting response data.
-                        if (aborter.signal.aborted) await interruption;
+                        checkActive();
                         const item = buffered ?? await race(iterator!.next());
                         buffered = undefined;
-                        if (aborter.signal.aborted) await interruption;
+                        checkActive();
                         if (!item || typeof item !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                         if (item.done) {
                             if (inputFailure !== undefined) throw inputFailure;
                             disposeInput();
-                            controller.enqueue(trailer(status.OK, '', trailing));
+                            const terminal = trailer(status.OK, '', trailing);
+                            checkActive();
+                            controller.enqueue(terminal);
                             closed = true;
                             cleanup();
                             controller.close();
@@ -354,14 +384,16 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                         let bytes: Buffer;
                         try { bytes = route.definition.responseSerialize(item.value); }
                         catch { throw new TransportError(status.INTERNAL, 'WGA_SERVER_SERIALIZE'); }
+                        checkActive();
                         if (!(bytes instanceof Uint8Array)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_SERIALIZE');
                         if (bytes.byteLength > sendLimit) throw new TransportError(status.RESOURCE_EXHAUSTED, 'WGA_SERVER_RESPONSE_SIZE');
                         const encoded = await race(encodeMessageFrame(bytes, encoding, wireLimit, aborter.signal));
                         if (closed) return;
-                        if (aborter.signal.aborted) await interruption;
+                        checkActive();
                         controller.enqueue(encoded);
                     } catch (error) {
                         if (closed) return;
+                        error = terminalError(error);
                         const result = failure(error);
                         stop(result.code, result.details);
                         controller.enqueue(errorTrailer(error, trailing));
