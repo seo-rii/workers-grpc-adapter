@@ -343,24 +343,22 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             const producing = Promise.resolve().then(() => {
                 checkActive();
                 return route.handler(input, context);
-            });
-            // A handler may finish after its deadline and return an iterator that
-            // already owns resources. Dispose it even though race has settled.
-            void producing.then(output => {
-                if (aborter.signal.aborted && !iterator && output && typeof output[Symbol.asyncIterator] === 'function') {
+            }).then(output => {
+                // Own the iterator as part of handler completion, before any
+                // awaiting continuation can observe cancellation. The same
+                // owner also disposes a handler that resolves after race ended.
+                if (output && typeof output[Symbol.asyncIterator] === 'function') {
                     iterator = output[Symbol.asyncIterator]();
-                    disposeIterator();
+                    if (aborter.signal.aborted) disposeIterator();
                 }
-            }).catch(() => {});
+                return output;
+            });
             const output = await race(producing);
             if (interruptionError) throw interruptionError;
             if (inputFailure !== undefined) throw inputFailure;
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
-                // Acquire the returned iterator before checking so expiration
-                // also disposes resources owned by an already completed handler.
-                iterator = output[Symbol.asyncIterator]();
                 checkActive();
                 first = await race(iterator!.next());
             } else {
