@@ -4,7 +4,7 @@
 // literal module sites without evaluating inspected code. It is deliberately
 // separate from the profile compiler's full AST and semantic validation.
 function tokensFor(source) {
-    const tokens = [], groups = [], pairs = new Map(), classes = [];
+    const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
     let offset = 0;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
     const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
@@ -63,9 +63,11 @@ function tokensFor(source) {
                     if (tokens[keyword]?.value === '*') keyword--;
                     if (tokens[keyword]?.value === 'function') {
                         functionBody = true;
+                        const definition = keyword;
                         if (tokens[keyword - 1]?.value === 'async'
                             && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
                         statementEnd = !expressionBefore(keyword);
+                        definitions.set(definition, { expression: !statementEnd, body: index });
                     }
                 }
                 const definition = classes[classes.length - 1];
@@ -73,6 +75,7 @@ function tokensFor(source) {
                     // Keep a class header across its heritage expression. Its
                     // nested parentheses/classes/functions own their own bodies.
                     statementEnd = !definition.expression;
+                    definitions.set(definition.index, { expression: definition.expression, body: index });
                     classes.pop();
                 }
                 groups.push({ index, value, statementEnd,
@@ -88,7 +91,7 @@ function tokensFor(source) {
         }
         tokens.push(token);
         if (kind === 'identifier' && value === 'class' && !['.', '?.'].includes(tokens[index - 1]?.value)) {
-            classes.push({ depth: groups.length, stage: 'name', expression: expressionBefore(index) });
+            classes.push({ index, depth: groups.length, stage: 'name', expression: expressionBefore(index) });
         }
     }
     function escaped() {
@@ -183,11 +186,11 @@ function tokensFor(source) {
         }
     }
     scan();
-    return { tokens, pairs };
+    return { tokens, pairs, definitions };
 }
 
 function literalImports(source, declaration = false) {
-    const { tokens, pairs } = tokensFor(source), imports = new Map();
+    const { tokens, pairs, definitions } = tokensFor(source), imports = new Map();
     if (!tokens.some(token => token.kind === 'literal' && typeof token.value === 'string' && /^@grpc\/grpc-js(?:\/|$)/.test(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
@@ -332,11 +335,11 @@ function literalImports(source, declaration = false) {
         }
         if (['function', 'class'].includes(value(index)) && !property(index)) {
             const name = value(index + 1) === '*' ? index + 2 : index + 1;
-            if (!identifier(name)) continue;
-            const expression = ['=', '(', '[', ',', ':', 'return', '=>'].includes(value(index - 1));
-            let body = name + 1;
-            if (value(body) === '(') body = (pairs.get(body) ?? body) + 1;
-            if (expression && value(body) === '{' && pairs.has(body)) bind(addScope(name, pairs.get(body)), [value(name)]);
+            const definition = definitions.get(index);
+            if (!identifier(name) || value(name) === 'extends' || !definition || !pairs.has(definition.body)) continue;
+            // Scope ownership must agree with the lexer, including async
+            // modifiers and class heritage that contains other definitions.
+            if (definition.expression) bind(addScope(name, pairs.get(definition.body)), [value(name)]);
             else bind(scopeAt(index), [value(name)]);
         }
     }

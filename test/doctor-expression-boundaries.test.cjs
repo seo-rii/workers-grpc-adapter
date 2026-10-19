@@ -62,6 +62,15 @@ for (const [name, source] of [
     ['parenthesized operand', `const n = (class {} / ${load});`],
     ['template interpolation', 'const n = `${class {} / ' + load + '}`;'],
     ['conditional class in a switch body', `switch (1) { case 1: const n = false ? 0 : class {} / ${load}; }`],
+    ['named async function called require', `const n = async function require() {} / ${load};`],
+    ['named async generator called require', `const n = async function* require() {} / ${load};`],
+    ['named generator in a unary operand', `const n = !function* require() {} / ${load};`],
+    ['named function in a binary operand', `const n = 1 + function require() {} / ${load};`],
+    ['named class in a binary operand', `const n = 1 + class require {} / ${load};`],
+    ['named class with heritage', `const n = class require extends Object {} / ${load};`],
+    ['named class with nested heritage', `const n = class require extends class {} {} / ${load};`],
+    ['named class with a heritage function', `const n = class require extends function() {} {} / ${load};`],
+    ['named class in a conditional alternate', `const n = false ? 0 : class require extends Object {} / ${load};`],
 ]) {
     test(`DOCTOR keeps division after ${name}`, t => {
         const calls = [];
@@ -71,6 +80,42 @@ for (const [name, source] of [
         const report = inspect(t, source);
         assert.equal(report.passed, false);
         assert.equal(report.results[0].graph.find(item => item.name === 'sdk').grpcImports[0].status, 'resolution-failed');
+    });
+}
+
+for (const [name, definition, invoke] of [
+    ['ordinary function', 'function require(value) { return value || require("@grpc/grpc-js/self"); }', 'value()'],
+    ['async function', 'async function require(value) { return value || require("@grpc/grpc-js/self"); }', 'await value()'],
+    ['generator', 'function* require(value) { return value || (yield* require("@grpc/grpc-js/self")); }', 'value().next().value'],
+    ['async generator', 'async function* require(value) { return value || (yield* require("@grpc/grpc-js/self")); }', '(await value().next()).value'],
+    ['class with heritage', 'class require extends Object { static invoke() { return new require("@grpc/grpc-js/self"); } }', 'value.invoke()'],
+]) {
+    test(`DOCTOR contains named ${name} self references within the expression`, async t => {
+        const source = `(async () => { const value = ${definition}; ${invoke}; ${load}; })();`;
+        const calls = [];
+        await vm.runInNewContext(source, { require: specifier => { calls.push(specifier); return 2; } }, { timeout: 1000 });
+        assert.deepEqual(calls, ['@grpc/grpc-js/missing']);
+        assert.deepEqual(literalImports(source), [{ kind: 'require', specifier: '@grpc/grpc-js/missing' }]);
+        const report = inspect(t, source);
+        assert.equal(report.passed, false);
+        assert.deepEqual(report.results[0].graph.find(item => item.name === 'sdk').grpcImports.map(item => item.specifier),
+            ['@grpc/grpc-js/missing']);
+    });
+}
+
+for (const [name, definition, invoke] of [
+    ['ordinary function', 'function require() {}', load],
+    ['async function', 'async function require() {}', `await ${load}`],
+    ['generator', 'function* require() {}', `${load}.next()`],
+    ['async generator', 'async function* require() {}', `await ${load}.next()`],
+    ['class with heritage', 'class require extends Object {}', `new ${load}`],
+]) {
+    test(`DOCTOR keeps a named ${name} declaration binding in its enclosing scope`, async t => {
+        const source = `(async () => { ${definition} ${invoke}; })();`, calls = [];
+        await vm.runInNewContext(source, { require: specifier => calls.push(specifier) }, { timeout: 1000 });
+        assert.deepEqual(calls, []);
+        assert.deepEqual(literalImports(source), []);
+        assert.equal(inspect(t, source).passed, true);
     });
 }
 
