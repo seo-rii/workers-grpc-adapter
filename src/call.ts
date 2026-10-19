@@ -301,7 +301,7 @@ export class WorkersCall {
         }
     }
     private async refreshCredentials(): Promise<void> {
-        if (this.terminal) return;
+        if (this.stopIfExpired()) return;
         this.observation?.beginAttempt();
         const c = this.context;
         const service = c.path.slice(0, c.path.lastIndexOf('/'));
@@ -309,7 +309,9 @@ export class WorkersCall {
         try {
             // Start outside the caller stack, preserving cancellation before auth.
             await Promise.resolve();
-            if (this.terminal) return;
+            // A ready continuation can run before the deadline timer gets a
+            // turn. Check the budget again before starting credential I/O.
+            if (this.stopIfExpired()) return;
             const auth = await this.credentials.generateMetadata({ service_url: authOrigin + service, method_name: c.path });
             if (this.terminal) return;
             this.metadata = this.baseMetadata!.clone();
