@@ -82,6 +82,10 @@ function walk(root, dir) {
 }
 function captureInputs(root = ROOT) {
     const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'PLAN.md', 'LICENSE', 'NOTICE', '.github/workflows/local.yml', 'fixtures/google/.env.example', ...discoverMarkdown(root),
+        // These checked-in dotfiles determine the pnpm graph used by the
+        // installed consumers. Keep an explicit list instead of capturing
+        // arbitrary hidden files such as local credentials or environment files.
+        'fixtures/hono/.npmrc', 'fixtures/sveltekit/.npmrc',
         ...['src', 'scripts', 'test', 'fixtures', 'docs', 'vendor'].flatMap(dir => walk(root, dir)),
         ...walk(root, 'compatibility').filter(file => !GENERATED_COMPATIBILITY.has(path.basename(file)))];
     return Object.fromEntries([...new Set(files)].sort().map(file => [file, hash(root, file)]));
