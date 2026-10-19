@@ -204,7 +204,7 @@ export interface GrpcObject {
 function isProtobufTypeDefinition(
   obj: ServiceDefinition | ProtobufTypeDefinition
 ): obj is ProtobufTypeDefinition {
-  return 'format' in obj;
+  return typeof obj.format === 'string';
 }
 
 /**
