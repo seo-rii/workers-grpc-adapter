@@ -1,14 +1,15 @@
 --- a/src/client.ts
 +++ b/src/client.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2019 gRPC authors.
-+ *
+  *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-  *
++ *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
 @@ -26,17 +29,18 @@
    ClientWritableStreamImpl,
    ServiceError,
@@ -25,7 +26,7 @@
 -import { ChannelCredentials } from './channel-credentials';
 -import { ChannelOptions } from './channel-options';
 -import { Status } from './constants';
-+import { Channel } from './channel';
++import { Channel, isWorkersChannel } from './channel';
 +import { WorkersGrpcConfigurationError } from './status';
 +import { ChannelCredentials } from './credentials';
 +import { ChannelOptions } from './options';
@@ -65,35 +66,44 @@
    propagate_flags?: number;
    credentials?: CallCredentials;
    interceptors?: Interceptor[];
-@@ -144,23 +139,10 @@
+@@ -144,23 +139,23 @@
      this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
        options.callInvocationTransformer;
      delete options.callInvocationTransformer;
 -    if (options.channelOverride) {
 -      this[CHANNEL_SYMBOL] = options.channelOverride;
 -    } else if (options.channelFactoryOverride) {
--      const channelFactoryOverride = options.channelFactoryOverride;
--      delete options.channelFactoryOverride;
++    let channel: unknown;
++    if (options.channelOverride !== undefined) {
++      channel = options.channelOverride;
++    } else if (options.channelFactoryOverride !== undefined) {
+       const channelFactoryOverride = options.channelFactoryOverride;
++      if (typeof channelFactoryOverride !== 'function') {
++        throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'A channel factory function is required');
++      }
+       delete options.channelFactoryOverride;
 -      this[CHANNEL_SYMBOL] = channelFactoryOverride(
 -        address,
 -        credentials,
 -        options
 -      );
--    } else {
++      channel = channelFactoryOverride(address, credentials, options);
+     } else {
 -      this[CHANNEL_SYMBOL] = new ChannelImplementation(
 -        address,
 -        credentials,
 -        options
 -      );
--    }
-+    if (options.channelOverride !== undefined || options.channelFactoryOverride !== undefined) {
-+      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
++      channel = new Channel(address, credentials, options);
 +    }
-+    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
++    if (!isWorkersChannel(channel)) {
++      throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
+     }
++    this[CHANNEL_SYMBOL] = channel;
    }
  
    close(): void {
-@@ -172,33 +154,8 @@
+@@ -172,33 +167,8 @@
    }
  
    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
@@ -129,7 +139,7 @@
    }
  
    private checkOptionalUnaryResponseArguments<ResponseType>(
-@@ -365,7 +322,7 @@
+@@ -365,7 +335,7 @@
          emitter.emit('status', status);
        },
      });
@@ -138,7 +148,7 @@
      call.halfClose();
      return emitter;
    }
-@@ -473,6 +430,7 @@
+@@ -473,6 +443,7 @@
            return;
          }
          receivedStatus = true;
@@ -146,7 +156,7 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -561,7 +519,7 @@
+@@ -561,7 +532,7 @@
      let callProperties: CallProperties<RequestType, ResponseType> = {
        argument: argument,
        metadata: checkedArguments.metadata,
@@ -155,7 +165,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -606,8 +564,9 @@
+@@ -606,8 +577,9 @@
            return;
          }
          receivedStatus = true;
@@ -166,7 +176,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +576,7 @@
+@@ -617,7 +589,7 @@
          stream.emit('status', status);
        },
      });
@@ -175,7 +185,7 @@
      call.halfClose();
      return stream;
    }
-@@ -655,7 +614,8 @@
+@@ -655,7 +627,8 @@
        metadata: checkedArguments.metadata,
        call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
          serialize,
@@ -185,7 +195,7 @@
        ),
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
-@@ -700,8 +660,9 @@
+@@ -700,8 +673,9 @@
            return;
          }
          receivedStatus = true;
@@ -196,7 +206,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +675,12 @@
+@@ -714,3 +688,12 @@
      return stream;
    }
  }

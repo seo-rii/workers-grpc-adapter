@@ -34,7 +34,7 @@ import {
 } from './call-surface';
 import { CallCredentials } from './credentials';
 import { StatusObject } from './call-interface';
-import { Channel } from './channel';
+import { Channel, isWorkersChannel } from './channel';
 import { WorkersGrpcConfigurationError } from './status';
 import { ChannelCredentials } from './credentials';
 import { ChannelOptions } from './options';
@@ -139,10 +139,23 @@ export class Client {
     this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
       options.callInvocationTransformer;
     delete options.callInvocationTransformer;
-    if (options.channelOverride !== undefined || options.channelFactoryOverride !== undefined) {
+    let channel: unknown;
+    if (options.channelOverride !== undefined) {
+      channel = options.channelOverride;
+    } else if (options.channelFactoryOverride !== undefined) {
+      const channelFactoryOverride = options.channelFactoryOverride;
+      if (typeof channelFactoryOverride !== 'function') {
+        throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'A channel factory function is required');
+      }
+      delete options.channelFactoryOverride;
+      channel = channelFactoryOverride(address, credentials, options);
+    } else {
+      channel = new Channel(address, credentials, options);
+    }
+    if (!isWorkersChannel(channel)) {
       throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
     }
-    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
+    this[CHANNEL_SYMBOL] = channel;
   }
 
   close(): void {
