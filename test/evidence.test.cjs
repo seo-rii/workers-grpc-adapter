@@ -323,7 +323,7 @@ test('EVIDENCE lifecycle receipts require signal-specific exits and completed ch
         f => f.report.results[0].status = 'skipped',
         f => f.report.results[0].signal = 'SIGINT',
         f => f.report.results[0].exit.code = 0,
-        f => f.report.results[0].children[0].exit.code = 143,
+        f => f.report.results[0].children[0].exit.code = 137,
         f => f.report.results[0].children[0].exit.parentSignal = 'SIGINT',
         f => f.report.results[0].children[0].pidGone = false,
         f => f.report.results[0].children[0].workingDirectoryRemoved = false,
@@ -334,6 +334,60 @@ test('EVIDENCE lifecycle receipts require signal-specific exits and completed ch
         f => f.report.externalServiceRpcRequests = true,
     ]) {
         const f = lifecycleFixture(); mutate(f);
+        assert.throws(() => validateLifecycleReport(f.report, f.toolchain), /WGA_EVIDENCE_INVALID/);
+    }
+});
+
+test('EVIDENCE emulator and lifecycle gates accept owned JVM SIGTERM exits', () => {
+    for (const exit of [{ code: 143, signal: null }, { code: null, signal: 'SIGTERM' }]) {
+        const emulator = emulatorFixture();
+        for (const instance of Object.values(emulator.report.emulators.instances)) Object.assign(instance.exit, exit);
+        validateEmulatorReport(emulator.report, emulator.expected);
+        const lifecycle = lifecycleFixture();
+        for (const result of lifecycle.report.results) for (const child of result.children) Object.assign(child.exit, exit);
+        validateLifecycleReport(lifecycle.report, lifecycle.toolchain);
+    }
+});
+
+test('EVIDENCE owned JVM shutdown rejects abnormal or contradictory exit receipts', () => {
+    for (const exit of [
+        { code: 1, signal: null }, { code: 137, signal: null }, { code: null, signal: 'SIGKILL' },
+        { code: 143, signal: 'SIGTERM' }, { code: 0, signal: 'SIGTERM' },
+        { code: 143, signal: null, errorCode: 'SPAWN_ERROR' }, { code: null, signal: null },
+        { code: 143 }, { signal: 'SIGTERM' },
+    ]) {
+        const emulator = emulatorFixture();
+        emulator.report.emulators.instances.firestore.exit = { ...exit };
+        assert.throws(() => validateEmulatorReport(emulator.report, emulator.expected), /emulator did not exit cleanly/);
+        for (const resultIndex of [0, 2, 3]) {
+            const lifecycle = lifecycleFixture(), child = lifecycle.report.results[resultIndex].children[0];
+            child.exit = { pid: child.pid, parentSignal: 'SIGTERM', ...exit };
+            assert.throws(() => validateLifecycleReport(lifecycle.report, lifecycle.toolchain), /lifecycle child exit was unexpected/);
+        }
+    }
+});
+
+test('EVIDENCE owned JVM SIGTERM exits still require completed error-free cleanup', () => {
+    for (const mutate of [
+        f => f.report.cleanupErrors = [{ message: 'cleanup failed' }],
+        f => f.report.interrupted = 'SIGTERM',
+        f => f.report.emulators.instances.firestore.status = 'running',
+        f => f.report.envoy.exit = { code: 143, signal: null },
+    ]) {
+        const f = emulatorFixture();
+        for (const instance of Object.values(f.report.emulators.instances)) instance.exit = { code: 143, signal: null };
+        mutate(f);
+        assert.throws(() => validateEmulatorReport(f.report, f.expected), /WGA_EVIDENCE_INVALID/);
+    }
+    for (const mutate of [
+        child => child.pidGone = false,
+        child => child.workingDirectoryRemoved = false,
+        child => child.exit.pid++,
+        child => child.exit.parentSignal = 'SIGINT',
+    ]) {
+        const f = lifecycleFixture(), child = f.report.results[0].children[0];
+        Object.assign(child.exit, { code: 143, signal: null });
+        mutate(child);
         assert.throws(() => validateLifecycleReport(f.report, f.toolchain), /WGA_EVIDENCE_INVALID/);
     }
 });

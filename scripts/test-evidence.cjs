@@ -279,6 +279,13 @@ function emulatorSuites(root) {
     need(suites.length > 0 && new Set(suites.map(item => item.suite)).size === suites.length, 'emulator suite registry is missing or ambiguous');
     return suites;
 }
+function cleanEmulatorExit(exit) {
+    // The launcher stops only its owned JVM process group with SIGTERM. Java
+    // can report the handled signal as 128 + 15 instead of a Node signal exit.
+    return exit && exit.errorCode === undefined
+        && (([0, 143].includes(exit.code) && exit.signal === null)
+            || (exit.code === null && exit.signal === 'SIGTERM'));
+}
 function validateEmulatorReport(report, { toolchain, envoyPin, suites }) {
     need(report?.status === 'passed' && report.realGoogleSDK === true && report.officialEmulators === true, 'official emulator execution did not pass');
     need(report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.releaseEligible === false, 'emulator results cannot certify live cloud or release');
@@ -290,7 +297,7 @@ function validateEmulatorReport(report, { toolchain, envoyPin, suites }) {
     need(isDeepStrictEqual([...metadata.modeNames].sort(), ['datastore', 'firestore']), 'both official emulator modes are required');
     for (const [name, mode] of [['datastore', 'datastore-mode'], ['firestore', 'firestore-native']]) {
         const instance = metadata.instances?.[name];
-        need(instance?.mode === mode && instance.status === 'stopped' && instance.exit?.code === 0 && instance.exit.signal === null, `${name}: emulator did not exit cleanly`);
+        need(instance?.mode === mode && instance.status === 'stopped' && cleanEmulatorExit(instance.exit), `${name}: emulator did not exit cleanly`);
         need(instance.loopbackOnly === true && instance.persistentData === false && instance.imports === false && instance.exports === false, `${name}: emulator isolation drift`);
     }
     need(report.envoy?.version === envoyPin.version && report.envoy.sha256 === envoyPin.sha256, 'emulator Envoy provenance pin drift');
@@ -412,7 +419,7 @@ function validateLifecycleReport(report, toolchain) {
         for (const child of result.children) {
             need(child.pidGone === true && child.workingDirectoryRemoved === true && child.exit?.pid === child.pid, `${id}: lifecycle child cleanup was not proven`);
             if (signal) need(child.exit.parentSignal === signal, `${id}: lifecycle child signal propagation drift`);
-            need(phase === 'ready' ? child.exit.code === 0 : child.exit.code === 0 || child.exit.code === 143 || child.exit.signal === 'SIGTERM', `${id}: lifecycle child exit was unexpected`);
+            need(cleanEmulatorExit(child.exit), `${id}: lifecycle child exit was unexpected`);
         }
         if (!signal) need(result.stopEvidence?.concurrentStopSharedPromise === true && result.stopEvidence.repeatedStopAfterExit === true, 'idempotent-stop: stop completion invariants missing');
     }
