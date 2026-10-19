@@ -43,7 +43,7 @@ function fixture() {
     failures: [], sdkVersion: '10.1.1', nativeGrpcVersion: '1.14.5', runtime: 'v22.0.0', workerd: '1.20260923.0', miniflare: '4.0.0',
     compatibilityDate: '2026-09-21', evidence: Object.fromEntries(sources.map(source => [source, digest])), sharedSourceHashes,
     sourceHashes: Object.fromEntries(['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd'].map(runtime => [runtime, { ...sharedSourceHashes }])),
-    buildProfile: { name: 'google-static-v1', revision: 5, sha256: digest, registrySha256: digest }, bundleSha256: digest,
+    buildProfile: { name: 'google-static-v1', revision: 6, sha256: digest, registrySha256: digest }, bundleSha256: digest,
     installedInputs, nativeInputs, results, caseCount: 85,
     rpcCount: results.reduce((n, row) => n + row.rpcCount, 0),
     dataFetches: results.reduce((n, row) => n + row.dataFetches, 0), grpcWebRequests: results.reduce((n, row) => n + row.dataFetches, 0),

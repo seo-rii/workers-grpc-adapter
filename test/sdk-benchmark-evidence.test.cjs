@@ -32,6 +32,7 @@ function fixture() {
     const canonical = require(`../src/build/profiles/${profile}.json`);
     const profileSha256 = digest(JSON.stringify(canonical));
     const profileInputSha256 = digest(JSON.stringify({ packages: canonical.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+      generators: canonical.schemas.map(schema => [schema.path, 'node_modules/protobufjs/index.js']),
       sources: [...canonical.files, ...canonical.schemas, ...canonical.codegenInputs].map(file => [file.path, file.sha256]) }));
     const transformer = { version: canonical.transformerVersion,
       sha256: digest(fs.readFileSync(path.join(__dirname, '../src/build/index.cjs'))), typescriptVersion: require('typescript').version };

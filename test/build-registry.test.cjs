@@ -29,6 +29,9 @@ function fixture(t) {
   write(path.join(project, 'package.json'), '{}');
   write(path.join(project, 'build/index.cjs'), fs.readFileSync(path.join(root, 'src/build/index.cjs')));
   const protobufRoot = path.dirname(googleRequire.resolve('protobufjs/package.json'));
+  const pinned = JSON.parse(fs.readFileSync(path.join(root, 'src/build/profiles/google-static-v1.json'), 'utf8'));
+  const protobufPackage = { ...pinned.packages.find(pkg => pkg.name === 'protobufjs') };
+  delete protobufPackage.resolveFrom;
   fs.mkdirSync(path.join(project, 'node_modules'), { recursive: true });
   fs.symlinkSync(protobufRoot, path.join(project, 'node_modules/protobufjs'), process.platform === 'win32' ? 'junction' : 'dir');
   for (const [profile, name, type] of [['google-static-v1', 'codec-a', 'A'], ['google-modern-v1', 'codec-b', 'B']]) {
@@ -41,9 +44,9 @@ function fixture(t) {
     write(path.join(project, relative, 'schema.json'), schema);
     write(path.join(project, 'build/profiles', profile + '.json'), JSON.stringify({
       id: profile, schemaVersion: 1, transformerVersion: 1, revision: 1,
-      packages: [{ path: relative, name, version: '1.0.0', packageJsonSha256: hash(manifest) }],
+      packages: [{ path: relative, name, version: '1.0.0', packageJsonSha256: hash(manifest) }, protobufPackage],
       files: [{ path: relative + '/index.js', sha256: hash(source), transforms: [{ rule: 'static-root-from-json', expectedMatches: 1 }] }],
-      schemas: [{ path: relative + '/schema.json', sha256: hash(schema) }], codegenInputs: [], loaderOptions: {}, capabilities: [], requiredChecks: [],
+      schemas: [{ path: relative + '/schema.json', sha256: hash(schema) }], codegenInputs: pinned.codegenInputs, loaderOptions: {}, capabilities: [], requiredChecks: [],
     }));
     write(path.join(project, name + '.cjs'), `module.exports=require(${JSON.stringify(name)}).lookupType(${JSON.stringify(type)}).fieldsArray.map(field=>field.name);`);
   }

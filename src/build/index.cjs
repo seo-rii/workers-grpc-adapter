@@ -55,6 +55,44 @@ function resolveProfileInputs(projectRoot, profile) {
     paths: [...new Set([...profile.packages.map(pkg => `${pkg.path}/package.json`), ...profile.files.map(file => file.path),
       ...profile.schemas.map(file => file.path), ...profile.codegenInputs.map(file => file.path)])].map(relative => ({ path: relative, ...context(relative) })) };
 }
+function resolveCodegenInputs(profile, resolution) {
+  const diagnostics = [], generators = new Map();
+  if (!profile.schemas.length) return { diagnostics, generators };
+  const required = ['index.js', 'src/index.js', 'src/index-light.js', 'src/index-minimal.js',
+    'src/root.js', 'src/type.js', 'src/encoder.js', 'src/decoder.js', 'src/verifier.js', 'src/converter.js'];
+  const declared = new Set(profile.codegenInputs.map(file => file.path));
+  const entries = profile.packages.filter(pkg => pkg.name === 'protobufjs').map(pkg => ({
+    package: pkg.path, path: `${pkg.path}/index.js`, physicalPath: resolution.resolve(`${pkg.path}/index.js`),
+    manifest: resolution.resolve(`${pkg.path}/package.json`),
+  }));
+  for (const entry of entries) {
+    for (const relative of required) {
+      const file = `${entry.package}/${relative}`;
+      if (!declared.has(file)) diagnostics.push({ kind: 'codegen-hash', path: file,
+        expected: 'pinned generator input', actual: null, reason: 'undeclared-codegen-input', ...resolution.context(file) });
+    }
+  }
+  // Preflight every schema before loading even the first generator. Resolving
+  // a module does not execute it, unlike require() on a schema-local wrapper.
+  for (const schema of profile.schemas) {
+    const importer = resolution.resolve(schema.path);
+    const req = createRequire(importer);
+    let actual = null, manifest = null;
+    // Check the package lookup separately: Node caches entry resolution, so a
+    // newly inserted local package must not be hidden by an earlier lookup.
+    for (const directory of req.resolve.paths('protobufjs') || []) {
+      const candidate = path.join(directory, 'protobufjs/package.json');
+      if (fs.existsSync(candidate)) { manifest = fs.realpathSync(candidate); break; }
+    }
+    try { actual = fs.realpathSync(req.resolve('protobufjs')); } catch { /* Report missing generators as identity failures. */ }
+    const entry = entries.find(candidate => candidate.manifest === manifest && candidate.physicalPath === actual);
+    if (!entry) diagnostics.push({ kind: 'source-identity', path: schema.path,
+      expected: entries.map(candidate => candidate.physicalPath), actual: manifest && !entries.some(candidate => candidate.manifest === manifest) ? manifest : actual,
+      logicalPath: resolution.context(schema.path).logicalPath, physicalPath: actual, importer, reason: 'unverified-codegen-installation' });
+    else generators.set(schema.path, entry);
+  }
+  return { diagnostics, generators };
+}
 function profileDiagnostics(projectRoot, profile) {
   const diagnostics = [];
   const add = (kind, file, expected, actual, extra = {}) => diagnostics.push({ kind, path: file, expected, actual, ...extra });
@@ -119,6 +157,7 @@ function profileDiagnostics(projectRoot, profile) {
       }
     }
   }
+  if (!diagnostics.length) diagnostics.push(...resolveCodegenInputs(profile, resolution).diagnostics);
   return diagnostics;
 }
 function throwDiagnostic(diagnostic) {
@@ -161,6 +200,8 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const profile = readProfile(profileId);
   validateProfile(projectRoot, profile);
   const resolution = resolveProfileInputs(projectRoot, profile);
+  const codegen = resolveCodegenInputs(profile, resolution);
+  if (codegen.diagnostics.length) throwDiagnostic(codegen.diagnostics[0]);
   const ts = typescript;
   if (!ts || typeof ts.createSourceFile !== 'function') fail('WGA_UNSUPPORTED_DEPENDENCY', 'Pass the installed TypeScript compiler as typescript');
   const compiler = /^(\d+)\.(\d+)\./.exec(ts.version || '');
@@ -170,8 +211,9 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   let legacyKeySchema, datastoreStructSchema;
   for (const schema of profile.schemas) {
     const file = resolution.resolve(schema.path);
-    const req = createRequire(file);
-    const P = req('protobufjs');
+    // Load only the physical entry whose role and generator hashes were checked,
+    // never resolve protobufjs independently a second time while executing it.
+    const P = require(codegen.generators.get(schema.path).physicalPath);
     const json = schema.common ? P.common[schema.common] : file.endsWith('.proto') ? P.loadSync(file).toJSON() : JSON.parse(fs.readFileSync(file, 'utf8'));
     if (!json || typeof json !== 'object') fail('WGA_SCHEMA_MISMATCH', `${schema.path}: unknown common schema`);
     if (file.endsWith('app_engine_key.proto')) legacyKeySchema = json;
@@ -184,7 +226,8 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   // Includes actual transformer bytes as well as an explicit semantic version: even
   // an unversioned local transformer edit cannot reuse a previous registry key.
   const transformer = { version: transformerVersion, sha256: hash(fs.readFileSync(__filename)), typescriptVersion: ts.version };
-  const inputSha256 = hash(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+  const generatorInputs = [...codegen.generators].map(([schema, entry]) => [schema, entry.path]);
+  const inputSha256 = hash(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]), generators: generatorInputs,
     sources: [...profile.files, ...profile.schemas, ...profile.codegenInputs].map(file => [file.path, file.sha256]) }));
   const cacheKey = hash(JSON.stringify({ profileSha256: hash(JSON.stringify(profile)), transformer, inputSha256 }));
   const registryPrefix = `${profile.id}:${profile.revision}:${cacheKey}:`;

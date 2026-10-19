@@ -102,6 +102,7 @@ function validateSdkBenchmarkReport(report) {
     const canonical = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src/build/profiles', `${graph.profile}.json`), 'utf8'));
     const profileSha256 = digest(JSON.stringify(canonical));
     const inputSha256 = digest(JSON.stringify({ packages: canonical.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+      generators: canonical.schemas.map(schema => [schema.path, 'node_modules/protobufjs/index.js']),
       sources: [...canonical.files, ...canonical.schemas, ...canonical.codegenInputs].map(file => [file.path, file.sha256]) }));
     const transformer = { version: canonical.transformerVersion,
       sha256: digest(fs.readFileSync(path.join(__dirname, '..', 'src/build/index.cjs'))), typescriptVersion: require('typescript').version };

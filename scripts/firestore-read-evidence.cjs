@@ -3,8 +3,8 @@ const { isDeepStrictEqual } = require('node:util');
 const envoyPin = require('../fixtures/envoy/binary.json');
 const runtimes = ['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd-grpc-web', 'workerd-cloudflare'];
 const profiles = [
-  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '8.3.0', revision: 5 },
-  { id: 'google-modern-v1', fixture: 'modern', native: 'modern-native', version: '9.2.0', revision: 3 },
+  { id: 'google-static-v1', fixture: 'google', native: 'native', version: '8.3.0', revision: 6 },
+  { id: 'google-modern-v1', fixture: 'modern', native: 'modern-native', version: '9.2.0', revision: 4 },
 ];
 const scenarios = ['batch-permanent-partial', 'batch-transient-before', 'batch-transient-partial',
   'query-get-permanent-partial', 'query-get-transient-before', 'query-get-transient-partial',

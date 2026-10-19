@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "transformerVersion": 1,
   "id": "google-modern-v1",
-  "revision": 3,
+  "revision": 4,
   "packages": [
     {
       "path": "node_modules/gaxios",
@@ -360,6 +360,22 @@
     }
   ],
   "codegenInputs": [
+    {
+      "path": "node_modules/protobufjs/index.js",
+      "sha256": "33c2ed457283fb463ca5a3228eb35fabbe2ab5f25f25b411e93aed4b7c18e8c0"
+    },
+    {
+      "path": "node_modules/protobufjs/src/index.js",
+      "sha256": "a3303b1b08d3a9f082fd067f501406ad2a1e8bc75c3fcbb9999f5abd9c942607"
+    },
+    {
+      "path": "node_modules/protobufjs/src/index-light.js",
+      "sha256": "20aa0db4e86a2e474764f5c6a99e7fd635dd2e63d8e4a90fd9dc8ace314ee0b1"
+    },
+    {
+      "path": "node_modules/protobufjs/src/index-minimal.js",
+      "sha256": "6b6436025c7c67c5a0a89d68d4e9e8d788bc944509d8ea650afb6748a89a069d"
+    },
     {
       "path": "node_modules/protobufjs/src/root.js",
       "sha256": "1f610f79137dff45ce2ec4e0f742ae43f26b296f2518f4ba41e0a497af5ad624"

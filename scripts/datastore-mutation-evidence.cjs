@@ -68,7 +68,7 @@ function validateDatastoreMutationReport(report) {
     for (const runtime of ['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd']) need(report.sourceHashes?.[runtime]?.[file] === digest, `${runtime} shared identity`);
   }
   need(isDeepStrictEqual(Object.keys(report.sourceHashes).sort(), ['native', 'adapter-grpc-web', 'adapter-cloudflare', 'workerd'].sort()), 'exact source runtime set');
-  need(report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 5
+  need(report.buildProfile?.name === 'google-static-v1' && report.buildProfile.revision === 6
     && hash(report.buildProfile.sha256) && hash(report.buildProfile.registrySha256) && hash(report.bundleSha256), 'Worker build provenance');
   for (const [mapName, fixture, grpcEntry] of [['installedInputs', 'google', 'dist/index.js'], ['nativeInputs', 'native', 'build/src/index.js']]) {
     const required = ['@grpc/grpc-js/package.json', `@grpc/grpc-js/${grpcEntry}`, '@google-cloud/datastore/package.json',
