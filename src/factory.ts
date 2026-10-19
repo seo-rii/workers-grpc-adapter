@@ -226,7 +226,9 @@ export function loadPackageDefinition(
       const serviceName = nameComponents[nameComponents.length - 1];
       let current = result;
       for (const packageName of nameComponents.slice(0, -1)) {
-        if (!current[packageName]) {
+        // Inherited Object names are valid protobuf namespaces. Give each
+        // package load its own namespace instead of mutating a shared built-in.
+        if (!Object.prototype.hasOwnProperty.call(current, packageName)) {
           current[packageName] = {};
         }
         current = current[packageName] as GrpcObject;
