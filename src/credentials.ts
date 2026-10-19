@@ -40,7 +40,11 @@ export class CallCredentials {
                         reject(new Error('Invalid authentication metadata'));
                     }
                     else {
-                        resolve(metadata.clone());
+                        // The first callback owns its outcome, including a
+                        // failing snapshot. Do not throw back into the provider
+                        // after completed prevents its error callback settling.
+                        try { resolve(metadata.clone()); }
+                        catch (error) { reject(error); }
                     }
                 }
             };
