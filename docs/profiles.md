@@ -208,6 +208,11 @@ Another plugin swallowing `onLoad`, an unverified physical source, or
 dependency-link drift fails the build. Rebuilds clear all target and module
 receipts. Package/source/schema/codegen checks run again before completion.
 
+Use a separate prepared preset for concurrent builds or esbuild contexts.
+Overlapping use of one preset fails with `WGA_BUILD_CONCURRENT`, so one build
+cannot borrow another build's transformation receipts. Sequential builds and
+context rebuilds may reuse a preset after its previous build finishes.
+
 `manifest().transformCoverage` reports `required`, `applied`, `unused` and
 `passed`. These counts describe distinct profile targets, rather than module
 instances. `required` counts targets present in the actual metafile; `applied`
