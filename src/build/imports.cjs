@@ -4,13 +4,37 @@
 // literal module sites without evaluating inspected code. It is deliberately
 // separate from the profile compiler's full AST and semantic validation.
 function tokensFor(source) {
-    const tokens = [], groups = [], pairs = new Map();
+    const tokens = [], groups = [], pairs = new Map(), classes = [];
     let offset = 0;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
     const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
     const prefix = new Set(['return', 'throw', 'case', 'delete', 'void', 'typeof', 'instanceof', 'in', 'of', 'yield', 'await', 'else', 'do']);
     const controls = new Set(['if', 'while', 'for', 'with', 'switch', 'catch']);
+    const expressionPrefixes = new Set(['=', '(', '[', ',', ':', '?', '=>', '${', '...',
+        '+', '-', '*', '/', '%', '**', '!', '~', '&', '|', '^', '&&', '||', '??',
+        '<', '>', '==', '!=', '+=', '-=', '/=', 'return', 'throw', 'yield', 'await',
+        'new', 'void', 'typeof', 'delete', 'in', 'instanceof', 'of', 'case', 'extends']);
     const previous = () => tokens[tokens.length - 1];
+    const expressionBefore = index => {
+        const before = tokens[index - 1];
+        if (before?.value === ':' && groups[groups.length - 1]?.control === 'switch') {
+            // A switch clause starts statements, while an unmatched question
+            // mark makes this a conditional-expression alternate in that body.
+            let alternatives = 0;
+            for (let cursor = index - 2; cursor >= 0; cursor--) {
+                if (pairs.get(cursor) < cursor) { cursor = pairs.get(cursor); continue; }
+                const value = tokens[cursor].value;
+                if (value === ':') alternatives++;
+                else if (value === '?' && alternatives-- === 0) return true;
+                else if ([';', '{', '}'].includes(value)) break;
+            }
+            return false;
+        }
+        // A line break after return/yield ends that expression before a new
+        // declaration; comments are already absent from the token stream.
+        return expressionPrefixes.has(before?.value) && !(['return', 'yield'].includes(before.value)
+            && /[\r\n\u2028\u2029]/.test(source.slice(before.end, tokens[index].start)));
+    };
     const allowsRegex = () => {
         const last = previous();
         if (!last) return true;
@@ -21,29 +45,51 @@ function tokensFor(source) {
     };
     function add(kind, value, start, extra = {}) {
         const token = { kind, value, start, end: offset, ...extra }, index = tokens.length;
+        const header = classes[classes.length - 1];
+        if (header?.depth === groups.length && header.stage !== 'heritage') {
+            if (value === 'extends') header.stage = 'heritage';
+            else if (header.stage === 'name' && kind === 'identifier') header.stage = 'body';
+            else if (value !== '{') classes.pop();
+        }
         if (kind === 'punctuation') {
             if (['(', '[', '{', '${'].includes(value)) {
                 const last = previous();
                 let statementEnd = value === '(' ? controls.has(last?.value)
                     : value === '{' && (!last || !['=', '(', '[', ',', ':', 'return'].includes(last.value));
+                let functionBody = false;
                 if (value === '{' && last?.value === ')') {
-                    // A function expression ends an operand, unlike a function
-                    // declaration or a control statement followed by a regex.
                     let keyword = (pairs.get(index - 1) ?? index) - 1;
                     if (tokens[keyword]?.kind === 'identifier' && tokens[keyword]?.value !== 'function') keyword--;
                     if (tokens[keyword]?.value === '*') keyword--;
-                    if (tokens[keyword]?.value === 'function' && ['=', '(', '[', ',', ':', 'return', '=>'].includes(tokens[keyword - 1]?.value)) statementEnd = false;
+                    if (tokens[keyword]?.value === 'function') {
+                        functionBody = true;
+                        if (tokens[keyword - 1]?.value === 'async'
+                            && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
+                        statementEnd = !expressionBefore(keyword);
+                    }
                 }
-                groups.push({ index, value, statementEnd });
+                const definition = classes[classes.length - 1];
+                if (value === '{' && definition?.depth === groups.length && !functionBody) {
+                    // Keep a class header across its heritage expression. Its
+                    // nested parentheses/classes/functions own their own bodies.
+                    statementEnd = !definition.expression;
+                    classes.pop();
+                }
+                groups.push({ index, value, statementEnd,
+                    control: value === '(' ? last?.value : value === '{' ? last?.control : undefined });
             } else if ([')', ']', '}'].includes(value)) {
                 const open = groups[groups.length - 1];
                 if (open && ({ ')': ['('], ']': ['['], '}': ['{', '${'] })[value].includes(open.value)) {
                     groups.pop(); pairs.set(open.index, index); pairs.set(index, open.index);
                     token.statementEnd = open.statementEnd;
+                    token.control = open.control;
                 }
             }
         }
         tokens.push(token);
+        if (kind === 'identifier' && value === 'class' && !['.', '?.'].includes(tokens[index - 1]?.value)) {
+            classes.push({ depth: groups.length, stage: 'name', expression: expressionBefore(index) });
+        }
     }
     function escaped() {
         const char = source[offset++];
