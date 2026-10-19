@@ -77,7 +77,8 @@ function captureBuildInputs(projectRoot, preset) {
     if (previous && (previous.source.physical !== source.physical || previous.source.sha256 !== source.sha256 || previous.loadedSha256 !== loadedSha256)) {
       fail('WGA_PREBUNDLE_AUDIT', 'One bundled input has conflicting source receipts', { path: key });
     }
-    modules.set(key, { source, loadedSha256, loadedBytes: Buffer.byteLength(contents), pkg: packageOf(source.physical, packages, read) });
+    modules.set(key, { source, moduleIdentity: JSON.stringify([args.namespace, path.resolve(args.path), args.suffix || '']),
+      loadedSha256, loadedBytes: Buffer.byteLength(contents), pkg: packageOf(source.physical, packages, read) });
   }
   // Supplying the captured bytes to esbuild is essential: hashing the file only
   // before/after build() cannot identify an intermediate version it consumed.
@@ -118,7 +119,7 @@ function captureBuildInputs(projectRoot, preset) {
   };
 }
 function checkRuntimeGraph(projectRoot, metafile, profile, captured) {
-  const adapters = new Map(), inputs = [];
+  const adapters = new Map(), adapterModules = new Map(), inputs = [];
   const allowed = new Map();
   for (const pkg of profile.packages) {
     const resolved = profile.resolvedPaths.find(item => item.path === `${pkg.path}/package.json`);
@@ -126,10 +127,18 @@ function checkRuntimeGraph(projectRoot, metafile, profile, captured) {
     if (!allowed.has(pkg.name)) allowed.set(pkg.name, new Set());
     allowed.get(pkg.name).add(path.dirname(resolved.physicalPath));
   }
-  for (const { input, info, source, pkg } of captured) {
+  for (const { input, info, source, pkg, moduleIdentity } of captured) {
     const { logical, physical } = source;
     if (pkg?.name === '@grpc/grpc-js') fail('WGA_PREBUNDLE_NATIVE_GRPC', 'Install workers-grpc-adapter under the @grpc/grpc-js alias', { logicalPath: logical, physicalPath: physical });
-    if (pkg?.name === 'workers-grpc-adapter') adapters.set(pkg.root, pkg);
+    if (pkg?.name === 'workers-grpc-adapter') {
+      adapters.set(pkg.root, pkg);
+      // esbuild caches by namespace/path/suffix, not physical package root.
+      // Two identities for one source instantiate private symbols/state twice.
+      const previous = adapterModules.get(physical);
+      if (previous && previous.moduleIdentity !== moduleIdentity) fail('WGA_PREBUNDLE_RUNTIME_IDENTITY',
+        'One adapter source cannot be instantiated as multiple bundled modules', { physicalPath: physical, inputs: [previous.input, input] });
+      adapterModules.set(physical, { moduleIdentity, input });
+    }
     if (allowed.has(pkg?.name) && !allowed.get(pkg.name).has(pkg.root)) fail('WGA_SOURCE_IDENTITY', `Bundled ${pkg.name} comes from an unverified physical installation`, { logicalPath: logical, physicalPath: physical, expected: [...allowed.get(pkg.name)] });
     if (pkg?.name.startsWith('@google-cloud/') && !allowed.has(pkg.name) && pkg.name !== '@google-cloud/promisify') fail('WGA_UNSUPPORTED_DEPENDENCY', `The selected profile does not verify ${pkg.name}`, { package: pkg.name, physicalPath: pkg.root });
     for (const dependency of info.imports) {
