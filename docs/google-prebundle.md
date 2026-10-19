@@ -118,6 +118,11 @@ options), destructuring and namespace rest bindings,
 and statically known computed property names. An unknown computed property on
 a Node module namespace is rejected because it could select a loader.
 
+One physical adapter installation is necessary but does not alone prove one
+runtime. The build also rejects different esbuild module identities for the
+same adapter source, including query/hash suffix copies. Import adapter entry
+points without suffixes; ordinary aliases that resolve to one module are valid.
+
 For SvelteKit, pack the generated directory and install its tarball as a server
 dependency. Import that package from routes, hooks, or a module under the
 application's `./src/lib/server` directory:
