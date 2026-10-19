@@ -18,7 +18,7 @@ function resolveFile(projectRoot, value, option) {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) fail('WGA_PREBUNDLE_OPTIONS', `${option} must name an existing file`);
   return fs.realpathSync(file);
 }
-function packageOf(file, cache) {
+function packageOf(file, cache, read) {
   let directory = path.dirname(file);
   const visited = [];
   while (true) {
@@ -30,11 +30,11 @@ function packageOf(file, cache) {
     visited.push(directory);
     const manifest = path.join(directory, 'package.json');
     if (fs.existsSync(manifest)) {
-      const json = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      const source = read(manifest), json = JSON.parse(source.contents.toString('utf8'));
       // A nameless package.json can set a nested CJS/ESM scope; it does not
       // replace the enclosing package's source identity.
       if (typeof json.name === 'string' && json.name) {
-        const result = { root: fs.realpathSync(directory), name: json.name, version: json.version, packageJsonSha256: hash(fs.readFileSync(manifest)) };
+        const result = { root: fs.realpathSync(directory), name: json.name, version: json.version, packageJsonSha256: source.sha256 };
         for (const entry of visited) cache.set(entry, result);
         return result;
       }
@@ -53,8 +53,72 @@ function publicPath(projectRoot, file, pkg) {
   // Never write an absolute machine path into a portable artifact manifest.
   return !relative.startsWith(`..${path.sep}`) && relative !== '..' ? relative.split(path.sep).join('/') : `external/${path.basename(file)}`;
 }
-function checkRuntimeGraph(projectRoot, metafile, profile) {
-  const cache = new Map(), adapters = new Map(), inputs = [];
+function captureBuildInputs(projectRoot, preset) {
+  const files = new Map(), modules = new Map(), packages = new Map();
+  function read(logical) {
+    logical = path.resolve(logical);
+    if (!files.has(logical)) {
+      const physical = fs.realpathSync(logical), contents = fs.readFileSync(physical);
+      files.set(logical, { logical, physical, contents, sha256: hash(contents) });
+    }
+    return files.get(logical);
+  }
+  function unchanged(source) {
+    let physical = null, sha256 = null;
+    try { physical = fs.realpathSync(source.logical); sha256 = hash(fs.readFileSync(physical)); } catch { /* Diagnose removed inputs like changed inputs. */ }
+    if (physical !== source.physical || sha256 !== source.sha256) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A build input changed after it was captured; retry with a stable source tree', {
+      logicalPath: source.logical, physicalPath: source.physical, actualPhysicalPath: physical, expectedSha256: source.sha256, actualSha256: sha256,
+    });
+  }
+  function record(args, source, contents) {
+    if (args.namespace !== 'file') fail('WGA_PREBUNDLE_AUDIT', 'Only captured file inputs may enter the prebundle');
+    const key = path.resolve(args.path) + (args.suffix || ''), loadedSha256 = hash(contents);
+    const previous = modules.get(key);
+    if (previous && (previous.source.physical !== source.physical || previous.source.sha256 !== source.sha256 || previous.loadedSha256 !== loadedSha256)) {
+      fail('WGA_PREBUNDLE_AUDIT', 'One bundled input has conflicting source receipts', { path: key });
+    }
+    modules.set(key, { source, loadedSha256, loadedBytes: Buffer.byteLength(contents), pkg: packageOf(source.physical, packages, read) });
+  }
+  // Supplying the captured bytes to esbuild is essential: hashing the file only
+  // before/after build() cannot identify an intermediate version it consumed.
+  const plugin = { name: 'wga-prebundle-source-receipts', setup(build) {
+    preset.plugin.setup({ ...build, onLoad(options, callback) {
+      build.onLoad(options, async args => {
+        const source = read(args.path), loaded = await callback(args);
+        if (loaded?.contents !== undefined) {
+          unchanged(source);
+          // The preset reads pinned upstream bytes and returns transformed text.
+          // Bind both identities to this receipt without changing its guards.
+          const manifest = preset.manifest();
+          const transformed = manifest.transformed.find(item => manifest.resolvedPaths.some(resolved => resolved.path === item.path && resolved.physicalPath === source.physical));
+          const registry = source.physical === fs.realpathSync(preset.registryFile);
+          if (source.sha256 !== (registry ? manifest.registrySha256 : transformed?.upstreamSha256)
+            || hash(loaded.contents) !== (registry ? manifest.registrySha256 : transformed?.replacementSha256)) {
+            fail('WGA_PREBUNDLE_AUDIT', 'The captured source does not match the verified transform input and output', { path: source.logical });
+          }
+          record(args, source, loaded.contents);
+        }
+        return loaded;
+      });
+    } });
+    build.onLoad({ filter: /.*/, namespace: 'file' }, args => {
+      const source = read(args.path);
+      record(args, source, source.contents);
+      return { contents: source.contents, loader: 'default', resolveDir: path.dirname(args.path) };
+    });
+  } };
+  return { plugin, read, verify() { for (const source of files.values()) unchanged(source); },
+    inputs(metafile) {
+      return Object.entries(metafile.inputs).map(([input, info]) => {
+        const receipt = modules.get(path.resolve(projectRoot, input));
+        if (!receipt || receipt.loadedBytes !== info.bytes) fail('WGA_PREBUNDLE_AUDIT', 'A bundled input has no matching consumed-source receipt', { path: input });
+        return { input, info, ...receipt };
+      });
+    },
+  };
+}
+function checkRuntimeGraph(projectRoot, metafile, profile, captured) {
+  const adapters = new Map(), inputs = [];
   const allowed = new Map();
   for (const pkg of profile.packages) {
     const resolved = profile.resolvedPaths.find(item => item.path === `${pkg.path}/package.json`);
@@ -62,10 +126,8 @@ function checkRuntimeGraph(projectRoot, metafile, profile) {
     if (!allowed.has(pkg.name)) allowed.set(pkg.name, new Set());
     allowed.get(pkg.name).add(path.dirname(resolved.physicalPath));
   }
-  for (const [input, info] of Object.entries(metafile.inputs)) {
-    const logical = path.resolve(projectRoot, input);
-    if (!fs.existsSync(logical)) fail('WGA_PREBUNDLE_INPUT', 'A bundled input disappeared before it could be recorded');
-    const physical = fs.realpathSync(logical), pkg = packageOf(physical, cache);
+  for (const { input, info, source, pkg } of captured) {
+    const { logical, physical } = source;
     if (pkg?.name === '@grpc/grpc-js') fail('WGA_PREBUNDLE_NATIVE_GRPC', 'Install workers-grpc-adapter under the @grpc/grpc-js alias', { logicalPath: logical, physicalPath: physical });
     if (pkg?.name === 'workers-grpc-adapter') adapters.set(pkg.root, pkg);
     if (allowed.has(pkg?.name) && !allowed.get(pkg.name).has(pkg.root)) fail('WGA_SOURCE_IDENTITY', `Bundled ${pkg.name} comes from an unverified physical installation`, { logicalPath: logical, physicalPath: physical, expected: [...allowed.get(pkg.name)] });
@@ -73,7 +135,7 @@ function checkRuntimeGraph(projectRoot, metafile, profile) {
     for (const dependency of info.imports) {
       if (dependency.external && !isBuiltin(dependency.path)) fail('WGA_PREBUNDLE_EXTERNAL', `Unresolved runtime dependency ${JSON.stringify(dependency.path)}; install it in the build graph before generating a prebundle`, { path: input, import: dependency.path });
     }
-    inputs.push({ path: publicPath(projectRoot, physical, pkg), sha256: hash(fs.readFileSync(physical)), bytes: info.bytes });
+    inputs.push({ path: publicPath(projectRoot, physical, pkg), sha256: source.sha256, bytes: source.contents.length });
   }
   if (adapters.size !== 1) fail('WGA_PREBUNDLE_RUNTIME_IDENTITY', 'The wrapper and SDK must bundle exactly one physical workers-grpc-adapter installation', { installations: [...adapters.keys()] });
   for (const output of Object.values(metafile.outputs)) {
@@ -134,12 +196,11 @@ function bindSources(ts, sources) {
   host.getSourceFile = file => sources.get(file);
   return ts.createProgram([...sources.keys()], options, host).getTypeChecker();
 }
-function checkModuleLoaders(ts, projectRoot, metafile) {
+function checkModuleLoaders(ts, captured) {
   // Inspect original module scopes: esbuild renames the CommonJS `module`
   // parameter, so a spelling-only check of the minified artifact misses it.
-  const files = [...new Set(Object.keys(metafile.inputs).map(file => fs.realpathSync(path.resolve(projectRoot, file))))]
-    .filter(file => /\.[cm]?[jt]sx?$/.test(file));
-  const sources = new Map(files.map(file => [file, ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)]));
+  const sources = new Map(captured.filter(({ source }) => /\.[cm]?[jt]sx?$/.test(source.physical))
+    .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true)]));
   const checker = bindSources(ts, sources), values = new Map();
   const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) ? unwrap(node.expression) : node;
@@ -205,9 +266,9 @@ function checkModuleLoaders(ts, projectRoot, metafile) {
   }
   for (const source of sources.values()) visit(source);
 }
-function checkExportStability(ts, entryPoint, source, expected) {
+function checkExportStability(ts, entryPoint, original, source, expected) {
   const reject = name => fail('WGA_PREBUNDLE_EXPORT_STABILITY', 'Public export bindings must be stable; expose a factory or a stable object for changing state', { export: name });
-  const wrapper = ts.createSourceFile(entryPoint, fs.readFileSync(entryPoint, 'utf8'), ts.ScriptTarget.Latest, true), mutable = new Set();
+  const wrapper = ts.createSourceFile(entryPoint, original, ts.ScriptTarget.Latest, true), mutable = new Set();
   function names(node, into) {
     if (ts.isIdentifier(node)) into.add(node.text);
     else for (const element of node.elements) if (ts.isBindingElement(element)) names(element.name, into);
@@ -349,26 +410,26 @@ async function buildGoogleWorkerPrebundle(options) {
     const { createGoogleWorkerBuild } = require('./index.cjs');
     const preset = createGoogleWorkerBuild({ projectRoot, outdir: path.join(temporary, 'registry'), profile: options.profile, typescript: ts });
     if (typeof preset.verifyBuild !== 'function') fail('WGA_PREBUNDLE_AUDIT', 'This prebundle helper requires the matching fail-closed build preset');
+    const capture = captureBuildInputs(projectRoot, preset), declaration = capture.read(declarationFile).contents;
     let built;
     try {
       built = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: [entryPoint], bundle: true, format: 'cjs', platform: 'node',
         target: 'es2022', outfile: path.join(temporary, 'index.cjs'), write: false, metafile: true, minify: true,
-        legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [preset.plugin] });
+        legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [capture.plugin] });
     } catch (error) {
       // esbuild wraps plugin errors. Preserve the profile diagnostic contract.
       const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
       throw cause || error;
     }
     const coverage = preset.verifyBuild(built.metafile);
-    const entry = Object.entries(built.metafile.inputs).find(([input]) => fs.realpathSync(path.resolve(projectRoot, input)) === entryPoint);
-    if (entry?.[1].format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
+    const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
+    if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
     if (built.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one self-contained JavaScript artifact');
     const source = built.outputFiles[0].text;
     checkArtifact(ts, source, names);
-    const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest);
-    checkModuleLoaders(ts, projectRoot, built.metafile);
-    checkExportStability(ts, entryPoint, source, names);
-    const declaration = fs.readFileSync(declarationFile);
+    const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest, captured);
+    checkModuleLoaders(ts, captured);
+    checkExportStability(ts, entryPoint, entry.source.contents.toString('utf8'), source, names);
     checkDeclarations(ts, declaration.toString('utf8'), names);
     const facade = `import owned from './index.cjs';\n${names.map((name, index) => `const value${index} = owned[${JSON.stringify(name)}];\nexport { value${index} as ${name} };\n`).join('')}`;
     const blocked = `throw new Error('WGA_PREBUNDLE_SERVER_ONLY: import this package only from server code');\n`;
@@ -385,7 +446,7 @@ async function buildGoogleWorkerPrebundle(options) {
       // hash covers transformed output; retain path-independent source receipts.
       transformed: presetManifest.transformed.map(({ path: file, upstreamSha256, rules }) => ({ path: file, upstreamSha256, rules })),
       transformCoverage: coverage, runtime: graph.adapter, sources: graph.inputs,
-      wrapper: { sha256: hash(fs.readFileSync(entryPoint)), declarationSha256: hash(declaration) }, artifacts };
+      wrapper: { sha256: entry.source.sha256, declarationSha256: hash(declaration) }, artifacts };
     manifest.artifactSha256 = hash(JSON.stringify({ artifacts, exports: names, cacheKey: manifest.cacheKey }));
     files['manifest.json'] = JSON.stringify(manifest, null, 2) + '\n';
     fs.mkdirSync(path.dirname(outdir), { recursive: true });
@@ -397,6 +458,7 @@ async function buildGoogleWorkerPrebundle(options) {
         fs.chmodSync(file, 0o644);
       }
       fs.chmodSync(staging, 0o755);
+      capture.verify();
       if (fs.existsSync(outdir)) {
         if (!fs.statSync(outdir).isDirectory() || fs.readdirSync(outdir).length) fail('WGA_PREBUNDLE_OUTPUT', 'outdir changed during the build; existing files were preserved');
         fs.rmdirSync(outdir);
