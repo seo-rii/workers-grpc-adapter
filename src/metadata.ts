@@ -177,7 +177,10 @@ export class Metadata {
     for (const [key, values] of this.internalRepr) {
       if (values.length > 0) {
         const v = values[0];
-        result[key] = Buffer.isBuffer(v) ? Buffer.from(v) : v;
+        Object.defineProperty(result, key, {
+          value: Buffer.isBuffer(v) ? Buffer.from(v) : v,
+          enumerable: true, configurable: true, writable: true,
+        });
       }
     }
     return result;
@@ -249,7 +252,10 @@ export class Metadata {
       }
       // We assume that the user's interaction with this object is limited to
       // through its public API (i.e. keys and values are already validated).
-      result[key] = values.map(bufToString);
+      Object.defineProperty(result, key, {
+        value: values.map(bufToString),
+        enumerable: true, configurable: true, writable: true,
+      });
     }
 
     return result;
@@ -262,7 +268,10 @@ export class Metadata {
   toJSON() {
     const result: { [key: string]: MetadataValue[] } = {};
     for (const [key, values] of this.internalRepr) {
-      result[key] = values;
+      Object.defineProperty(result, key, {
+        value: values,
+        enumerable: true, configurable: true, writable: true,
+      });
     }
     return result;
   }
