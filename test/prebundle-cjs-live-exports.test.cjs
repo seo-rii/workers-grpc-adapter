@@ -47,6 +47,12 @@ function synthetic(t) {
 }
 
 const mutable = [
+  ['failed Reflect descriptor helper escape', 'const state = {current: 1}; Object.defineProperty(exports, "activeClient", {value: 1, writable: true}); Reflect.defineProperty(exports, "activeClient", {get: () => state}); function helper(value) { queueMicrotask(() => { value.activeClient = 2; }); } helper(exports); exports.initialize = () => {};'],
+  ['conditional readonly getter helper escape', 'const state = {current: 1}; if (globalThis.lockExports) Object.defineProperty(exports, "activeClient", {get: () => state}); function helper(value) { queueMicrotask(() => { value.activeClient = 2; }); } helper(exports); exports.initialize = () => {};'],
+  ['configurable getter helper escape', 'const state = {current: 1}; Object.defineProperty(exports, "activeClient", {get: () => state, configurable: true}); function helper(value) { queueMicrotask(() => { Object.defineProperty(value, "activeClient", {value: 2}); }); } helper(exports); exports.initialize = () => {};'],
+  ['nested readonly getter helper escape', 'const state = {current: 1}; function setup() { Object.defineProperty(exports, "activeClient", {get: () => state}); } if (globalThis.lockExports) setup(); function helper(value) { queueMicrotask(() => { value.activeClient = 2; }); } helper(exports); exports.initialize = () => {};'],
+  ['replaced namespace helper escape', 'const state = {current: 1}; Object.defineProperty(exports, "activeClient", {get: () => state}); module.exports = {activeClient: 1}; function helper(value) { queueMicrotask(() => { value.activeClient = 2; }); } helper(module.exports); module.exports.initialize = () => {};'],
+  ['uncached namespace clone getter', 'Object.defineProperty(exports, "activeClient", {get: () => Object.assign({}, require("./box.cjs"))}); exports.initialize = () => {};'],
   ['imported getter alias write', 'const box = require("./box.cjs"), alias = box; Object.defineProperty(exports, "activeClient", {enumerable: true, get() { return box.current; }}); exports.initialize = () => { alias.current = 2; };'],
   ['imported getter Object.assign write', 'const box = require("./box.cjs"); Object.defineProperty(exports, "activeClient", {enumerable: true, get() { return box.current; }}); exports.initialize = () => { Object.assign(box, {current: 2}); };'],
   ['imported getter Reflect.set write', 'const box = require("./box.cjs"); Object.defineProperty(exports, "activeClient", {enumerable: true, get() { return box.current; }}); exports.initialize = () => { Reflect.set(box, "current", 2); };'],
@@ -88,7 +94,7 @@ for (const style of ['re-export', 'stable wrapper object']) test(`PREBUNDLE perm
   cjs.initialize(); assert.equal(esm.state.current, 2);
 });
 
-test('PREBUNDLE preserves actual adapter constructor and private channel identity', async t => {
+test('PREBUNDLE export stability preserves actual adapter constructor and private channel identity', async t => {
   const f = synthetic(t);
   fs.cpSync(path.join(root, 'dist'), path.join(f.adapterRoot, 'dist'), { recursive: true });
   write(path.join(f.adapterRoot, 'package.json'), fs.readFileSync(path.join(root, 'package.json')));
@@ -109,4 +115,92 @@ test('PREBUNDLE permits stable CJS getters and TypeScript-style initial assignme
   const built = await f.build({ exports: ['createClient', 'configure', 'state', 'initialize'] });
   const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
   assert.equal(cjs.state, esm.state); esm.initialize(); assert.equal(cjs.state.current, 2);
+});
+
+test('PREBUNDLE export stability permits namespace copies during CJS initialization', async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'stable.cjs'), 'const state = {current: 1}; exports.state = state; const existing = module.exports; module.exports = class Wrapper {}; module.exports = Object.assign(module.exports, existing);');
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: {current: number};');
+  const built = await f.build({exports: ['createClient', 'configure', 'state']});
+  const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  assert.equal(cjs.state, esm.state);
+});
+
+test('PREBUNDLE export stability permits lazy cached CJS namespace getters', async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'state.cjs'), 'exports.current = 1; exports.initialize = () => { exports.current = 2; };');
+  write(path.join(f.projectRoot, 'stable.cjs'), 'Object.defineProperty(exports, "state", {get: () => require("./state.cjs")});');
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: {current: number; initialize(): void};');
+  const built = await f.build({exports: ['createClient', 'configure', 'state']});
+  const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  assert.equal(cjs.state, esm.state); cjs.state.initialize(); assert.equal(esm.state.current, 2);
+});
+
+for (const [name, mutation] of [
+  ['assignment', 'module.exports = {current: 2};'],
+  ['Object.assign', 'Object.assign(module, {exports: {current: 2}});'],
+  ['Reflect.set', 'Reflect.set(module, "exports", {current: 2});'],
+  ['Object.defineProperty', 'Object.defineProperty(module, "exports", {value: {current: 2}});'],
+  ['helper escape', 'const replace = value => { value.exports = {current: 2}; }; replace(module);'],
+  ['holder escape', 'const holder = {module}; holder.module.exports = {current: 2};'],
+  ['computed replacement', 'const key = "exports"; module[key] = {current: 2};'],
+]) test(`PREBUNDLE export stability rejects lazy CJS namespace replacement through ${name}`, async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'state.cjs'), `exports.current = 1; exports.initialize = () => { ${mutation} };`);
+  write(path.join(f.projectRoot, 'stable.cjs'), 'Object.defineProperty(exports, "state", {get: () => require("./state.cjs")});');
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: unknown;');
+  await assert.rejects(f.build({exports: ['createClient', 'configure', 'state']}), {code: 'WGA_PREBUNDLE_EXPORT_STABILITY'});
+});
+
+for (const descriptor of ['', 'configurable: false,']) test(`PREBUNDLE export stability permits initialization helpers after a fixed readonly getter (${descriptor || 'default'})`, async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'stable.cjs'), `const state = {current: 1}; Object.defineProperty(exports, "state", {${descriptor}enumerable: true, get: () => state}); function exportStar(source, target) { for (const key in source) if (!Object.prototype.hasOwnProperty.call(target, key)) Object.defineProperty(target, key, {enumerable: true, get: () => source[key]}); } exportStar({other: 7}, exports);`);
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: {current: number};');
+  const built = await f.build({exports: ['createClient', 'configure', 'state']});
+  const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  assert.equal(cjs.state, esm.state);
+});
+
+for (const [name, source] of [
+  ['indirect namespace replacement', 'const state = {current: 1}; Object.defineProperty(exports, "state", {get: () => state}); Object.assign(module, {exports: {state: {current: 1}}}); function helper(value) { value.state.initialize = () => { value.state = {current: 2}; }; } helper(module.exports);'],
+  ['inherited configurable descriptor', 'const state = {current: 1}; Object.defineProperty(exports, "state", {get: () => state, __proto__: {configurable: true}}); function helper(value) { state.initialize = () => { Object.defineProperty(value, "state", {value: {current: 2}}); }; } helper(exports);'],
+  ['unrelated descriptor target', 'const state = {current: 1}; exports.state = state; Object.defineProperty({}, "state", {get: () => state}, exports); function helper(value) { state.initialize = () => { value.state = {current: 2}; }; } helper(exports);'],
+  ['descriptor on a replaced exports parameter', 'module.exports = {state: {current: 1}}; const state = {current: 1}; Object.defineProperty(exports, "state", {get: () => state}); function helper(value) { value.state.initialize = () => { value.state = {current: 2}; }; } helper(module.exports);'],
+]) test(`PREBUNDLE export stability rejects readonly getter escape through ${name}`, async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'stable.cjs'), source);
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: unknown;');
+  await assert.rejects(f.build({exports: ['createClient', 'configure', 'state']}), {code: 'WGA_PREBUNDLE_EXPORT_STABILITY'});
+});
+
+for (const proto of ['', '__proto__: null,']) test(`PREBUNDLE export stability permits readonly getter helper state updates (${proto || 'default prototype'})`, async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'stable.cjs'), `const state = {current: 1}; Object.defineProperty(exports, "state", {${proto}get: () => state}); function helper(value) { state.initialize = () => { value.state.current = 2; }; } helper(exports);`);
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {state} from "./stable.cjs";');
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: {current: number; initialize(): void};');
+  const built = await f.build({exports: ['createClient', 'configure', 'state']});
+  const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  assert.equal(cjs.state, esm.state); cjs.state.initialize(); assert.equal(esm.state.current, 2);
+});
+
+for (const style of ['re-export', 'owned snapshot']) test(`PREBUNDLE export stability handles complex memoized CJS getters (${style})`, async t => {
+  const f = synthetic(t);
+  write(path.join(f.projectRoot, 'box.cjs'), 'exports.current = 1;');
+  write(path.join(f.projectRoot, 'stable.cjs'), 'let cached; Object.defineProperty(exports, "state", {get() { if (!cached) { const api = require("./box.cjs"); cached = Object.assign(function Client() {}, api); } return cached; }});');
+  f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ' + (style === 're-export'
+    ? 'export {state} from "./stable.cjs";'
+    : 'import {state as initialState} from "./stable.cjs"; export const state = initialState;'));
+  fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare const state: {current: number};');
+  if (style === 're-export') {
+    await assert.rejects(f.build({exports: ['createClient', 'configure', 'state']}), {code: 'WGA_PREBUNDLE_EXPORT_STABILITY'});
+    return;
+  }
+  const built = await f.build({exports: ['createClient', 'configure', 'state']});
+  const cjs = require(built.bundlePath), esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  assert.equal(cjs.state, esm.state); cjs.state.current = 2; assert.equal(esm.state.current, 2);
 });
