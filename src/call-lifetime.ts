@@ -69,11 +69,11 @@ export class CallLifetime implements InterceptingCallInterface {
             catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); return; }
         }
         const begin = () => {
-            if (this.terminal) return;
+            if (this.stopIfExpired()) return;
             this.chainStarted = true;
             this.observation?.admitted();
             this.startChain(metadata);
-            while (!this.terminal && this.pending.length) this.pending.shift()!();
+            while (this.pending.length && !this.stopIfExpired()) this.pending.shift()!();
         };
         if (!this.resources) { begin(); return; }
         if (this.resources.limits.maxConcurrentCalls !== undefined) this.observation?.queue();
@@ -102,8 +102,8 @@ export class CallLifetime implements InterceptingCallInterface {
     private stopIfExpired(): boolean {
         if (this.terminal) return true;
         if (this.deadline === Infinity || this.deadline > Date.now()) return false;
-        // An interceptor continuation can arrive after expiry before the
-        // deadline timer gets a turn. Check the logical delivery boundary too.
+        // Admission and interceptor continuations can run after expiry before
+        // the deadline timer gets a turn. Check work and delivery boundaries.
         this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
         return true;
     }
