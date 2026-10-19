@@ -230,6 +230,9 @@ export class HealthWatch {
             let done = false;
             const finish = (error?: ServiceError) => {
                 if (done) return;
+                // A SERVING message can arrive after wall-clock expiry while
+                // this waiter's timer is still waiting for the event loop.
+                if (!error && deadline <= Date.now()) error = healthError(status.DEADLINE_EXCEEDED, 'WGA_HEALTH_DEADLINE_EXCEEDED');
                 done = true;
                 clearTimeout(timer);
                 signal?.removeEventListener('abort', abort);

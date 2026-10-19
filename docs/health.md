@@ -51,8 +51,10 @@ A monitor's `getState()` returns an immutable snapshot with `phase`,
 (1) satisfies `waitForServing`; `UNKNOWN`, `NOT_SERVING`, `SERVICE_UNKNOWN` and
 unrecognized future values continue waiting. Each waiter requires its own finite
 deadline and can have an independent AbortSignal. A waiter's timeout or abort
-does not close the monitor or affect other waiters. `close()` rejects remaining
-waiters, cancels the stream and clears backoff; it is safe to call repeatedly.
+does not close the monitor or affect other waiters. Each waiter checks its
+deadline again before accepting SERVING, even when its timeout callback has not
+run yet. `close()` rejects remaining waiters, cancels the stream and clears
+backoff; it is safe to call repeatedly.
 
 The standard Watch protocol retries every server terminal status, including OK,
 except `UNIMPLEMENTED`. This includes permission and authentication failures:
