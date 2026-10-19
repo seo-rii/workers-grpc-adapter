@@ -18,27 +18,27 @@
       "source": "vendor/client/client.ts",
       "sha256": "215d41d55165e9c21656a043894eccc9065745f8735f0818c1cb05124168df53",
       "target": "src/client.ts",
-      "patchedSha256": "8b5f25f9414d541632bbbceb65f3095977c05cc3373df6b54a09b708aa6e06a0",
+      "patchedSha256": "88262ed336cc21be64defc14d82368102bd09b5034bd8c55590e1ff3c04ba730",
       "patch": "vendor/patches/client.ts.patch",
-      "patchSha256": "fdb3149d07072cc26f77e7cb497686935b5601d99e852fa7752fffb086f902f6"
+      "patchSha256": "da46b866b637ee0c267dbe97428ceeaf78b17117947a6bc1e27980d38e32a8a4"
     },
     {
       "upstreamPath": "src/make-client.ts",
       "source": "vendor/client/make-client.ts",
       "sha256": "53acc4fa9e851d4644341913d45d1d5cfe9e071f14191aabaf48716543669fdf",
       "target": "src/factory.ts",
-      "patchedSha256": "49ec3c32decc19d830221968ff637cc49d175e955335d8e0cdd7a4bdf07e812b",
+      "patchedSha256": "a0eff1f277f610c6488acc8f9e24420ec3fa5ec524677ba1a3503793202819cb",
       "patch": "vendor/patches/factory.ts.patch",
-      "patchSha256": "fce9501c475210e0e0018324aad8eaa0275753cafabd6d5885003835a0bfd3ea"
+      "patchSha256": "676b416de85e60d61d369ac5602fe80f2ba1e1cb0a4811a0fe9b3dc104475cca"
     },
     {
       "upstreamPath": "src/metadata.ts",
       "source": "vendor/client/metadata.ts",
       "sha256": "53cd9e7a30986c69ffc6753b68d0b0434893c5ac0b5ac31cc6febf52c695fe46",
       "target": "src/metadata.ts",
-      "patchedSha256": "d7d204a8146475456ad420e922f25a54780cba8683857845ed513e84adb6fb0a",
+      "patchedSha256": "218c5b77a30435c0171fa7c3a3e6b0f6a22555c7e791b441767c45dc9591b027",
       "patch": "vendor/patches/metadata.ts.patch",
-      "patchSha256": "ce04da7942c83bdeb014454bde0542b11157f04257b45ded568d5d6ed84f4a44"
+      "patchSha256": "9c7960edeb2d9d5523223f2cfc6f2a9891007abb343fc0a6b17acc90dec43348"
     },
     {
       "upstreamPath": "src/call.ts",

@@ -69,7 +69,9 @@ The patch boundary follows P-01 through P-06 of the
   ordering and stream-destroy cancellation have explicit adapter corrections.
   Metadata adds a transport iterator and an internal admission snapshot that
   preserves interceptor context while isolating headers, options and opaque key
-  assignments. Public `clone()` semantics remain unchanged. It substitutes the
+  assignments. Public `clone()` semantics remain unchanged. Plain-object
+  conversions preserve validated keys including `__proto__` as own enumerable
+  data properties without changing the object's prototype. It substitutes the
   default error logger to avoid native process/environment tracing initialization.
 - HTTP/2 and TLS references are type-only. Parent calls use the adapter's structural
   deadline/cancellation contract; native channel, resolver, retry, server and

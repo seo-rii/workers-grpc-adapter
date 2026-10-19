@@ -281,6 +281,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                     try {
                         const value = await race(decoded.next());
                         checkActive();
+                        if (inputClosed) return { done: true, value: undefined };
                         if (value.done) { inputClosed = true; return value; }
                         if (!route.definition.requestStream) return value;
                         let deserialized: unknown;
@@ -290,6 +291,14 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                         return { done: false, value: deserialized };
                     } catch (error) {
                         error = terminalError(error);
+                        // A handler may close its upload while next() is still
+                        // reading. That input-only abort is normal completion;
+                        // caller cancellation, deadlines and input faults remain terminal.
+                        if (inputClosed && inputAborter.signal.aborted && !aborter.signal.aborted
+                            && error instanceof TransportError && error.code === status.CANCELLED
+                            && error.diagnostic === 'WGA_ABORTED') {
+                            return { done: true, value: undefined };
+                        }
                         const wasClosed = inputClosed;
                         inputFailure ??= error;
                         disposeInput();
@@ -361,6 +370,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 checkActive();
                 first = await race(iterator!.next());
+                if (!first || typeof first !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
             } else {
                 checkActive();
                 if (output && typeof output[Symbol.asyncIterator] === 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');

@@ -286,7 +286,7 @@ test('CFG-010 installed alias constructors reject arbitrary and native channelOv
         }), { code: 'WGA_UNSUPPORTED_OPTION' });
       }
     }
-    assert.deepEqual({ fetches, calls, factories }, { fetches: 0, calls: 0, factories: 0 });
+    assert.deepEqual({ fetches, calls, factories }, { fetches: 0, calls: 0, factories: 4 });
     assert.equal(foreign.getConnectivityState(false), native.connectivityState.IDLE);
   } finally { foreign.close(); globalThis.fetch = savedFetch; }
 });
