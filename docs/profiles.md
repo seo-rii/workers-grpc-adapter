@@ -250,7 +250,7 @@ reported checks passed; `2` means a failed check, missing dependency or invalid
 invocation. A report filename writes the complete graph with restrictive file
 permissions and prints a compact summary.
 
-The same graph check is available without shelling out:
+The same graph check is available through the Node API:
 
 ```js
 const { inspectGoogleWorkerGraph } = require('@grpc/grpc-js/build');
@@ -278,8 +278,10 @@ import records `kind`: `require`, `import`, or `declaration`.
 Runtime static imports, re-exports and dynamic `import()` use Node's ESM
 conditions, including dynamic imports inside CommonJS files. `require()` uses
 CommonJS conditions; using both forms for one specifier checks both targets.
-The ESM check batches Node's parent-aware resolver in a separate process without
-loading inspected modules. Missing files and directory targets fail, even when
+Each check batches Node's import and CommonJS resolvers in a fresh process without
+loading inspected modules. This also avoids stale CommonJS paths and package
+metadata when the API re-inspects an installation after dependency changes.
+Missing files and directory targets fail, even when
 Node's resolver can construct their URLs. User preload scripts, loader hooks and
 custom conditions are excluded; validate those environments separately.
 
