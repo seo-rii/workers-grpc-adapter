@@ -228,10 +228,13 @@ export function headerBudget(entries: Iterable<[
     }
     return result;
 }
-export function metadataFromHeaders(headers: Headers): Metadata {
+export function metadataFromHeaders(headers: Headers, kind: 'request' | 'response' = 'response'): Metadata {
     const out = new Metadata();
     for (const [key, value] of headerBudget(headers.entries())) {
-        if (!responseControl.has(key)) {
+        // Request contexts expose application metadata that may be forwarded
+        // to another RPC. Its transport owns these fields on each individual
+        // hop; they still count toward the full incoming header budget.
+        if (!responseControl.has(key) && !(kind === 'request' && owned.has(key))) {
             addHeader(out, key, value);
         }
     }

@@ -8,6 +8,7 @@ import { decodeFrames, encodeFrame, encodeMessageFrame, headerBudget, metadataFr
 
 export interface GrpcWebServerContext extends ParentCall {
     readonly method: string;
+    /** Application request metadata, excluding HTTP/gRPC transport control fields. */
     readonly metadata: Metadata;
     readonly signal: AbortSignal;
     /** Absolute milliseconds since the epoch, or Infinity. */
@@ -234,7 +235,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             request.signal.addEventListener('abort', callerAbort, { once: true });
             if (request.signal.aborted) callerAbort();
             armTimer();
-            const metadata = metadataFromHeaders(request.headers);
+            const metadata = metadataFromHeaders(request.headers, 'request');
             const requestBody = request.body;
             if (!requestBody && !route.definition.requestStream) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
             const requestEncoding = responseCompression(request.headers);
