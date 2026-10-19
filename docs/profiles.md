@@ -289,6 +289,14 @@ Missing files and directory targets fail, even when
 Node's resolver can construct their URLs. User preload scripts, loader hooks and
 custom conditions are excluded; validate those environments separately.
 
+The compiler-free source scanner recognizes literal import and re-export
+specifiers, including comments between tokens, string escapes and static
+template literals in `require()` or `import()`. It ignores comment/string/regex
+contents, property calls, and ordinary locally bound `require` functions. A
+`require` initialized directly by an imported `node:module`/`module`
+`createRequire` factory remains a CommonJS loader. This is static module-site
+inspection, not arbitrary loader-alias or computed-specifier data-flow analysis.
+
 Declaration files retain the graph check's package-entry availability check
 through CommonJS resolution and are recorded separately from runtime imports.
 This check does not resolve TypeScript's `types` conditions or validate declaration

@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
+const { literalImports } = require('./imports.cjs');
 const sdksDefault = ['@google-cloud/datastore', '@google-cloud/firestore', '@google-cloud/secret-manager'];
 const adapterName = 'workers-grpc-adapter';
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -127,12 +128,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                     if (visitedFiles.has(full)) continue;
                     visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
-                    const imports = new Map();
-                    for (const match of source.matchAll(/\b(require\s*\(\s*|from\s+|import\s*\(\s*|import\s*)['"](@grpc\/grpc-js(?:\/[^'"]*)?)['"]/g)) {
-                        const kind = [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)) ? 'declaration' : match[1].startsWith('require') ? 'require' : 'import';
-                        imports.set(`${kind}:${match[2]}`, { kind, specifier: match[2] });
-                    }
-                    for (const { kind, specifier } of imports.values()) {
+                    for (const { kind, specifier } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
                         const imported = { file: rel(full), specifier, kind, status: 'resolution-failed' };
                         record.grpcImports.push(imported);
                         pendingImports.push({ full, entry: imported });
