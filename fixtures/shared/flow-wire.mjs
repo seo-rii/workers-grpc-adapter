@@ -52,7 +52,9 @@ export async function runWireFlowSuite({ grpc, createWorkersGrpcTransport, fetch
       await drain();
       assert.deepEqual(statuses, [count === 1 ? 0 : 12]);
       assert.deepEqual(callbacks, [{ code: count === 1 ? 0 : 12, value: count === 1 ? 'one' : null }]);
-      assert.deepEqual(decoded, count === 1 ? ['one'] : ['one', 'two']);
+      // The wire reader rejects a second unary frame before deserialization,
+      // so an interceptor cannot collapse duplicate responses into success.
+      assert.deepEqual(decoded, ['one']);
       assert.equal(readDemands, 1); assert.equal(fetchCount, 1); assert.equal(body.locked, false);
       rows.push({ id: 'FLOW-006', scenario: count === 1 ? 'unary-one' : 'unary-duplicate', runtime, mode, status: 'passed',
         peer: 'controlled-binary-response', fetchCount, readDemands, callbacks, statuses, decoded, maxExecution,
