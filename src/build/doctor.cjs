@@ -110,17 +110,26 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         }
         // Inspect all installed runtime and declaration imports, not only one GAX selected at the root.
         const pending = [directory];
+        const visitedDirectories = new Set(), visitedFiles = new Set();
         while (pending.length) {
-            const current = pending.pop();
+            const current = fs.realpathSync(pending.pop());
+            if (visitedDirectories.has(current)) continue;
+            visitedDirectories.add(current);
             for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-                if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-                const full = path.join(current, entry.name);
-                if (entry.isDirectory()) pending.push(full);
-                else if (entry.isFile() && /\.(?:[cm]?js|d\.[cm]?ts)$/.test(entry.name)) {
+                if (['node_modules', '.git', '.hg', '.svn'].includes(entry.name)) continue;
+                // Node follows source symlinks before resolving their imports.
+                // Track physical directories/files to bound cycles and aliases,
+                // but do not discard generated dot-directories or dot-files.
+                const full = fs.realpathSync(path.join(current, entry.name));
+                const info = entry.isSymbolicLink() ? fs.statSync(full) : entry;
+                if (info.isDirectory()) pending.push(full);
+                else if (info.isFile() && [full, entry.name].some(name => /\.(?:[cm]?js|d\.[cm]?ts)$/.test(name))) {
+                    if (visitedFiles.has(full)) continue;
+                    visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
                     const imports = new Map();
                     for (const match of source.matchAll(/\b(require\s*\(\s*|from\s+|import\s*\(\s*|import\s*)['"](@grpc\/grpc-js(?:\/[^'"]*)?)['"]/g)) {
-                        const kind = /\.d\.[cm]?ts$/.test(entry.name) ? 'declaration' : match[1].startsWith('require') ? 'require' : 'import';
+                        const kind = [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)) ? 'declaration' : match[1].startsWith('require') ? 'require' : 'import';
                         imports.set(`${kind}:${match[2]}`, { kind, specifier: match[2] });
                     }
                     for (const { kind, specifier } of imports.values()) {

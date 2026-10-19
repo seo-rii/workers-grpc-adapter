@@ -268,8 +268,12 @@ original scope; another lockfile's presence is fingerprinted without claiming
 its full lock graph was parsed. The graph check reads manifests and source
 files without importing SDK, auth or adapter modules. It checks grpc-js imports
 in `.js`, `.cjs`, `.mjs`, `.d.ts`, `.d.cts` and `.d.mts` files throughout each
-dependency; an unresolved root or deep import fails the graph check. Profile AST
-checks also load the installed compiler and hash-checked protobuf generators. Neither check
+dependency; an unresolved root or deep import fails the graph check.
+Hidden runtime directories and source symlinks are included. Symlink imports
+resolve from the physical source location, and repeated physical files and
+directory cycles are visited once per package. Dependency `node_modules` trees
+are followed through package dependencies; version-control internals are skipped.
+Profile AST checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.
 
