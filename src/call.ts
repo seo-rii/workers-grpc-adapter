@@ -621,6 +621,12 @@ export class WorkersCall {
                         if (final) this.closeUploadFromResponse();
                         continue;
                     }
+                    // Unary response cardinality belongs to the wire reader.
+                    // Async interceptors may hold or discard delivery, so the
+                    // surface callback cannot reliably count received frames.
+                    if (!c.responseStream && committed) {
+                        throw new TransportError(status.UNIMPLEMENTED, 'Too many responses received');
+                    }
                     committed = true;
                     this.observation?.message(frame.payload.length);
                     this.releaseRequest();
