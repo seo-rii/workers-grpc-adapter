@@ -208,6 +208,14 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
       if (left !== undefined && right !== undefined) return left + right;
     }
   }
+  function specifierChoices(expression) {
+    const node = unwrap(expression), value = specifierText(node);
+    if (value !== undefined) return [value];
+    if (ts.isConditionalExpression(node)) {
+      const whenTrue = specifierChoices(node.whenTrue), whenFalse = specifierChoices(node.whenFalse);
+      if (whenTrue && whenFalse) return [...new Set([...whenTrue, ...whenFalse])];
+    }
+  }
   function resolveEdge(receipt, specifier, kind) {
     const matches = receipt.info.imports.filter(dependency => (dependency.original || dependency.path) === specifier && dependency.kind === kind);
     // esbuild can omit import("node:module", {}) from the first metafile
@@ -249,7 +257,6 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
     identify(ast);
     function rewriteCalls(node) {
       const callee = ts.isCallExpression(node) && unwrap(node.expression);
-      const specifier = callee && node.arguments.length === 1 ? specifierText(node.arguments[0]) : undefined;
       if (callee && ts.isIdentifier(callee) && callee.text === 'require' && node.arguments.length === 1
         && !checker.getSymbolAtLocation(callee)?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration))) {
         const argument = node.arguments[0], start = argument.getStart(ast);
@@ -257,20 +264,42 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
         // while tagging its require condition independently of injected JSX.
         replacements.push({ start, end: argument.end, text: `"wga-original-require:" + (${source.slice(start, argument.end)})` });
       }
-      if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && specifier !== undefined) {
-        const edge = resolveEdge(receipt, specifier, 'dynamic-import');
-        const target = !edge.external && modules.get(edge.path);
-        if (target && target.info.format !== 'esm') {
+      if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length === 1) {
+        const choices = specifierChoices(node.arguments[0]);
+        if (!choices) fail('WGA_PREBUNDLE_AUDIT', 'A strict module dynamic import must have bounded static targets', { path: receipt.input });
+        const resolutions = choices.map(specifier => {
+          const edge = resolveEdge(receipt, specifier, 'dynamic-import');
+          const target = !edge.external && modules.get(edge.path);
+          return { specifier, edge, commonJs: target && target.info.format !== 'esm' };
+        });
+        if (resolutions.some(resolution => resolution.commonJs)) {
           // Keep Node's CJS default-namespace interop in an ESM importer.
           // Merely moving import() into a virtual .cjs factory would enable
           // Babel __esModule interop and change a CJS module's default value.
           let name = '__wgaDynamicImport'; while (identifiers.has(name)) name += '_'; identifiers.add(name);
-          const token = `wga-captured-import:${edges.size}`, id = `dynamic-${dynamicModules.size}.mjs`;
+          const branches = resolutions.map(({ specifier, edge, commonJs }) => {
+            const targetToken = `wga-captured-import:${edges.size}`; edges.set(targetToken, edge);
+            let load = `import(${JSON.stringify(targetToken)})`;
+            if (commonJs) {
+              const id = `dynamic-${dynamicModules.size}.mjs`;
+              dynamicModules.set(id, `export function load() { return ${load}; }`);
+              const bridgeToken = `wga-captured-import:${edges.size}`; edges.set(bridgeToken, { dynamicModule: id });
+              load = `require(${JSON.stringify(bridgeToken)}).load()`;
+            }
+            return `case ${JSON.stringify(specifier)}: return ${load};`;
+          });
+          // Compiled ESM targets need the CJS importer's __esModule interop;
+          // external builtins keep native import(). Only original CJS targets
+          // go through an ESM bridge. Select from the audited edges at runtime.
+          const id = `dynamic-${dynamicModules.size}.cjs`;
+          dynamicModules.set(id, `exports.load = function(specifier) { switch(specifier) { ${branches.join('\n')} } throw new Error('Uncaptured dynamic import target'); };`);
+          const token = `wga-captured-import:${edges.size}`;
           edges.set(token, { dynamicModule: id });
-          const targetToken = `wga-captured-import:${edges.size}`; edges.set(targetToken, edge);
-          dynamicModules.set(id, `export function load() { return import(${JSON.stringify(targetToken)}); }`);
           imports.push(`import {load as ${name}} from ${JSON.stringify(token)};`);
-          replacements.push({ start: node.getStart(ast), end: node.end, text: `${name}()` });
+          // Preserve the original argument, including predicate evaluation,
+          // await/yield, and nested imports/requires. Replacing only the callee
+          // also keeps their independent source rewrites from overlapping.
+          replacements.push({ start: node.expression.getStart(ast), end: node.expression.end, text: name });
         }
       }
       ts.forEachChild(node, rewriteCalls);

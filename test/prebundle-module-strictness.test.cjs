@@ -193,3 +193,103 @@ test('PREBUNDLE preserves stable inherited compiler settings', async t => {
   const built = await f.build({ entryPoint: 'wrapper.ts' });
   assert.equal(require(built.bundlePath).inspect(), 7);
 });
+
+for (const [name, expression] of [
+  ['CommonJS branches', "choose('outer', first) ? './dependency.cjs' : './other.cjs'"],
+  ['mixed CommonJS and ESM branches', "choose('outer', first) ? './dependency.cjs' : './esm.mjs'"],
+  ['ESM-only branches', "choose('outer', first) ? './esm.mjs' : './other-esm.mjs'"],
+  ['nested conditions', "choose('outer', first) ? (choose('inner', second) ? './dependency.cjs' : './other.cjs') : './esm.mjs'"],
+  ['template and concatenated leaves', "choose('outer', first) ? `./${'dependency'}.cjs` : ('./' + 'other.cjs')"],
+  ['awaited predicate', "(await Promise.resolve(choose('outer', first))) ? './dependency.cjs' : './other.cjs'"],
+  ['nested dynamic import predicate', "(await import('./selector.cjs')).default.choose(trace, first) ? './dependency.cjs' : './other.cjs'"],
+  ['external builtin branch', "choose('outer', first) ? './dependency.cjs' : 'node:module'"],
+]) test(`PREBUNDLE preserves bounded conditional dynamic imports with ${name}`, async t => {
+  const f = fixture(t);
+  f.write('dependency.cjs', 'exports.__esModule = true; exports.default = "inner"; exports.kind = "namespace"; exports.named = "first";');
+  f.write('other.cjs', 'exports.__esModule = true; exports.default = "other-inner"; exports.kind = "other-namespace"; exports.named = "second";');
+  f.write('esm.mjs', 'export default {kind: "esm-default"}; export const named = "esm-named";');
+  f.write('other-esm.mjs', 'export default {kind: "other-esm-default"}; export const named = "other-esm-named";');
+  f.write('selector.cjs', 'module.exports = {__esModule: true, default: null, choose(trace, value) { trace.push("outer"); return value; }};');
+  const entry = f.write('wrapper.mjs', `export {client} from '@grpc/grpc-js';
+    export async function inspect(first, second) {
+      const trace = [];
+      const choose = (name, value) => { trace.push(name); return value; };
+      const loaded = await import(${expression});
+      return { value: typeof loaded.default === 'function' ? loaded.default.isBuiltin('node:fs') : loaded.default,
+        named: loaded.named, trace };
+    }`);
+  const original = await import(pathToFileURL(entry).href);
+  const baseline = await esbuild.build({ absWorkingDir: f.projectRoot, entryPoints: [entry], bundle: true,
+    platform: 'node', format: 'cjs', target: 'es2022', minify: true, write: false });
+  const previous = require(f.write('baseline.cjs', baseline.outputFiles[0].text));
+  const built = await f.build();
+  const cjs = require(built.bundlePath);
+  const esm = await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href);
+  for (const first of [true, false]) for (const second of [true, false]) {
+    const expected = await original.inspect(first, second);
+    assert.deepEqual(await previous.inspect(first, second), expected, 'the original flat esbuild bundle agrees with Node');
+    assert.deepEqual(await cjs.inspect(first, second), expected);
+    assert.deepEqual(await esm.inspect(first, second), expected);
+    assert.deepEqual(expected.trace, name === 'nested conditions' && first ? ['outer', 'inner'] : ['outer'],
+      'each selected predicate is evaluated once, in order');
+  }
+});
+
+test('PREBUNDLE preserves require calls inside a conditional dynamic import predicate', async t => {
+  const f = fixture(t);
+  f.write('package.json', { name: 'strictness-consumer', private: true, type: 'module' });
+  f.write('dependency.cjs', 'module.exports = {__esModule: true, default: "inner", kind: "namespace"};');
+  f.write('other.cjs', 'module.exports = {__esModule: true, default: "other-inner", kind: "other-namespace"};');
+  f.write('wrapper.ts', `export {client} from '@grpc/grpc-js';
+    export async function inspect() {
+      return (await import(require('node:module').isBuiltin('node:fs') ? './dependency.cjs' : './other.cjs')).default;
+    }`);
+  const baseline = await esbuild.build({ absWorkingDir: f.projectRoot, entryPoints: ['wrapper.ts'], bundle: true,
+    platform: 'node', format: 'cjs', target: 'es2022', minify: true, write: false });
+  const previous = require(f.write('baseline.cjs', baseline.outputFiles[0].text));
+  const built = await f.build({ entryPoint: 'wrapper.ts' });
+  assert.deepEqual(await require(built.bundlePath).inspect(), await previous.inspect());
+  assert.deepEqual(await previous.inspect(), {__esModule: true, default: 'inner', kind: 'namespace'});
+});
+
+test('PREBUNDLE preserves a yielded conditional dynamic import predicate', async t => {
+  const f = fixture(t);
+  f.write('dependency.cjs', 'module.exports = {__esModule: true, default: "inner", kind: "namespace"};');
+  f.write('other.cjs', 'module.exports = {__esModule: true, default: "other-inner", kind: "other-namespace"};');
+  const entry = f.write('wrapper.mjs', `export {client} from '@grpc/grpc-js';
+    export function* inspect() {
+      return import((yield 'select') ? './dependency.cjs' : './other.cjs').then(value => value.default);
+    }`);
+  const original = await import(pathToFileURL(entry).href);
+  const built = await f.build();
+  for (const flag of [true, false]) {
+    const actual = require(built.bundlePath).inspect(), expected = original.inspect();
+    assert.deepEqual(actual.next(), expected.next());
+    const result = actual.next(flag), baseline = expected.next(flag);
+    assert.equal(result.done, true);
+    assert.deepEqual(await result.value, await baseline.value);
+  }
+});
+
+for (const failure of ['predicate', 'module']) test(`PREBUNDLE preserves conditional dynamic import ${failure} failure timing`, async t => {
+  const f = fixture(t);
+  f.write('dependency.cjs', 'throw new Error("module failed");');
+  f.write('other.cjs', 'module.exports = {__esModule: true, default: "other-inner"};');
+  f.write('wrapper.mjs', `export {client} from '@grpc/grpc-js';
+    export function inspect() {
+      let calls = 0;
+      const choose = () => { calls++; ${failure === 'predicate' ? 'throw new Error("predicate failed");' : 'return true;'} };
+      try {
+        const result = import(choose() ? './dependency.cjs' : './other.cjs');
+        return result.then(() => ({kind: 'fulfilled', calls}), error => ({kind: 'rejected', message: error.message, calls}));
+      } catch (error) { return {kind: 'thrown', message: error.message, calls}; }
+    }`);
+  const baseline = await esbuild.build({ absWorkingDir: f.projectRoot, entryPoints: ['wrapper.mjs'], bundle: true,
+    platform: 'node', format: 'cjs', target: 'es2022', minify: true, write: false });
+  const previous = require(f.write('baseline.cjs', baseline.outputFiles[0].text));
+  const built = await f.build();
+  const expected = previous.inspect(), actual = require(built.bundlePath).inspect();
+  assert.equal(typeof actual.then, typeof expected.then, 'synchronous throws remain distinct from rejected import promises');
+  assert.deepEqual(await actual, await expected);
+  assert.deepEqual(await actual, {kind: failure === 'predicate' ? 'thrown' : 'rejected', message: failure + ' failed', calls: 1});
+});
