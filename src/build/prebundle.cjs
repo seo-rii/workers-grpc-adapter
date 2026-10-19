@@ -621,6 +621,7 @@ function checkDeclarations(ts, source, expected) {
   const reject = message => fail('WGA_PREBUNDLE_DECLARATIONS', message);
   if (ast.parseDiagnostics.length) reject('declarationFile contains invalid TypeScript syntax');
   const specifier = name => {
+    if (name.startsWith('#')) reject('Package-private declaration imports require an imports map and resources that are not copied');
     if (name.startsWith('.') || name.startsWith('/') || name.startsWith('\\') || /^[a-z]:[/\\]|^file:/i.test(name)) reject('Declarations must use external package imports; relative declaration resources are not copied');
   };
   if (ast.referencedFiles.length) reject('Declaration reference paths are not copied into the generated package');
