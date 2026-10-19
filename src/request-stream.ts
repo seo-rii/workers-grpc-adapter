@@ -13,6 +13,8 @@ export interface RequestStreamBodyOptions {
     budget?: ResourceBudget;
     /** Internal wire counter: a frame has been accepted by the body reader. */
     onFrame?: (bytes: number) => void;
+    /** Let the owning call expire and abort before a frame reaches the reader. */
+    beforeFrame?: () => void;
 }
 interface PendingWrite {
     bytes: number;
@@ -37,6 +39,7 @@ export class RequestStreamBody {
     private readonly onCancel?: (error: Error) => void;
     private readonly budget?: ResourceBudget;
     private readonly onFrame?: (bytes: number) => void;
+    private readonly beforeFrame?: () => void;
     constructor(options: RequestStreamBodyOptions) {
         for (const [size, minimum] of [[options.maxMessageBytes, 0], [options.maxWireBytes, 1]]) {
             if (!Number.isSafeInteger(size) || size < minimum || size > 2147483647) {
@@ -52,6 +55,7 @@ export class RequestStreamBody {
         this.onCancel = options.onCancel;
         this.budget = options.budget;
         this.onFrame = options.onFrame;
+        this.beforeFrame = options.beforeFrame;
         this.body = new ReadableStream<Uint8Array>({
             start: controller => { this.controller = controller; },
             pull: () => { this.demand = true; this.flush(); },
@@ -139,6 +143,10 @@ export class RequestStreamBody {
     private flush(): void {
         const pending = this.pending;
         if (this.closed || !this.demand || !pending?.frame) return;
+        // Encoding and downstream backpressure can both outlast the budget
+        // while the event loop has not yet run the owner's deadline timer.
+        this.beforeFrame?.();
+        if (this.closed) return;
         this.pending = undefined;
         this.demand = false;
         try {
