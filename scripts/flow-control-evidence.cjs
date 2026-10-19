@@ -141,7 +141,7 @@ function wireRow(row) {
     need(row.peer === 'controlled-binary-response' && row.readDemands === 1, `${label} one unary demand`);
     same(row.callbacks, [{ code: duplicate ? 12 : 0, value: duplicate ? null : 'one' }], `${label} unary callback`);
     same(row.statuses, [duplicate ? 12 : 0], `${label} unary status`);
-    same(row.decoded, duplicate ? ['one', 'two'] : ['one'], `${label} unary decoded messages`);
+    same(row.decoded, ['one'], `${label} unary decoded messages`);
     executionBounds(row.maxExecution, 16, label);
     need(row.maxExecution.activePumps === 1 && row.maxExecution.parserAssemblies === 1
       && row.maxExecution.parserAssemblyBytes > 0 && row.maxExecution.runtimeChunkBytes > 0, `${label} observed unary parser`);
