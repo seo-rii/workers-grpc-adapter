@@ -3,6 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { createRequire } = require('node:module');
+const { spawnSync } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
 const sdksDefault = ['@google-cloud/datastore', '@google-cloud/firestore', '@google-cloud/secret-manager'];
 const adapterName = 'workers-grpc-adapter';
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -13,6 +15,38 @@ function packageFor(req, name) {
         if (fs.existsSync(candidate)) return fs.realpathSync(candidate);
     }
     throw Object.assign(new Error('dependency-not-installed'), { code: 'MODULE_NOT_FOUND' });
+}
+function resolveImports(imports) {
+    if (!imports.length) return [];
+    // Node's synchronous parent-aware ESM resolver requires this flag on Node
+    // 22+. Run one batch in a clean Node process: no inspected modules, user
+    // preload scripts, loader hooks, or inherited custom conditions execute.
+    const source = `
+        import { readFileSync, realpathSync, statSync } from 'node:fs';
+        import { fileURLToPath } from 'node:url';
+        const requests = JSON.parse(readFileSync(0, 'utf8'));
+        const results = requests.map(([specifier, parent]) => {
+            try {
+                const file = fileURLToPath(import.meta.resolve(specifier, parent));
+                // import.meta.resolve can return URLs for missing files and
+                // directories. Neither is a loadable ESM file.
+                return statSync(file).isFile() ? realpathSync(file) : null;
+            } catch { return null; }
+        });
+        process.stdout.write(JSON.stringify(results));
+    `;
+    const result = spawnSync(process.execPath, ['--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
+        encoding: 'utf8', input: JSON.stringify(imports.map(({ full, entry }) => [entry.specifier, pathToFileURL(full).href])),
+        env: { ...process.env, NODE_OPTIONS: '' }, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
+    });
+    // A resolver failure leaves every import unresolved. Never fall back to
+    // CommonJS resolution or include child stderr/environment in the report.
+    if (result.error || result.status !== 0) return [];
+    try {
+        const resolved = JSON.parse(result.stdout);
+        return Array.isArray(resolved) && resolved.length === imports.length
+            && resolved.every(value => value === null || typeof value === 'string') ? resolved : [];
+    } catch { return []; }
 }
 function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', buildOptions) {
     base = path.resolve(base);
@@ -25,6 +59,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         .map(file => ({ path: file, sha256: hash(fs.readFileSync(path.join(base, file))) }));
     const projectManifest = fs.existsSync(path.join(base, 'package.json')) ? JSON.parse(fs.readFileSync(path.join(base, 'package.json'))) : {};
     const allPackages = new Map();
+    const esmImports = [];
     const adapterInstallations = new Map();
     const recordResolution = (manifestPath, consumer, specifier) => {
         // Module identity follows physical paths, not package names or matching versions.
@@ -47,6 +82,13 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         try { recordResolution(packageFor(rootRequire, specifier), '.', specifier); }
         catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
     }
+    const resolvedImport = (entry, full, resolved) => {
+        const grpcManifestPath = packageFor(createRequire(full), '@grpc/grpc-js');
+        recordResolution(grpcManifestPath, rel(full), entry.specifier);
+        const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
+        Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
+            status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
+    };
     const readPackage = manifestPath => {
         const directory = path.dirname(manifestPath);
         if (allPackages.has(directory)) return allPackages.get(directory);
@@ -74,23 +116,25 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 if (entry.isDirectory()) pending.push(full);
                 else if (entry.isFile() && /\.(?:[cm]?js|d\.[cm]?ts)$/.test(entry.name)) {
                     const source = fs.readFileSync(full, 'utf8');
-                    const imports = new Set([...source.matchAll(/(?:require\s*\(\s*|from\s+|import\s*\(\s*|import\s*)['"](@grpc\/grpc-js(?:\/[^'"]*)?)['"]/g)].map(match => match[1]));
-                    for (const specifier of imports) {
+                    const imports = new Map();
+                    for (const match of source.matchAll(/\b(require\s*\(\s*|from\s+|import\s*\(\s*|import\s*)['"](@grpc\/grpc-js(?:\/[^'"]*)?)['"]/g)) {
+                        const kind = /\.d\.[cm]?ts$/.test(entry.name) ? 'declaration' : match[1].startsWith('require') ? 'require' : 'import';
+                        imports.set(`${kind}:${match[2]}`, { kind, specifier: match[2] });
+                    }
+                    for (const { kind, specifier } of imports.values()) {
+                        const imported = { file: rel(full), specifier, kind, status: 'resolution-failed' };
+                        record.grpcImports.push(imported);
+                        if (kind === 'import') { esmImports.push({ full, entry: imported }); continue; }
                         try {
-                            const fromFile = createRequire(full);
-                            const resolved = fromFile.resolve(specifier);
-                            const grpcManifestPath = packageFor(fromFile, '@grpc/grpc-js');
-                            recordResolution(grpcManifestPath, rel(full), specifier);
-                            const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
-                            record.grpcImports.push({ file: rel(full), specifier, resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version, status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
-                        } catch {
-                            record.grpcImports.push({ file: rel(full), specifier, status: 'resolution-failed' });
-                        }
+                            // Declarations retain their existing package-entry
+                            // availability check; this is not TypeScript checking.
+                            resolvedImport(imported, full, createRequire(full).resolve(specifier));
+                        } catch { /* Keep the unresolved diagnostic. */ }
                     }
                 }
             }
         }
-        record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}`.localeCompare(`${b.file}:${b.specifier}`));
+        record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
         return record;
     };
     const results = [];
@@ -110,11 +154,21 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
             const grpc = graph.filter(item => item.name === expected || item.name === '@grpc/grpc-js');
             const unresolved = graph.flatMap(item => item.dependencies.filter(edge => edge.missing && !edge.optional).map(edge => `${item.path}:${edge.name}`));
             const imports = graph.flatMap(item => item.grpcImports);
-            const passed = gax.length > 0 && grpc.length > 0 && grpc.every(item => item.name === expected) && imports.length > 0 && imports.every(item => item.status === successStatus) && unresolved.length === 0;
-            results.push({ sdk, version: first.version, status: passed ? successStatus : 'wrong-implementation', gax: gax.map(item => ({ path: item.path, version: item.version })), grpc: grpc.map(item => ({ path: item.path, implementation: item.name, version: item.version })), grpcImportCount: imports.length, prerelease: graph.filter(item => /\d-/.test(item.version)).map(item => ({ name: item.name, version: item.version, expected: item.name === expected })), unresolved, graph });
+            results.push({ sdk, version: first.version, status: 'wrong-implementation', gax: gax.map(item => ({ path: item.path, version: item.version })), grpc: grpc.map(item => ({ path: item.path, implementation: item.name, version: item.version })), grpcImportCount: imports.length, prerelease: graph.filter(item => /\d-/.test(item.version)).map(item => ({ name: item.name, version: item.version, expected: item.name === expected })), unresolved, graph });
         } catch (error) {
             results.push({ sdk, status: 'blocked', reason: error.code === 'MODULE_NOT_FOUND' ? 'dependency-not-installed' : 'resolution-failed' });
         }
+    }
+    const resolved = resolveImports(esmImports);
+    for (let index = 0; index < esmImports.length; index++) if (resolved[index]) {
+        const { full, entry } = esmImports[index];
+        try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
+    }
+    for (const result of results) if (result.graph) {
+        const passed = result.gax.length > 0 && result.grpc.length > 0 && result.grpc.every(item => item.implementation === expected)
+            && result.grpcImportCount > 0 && result.graph.every(item => item.grpcImports.every(entry => entry.status === successStatus))
+            && result.unresolved.length === 0;
+        result.status = passed ? successStatus : 'wrong-implementation';
     }
     const installations = [...adapterInstallations.values()].sort((a, b) => a.path.localeCompare(b.path));
     for (const installation of installations) installation.resolvedBy.sort((a, b) => `${a.consumer}:${a.specifier}`.localeCompare(`${b.consumer}:${b.specifier}`));
@@ -125,7 +179,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         paths: installations.map(item => item.path),
     }] : [];
     const buildProfile = buildOptions ? require('./index.cjs').inspectGoogleWorkerProfile({ projectRoot: base, ...buildOptions }) : undefined;
-    return { ...(buildProfile ? { buildProfile } : {}), scope: 'installed dependency graph, runtime/declaration grpc-js import resolution and physical adapter identity; graph inspection performs no runtime imports, authentication or network requests', expectedImplementation: expected, environment: { node: process.version, platform: process.platform, arch: process.arch, packageManager: projectManifest.packageManager ?? null }, lockfiles, lockfileVersion: lock?.lockfileVersion ?? null, lockfileSha256: lock ? hash(fs.readFileSync(lockPath)) : null, graphSha256: hash(JSON.stringify({ results, identity })), identity, diagnostics, results, passed: diagnostics.length === 0 && results.every(item => item.status === successStatus) && (!buildProfile || buildProfile.passed) };
+    return { ...(buildProfile ? { buildProfile } : {}), scope: 'installed dependency graph, default Node import/require resolution, declaration package-entry availability and physical adapter identity; no TypeScript semantic checks, inspected module execution, authentication or network requests', expectedImplementation: expected, environment: { node: process.version, platform: process.platform, arch: process.arch, packageManager: projectManifest.packageManager ?? null }, lockfiles, lockfileVersion: lock?.lockfileVersion ?? null, lockfileSha256: lock ? hash(fs.readFileSync(lockPath)) : null, graphSha256: hash(JSON.stringify({ results, identity })), identity, diagnostics, results, passed: diagnostics.length === 0 && results.every(item => item.status === successStatus) && (!buildProfile || buildProfile.passed) };
 }
 /** Read-only installed graph and physical runtime identity inspection. */
 function inspectGoogleWorkerGraph(options) {

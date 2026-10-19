@@ -267,3 +267,19 @@ dependency; an unresolved root or deep import fails the graph check. Profile AST
 checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.
+
+Graph inspection assumes Node's default import/require conditions. Each graph
+import records `kind`: `require`, `import`, or `declaration`.
+Runtime static imports, re-exports and dynamic `import()` use Node's ESM
+conditions, including dynamic imports inside CommonJS files. `require()` uses
+CommonJS conditions; using both forms for one specifier checks both targets.
+The ESM check batches Node's parent-aware resolver in a separate process without
+loading inspected modules. Missing files and directory targets fail, even when
+Node's resolver can construct their URLs. User preload scripts, loader hooks and
+custom conditions are excluded; validate those environments separately.
+
+Declaration files retain the graph check's package-entry availability check
+through CommonJS resolution and are recorded separately from runtime imports.
+This check does not resolve TypeScript's `types` conditions or validate declaration
+semantics. Run the application's TypeScript checks with its chosen module
+resolution settings to validate those contracts.
