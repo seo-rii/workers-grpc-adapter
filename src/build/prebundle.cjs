@@ -252,9 +252,17 @@ function checkModuleLoaders(ts, captured) {
         ? keys : [...keys, key(element.propertyName || element.name)]);
     }
   }
+  function objectAssign(node) {
+    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)
+      || node.expression.name.text !== 'assign' || !ts.isIdentifier(node.expression.expression)
+      || node.expression.expression.text !== 'Object') return false;
+    // A lexical Object binding may implement an unrelated application method.
+    return !checker.getSymbolAtLocation(node.expression.expression)?.declarations?.length;
+  }
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
+    if (objectAssign(node) && node.arguments.length && ts.isIdentifier(node.arguments[0])) bind(node.arguments[0], node);
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && ['module', 'node:module'].includes(node.moduleSpecifier.text)) {
       const clause = node.importClause;
       if (clause?.name) bind(clause.name, NAMESPACE);
@@ -285,6 +293,9 @@ function checkModuleLoaders(ts, captured) {
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
+    if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
+      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0), 0);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0);
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
