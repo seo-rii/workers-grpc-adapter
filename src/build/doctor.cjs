@@ -39,7 +39,7 @@ function resolveImports(imports) {
         process.stdout.write(JSON.stringify(results));
     `;
     const result = spawnSync(process.execPath, ['--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
-        encoding: 'utf8', input: JSON.stringify(imports.map(({ full, entry }) => [entry.specifier, pathToFileURL(full).href, entry.kind])),
+        encoding: 'utf8', input: JSON.stringify(imports.map(({ parent, entry }) => [entry.specifier, parent, entry.kind])),
         env: { ...process.env, NODE_OPTIONS: '' }, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
     });
     // A resolver failure leaves every import unresolved. Never fall back to
@@ -86,8 +86,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         try { recordResolution(packageFor(rootRequire, specifier), '.', specifier); }
         catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
     }
-    const resolvedImport = (entry, full, resolved) => {
-        const grpcManifestPath = packageFor(createRequire(full), '@grpc/grpc-js');
+    const resolvedImport = (entry, full, resolved, parent) => {
+        const grpcManifestPath = packageFor(createRequire(parent), '@grpc/grpc-js');
         recordResolution(grpcManifestPath, rel(full), entry.specifier);
         const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
@@ -140,10 +140,17 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                     if (visitedFiles.has(full)) continue;
                     visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
-                    for (const { kind, specifier } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
-                        const imported = { file: rel(full), specifier, kind, status: 'resolution-failed' };
+                    for (const { kind, specifier, base: loaderBase } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
+                        let parent = pathToFileURL(full).href;
+                        if (loaderBase === null) parent = null;
+                        else if (loaderBase?.kind === 'literal') parent = loaderBase.value;
+                        else if (loaderBase?.kind === 'url') {
+                            try { parent = new URL(loaderBase.value, loaderBase.relative ? parent : undefined).href; }
+                            catch { parent = null; }
+                        }
+                        const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
                         record.grpcImports.push(imported);
-                        pendingImports.push({ full, entry: imported });
+                        pendingImports.push({ full, entry: imported, parent });
                     }
                 }
             }
@@ -179,8 +186,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
     }
     const resolved = resolveImports(pendingImports);
     for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
-        const { full, entry } = pendingImports[index];
-        try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
+        const { full, entry, parent } = pendingImports[index];
+        try { resolvedImport(entry, full, resolved[index], parent); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {
         const passed = result.gax.length > 0 && result.grpc.length > 0 && result.grpc.every(item => item.implementation === expected)

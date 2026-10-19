@@ -277,10 +277,12 @@ function literalImports(source, declaration = false) {
             .sort((a, b) => (a.end - a.start) - (b.end - b.start));
         return owners.length ? owners[0].bindings.get(name) : undefined;
     }
-    function record(kind, token) {
+    function record(kind, token, base) {
         if (token?.kind !== 'literal' || typeof token.value !== 'string' || !/^@grpc\/grpc-js(?:\/|$)/.test(token.value)) return;
         kind = declaration ? 'declaration' : kind;
-        imports.set(`${kind}:${token.value}`, { kind, specifier: token.value });
+        const imported = { kind, specifier: token.value, ...(base !== undefined ? { base } : {}) };
+        // One source can use two createRequire bases for the same specifier.
+        imports.set(JSON.stringify(imported), imported);
     }
     for (let index = 0; index < tokens.length; index++) {
         const keyword = value(index);
@@ -343,13 +345,41 @@ function literalImports(source, declaration = false) {
             else bind(scopeAt(index), [value(name)]);
         }
     }
+    function unparenthesized(start, end) {
+        while (value(start) === '(' && pairs.get(start) === end - 1) { start++; end--; }
+        return [start, end];
+    }
+    function sourceURL(start, end) {
+        [start, end] = unparenthesized(start, end);
+        return end - start === 5 && tokens[start]?.kind === 'identifier'
+            && tokens.slice(start, end).map(token => token.value).join(' ') === 'import . meta . url';
+    }
+    function loaderBase(open) {
+        const close = pairs.get(open);
+        if (close === undefined) return null;
+        let [start, end] = separated(open + 1, close)[0];
+        [start, end] = unparenthesized(start, end);
+        if (sourceURL(start, end)) return undefined;
+        if (end === start + 1 && tokens[start]?.kind === 'literal' && typeof value(start) === 'string') return { kind: 'literal', value: value(start) };
+        if (value(start) === 'new' && value(start + 1) === 'URL' && bindingAt('URL', start) === undefined
+            && value(start + 2) === '(' && pairs.get(start + 2) === end - 1) {
+            const args = separated(start + 3, end - 1), [first, last] = unparenthesized(...args[0]);
+            if (last === first + 1 && tokens[first]?.kind === 'literal' && typeof value(first) === 'string'
+                && (args.length === 1 || args.length === 2 && sourceURL(...args[1]))) {
+                return { kind: 'url', value: value(first), relative: args.length === 2 };
+            }
+        }
+        // Do not execute arbitrary expressions or assume the source directory.
+        return null;
+    }
     function loaderAt(index) {
         const binding = bindingAt('require', index);
         if (binding === undefined) return true;
         if (!binding || typeof binding !== 'object') return false;
         const initial = binding.initial, origin = bindingAt(value(initial), initial);
-        return (origin === 'factory' && value(initial + 1) === '(')
-            || (origin === 'namespace' && value(initial + 1) === '.' && value(initial + 2) === 'createRequire' && value(initial + 3) === '(');
+        if (origin === 'factory' && value(initial + 1) === '(') return { base: loaderBase(initial + 1) };
+        if (origin === 'namespace' && value(initial + 1) === '.' && value(initial + 2) === 'createRequire' && value(initial + 3) === '(') return { base: loaderBase(initial + 3) };
+        return false;
     }
     for (let index = 0; index < tokens.length; index++) {
         if (!['require', 'import'].includes(value(index)) || property(index)) continue;
@@ -358,8 +388,9 @@ function literalImports(source, declaration = false) {
         while (value(first - 1) === '(' && pairs.get(first - 1) === call) { first--; call++; }
         if (value(call) === '?.') call++;
         if (value(call) !== '(' || ![',', ')'].includes(value(call + 2))) continue;
-        if (kind === 'require' && !loaderAt(index)) continue;
-        record(kind, tokens[call + 1]);
+        const loader = kind === 'require' ? loaderAt(index) : true;
+        if (!loader) continue;
+        record(kind, tokens[call + 1], typeof loader === 'object' ? loader.base : undefined);
     }
     return [...imports.values()];
 }
