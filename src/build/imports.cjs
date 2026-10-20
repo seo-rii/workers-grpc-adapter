@@ -292,6 +292,19 @@ function literalImports(source, declaration = false) {
     // Establish function/arrow and loop scopes before assigning any binding,
     // so declarations also shadow references earlier in their lexical scope.
     const parameters = [];
+    if (!declaration) for (const [index, definition] of definitions) {
+        if (value(index) !== 'class') continue;
+        // A class static block has its own var environment. Visit only direct
+        // class elements: nested method/initializer bodies establish their own
+        // environments and must not make an ordinary block var-isolating.
+        const end = pairs.get(definition.body);
+        for (let member = definition.body + 1; member < end; member++) {
+            if (value(member) === 'static' && value(member + 1) === '{' && pairs.has(member + 1)) {
+                addScope(member + 1, pairs.get(member + 1), true);
+            }
+            if (pairs.get(member) > member) member = pairs.get(member);
+        }
+    }
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (value(index) === '(' && pairs.has(index)) {
             const close = pairs.get(index), body = close + 1, before = value(index - 1);
