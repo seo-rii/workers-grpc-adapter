@@ -460,10 +460,15 @@ function literalImports(source, declaration = false) {
         let call = index + 1, first = index;
         while (value(first - 1) === '(' && pairs.get(first - 1) === call) { first--; call++; }
         if (value(call) === '?.') call++;
-        if (value(call) !== '(' || ![',', ')'].includes(value(call + 2))) continue;
+        if (value(call) !== '(' || !pairs.has(call)) continue;
+        // Parentheses around a literal do not compute a module specifier.
+        // Split arguments first so import options and trailing commas retain
+        // their ordinary meaning, then unwrap only the complete first one.
+        const [start, end] = unparenthesized(...separated(call + 1, pairs.get(call))[0]);
+        if (end !== start + 1) continue;
         const loader = kind === 'require' ? loaderAt(index) : true;
         if (!loader) continue;
-        record(kind, tokens[call + 1], typeof loader === 'object' ? loader.base : undefined);
+        record(kind, tokens[start], typeof loader === 'object' ? loader.base : undefined);
     }
     return [...imports.values()];
 }
