@@ -29,10 +29,16 @@ export function getErrorStack(error: Error): string | undefined {
 }
 
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  } else {
+  try {
+    if (error instanceof Error) {
+      const message = error.message;
+      return typeof message === 'string' ? message : 'Unknown error';
+    }
     return String(error);
+  } catch {
+    // Error inspection and coercion can invoke application accessors or proxies.
+    // Formatting a codec failure must not prevent its INTERNAL terminal status.
+    return 'Unknown error';
   }
 }
 

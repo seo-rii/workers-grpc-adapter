@@ -1,6 +1,6 @@
 --- a/src/error.ts
 +++ b/src/error.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2022 gRPC authors.
 + *
@@ -9,11 +9,12 @@
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
-@@ -14,6 +17,16 @@
+  * You may obtain a copy of the License at
+@@ -14,13 +17,29 @@
   * limitations under the License.
   *
   */
-+
+
 +/** Stack formatters may return structured values or throw while the stack is read. */
 +export function getErrorStack(error: Error): string | undefined {
 +  try {
@@ -23,6 +24,22 @@
 +    return undefined;
 +  }
 +}
-
++
  export function getErrorMessage(error: unknown): string {
-   if (error instanceof Error) {
+-  if (error instanceof Error) {
+-    return error.message;
+-  } else {
++  try {
++    if (error instanceof Error) {
++      const message = error.message;
++      return typeof message === 'string' ? message : 'Unknown error';
++    }
+     return String(error);
++  } catch {
++    // Error inspection and coercion can invoke application accessors or proxies.
++    // Formatting a codec failure must not prevent its INTERNAL terminal status.
++    return 'Unknown error';
+   }
+ }
+
+ export function getErrorCode(error: unknown): number | null {

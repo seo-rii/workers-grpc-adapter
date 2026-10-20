@@ -70,6 +70,9 @@ The patch boundary follows P-01 through P-06 of the
   Error stacks accept ordinary string traces and use a fixed fallback for
   structured or throwing stack formatters, so stack rendering cannot interrupt
   RPC completion.
+  Error message rendering also contains throwing accessors, proxies and string
+  coercions. Unrenderable codec failures use `Unknown error` and still deliver
+  their `INTERNAL` status without logging the thrown value.
   Metadata adds a transport iterator and an internal admission snapshot that
   preserves interceptor context while isolating headers, options and opaque key
   assignments. Public `clone()` semantics remain unchanged. Plain-object

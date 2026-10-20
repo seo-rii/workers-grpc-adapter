@@ -99,9 +99,9 @@
       "source": "vendor/client/error.ts",
       "sha256": "4dab77b20756fa630d15a235ecf25393c8a7dbb0d6c2a6f4b57b9d4458a2e191",
       "target": "src/error.ts",
-      "patchedSha256": "288ba1f6ee0dfb3bbe0c6e900d737412691a9e7a5f7dc2d71ac50d1c9b609c20",
+      "patchedSha256": "83cd9e081b44dd84e9358f2047450e73a0e03a079a6da4e3150b8b482d1c83a6",
       "patch": "vendor/patches/error.ts.patch",
-      "patchSha256": "cd1e09eedf53d16efd7518833724431c84c8a2e7435492471c642de79104581b"
+      "patchSha256": "a2969de696e0c1f7c4174412d94db07be53f08cbd28ce3d57e50ae62f8568af1"
     },
     {
       "upstreamPath": "src/status-builder.ts",
