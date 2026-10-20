@@ -264,7 +264,7 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
         // while tagging its require condition independently of injected JSX.
         replacements.push({ start, end: argument.end, text: `"wga-original-require:" + (${source.slice(start, argument.end)})` });
       }
-      if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length === 1) {
+      if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2) {
         const choices = specifierChoices(node.arguments[0]);
         if (!choices) fail('WGA_PREBUNDLE_AUDIT', 'A strict module dynamic import must have bounded static targets', { path: receipt.input });
         const resolutions = choices.map(specifier => {
@@ -298,7 +298,8 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
           imports.push(`import {load as ${name}} from ${JSON.stringify(token)};`);
           // Preserve the original argument, including predicate evaluation,
           // await/yield, and nested imports/requires. Replacing only the callee
-          // also keeps their independent source rewrites from overlapping.
+          // also preserves evaluation of captured import options and keeps
+          // independent source rewrites from overlapping.
           replacements.push({ start: node.expression.getStart(ast), end: node.expression.end, text: name });
         }
       }
