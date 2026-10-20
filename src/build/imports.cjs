@@ -350,7 +350,11 @@ function literalImports(source, declaration = false) {
         const source = value(from + 1), names = [], factories = [], namespaces = [];
         let cursor = index + 1;
         if (value(cursor) === 'type') cursor++;
-        if (identifier(cursor)) { names.push(value(cursor)); cursor++; }
+        if (identifier(cursor)) {
+            names.push(value(cursor));
+            if (['module', 'node:module'].includes(source)) namespaces.push(value(cursor));
+            cursor++;
+        }
         if (value(cursor) === ',') cursor++;
         if (value(cursor) === '*' && value(cursor + 1) === 'as') {
             names.push(value(cursor + 2));
@@ -360,6 +364,7 @@ function literalImports(source, declaration = false) {
                 const alias = value(first + 1) === 'as' ? value(first + 2) : value(first);
                 if (first < last) names.push(alias);
                 if (['module', 'node:module'].includes(source) && value(first) === 'createRequire') factories.push(alias);
+                if (['module', 'node:module'].includes(source) && value(first) === 'default') namespaces.push(alias);
             }
         }
         bind(scopeAt(index), names);
@@ -427,9 +432,26 @@ function literalImports(source, declaration = false) {
         const binding = bindingAt('require', index);
         if (binding === undefined) return true;
         if (!binding || typeof binding !== 'object') return false;
-        const initial = binding.initial, origin = bindingAt(value(initial), initial);
-        if (origin === 'factory' && value(initial + 1) === '(') return { base: loaderBase(initial + 1) };
-        if (origin === 'namespace' && value(initial + 1) === '.' && value(initial + 2) === 'createRequire' && value(initial + 3) === '(') return { base: loaderBase(initial + 3) };
+        let initial = binding.initial, end;
+        // A wrapper around the complete call is transparent only when the
+        // enclosed expression ends with that call, without another operator.
+        while (value(initial) === '(' && pairs.has(initial)) {
+            const close = pairs.get(initial);
+            if (['(', '.'].includes(value(close + 1))) break;
+            end = close;
+            initial++;
+        }
+        let call = value(initial) === '(' ? (pairs.get(initial) ?? initial) + 1 : initial + 1;
+        if (value(call) === '.' && value(call + 1) === 'createRequire') call += 2;
+        if (value(call) !== '(' || end !== undefined && pairs.get(call) !== end - 1) return false;
+        // Parentheses preserve an imported factory's identity. Only accept a
+        // proven direct binding or a static property of the module namespace.
+        let [start, last] = unparenthesized(initial, call);
+        if (last === start + 1 && bindingAt(value(start), start) === 'factory') return { base: loaderBase(call) };
+        if (value(last - 2) === '.' && value(last - 1) === 'createRequire') {
+            [start, last] = unparenthesized(start, last - 2);
+            if (last === start + 1 && bindingAt(value(start), start) === 'namespace') return { base: loaderBase(call) };
+        }
         return false;
     }
     for (let index = 0; index < tokens.length; index++) {
