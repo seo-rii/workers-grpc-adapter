@@ -20,7 +20,6 @@
 
 import type * as http2 from 'node:http2';
 import { Buffer } from 'node:buffer';
-import { getErrorMessage } from './error';
 const LEGAL_KEY_REGEX = /^[:0-9a-z_.-]+$/;
 const LEGAL_NON_BINARY_VALUE_REGEX = /^[ -~]*$/;
 
@@ -336,11 +335,9 @@ export class Metadata {
             result.add(key, values);
           }
         }
-      } catch (error) {
-        const message = `Failed to add metadata entry ${key}: ${values}. ${getErrorMessage(
-          error
-        )}. For more information see https://github.com/grpc/grpc-node/issues/1173`;
-        console.error('E ' + message);
+      } catch {
+        // Rejected metadata can contain credentials or private application
+        // values. Discard it without logging the value or validation error.
       }
     }
 

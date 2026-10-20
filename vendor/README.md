@@ -71,8 +71,9 @@ The patch boundary follows P-01 through P-06 of the
   preserves interceptor context while isolating headers, options and opaque key
   assignments. Public `clone()` semantics remain unchanged. Plain-object
   conversions preserve validated keys including `__proto__` as own enumerable
-  data properties without changing the object's prototype. It substitutes the
-  default error logger to avoid native process/environment tracing initialization.
+  data properties without changing the object's prototype. The public HTTP/2
+  conversion helper silently discards rejected values so validation failures do
+  not log credentials or application metadata.
 - HTTP/2 and TLS references are type-only. Parent calls use the adapter's structural
   deadline/cancellation contract; native channel, resolver, retry, server and
   transport code is excluded.
