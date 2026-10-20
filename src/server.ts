@@ -378,7 +378,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 if (!iterableOutput) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 checkActive();
                 first = await race(iterator!.next());
-                if (!first || typeof first !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                if (!first || (typeof first !== 'object' && typeof first !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
             } else {
                 checkActive();
                 if (iterableOutput) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
@@ -401,7 +401,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                         const item = buffered ?? await race(iterator!.next());
                         buffered = undefined;
                         checkActive();
-                        if (!item || typeof item !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                        if (!item || (typeof item !== 'object' && typeof item !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                         if (item.done) {
                             if (inputFailure !== undefined) throw inputFailure;
                             disposeInput();
