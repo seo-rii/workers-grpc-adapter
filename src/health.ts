@@ -122,7 +122,7 @@ export class HealthClient {
                 }
                 encodeRequest(service);
                 signal?.addEventListener('abort', abort, { once: true });
-                call = this.client.makeUnaryRequest('/grpc.health.v1.Health/Check', encodeRequest, decodeResponse,
+                call = Client.prototype.makeUnaryRequest.bind(this.client)('/grpc.health.v1.Health/Check', encodeRequest, decodeResponse,
                     service, metadata ? snapshotMetadata(metadata) : new Metadata(), callOptions, finish);
                 if (signal?.aborted) abort();
             } catch (error) { finish(error as Error); }
@@ -132,7 +132,7 @@ export class HealthClient {
     watch(service = '', options: Omit<HealthCallOptions, 'signal'> = {}): ClientReadableStream<HealthCheckResponse> {
         encodeRequest(service);
         const { metadata, ...callOptions } = options;
-        return this.client.makeServerStreamRequest('/grpc.health.v1.Health/Watch', encodeRequest, decodeResponse,
+        return Client.prototype.makeServerStreamRequest.bind(this.client)('/grpc.health.v1.Health/Watch', encodeRequest, decodeResponse,
             service, metadata ? snapshotMetadata(metadata) : new Metadata(), callOptions);
     }
     /** Starts a managed Watch without taking ownership of the underlying client. */

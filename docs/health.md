@@ -2,8 +2,10 @@
 
 `HealthClient` calls the standard `grpc.health.v1.Health` service using an existing
 adapter `Client`. It reuses that client's routing, channel credentials and
-interceptors in either transport mode. The server must implement the health
-service; this helper does not make an arbitrary Google API expose one.
+interceptors in either transport mode. Generated RPC names or aliases such as
+`makeUnaryRequest` and `makeServerStreamRequest` do not change the health route.
+The server must implement the health service; this helper does not make an
+arbitrary Google API expose one.
 
 ```js
 import { Client, HealthClient } from '@grpc/grpc-js';
