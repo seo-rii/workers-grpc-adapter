@@ -502,7 +502,18 @@ function checkModuleLoaders(ts, captured) {
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
   const checker = bindSources(ts, sources), values = new Map();
-  const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
+  const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
+  const containers = new Map(), containerFlags = new Map();
+  let nextContainer = 16n;
+  function container(kind, value) {
+    if (!value) return 0n;
+    const key = `${kind}:${value}`;
+    if (!containerFlags.has(key)) {
+      const flag = nextContainer; nextContainer <<= 1n;
+      containerFlags.set(key, flag); containers.set(flag, { kind, value });
+    }
+    return containerFlags.get(key);
+  }
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
     || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
   function key(expression, computed = false, seen = new Set()) {
@@ -525,13 +536,20 @@ function checkModuleLoaders(ts, captured) {
     }
   }
   const member = (origin, name) => {
-    let result = 0;
+    let result = 0n;
+    // Descriptors can themselves be reflected upon. Intern structural
+    // containers instead of dropping provenance at a fixed nesting depth.
+    for (const [flag, shape] of containers) if (origin & flag) {
+      result |= shape.kind === 'value'
+        ? name === 'value' ? shape.value : name === undefined ? LOADER : 0n
+        : container('value', member(shape.value, name));
+    }
     // Unknown computed access on a known module object could select a loader.
     // Ordinary application objects have no module provenance and stay valid.
     if (name === undefined && origin & (MODULE | NAMESPACE)) return LOADER;
-    if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0;
+    if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0n;
     if (origin & NAMESPACE) result |= ['createRequire', '_load', 'register', 'registerHooks'].includes(name) ? LOADER
-      : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0;
+      : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0n;
     return result;
   };
   function bind(name, value, keys = []) {
@@ -543,22 +561,17 @@ function checkModuleLoaders(ts, captured) {
         ? keys : [...keys, key(element.propertyName || element.name)]);
     }
   }
-  function objectAssign(node) {
-    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)
-      || node.expression.name.text !== 'assign' || !ts.isIdentifier(node.expression.expression)
-      || node.expression.expression.text !== 'Object') return false;
-    // A lexical Object binding may implement an unrelated application method.
-    return !checker.getSymbolAtLocation(node.expression.expression)?.declarations?.length;
-  }
-  function reflectGet(node) {
+  function builtinMethod(node, receiver, method) {
     if (!ts.isCallExpression(node)) return false;
     const callee = unwrap(node.expression);
     const object = (ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) && unwrap(callee.expression);
     const name = ts.isPropertyAccessExpression(callee) ? callee.name.text
       : ts.isElementAccessExpression(callee) && callee.argumentExpression ? key(callee.argumentExpression, true) : undefined;
-    return name === 'get' && object && ts.isIdentifier(object) && object.text === 'Reflect'
+    return name === method && object && ts.isIdentifier(object) && object.text === receiver
       && !checker.getSymbolAtLocation(object)?.declarations?.length;
   }
+  const objectAssign = node => builtinMethod(node, 'Object', 'assign');
+  const reflectGet = node => builtinMethod(node, 'Reflect', 'get');
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
@@ -578,7 +591,7 @@ function checkModuleLoaders(ts, captured) {
   }
   for (const source of sources.values()) collect(source);
   function origin(expression, seen = new Set()) {
-    if (typeof expression === 'number') return expression;
+    if (typeof expression === 'bigint') return expression;
     const node = unwrap(expression);
     if (ts.isIdentifier(node)) {
       const symbol = checker.getSymbolAtLocation(node);
@@ -587,22 +600,25 @@ function checkModuleLoaders(ts, captured) {
       const local = symbol?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration));
       if (!local && node.text === 'module') return MODULE;
       if (!local && node.text === 'require') return REQUIRE;
-      if (!symbol || seen.has(symbol)) return 0;
+      if (!symbol || seen.has(symbol)) return 0n;
       const next = new Set(seen); next.add(symbol);
-      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0);
+      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0n);
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
-      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0), 0);
-    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0);
+      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
     if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true));
+    if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
+      && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true)));
+    if (builtinMethod(node, 'Object', 'getOwnPropertyDescriptors') && node.arguments.length >= 1) return container('members', origin(node.arguments[0], seen));
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
       && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
-    return 0;
+    return 0n;
   }
   function bindCallback(expression, value, seen = new Set()) {
     const node = unwrap(expression);
