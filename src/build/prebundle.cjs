@@ -55,16 +55,25 @@ function publicPath(projectRoot, file, pkg) {
 }
 function captureBuildInputs(projectRoot, preset, ts) {
   const files = new Map(), modules = new Map(), packages = new Map(), scopes = new Map();
-  const absent = new Set(), configDirectories = new Set();
+  const absent = new Set(), configDirectories = new Set(), configurationInputs = new Set();
+  let sealed = false;
+  function fileVersion(logical, physical) {
+    const file = fs.statSync(physical, { bigint: true });
+    const link = logical === physical ? file : fs.lstatSync(logical, { bigint: true });
+    return [file, link].map(stat => [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':')).join('|');
+  }
   function read(logical) {
     logical = path.resolve(logical);
     if (!files.has(logical)) {
-      const physical = fs.realpathSync(logical), contents = fs.readFileSync(physical);
-      files.set(logical, { logical, physical, contents, sha256: hash(contents) });
+      if (sealed) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'The build discovered a new input after its snapshot was sealed; retry with a stable source tree', { logicalPath: logical });
+      const physical = fs.realpathSync(logical), version = fileVersion(logical, physical), contents = fs.readFileSync(physical);
+      if (configurationInputs.has(logical) && fileVersion(logical, physical) !== version) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'Compiler configuration changed while it was captured; retry with a stable source tree', { logicalPath: logical });
+      files.set(logical, { logical, physical, contents, sha256: hash(contents), version });
     }
     return files.get(logical);
   }
-  function optionalRead(file) {
+  function optionalRead(file, configuration = false) {
+    if (configuration) configurationInputs.add(path.resolve(file));
     if (fs.existsSync(file) && fs.statSync(file).isFile()) return read(file);
     absent.add(path.resolve(file));
   }
@@ -73,14 +82,14 @@ function captureBuildInputs(projectRoot, preset, ts) {
     while (!configDirectories.has(directory)) {
       configDirectories.add(directory);
       const config = path.join(directory, 'tsconfig.json');
-      if (optionalRead(config)) {
+      if (optionalRead(config, true)) {
         // Track inherited configs and package resolution receipts as well as
         // the nearest config. esbuild owns validation/lowering; TypeScript's
         // config reader only discovers the files that must remain stable.
         ts.getParsedCommandLineOfConfigFile(config, {}, {
           useCaseSensitiveFileNames: true, getCurrentDirectory: () => projectRoot,
-          readDirectory: () => [], fileExists: file => !!optionalRead(file),
-          readFile: file => optionalRead(file)?.contents.toString('utf8'),
+          readDirectory: () => [], fileExists: file => !!optionalRead(file, true),
+          readFile: file => optionalRead(file, true)?.contents.toString('utf8'),
           onUnRecoverableConfigFileDiagnostic() {},
         });
         break;
@@ -91,10 +100,17 @@ function captureBuildInputs(projectRoot, preset, ts) {
     }
   }
   function unchanged(source) {
-    let physical = null, sha256 = null;
-    try { physical = fs.realpathSync(source.logical); sha256 = hash(fs.readFileSync(physical)); } catch { /* Diagnose removed inputs like changed inputs. */ }
-    if (physical !== source.physical || sha256 !== source.sha256) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A build input changed after it was captured; retry with a stable source tree', {
+    let physical = null, sha256 = null, version = null, changedDuringRead = false;
+    const configuration = configurationInputs.has(source.logical);
+    try {
+      physical = fs.realpathSync(source.logical);
+      if (configuration) version = fileVersion(source.logical, physical);
+      sha256 = hash(fs.readFileSync(physical));
+      if (configuration) changedDuringRead = version !== fileVersion(source.logical, physical);
+    } catch { /* Diagnose removed inputs like changed inputs. */ }
+    if (physical !== source.physical || sha256 !== source.sha256 || configuration && (version !== source.version || changedDuringRead)) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A build input changed after it was captured; retry with a stable source tree', {
       logicalPath: source.logical, physicalPath: source.physical, actualPhysicalPath: physical, expectedSha256: source.sha256, actualSha256: sha256,
+      metadataChanged: configuration && (version !== source.version || changedDuringRead),
     });
   }
   function nodeEsm(file) {
@@ -155,7 +171,10 @@ function captureBuildInputs(projectRoot, preset, ts) {
       return { contents: source.contents, loader: 'default', resolveDir: path.dirname(args.path) };
     });
   } };
-  return { plugin, read, verify() {
+  return { plugin, read, prepare(entry) {
+    // The resolver may consume entry settings before its first onLoad hook.
+    captureConfig(entry); nodeEsm(entry); packageOf(entry, packages, read);
+  }, seal() { sealed = true; }, verify() {
     for (const source of files.values()) unchanged(source);
     for (const logical of absent) if (fs.existsSync(logical) && fs.statSync(logical).isFile()) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A configuration lookup changed during the build; retry with a stable source tree', { logicalPath: logical });
   },
@@ -1030,31 +1049,43 @@ async function buildGoogleWorkerPrebundle(options) {
     const preset = createGoogleWorkerBuild({ projectRoot, outdir: path.join(temporary, 'registry'), profile: options.profile, typescript: ts });
     if (typeof preset.verifyBuild !== 'function') fail('WGA_PREBUNDLE_AUDIT', 'This prebundle helper requires the matching fail-closed build preset');
     const capture = captureBuildInputs(projectRoot, preset, ts), declaration = capture.read(declarationFile).contents;
-    let built;
-    try {
-      built = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: [entryPoint], bundle: true, format: 'cjs', platform: 'node',
-        target: 'es2022', outfile: path.join(temporary, 'index.cjs'), write: false, metafile: true, minify: true,
-        legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [capture.plugin] });
-    } catch (error) {
-      // esbuild wraps plugin errors. Preserve the profile diagnostic contract.
-      const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
-      throw cause || error;
+    capture.prepare(entryPoint);
+    async function auditBuild() {
+      let built;
+      try {
+        built = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: [entryPoint], bundle: true, format: 'cjs', platform: 'node',
+          target: 'es2022', outfile: path.join(temporary, 'index.cjs'), write: false, metafile: true, minify: true,
+          legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [capture.plugin] });
+      } catch (error) {
+        // esbuild wraps plugin errors. Preserve the profile diagnostic contract.
+        const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
+        throw cause || error;
+      }
+      const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
+      if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
+        path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
+      });
+      const coverage = preset.verifyBuild(built.metafile);
+      const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
+      if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
+      if (built.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one self-contained JavaScript artifact');
+      let source = built.outputFiles[0].text;
+      checkArtifact(ts, source, names);
+      const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest, captured);
+      checkModuleLoaders(ts, captured);
+      checkExportStability(ts, entryPoint, entry.source.contents.toString('utf8'), source, names);
+      checkDeclarations(ts, declaration.toString('utf8'), names);
+      capture.verify();
+      return { coverage, captured, entry, source, presetManifest, graph };
     }
-    const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
-    if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
-      path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
-    });
-    const coverage = preset.verifyBuild(built.metafile);
-    const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
-    if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
-    if (built.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one self-contained JavaScript artifact');
-    let source = built.outputFiles[0].text;
-    checkArtifact(ts, source, names);
-    const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest, captured);
-    checkModuleLoaders(ts, captured);
-    checkExportStability(ts, entryPoint, entry.source.contents.toString('utf8'), source, names);
-    checkDeclarations(ts, declaration.toString('utf8'), names);
-    capture.verify();
+    // Discover the whole graph before the authoritative compilation. Config
+    // receipts gathered by a dependency's onLoad may postdate resolver reads
+    // in that discovery pass. The second build starts with all those receipts
+    // frozen, rechecks them, and cannot introduce a previously uncaptured file.
+    await auditBuild();
+    capture.seal();
+    const { coverage, captured, entry, source: auditedSource, presetManifest, graph } = await auditBuild();
+    let source = auditedSource;
     let strict;
     try {
       strict = await preserveModuleStrictness(esbuild, ts, projectRoot, captured, entry, names, path.join(temporary, 'index.cjs'));

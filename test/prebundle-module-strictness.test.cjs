@@ -182,6 +182,113 @@ for (const change of ['nearest', 'inherited', 'package', 'added', 'after-compila
   });
 }
 
+for (const change of ['nearest', 'inherited', 'package', 'added']) {
+  test(`PREBUNDLE captures ${change} compiler settings before the first onLoad`, async t => {
+    const f = fixture(t);
+    let config = 'tsconfig.json';
+    if (change === 'inherited') {
+      config = 'settings/base.json'; f.write('tsconfig.json', { extends: './settings/base.json' });
+    } else if (change === 'package') {
+      config = 'node_modules/build-settings/base.json';
+      f.write('node_modules/build-settings/package.json', { name: 'build-settings', tsconfig: './base.json' });
+      f.write('tsconfig.json', { extends: 'build-settings' });
+    }
+    if (change !== 'added') f.write(config, { compilerOptions: { useDefineForClassFields: false } });
+    f.write('wrapper.ts', `export {client} from '@grpc/grpc-js';
+      class Base { set field(value: number) { this.observed = value; } observed?: number; }
+      class Derived extends Base { field = 7; }
+      export function inspect(){ return new Derived().observed; }`);
+    let changed = false;
+    const changing = { ...esbuild, build(options) {
+      return esbuild.build({ ...options, plugins: [{ name: 'write-before-capture', setup(build) {
+        build.onLoad({ filter: /wrapper\.ts$/ }, () => {
+          if (!changed) { f.write(config, { compilerOptions: { useDefineForClassFields: true } }); changed = true; }
+        });
+      } }, ...(options.plugins || [])] });
+    } };
+    await assert.rejects(f.build({ entryPoint: 'wrapper.ts', esbuild: changing }), { code: 'WGA_PREBUNDLE_INPUT_CHANGED' });
+    assert.equal(changed, true);
+    assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+  });
+}
+
+test('PREBUNDLE rejects a first-load paths change instead of publishing the previously resolved graph', async t => {
+  const f = fixture(t);
+  f.write('tsconfig.json', { compilerOptions: { baseUrl: '.', paths: { setting: ['./old.mjs'] } } });
+  f.write('old.mjs', 'export const label = "old mapping";');
+  f.write('new.mjs', 'export const label = "new mapping";');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {label} from "setting"; export function inspect(){ return label; }');
+  let changed = false;
+  const changing = { ...esbuild, build(options) {
+    return esbuild.build({ ...options, plugins: [{ name: 'change-paths-before-capture', setup(build) {
+      build.onLoad({ filter: /wrapper\.mjs$/ }, () => {
+        if (!changed) { f.write('tsconfig.json', { compilerOptions: { baseUrl: '.', paths: { setting: ['./new.mjs'] } } }); changed = true; }
+      });
+    } }, ...(options.plugins || [])] });
+  } };
+  await assert.rejects(f.build({ esbuild: changing }), { code: 'WGA_PREBUNDLE_INPUT_CHANGED' });
+  assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+  const stable = await f.build();
+  assert.equal(require(stable.bundlePath).inspect(), 'new mapping');
+});
+
+test('PREBUNDLE detects a dependency config changing during the authoritative graph load', async t => {
+  const f = fixture(t);
+  f.write('nested/tsconfig.json', { compilerOptions: { useDefineForClassFields: false } });
+  f.write('nested/helper.ts', `class Base { set field(value: number) { this.observed = value; } observed?: number; }
+    class Derived extends Base { field = 7; }
+    export function inspect(){ return new Derived().observed; }`);
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; export {inspect} from "./nested/helper.ts";');
+  let graphLoads = 0, changed = false;
+  const changing = { ...esbuild, build(options) {
+    const authoritative = options.plugins?.some(plugin => plugin.name === 'wga-prebundle-source-receipts') && ++graphLoads === 2;
+    return esbuild.build({ ...options, plugins: [...(authoritative ? [{ name: 'change-dependency-config', setup(build) {
+      build.onLoad({ filter: /helper\.ts$/ }, () => { f.write('nested/tsconfig.json', { compilerOptions: { useDefineForClassFields: true } }); changed = true; });
+    } }] : []), ...(options.plugins || [])] });
+  } };
+  await assert.rejects(f.build({ esbuild: changing }), { code: 'WGA_PREBUNDLE_INPUT_CHANGED' });
+  assert.equal(changed, true);
+  assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+});
+
+test('PREBUNDLE refuses a newly preferred resolution file after graph capture', async t => {
+  const f = fixture(t);
+  f.write('selected.js', 'export const value = "captured JS";');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {value} from "./selected"; export function inspect(){ return value; }');
+  let changed = false;
+  const changing = { ...esbuild, async build(options) {
+    const result = await esbuild.build(options);
+    if (!changed && options.plugins?.some(plugin => plugin.name === 'wga-prebundle-source-receipts')) {
+      f.write('selected.ts', 'export const value = "new TS";'); changed = true;
+    }
+    return result;
+  } };
+  await assert.rejects(f.build({ esbuild: changing }), { code: 'WGA_PREBUNDLE_INPUT_CHANGED' });
+  assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+  assert.equal(require((await f.build()).bundlePath).inspect(), 'new TS');
+});
+
+test('PREBUNDLE detects compiler settings changed and restored within an authoritative build', async t => {
+  const f = fixture(t);
+  const original = { compilerOptions: { useDefineForClassFields: false } };
+  f.write('tsconfig.json', original);
+  f.write('wrapper.ts', `export {client} from '@grpc/grpc-js';
+    class Base { set field(value: number) { this.observed = value; } observed?: number; }
+    class Derived extends Base { field = 7; }
+    export function inspect(){ return new Derived().observed; }`);
+  let graphLoads = 0, restored = false;
+  const changing = { ...esbuild, build(options) {
+    const authoritative = options.plugins?.some(plugin => plugin.name === 'wga-prebundle-source-receipts') && ++graphLoads === 2;
+    if (authoritative) f.write('tsconfig.json', { compilerOptions: { useDefineForClassFields: true } });
+    return esbuild.build({ ...options, plugins: [...(authoritative ? [{ name: 'restore-consumed-config', setup(build) {
+      build.onLoad({ filter: /wrapper\.ts$/ }, () => { f.write('tsconfig.json', original); restored = true; });
+    } }] : []), ...(options.plugins || [])] });
+  } };
+  await assert.rejects(f.build({ entryPoint: 'wrapper.ts', esbuild: changing }), { code: 'WGA_PREBUNDLE_INPUT_CHANGED' });
+  assert.equal(restored, true);
+  assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+});
+
 test('PREBUNDLE preserves stable inherited compiler settings', async t => {
   const f = fixture(t);
   f.write('tsconfig.json', { extends: './settings/base.json' });
