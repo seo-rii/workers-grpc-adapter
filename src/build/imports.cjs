@@ -189,9 +189,11 @@ function tokensFor(source) {
     return { tokens, pairs, definitions };
 }
 
-function literalImports(source, declaration = false) {
+function literalImports(source, declaration = false, { includeLocal = false } = {}) {
     const { tokens, pairs, definitions } = tokensFor(source), imports = new Map();
-    if (!tokens.some(token => token.kind === 'literal' && typeof token.value === 'string' && /^@grpc\/grpc-js(?:\/|$)/.test(token.value))) return [];
+    const included = specifier => typeof specifier === 'string' && (/^@grpc\/grpc-js(?:\/|$)/.test(specifier)
+        || includeLocal && /^(?:\.{1,2}\/|\/|file:)/.test(specifier));
+    if (!tokens.some(token => token.kind === 'literal' && included(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
     const property = index => ['.', '?.'].includes(value(index - 1));
@@ -278,7 +280,7 @@ function literalImports(source, declaration = false) {
         return owners.length ? owners[0].bindings.get(name) : undefined;
     }
     function record(kind, token, base) {
-        if (token?.kind !== 'literal' || typeof token.value !== 'string' || !/^@grpc\/grpc-js(?:\/|$)/.test(token.value)) return;
+        if (token?.kind !== 'literal' || !included(token.value)) return;
         kind = declaration ? 'declaration' : kind;
         const imported = { kind, specifier: token.value, ...(base !== undefined ? { base } : {}) };
         // One source can use two createRequire bases for the same specifier.
