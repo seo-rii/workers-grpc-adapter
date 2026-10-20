@@ -238,22 +238,73 @@ function literalImports(source, declaration = false) {
         }
         return index - 1;
     }
+    function statementAfter(start, depth = 0) {
+        if (depth > 128) throw new Error('WGA_DOCTOR_SOURCE_NESTING');
+        const keyword = value(start);
+        if (keyword === ';') return start + 1;
+        if (keyword === '{' && pairs.has(start)) return pairs.get(start) + 1;
+        if (identifier(start) && value(start + 1) === ':') return statementAfter(start + 2, depth + 1);
+        if (['if', 'for', 'while', 'with', 'switch'].includes(keyword)) {
+            const open = start + (keyword === 'for' && value(start + 1) === 'await' ? 2 : 1);
+            if (value(open) === '(' && pairs.has(open)) {
+                let next = statementAfter(pairs.get(open) + 1, depth + 1);
+                if (keyword === 'if' && value(next) === 'else') next = statementAfter(next + 1, depth + 1);
+                return next;
+            }
+        }
+        if (keyword === 'do') {
+            const next = statementAfter(start + 1, depth + 1), open = next + 1;
+            if (value(next) === 'while' && value(open) === '(' && pairs.has(open)) {
+                const end = pairs.get(open) + 1;
+                return end + Number(value(end) === ';');
+            }
+        }
+        if (keyword === 'try') {
+            let next = statementAfter(start + 1, depth + 1);
+            if (value(next) === 'catch') {
+                const body = value(next + 1) === '(' && pairs.has(next + 1) ? pairs.get(next + 1) + 1 : next + 1;
+                next = statementAfter(body, depth + 1);
+            }
+            if (value(next) === 'finally') next = statementAfter(next + 1, depth + 1);
+            return next;
+        }
+        // Expression statements can contain commas and paired groups. A line
+        // break ends one only when the next token cannot continue it; calls,
+        // members and operators across lines remain in the same loop body.
+        const prefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
+        const continuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
+            '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
+        for (let index = start; index < tokens.length; index++) {
+            const token = tokens[index], previous = tokens[index - 1];
+            if (value(index) === ';') return index + 1;
+            if (value(index) === '}' || value(index) === 'else' && !property(index)) return index;
+            if (index > start && /[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) {
+                const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
+                    || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
+                    || [')', ']', '}', '++', '--'].includes(previous.value);
+                if (index === start + 1 && ['return', 'break', 'continue', 'debugger'].includes(keyword)
+                    || finished && !continuations.has(token.value) && !token.template && token.kind !== 'template-start') return index;
+            }
+            if (pairs.get(index) > index) index = pairs.get(index);
+        }
+        return tokens.length;
+    }
     // Establish function/arrow and loop scopes before assigning any binding,
     // so declarations also shadow references earlier in their lexical scope.
     const parameters = [];
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (value(index) === '(' && pairs.has(index)) {
             const close = pairs.get(index), body = close + 1, before = value(index - 1);
-            if (value(body) === '{' && pairs.has(body) && !['if', 'while', 'for', 'with', 'switch'].includes(before)) {
+            const forLoop = before === 'for' || before === 'await' && value(index - 2) === 'for';
+            if (value(body) === '{' && pairs.has(body) && !forLoop && !['if', 'while', 'with', 'switch'].includes(before)) {
                 const scope = addScope(index, pairs.get(body), before !== 'catch');
                 // The body block is the same function scope for var bindings.
                 if (before !== 'catch') addScope(body, pairs.get(body), true);
                 parameters.push({ scope, start: index + 1, end: close });
                 if (before === 'catch') bind(scopeAt(body), bindings(index + 1, close));
             }
-            if (before === 'for') {
-                const end = value(body) === '{' ? pairs.get(body) : expressionEnd(body);
-                if (end !== undefined) addScope(index, end);
+            if (forLoop) {
+                addScope(index, statementAfter(body) - 1);
             }
         }
         if (value(index) === '=>') {
