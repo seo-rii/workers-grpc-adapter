@@ -516,6 +516,15 @@ function checkModuleLoaders(ts, captured) {
     // A lexical Object binding may implement an unrelated application method.
     return !checker.getSymbolAtLocation(node.expression.expression)?.declarations?.length;
   }
+  function reflectGet(node) {
+    if (!ts.isCallExpression(node)) return false;
+    const callee = unwrap(node.expression);
+    const object = (ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) && unwrap(callee.expression);
+    const name = ts.isPropertyAccessExpression(callee) ? callee.name.text
+      : ts.isElementAccessExpression(callee) && callee.argumentExpression ? key(callee.argumentExpression, true) : undefined;
+    return name === 'get' && object && ts.isIdentifier(object) && object.text === 'Reflect'
+      && !checker.getSymbolAtLocation(object)?.declarations?.length;
+  }
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
@@ -553,6 +562,7 @@ function checkModuleLoaders(ts, captured) {
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
       result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0), 0);
     if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0);
+    if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true));
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
@@ -560,8 +570,32 @@ function checkModuleLoaders(ts, captured) {
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
     return 0;
   }
+  function bindCallback(expression, value, seen = new Set()) {
+    const node = unwrap(expression);
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node)) {
+      if (node.parameters[0] && !node.parameters[0].dotDotDotToken) bind(node.parameters[0].name, value);
+    } else if (ts.isIdentifier(node)) {
+      const symbol = checker.getSymbolAtLocation(node);
+      if (!symbol || seen.has(symbol)) return;
+      const next = new Set([...seen, symbol]);
+      for (const declaration of symbol.declarations || []) if (ts.isFunctionDeclaration(declaration)) bindCallback(declaration, value, next);
+      for (const assigned of values.get(symbol) || []) if (!assigned.keys.length && typeof assigned.value !== 'number') bindCallback(assigned.value, value, next);
+    }
+  }
+  function collectCallbacks(node) {
+    if (ts.isCallExpression(node) && node.arguments[0]) {
+      const callee = unwrap(node.expression);
+      const receiver = ts.isPropertyAccessExpression(callee) && callee.name.text === 'then' ? callee.expression
+        : ts.isElementAccessExpression(callee) && callee.argumentExpression && key(callee.argumentExpression, true) === 'then' ? callee.expression : undefined;
+      if (receiver && origin(receiver) & NAMESPACE) bindCallback(node.arguments[0], receiver);
+    }
+    ts.forEachChild(node, collectCallbacks);
+  }
+  // Gather ordinary aliases first: a function can use a pending import or a
+  // named callback whose declaration appears later in the source file.
+  for (const source of sources.values()) collectCallbacks(source);
   function visit(node) {
-    if ((ts.isIdentifier(node) || ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) && origin(node) & LOADER) {
+    if ((ts.isIdentifier(node) || ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node) || ts.isCallExpression(node)) && origin(node) & LOADER) {
       fail('WGA_PREBUNDLE_DYNAMIC_IMPORT', 'Node module loading APIs cannot remain in a self-contained prebundle; use explicit static imports', { path: node.getSourceFile().fileName });
     }
     ts.forEachChild(node, visit);

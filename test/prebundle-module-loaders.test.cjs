@@ -57,9 +57,26 @@ const unsafe = [
   ['constant property alias', 'import m from "node:module"; const key = "create" + "Require"; export function load(name) { return m[key]("/app.cjs")(name); }'],
   ['computed destructuring', 'import m from "node:module"; const {["create" + "Require"]: make} = m; export function load(name) { return make("/app.cjs")(name); }'],
   ['unknown module property', 'import m from "node:module"; export function load(name) { return m[name]; }'],
+  ['then namespace callback', 'export function load(name) { return import("node:module").then(m => m.createRequire("/app.cjs")(name)); }'],
+  ['then function callback', 'export function load(name) { return import("node:module").then(function(m) { return m.createRequire("/app.cjs")(name); }); }'],
+  ['then destructured callback', 'export function load(name) { return import("node:module").then(({createRequire: make}) => make("/app.cjs")(name)); }'],
+  ['then namespace rest callback', 'export function load(name) { return import("node:module").then(({...m}) => m.createRequire("/app.cjs")(name)); }'],
+  ['then default namespace callback', 'export function load(name) { return import("node:module").then(({default: m}) => m.createRequire("/app.cjs")(name)); }'],
+  ['aliased pending import callback', 'export function load(name) { return pending.then(m => m.createRequire("/app.cjs")(name)); } const pending = import("node:module");'],
+  ['named then callback', 'function use(m) { return m.createRequire("/app.cjs")("node:fs"); } export function load() { return import("node:module").then(use); }'],
+  ['aliased then callback', 'const use = m => m.createRequire("/app.cjs")("node:fs"); const callback = use; export function load() { return import("node:module").then(callback); }'],
+  ['reflective namespace member', 'import m from "node:module"; export function load(name) { return Reflect.get(m, "createRequire")("/app.cjs")(name); }'],
+  ['parenthesized Reflect receiver', 'import m from "node:module"; export function load(name) { return (Reflect).get(m, "createRequire")("/app.cjs")(name); }'],
+  ['parenthesized computed Reflect receiver', 'import m from "node:module"; export function load(name) { return (Reflect)["get"](m, "createRequire")("/app.cjs")(name); }'],
+  ['reflective computed member', 'import m from "node:module"; const key = "create" + "Require"; export function load(name) { return Reflect.get(m, key)("/app.cjs")(name); }'],
+  ['reflective unknown namespace member', 'import m from "node:module"; export function load(name) { return Reflect.get(m, name); }'],
+  ['reflective default namespace', 'import * as m from "node:module"; export function load(name) { return Reflect.get(m, "default").createRequire("/app.cjs")(name); }'],
+  ['reflective module require', 'import helper from "./helper.cjs"; export function load(name) { return helper.load(name); }', 'exports.load = name => Reflect.get(module, "require").call(module, name);'],
+  ['reflective unknown module member', 'import helper from "./helper.cjs"; export function load(name) { return helper.load(name); }', 'exports.load = name => Reflect.get(module, name);'],
 ];
-for (const [name, body] of unsafe) test(`PREBUNDLE rejects ${name} module loaders`, async t => {
+for (const [name, body, helper] of unsafe) test(`PREBUNDLE rejects ${name} module loaders`, async t => {
   const f = synthetic(t);
+  if (helper) write(path.join(f.projectRoot, 'helper.cjs'), helper);
   f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ' + body);
   fs.appendFileSync(path.join(f.projectRoot, 'wrapper.d.ts'), 'export declare function load(name: string): unknown;');
   await assert.rejects(f.build({ exports: ['createClient', 'configure', 'load'] }), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
@@ -70,6 +87,18 @@ for (const [name, body] of [
   ['ordinary object method', 'const ordinary = {createRequire: () => 7}; export function probe() { return ordinary["create" + "Require"](); }'],
   ['computed builtin property', 'import m from "node:module"; const key = "is" + "Builtin"; export function probe() { return m[key]("node:fs"); }'],
   ['destructured builtin', 'export async function probe() { const {isBuiltin} = await import("node:module"); return isBuiltin("node:fs"); }'],
+  ['then builtin callback', 'export function probe() { return import("node:module").then(m => m.isBuiltin("node:fs")); }'],
+  ['then destructured builtin callback', 'export function probe() { return import("node:module").then(({isBuiltin}) => isBuiltin("node:fs")); }'],
+  ['named then builtin callback', 'function use(m) { return m.isBuiltin("node:fs"); } export function probe() { return import("node:module").then(use); }'],
+  ['application promise callback', 'export function probe() { return Promise.resolve({createRequire: () => 7}).then(m => m.createRequire()); }'],
+  ['application rejection callback', 'export function probe() { return Promise.reject({createRequire: () => 7}).then(() => 0, m => m.createRequire()); }'],
+  ['shadowed callback binding', 'export function probe() { return import("node:module").then(m => { function use(m) { return m.createRequire(); } return use({createRequire: () => 7}); }); }'],
+  ['reflective builtin', 'import m from "node:module"; export function probe() { return Reflect.get(m, "isBuiltin")("node:fs"); }'],
+  ['reflective application object', 'const ordinary = {require: () => 7}; export function probe() { return Reflect.get(ordinary, "require")(); }'],
+  ['parenthesized Reflect application read', 'const ordinary = {require: () => 7}; export function probe() { return (Reflect).get(ordinary, "require")(); }'],
+  ['parenthesized Reflect builtin read', 'import m from "node:module"; export function probe() { return (Reflect).get(m, "isBuiltin")("node:fs"); }'],
+  ['parenthesized shadowed Reflect', 'import m from "node:module"; const Reflect = {get: () => () => 7}; export function probe() { return (Reflect).get(m, "createRequire")(); }'],
+  ['shadowed Reflect', 'import m from "node:module"; const Reflect = {get: () => () => 7}; export function probe() { return Reflect.get(m, "createRequire")(); }'],
 ]) test(`PREBUNDLE preserves ordinary objects and non-loading builtin APIs: ${name}`, async t => {
   const f = synthetic(t);
   f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ' + body);
