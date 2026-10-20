@@ -127,8 +127,13 @@ Ordinary objects may still have a `require` method, and non-loader APIs such as
 checks module-loading boundaries; it does not sandbox arbitrary wrapper code.
 The source audit also follows `await import('node:module')` (including import
 options), destructuring and namespace rest bindings,
-and statically known computed property names. An unknown computed property on
-a Node module namespace is rejected because it could select a loader.
+statically known computed property names, and fulfillment callbacks passed to
+`.then()` on a known module import. Inline callbacks, named function callbacks
+and their direct aliases retain the imported namespace identity. `Reflect.get`
+on a known Node module object follows the same member checks as direct property
+access. An unknown computed property on a Node module namespace is rejected
+because it could select a loader. Ordinary application promises and reflective
+reads on ordinary objects remain supported.
 
 One physical adapter installation is necessary but does not alone prove one
 runtime. The build also rejects different esbuild module identities for the
