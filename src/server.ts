@@ -82,8 +82,14 @@ function trailer(code: status, details: string, metadata = new Metadata()): Buff
     return encodeFrame(Buffer.from(text), true);
 }
 function failure(error: unknown): { code: status; details: string; metadata: Metadata } {
-    if (error instanceof GrpcWebServerError) return { code: error.code, details: error.details, metadata: error.metadata };
-    if (error instanceof TransportError) return { code: error.code, details: error.diagnostic, metadata: new Metadata() };
+    try {
+        if (error instanceof GrpcWebServerError) return { code: error.code, details: error.details, metadata: error.metadata };
+        if (error instanceof TransportError) return { code: error.code, details: error.diagnostic, metadata: new Metadata() };
+    } catch {
+        // Application failures may themselves throw during instanceof or field
+        // inspection. Keep both the original and inspection errors private so
+        // terminal cleanup still runs before sending the generic status.
+    }
     return { code: status.INTERNAL, details: 'WGA_SERVER_HANDLER', metadata: new Metadata() };
 }
 function errorTrailer(error: unknown, trailing: Metadata): Buffer {
