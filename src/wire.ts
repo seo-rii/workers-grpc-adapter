@@ -190,14 +190,20 @@ function decodeBase64(value: string): Buffer {
 }
 function addHeader(metadata: Metadata, key: string, value: string): void {
     try {
+        if (!/^[0-9a-z_.-]+$/.test(key) || /[\x00-\x08\x0a-\x1f\x7f]/.test(value)) {
+            return wireError(status.INTERNAL, 'WGA_INVALID_METADATA');
+        }
         if (key.endsWith('-bin')) {
             for (const part of value.split(',')) {
                 metadata.add(key, decodeBase64(part.replace(/^[ \t]+|[ \t]+$/g, '')));
             }
         }
-        else {
+        else if (/^[\x20-\x7e]*$/.test(value)) {
             metadata.add(key, value);
         }
+        // HTTP permits HTAB and non-ASCII field values that gRPC ASCII
+        // metadata cannot represent. Discard those fields without failing the
+        // RPC, after budgeting and validating their names and control bytes.
     }
     catch (e) {
         if (e instanceof TransportError) {
