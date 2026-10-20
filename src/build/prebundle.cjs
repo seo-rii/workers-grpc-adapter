@@ -266,11 +266,15 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
       }
       if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length === 1) {
         const choices = specifierChoices(node.arguments[0]);
-        if (!choices) fail('WGA_PREBUNDLE_AUDIT', 'A strict module dynamic import must have bounded static targets', { path: receipt.input });
-        const resolutions = choices.map(specifier => {
+        // The first artifact has already passed the runtime-import audits.
+        // esbuild omits erased calls/branches from its captured graph; leave
+        // those to the compiler instead of inventing a resolution for them.
+        const resolutions = (choices || []).flatMap(specifier => {
+          if (!isBuiltin(specifier) && !receipt.info.imports.some(edge => edge.kind === 'dynamic-import'
+            && (edge.original || edge.path) === specifier)) return [];
           const edge = resolveEdge(receipt, specifier, 'dynamic-import');
           const target = !edge.external && modules.get(edge.path);
-          return { specifier, edge, commonJs: target && target.info.format !== 'esm' };
+          return [{ specifier, edge, commonJs: target && target.info.format !== 'esm' }];
         });
         if (resolutions.some(resolution => resolution.commonJs)) {
           // Keep Node's CJS default-namespace interop in an ESM importer.
@@ -352,6 +356,10 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
           : resolveEdge(importer, args.path, args.kind === 'require-call'
           && importer.info.imports.some(item => item.kind === 'import-statement' && (item.original || item.path) === args.path)
           ? 'import-statement' : args.kind);
+        const target = !edge.external && modules.get(edge.path);
+        if (args.kind === 'dynamic-import' && importer.nodeEsm && target && target.info.format !== 'esm') {
+          fail('WGA_PREBUNDLE_AUDIT', 'A surviving strict dynamic import of a non-ESM target must use captured static targets', { path: importer.input });
+        }
       }
       if (edge.dynamicModule) return { path: edge.dynamicModule, namespace: 'wga-strict' };
       if (edge.external && isBuiltin(edge.path)) return { path: edge.path, external: true };
