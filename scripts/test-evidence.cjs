@@ -33,11 +33,13 @@ const { validateAuthCatalogReport } = require('./auth-catalog-evidence.cjs');
 const { validateBootstrapCatalogReport } = require('./bootstrap-catalog-evidence.cjs');
 const { validateSecurityCatalogReport } = require('./security-catalog-evidence.cjs');
 const { validateSdkCancellationReport } = require('./sdk-cancellation-evidence.cjs');
+const { reportFile: sdkDeadlineReportFile, validateSdkDeadlineEvidence } = require('./sdk-deadline-evidence.cjs');
 const { reportFiles: prebundleReportFiles, validatePrebundleEvidence } = require('./prebundle-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
     ...prebundleReportFiles,
+    sdkDeadlineReportFile,
     'verification/vendor-provenance.json',
     'verification/doc-examples.json',
     'verification/documentation-policy.json',
@@ -616,6 +618,7 @@ function validateProvenance(root, report) {
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
     validatePrebundleEvidence(root, report);
+    validateSdkDeadlineEvidence(root, report);
     const embedded = [['build', 'verification/build.json'], ['vendorProvenance', 'verification/vendor-provenance.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'], ['docExamples', 'verification/doc-examples.json'], ['documentationPolicy', 'verification/documentation-policy.json'], ['docReferences', 'verification/doc-references.json'], ['documentationSupport', 'verification/documentation-support.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['wireCatalog', 'verification/wire-catalog.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['authCatalog', 'verification/auth-catalog.json'], ['bootstrapCatalog', 'verification/bootstrap-catalog.json'], ['securityCatalog', 'verification/security-catalog.json'],
