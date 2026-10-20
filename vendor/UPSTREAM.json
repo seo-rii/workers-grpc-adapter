@@ -18,9 +18,9 @@
       "source": "vendor/client/client.ts",
       "sha256": "215d41d55165e9c21656a043894eccc9065745f8735f0818c1cb05124168df53",
       "target": "src/client.ts",
-      "patchedSha256": "9ddca690bdc0d20fea259158179cbdc88f1bdb7506c05bfe6f5d0f819ca91f9c",
+      "patchedSha256": "3d76cb9b0f31bafbc595d1cb1f57546f477eb19c191b69d7ff8d0ed7f3f1bdd3",
       "patch": "vendor/patches/client.ts.patch",
-      "patchSha256": "ce150c674b8e71486d7fc1a513b1cbf2223913a44368c1d528bb91ef54200fcf"
+      "patchSha256": "49d97e5cd61d6a7290bbdef00c01448088f8107825cbc7f74e676dc8e99b5639"
     },
     {
       "upstreamPath": "src/make-client.ts",
@@ -45,9 +45,9 @@
       "source": "vendor/client/call.ts",
       "sha256": "3a6fd60fd29da2ee15c771d92e54a6773a74cd7a7b68c1510e2afc25e0347e81",
       "target": "src/call-surface.ts",
-      "patchedSha256": "e964199884fd03327da246f42f570263f74a92831aec00d297898fd8ed0b935b",
+      "patchedSha256": "8b00c295c30878fc606577918dd9f6e5d3ac7b0efa0c2d0f0e289215973d04aa",
       "patch": "vendor/patches/call-surface.ts.patch",
-      "patchSha256": "bf0b4b2baf06f647a5ecfe6bd6a1fe558fa984f29efb256c0e817c92294aaa55"
+      "patchSha256": "34acb9643cdd31d1b778477f9e065d9f68ec65e1d03f2c4e06f18efb40bfba8f"
     },
     {
       "upstreamPath": "src/client-interceptors.ts",
@@ -99,9 +99,9 @@
       "source": "vendor/client/error.ts",
       "sha256": "4dab77b20756fa630d15a235ecf25393c8a7dbb0d6c2a6f4b57b9d4458a2e191",
       "target": "src/error.ts",
-      "patchedSha256": "4dab77b20756fa630d15a235ecf25393c8a7dbb0d6c2a6f4b57b9d4458a2e191",
-      "patch": null,
-      "patchSha256": null
+      "patchedSha256": "288ba1f6ee0dfb3bbe0c6e900d737412691a9e7a5f7dc2d71ac50d1c9b609c20",
+      "patch": "vendor/patches/error.ts.patch",
+      "patchSha256": "cd1e09eedf53d16efd7518833724431c84c8a2e7435492471c642de79104581b"
     },
     {
       "upstreamPath": "src/status-builder.ts",

@@ -49,6 +49,7 @@ import {
   InterceptingCallInterface,
 } from './client-interceptors';
 import type { Deadline, ParentCall } from './call';
+import { getErrorStack } from './error';
 
 const CHANNEL_SYMBOL = Symbol();
 const INTERCEPTOR_SYMBOL = Symbol();
@@ -105,7 +106,7 @@ export type ClientOptions = Partial<ChannelOptions> & {
 };
 
 function getErrorStackString(error: Error): string {
-  return error.stack?.split('\n').slice(1).join('\n') || 'no stack trace available';
+  return getErrorStack(error)?.split('\n').slice(1).join('\n') || 'no stack trace available';
 }
 
 // Argument parsers live outside the generated client's string-keyed RPC namespace.

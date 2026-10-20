@@ -36,7 +36,7 @@
  import {
    getInterceptingCall,
    Interceptor,
-@@ -44,13 +48,7 @@
+@@ -44,13 +48,8 @@
    InterceptorArguments,
    InterceptingCallInterface,
  } from './client-interceptors';
@@ -48,10 +48,11 @@
 -} from './server-call';
 -import { Deadline } from './deadline';
 +import type { Deadline, ParentCall } from './call';
++import { getErrorStack } from './error';
 
  const CHANNEL_SYMBOL = Symbol();
  const INTERCEPTOR_SYMBOL = Symbol();
-@@ -71,11 +69,8 @@
+@@ -71,11 +70,8 @@
  export interface CallOptions {
    deadline?: Deadline;
    host?: string;
@@ -65,10 +66,12 @@
    propagate_flags?: number;
    credentials?: CallCredentials;
    interceptors?: Interceptor[];
-@@ -111,6 +106,62 @@
+@@ -110,7 +106,63 @@
+ };
 
  function getErrorStackString(error: Error): string {
-   return error.stack?.split('\n').slice(1).join('\n') || 'no stack trace available';
+-  return error.stack?.split('\n').slice(1).join('\n') || 'no stack trace available';
++  return getErrorStack(error)?.split('\n').slice(1).join('\n') || 'no stack trace available';
 +}
 +
 +// Argument parsers live outside the generated client's string-keyed RPC namespace.
@@ -128,7 +131,7 @@
  }
 
  /**
-@@ -144,23 +195,23 @@
+@@ -144,23 +196,23 @@
      this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
        options.callInvocationTransformer;
      delete options.callInvocationTransformer;
@@ -166,7 +169,7 @@
    }
 
    close(): void {
-@@ -172,64 +223,8 @@
+@@ -172,64 +224,8 @@
    }
 
    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
@@ -233,7 +236,7 @@
    }
 
    makeUnaryRequest<RequestType, ResponseType>(
-@@ -274,7 +269,7 @@
+@@ -274,7 +270,7 @@
      callback?: UnaryCallback<ResponseType>
    ): ClientUnaryCall {
      const checkedArguments =
@@ -242,7 +245,7 @@
          metadata,
          options,
          callback
-@@ -365,7 +360,7 @@
+@@ -365,7 +361,7 @@
          emitter.emit('status', status);
        },
      });
@@ -251,7 +254,7 @@
      call.halfClose();
      return emitter;
    }
-@@ -407,7 +402,7 @@
+@@ -407,7 +403,7 @@
      callback?: UnaryCallback<ResponseType>
    ): ClientWritableStream<RequestType> {
      const checkedArguments =
@@ -260,7 +263,7 @@
          metadata,
          options,
          callback
-@@ -473,6 +468,7 @@
+@@ -473,6 +469,7 @@
            return;
          }
          receivedStatus = true;
@@ -268,7 +271,7 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -502,30 +498,6 @@
+@@ -502,30 +499,6 @@
      return emitter;
    }
 
@@ -299,7 +302,7 @@
    makeServerStreamRequest<RequestType, ResponseType>(
      method: string,
      serialize: (value: RequestType) => Buffer,
-@@ -549,7 +521,7 @@
+@@ -549,7 +522,7 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientReadableStream<ResponseType> {
@@ -308,7 +311,7 @@
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -558,10 +530,11 @@
+@@ -558,10 +531,11 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -321,7 +324,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -573,6 +546,9 @@
+@@ -573,6 +547,9 @@
      }
      const stream: ClientReadableStream<ResponseType> =
        callProperties.call as ClientReadableStream<ResponseType>;
@@ -331,7 +334,7 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -606,8 +582,9 @@
+@@ -606,8 +583,9 @@
            return;
          }
          receivedStatus = true;
@@ -342,7 +345,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +594,7 @@
+@@ -617,7 +595,7 @@
          stream.emit('status', status);
        },
      });
@@ -351,7 +354,7 @@
      call.halfClose();
      return stream;
    }
-@@ -642,7 +619,7 @@
+@@ -642,7 +620,7 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientDuplexStream<RequestType, ResponseType> {
@@ -360,7 +363,7 @@
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -651,12 +628,12 @@
+@@ -651,12 +629,12 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -377,7 +380,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -668,6 +645,9 @@
+@@ -668,6 +646,9 @@
      }
      const stream: ClientDuplexStream<RequestType, ResponseType> =
        callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
@@ -387,7 +390,7 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -700,8 +680,9 @@
+@@ -700,8 +681,9 @@
            return;
          }
          receivedStatus = true;
@@ -398,7 +401,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +695,12 @@
+@@ -714,3 +696,12 @@
      return stream;
    }
  }

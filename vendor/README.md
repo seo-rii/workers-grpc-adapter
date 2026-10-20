@@ -67,6 +67,9 @@ The patch boundary follows P-01 through P-06 of the
 - Factory, metadata, typed stream surfaces, error stacks, and StatusBuilder reuse
   the upstream implementations with the recorded patches. Async interceptor
   ordering and stream-destroy cancellation have explicit adapter corrections.
+  Error stacks accept ordinary string traces and use a fixed fallback for
+  structured or throwing stack formatters, so stack rendering cannot interrupt
+  RPC completion.
   Metadata adds a transport iterator and an internal admission snapshot that
   preserves interceptor context while isolating headers, options and opaque key
   assignments. Public `clone()` semantics remain unchanged. Plain-object
