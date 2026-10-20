@@ -614,7 +614,12 @@ export class WorkersCall {
             if (response.body) {
                 for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
                     { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes,
-                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: this.observation ? bytes => this.observation!.received(bytes) : undefined })) {
+                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: bytes => {
+                            this.observation?.received(bytes);
+                            // Ready partial or empty chunks can keep timer callbacks
+                            // queued indefinitely without completing another frame.
+                            if (this.stopIfExpired()) throw new TransportError(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+                        } })) {
                     if (this.stopIfExpired()) return;
                     if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
                     if (frame.trailer) {
