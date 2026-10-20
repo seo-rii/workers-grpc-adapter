@@ -74,8 +74,10 @@ bindings across CJS. Exported `let`/`var` bindings, local aliases of those
 bindings, and detected reassignment of an exported binding, including through
 bundled re-exports, fail with `WGA_PREBUNDLE_EXPORT_STABILITY`. Private variables
 and properties on a stable exported object may still change.
-ES modules retain their implicit strict mode inside module-specific factories;
-CommonJS dependencies retain their original strict or sloppy mode. The builder
+ES modules retain their implicit strict mode inside one captured ESM graph,
+including hoisted function re-exports in cycles and shared module namespaces.
+Lazy namespace accessors keep dynamic imports deferred. CommonJS dependencies
+retain their original strict or sloppy mode in separate factories. The builder
 first audits the profile, captured sources, imports, and exported bindings, then
 compiles those captured modules using their original package and TypeScript
 configuration. The final bundle resolves only the previously audited dependency
