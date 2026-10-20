@@ -14,11 +14,18 @@ function packageFor(req, name) {
     for (const base of req.resolve.paths('__wga_dependency__') || []) {
         const directory = path.join(base, name);
         const candidate = path.join(directory, 'package.json');
-        if (fs.existsSync(candidate)) return fs.realpathSync(candidate);
+        // Legacy CommonJS resolution tries these files before a directory's
+        // main (and before searching ancestor node_modules directories). An
+        // exports map takes precedence over that legacy load-as-file step.
+        const bareFile = ['.js', '.json', '.node'].some(extension => {
+            const file = directory + extension;
+            return fs.existsSync(file) && fs.statSync(file).isFile();
+        });
+        if (fs.existsSync(candidate) && (!bareFile || JSON.parse(fs.readFileSync(candidate, 'utf8')).exports != null)) return fs.realpathSync(candidate);
         // Node can load an installed directory's index.js without a manifest.
         // Do not call it absent or substitute an ancestor's package: either
         // would skip inspection of the installation the SDK actually loads.
-        if (fs.existsSync(directory)) throw Object.assign(new Error('dependency-manifest-missing'), { code: 'WGA_DOCTOR_MANIFEST_MISSING' });
+        if (fs.existsSync(directory) || bareFile) throw Object.assign(new Error('dependency-manifest-missing'), { code: 'WGA_DOCTOR_MANIFEST_MISSING' });
     }
     throw Object.assign(new Error('dependency-not-installed'), { code: 'MODULE_NOT_FOUND' });
 }
