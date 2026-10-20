@@ -6,6 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
+const { Worker } = require('node:worker_threads');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
@@ -28,6 +29,9 @@ function fixture(t) {
   write(path.join(project, 'package.json'), '{}');
   write(path.join(project, 'build/index.cjs'), fs.readFileSync(path.join(root, 'src/build/index.cjs')));
   const protobufRoot = path.dirname(googleRequire.resolve('protobufjs/package.json'));
+  const pinned = JSON.parse(fs.readFileSync(path.join(root, 'src/build/profiles/google-static-v1.json'), 'utf8'));
+  const protobufPackage = { ...pinned.packages.find(pkg => pkg.name === 'protobufjs') };
+  delete protobufPackage.resolveFrom;
   fs.mkdirSync(path.join(project, 'node_modules'), { recursive: true });
   fs.symlinkSync(protobufRoot, path.join(project, 'node_modules/protobufjs'), process.platform === 'win32' ? 'junction' : 'dir');
   for (const [profile, name, type] of [['google-static-v1', 'codec-a', 'A'], ['google-modern-v1', 'codec-b', 'B']]) {
@@ -40,9 +44,9 @@ function fixture(t) {
     write(path.join(project, relative, 'schema.json'), schema);
     write(path.join(project, 'build/profiles', profile + '.json'), JSON.stringify({
       id: profile, schemaVersion: 1, transformerVersion: 1, revision: 1,
-      packages: [{ path: relative, name, version: '1.0.0', packageJsonSha256: hash(manifest) }],
+      packages: [{ path: relative, name, version: '1.0.0', packageJsonSha256: hash(manifest) }, protobufPackage],
       files: [{ path: relative + '/index.js', sha256: hash(source), transforms: [{ rule: 'static-root-from-json', expectedMatches: 1 }] }],
-      schemas: [{ path: relative + '/schema.json', sha256: hash(schema) }], codegenInputs: [], loaderOptions: {}, capabilities: [], requiredChecks: [],
+      schemas: [{ path: relative + '/schema.json', sha256: hash(schema) }], codegenInputs: pinned.codegenInputs, loaderOptions: {}, capabilities: [], requiredChecks: [],
     }));
     write(path.join(project, name + '.cjs'), `module.exports=require(${JSON.stringify(name)}).lookupType(${JSON.stringify(type)}).fieldsArray.map(field=>field.name);`);
   }
@@ -76,6 +80,41 @@ test('BUILD registry reuses an unchanged identity without invalidating an existi
   assert.deepEqual(fs.readFileSync(first.registryFile), before);
   assert.deepEqual((await f.bundle(first)).value, ['value']);
   assert.deepEqual((await f.bundle(second)).value, ['value']);
+});
+
+test('BUILD concurrent preparations share only identical registry bytes', { timeout: 30_000 }, async t => {
+  const f = fixture(t), gate = new SharedArrayBuffer(4), workers = [];
+  t.after(() => Promise.all(workers.map(worker => worker.terminate())));
+  const preparations = ['google-static-v1', 'google-static-v1', 'google-modern-v1'].map(profile => {
+    const worker = new Worker(`
+      const {parentPort, workerData} = require('node:worker_threads');
+      const {createGoogleWorkerBuild} = require(workerData.api);
+      const typescript = require(workerData.typescript);
+      parentPort.postMessage('ready');
+      Atomics.wait(new Int32Array(workerData.gate), 0, 0);
+      const preset = createGoogleWorkerBuild({...workerData.options, typescript});
+      parentPort.postMessage({registryFile: preset.registryFile, sha256: preset.manifest().registrySha256});
+    `, { eval: true, workerData: { api: path.join(f.project, 'build/index.cjs'), typescript: require.resolve('typescript'), gate,
+      options: { projectRoot: f.project, outdir: path.join(f.project, 'generated'), profile } } });
+    workers.push(worker);
+    const ready = new Promise((resolve, reject) => { worker.once('message', resolve); worker.once('error', reject); });
+    const done = new Promise((resolve, reject) => {
+      worker.on('message', value => { if (value !== 'ready') resolve(value); });
+      worker.once('error', reject);
+      worker.once('exit', code => { if (code !== 0) reject(new Error(`Registry worker exited ${code}`)); });
+    });
+    return { ready, done };
+  });
+  await Promise.all(preparations.map(item => item.ready));
+  Atomics.store(new Int32Array(gate), 0, 1);
+  Atomics.notify(new Int32Array(gate), 0);
+  const [first, same, other] = await Promise.all(preparations.map(item => item.done));
+  assert.equal(first.registryFile, same.registryFile);
+  assert.notEqual(first.registryFile, other.registryFile);
+  for (const receipt of [first, same, other]) assert.equal(hash(fs.readFileSync(receipt.registryFile)), receipt.sha256);
+  assert.equal(fs.readdirSync(path.join(f.project, 'generated')).some(name => name.startsWith('.wga-registry-')), false);
+  assert.deepEqual((await f.bundle(f.prepare())).value, ['value']);
+  assert.deepEqual((await f.bundle(f.prepare('google-modern-v1'), 'codec-b')).value, ['value']);
 });
 
 for (const change of ['deleted', 'tampered']) {

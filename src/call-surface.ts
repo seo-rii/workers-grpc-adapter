@@ -91,6 +91,13 @@ export function callErrorFromStatus(
 
 const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
 
+function setReadableQueueLimit(stream: Readable, limit: number): void {
+  // Node and Workers nodejs_compat streams expose this state but no public
+  // setter. Update only our own surface, before starting its transport, so a
+  // transformer can keep the stream identity and listeners it received.
+  (stream as unknown as { _readableState: { highWaterMark: number } })._readableState.highWaterMark = limit;
+}
+
 /** Mark the RPC terminal before invoking user callbacks or stream events. */
 export function markCallSurfaceTerminal(surface: SurfaceCall): void {
   streamLifecycles.get(surface)?.finish();
@@ -178,8 +185,15 @@ export class ClientReadableStreamImpl<ResponseType>
 {
   public call?: InterceptingCallInterface;
   private readonly lifecycle = new ClientStreamLifecycle(this);
+  private readonly defaultReadQueueLimit: number;
   constructor(readonly deserialize: (chunk: Buffer) => ResponseType, readableHighWaterMark?: number) {
-    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { highWaterMark: readableHighWaterMark }) });
+    super({ objectMode: true });
+    this.defaultReadQueueLimit = this.readableHighWaterMark;
+    this.setReadQueueLimit(readableHighWaterMark);
+  }
+
+  setReadQueueLimit(limit: number | undefined): void {
+    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
   }
 
   cancel(): void {
@@ -252,12 +266,19 @@ export class ClientDuplexStreamImpl<RequestType, ResponseType>
 {
   public call?: InterceptingCallInterface;
   private readonly lifecycle = new ClientStreamLifecycle(this);
+  private readonly defaultReadQueueLimit: number;
   constructor(
     readonly serialize: (value: RequestType) => Buffer,
     readonly deserialize: (chunk: Buffer) => ResponseType,
     readableHighWaterMark?: number
   ) {
-    super({ objectMode: true, ...(readableHighWaterMark === undefined ? {} : { readableHighWaterMark }) });
+    super({ objectMode: true });
+    this.defaultReadQueueLimit = this.readableHighWaterMark;
+    this.setReadQueueLimit(readableHighWaterMark);
+  }
+
+  setReadQueueLimit(limit: number | undefined): void {
+    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
   }
 
   cancel(): void {

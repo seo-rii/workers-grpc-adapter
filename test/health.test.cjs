@@ -1,8 +1,9 @@
 'use strict';
-const { test } = require('node:test');
+const { test, before } = require('node:test');
 const { assert, grpc, withFetch, trailers, deferred } = require('./helpers.cjs');
 const { encodeFrame } = require('../dist/wire.js');
 const { HealthClient, HealthServingStatus } = require('../dist/health.js');
+const { createWorkersGrpcTransport } = require('../dist/adapter.js');
 const fc = require('fast-check');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(predicate) {
@@ -22,9 +23,16 @@ function held(bytes) {
     push: value => controller.enqueue(encodeFrame(value)), cancelled: () => cancelled };
 }
 let codec;
-new HealthClient({ makeUnaryRequest(method, serialize, deserialize, service, metadata, options, callback) {
-  codec = { serialize, deserialize }; callback(null, { status: 0 }); return { cancel() {} };
-} }).check();
+before(async () => {
+  const transport = createWorkersGrpcTransport({ fetcher: { async fetch() { return reply(Buffer.from([8, 0])); } } });
+  const client = new grpc.Client('codec.test', transport.channelCredentials, transport.grpcOptions({
+    callInvocationTransformer(properties) {
+      codec = { serialize: properties.methodDefinition.requestSerialize, deserialize: properties.methodDefinition.responseDeserialize };
+      return properties;
+    },
+  }));
+  try { await new HealthClient(client).check(); } finally { client.close(); }
+});
 
 test('HEALTH protobuf UTF-8 requests, defaults, duplicate enum and forward-compatible unknown fields', () => {
   assert.deepEqual(codec.serialize(''), Buffer.alloc(0));

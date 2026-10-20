@@ -112,7 +112,16 @@ test('SDK doctor inspects without credentials or network and executes zero depen
       const dns = require('node:dns');
       for (const key of ['lookup', 'resolve', 'resolve4', 'resolve6']) dns[key] = dns.promises[key] = denied;
       const cp = require('node:child_process');
-      for (const key of ['exec', 'execSync', 'execFile', 'execFileSync', 'spawn', 'spawnSync', 'fork']) cp[key] = denied;
+      const spawnSync = cp.spawnSync;
+      let resolverRuns = 0;
+      for (const key of ['exec', 'execSync', 'execFile', 'execFileSync', 'spawn', 'fork']) cp[key] = denied;
+      cp.spawnSync = (executable, args, options) => {
+        assert.equal(executable, process.execPath);
+        assert.deepEqual(args.slice(0, 3), ['--experimental-import-meta-resolve', '--input-type=module', '--eval']);
+        assert.equal(options.env.NODE_OPTIONS, '');
+        resolverRuns++;
+        return spawnSync(executable, args, options);
+      };
       const load = Module._load;
       Module._load = function(specifier, parent, isMain) {
         if (specifier === 'google-auth-library' || specifier.startsWith('google-auth-library/')) {
@@ -134,6 +143,7 @@ test('SDK doctor inspects without credentials or network and executes zero depen
       assert.deepEqual(Object.keys(process.env).filter(key => /^(GOOGLE_|GCLOUD_|GCE_|CLOUDSDK_)/.test(key)), []);
       const report = require(process.argv[2]).inspect(process.argv[1], ['example-sdk']);
       assert.equal(report.passed, true);
+      assert.equal(resolverRuns, 1);
       assert.deepEqual(counters, { network: 0, fetch: 0, auth: 0, runtimeImports: 0, credentialReads: 0 });
       process.stdout.write(JSON.stringify({ passed: report.passed, counters, scope: report.scope }));
     `;
@@ -142,5 +152,6 @@ test('SDK doctor inspects without credentials or network and executes zero depen
     const report = JSON.parse(result.stdout);
     assert.equal(report.passed, true);
     assert.deepEqual(report.counters, { network: 0, fetch: 0, auth: 0, runtimeImports: 0, credentialReads: 0 });
-    assert.match(report.scope, /no runtime imports, authentication or network requests/);
+    assert.match(report.scope, /default Node import\/require resolution, declaration package-entry availability/);
+    assert.match(report.scope, /no TypeScript semantic checks, inspected module execution, authentication or network requests/);
 });

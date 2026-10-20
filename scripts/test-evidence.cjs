@@ -33,9 +33,13 @@ const { validateAuthCatalogReport } = require('./auth-catalog-evidence.cjs');
 const { validateBootstrapCatalogReport } = require('./bootstrap-catalog-evidence.cjs');
 const { validateSecurityCatalogReport } = require('./security-catalog-evidence.cjs');
 const { validateSdkCancellationReport } = require('./sdk-cancellation-evidence.cjs');
+const { reportFile: sdkDeadlineReportFile, validateSdkDeadlineEvidence } = require('./sdk-deadline-evidence.cjs');
+const { reportFiles: prebundleReportFiles, validatePrebundleEvidence } = require('./prebundle-evidence.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const GENERATED_COMPATIBILITY = new Set(['exports-contract.json', 'google-graph.json', 'google-native-graph.json', 'google-types.json', 'google-local.json']);
 const OUTPUTS = ['verification/report.json', 'verification/tests.tap', 'verification/build.json', 'verification/types.json',
+    ...prebundleReportFiles,
+    sdkDeadlineReportFile,
     'verification/vendor-provenance.json',
     'verification/doc-examples.json',
     'verification/documentation-policy.json',
@@ -82,6 +86,10 @@ function walk(root, dir) {
 }
 function captureInputs(root = ROOT) {
     const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'PLAN.md', 'LICENSE', 'NOTICE', '.github/workflows/local.yml', 'fixtures/google/.env.example', ...discoverMarkdown(root),
+        // These checked-in dotfiles determine the pnpm graph used by the
+        // installed consumers. Keep an explicit list instead of capturing
+        // arbitrary hidden files such as local credentials or environment files.
+        'fixtures/hono/.npmrc', 'fixtures/sveltekit/.npmrc',
         ...['src', 'scripts', 'test', 'fixtures', 'docs', 'vendor'].flatMap(dir => walk(root, dir)),
         ...walk(root, 'compatibility').filter(file => !GENERATED_COMPATIBILITY.has(path.basename(file)))];
     return Object.fromEntries([...new Set(files)].sort().map(file => [file, hash(root, file)]));
@@ -240,6 +248,7 @@ function validateProfileManifest(profile, build) {
     need(build.transformer?.version === profile.transformerVersion && /^[a-f0-9]{64}$/.test(build.transformer?.sha256)
         && /^\d+\.\d+\.\d+/.test(build.transformer?.typescriptVersion), 'transformer identity missing');
     const inputs = digest(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+        generators: profile.schemas.map(schema => [schema.path, 'node_modules/protobufjs/index.js']),
         sources: [...profile.files, ...profile.schemas, ...profile.codegenInputs].map(file => [file.path, file.sha256]) }));
     need(build.inputSha256 === inputs && build.cacheKey === digest(JSON.stringify({ profileSha256: build.profileSha256,
         transformer: build.transformer, inputSha256: inputs })), 'transformer/input cache identity drift');
@@ -278,6 +287,13 @@ function emulatorSuites(root) {
     need(suites.length > 0 && new Set(suites.map(item => item.suite)).size === suites.length, 'emulator suite registry is missing or ambiguous');
     return suites;
 }
+function cleanEmulatorExit(exit) {
+    // The launcher stops only its owned JVM process group with SIGTERM. Java
+    // can report the handled signal as 128 + 15 instead of a Node signal exit.
+    return exit && exit.errorCode === undefined
+        && (([0, 143].includes(exit.code) && exit.signal === null)
+            || (exit.code === null && exit.signal === 'SIGTERM'));
+}
 function validateEmulatorReport(report, { toolchain, envoyPin, suites }) {
     need(report?.status === 'passed' && report.realGoogleSDK === true && report.officialEmulators === true, 'official emulator execution did not pass');
     need(report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.releaseEligible === false, 'emulator results cannot certify live cloud or release');
@@ -289,7 +305,7 @@ function validateEmulatorReport(report, { toolchain, envoyPin, suites }) {
     need(isDeepStrictEqual([...metadata.modeNames].sort(), ['datastore', 'firestore']), 'both official emulator modes are required');
     for (const [name, mode] of [['datastore', 'datastore-mode'], ['firestore', 'firestore-native']]) {
         const instance = metadata.instances?.[name];
-        need(instance?.mode === mode && instance.status === 'stopped' && instance.exit?.code === 0 && instance.exit.signal === null, `${name}: emulator did not exit cleanly`);
+        need(instance?.mode === mode && instance.status === 'stopped' && cleanEmulatorExit(instance.exit), `${name}: emulator did not exit cleanly`);
         need(instance.loopbackOnly === true && instance.persistentData === false && instance.imports === false && instance.exports === false, `${name}: emulator isolation drift`);
     }
     need(report.envoy?.version === envoyPin.version && report.envoy.sha256 === envoyPin.sha256, 'emulator Envoy provenance pin drift');
@@ -411,7 +427,7 @@ function validateLifecycleReport(report, toolchain) {
         for (const child of result.children) {
             need(child.pidGone === true && child.workingDirectoryRemoved === true && child.exit?.pid === child.pid, `${id}: lifecycle child cleanup was not proven`);
             if (signal) need(child.exit.parentSignal === signal, `${id}: lifecycle child signal propagation drift`);
-            need(phase === 'ready' ? child.exit.code === 0 : child.exit.code === 0 || child.exit.code === 143 || child.exit.signal === 'SIGTERM', `${id}: lifecycle child exit was unexpected`);
+            need(cleanEmulatorExit(child.exit), `${id}: lifecycle child exit was unexpected`);
         }
         if (!signal) need(result.stopEvidence?.concurrentStopSharedPromise === true && result.stopEvidence.repeatedStopAfterExit === true, 'idempotent-stop: stop completion invariants missing');
     }
@@ -601,6 +617,8 @@ function validateProvenance(root, report) {
     const pkg = read(root, 'package.json');
     need(report.package === pkg.name && report.version === pkg.version, 'package/report version drift');
     need(report.releaseEligible === false && report.liveGoogleApiExecuted === false && report.deployedCloudflareExecuted === false && report.fullDropInCertified === false, 'local evidence cannot claim cloud or release certification');
+    validatePrebundleEvidence(root, report);
+    validateSdkDeadlineEvidence(root, report);
     const embedded = [['build', 'verification/build.json'], ['vendorProvenance', 'verification/vendor-provenance.json'], ['declarations', 'verification/types.json'], ['packaging', 'verification/packaging.json'], ['docExamples', 'verification/doc-examples.json'], ['documentationPolicy', 'verification/documentation-policy.json'], ['docReferences', 'verification/doc-references.json'], ['documentationSupport', 'verification/documentation-support.json'],
         ['workerdIntegration', 'verification/workerd-integration.json'], ['workerdLifecycle', 'verification/workerd-lifecycle.json'], ['callLifecycle', 'verification/call-lifecycle.json'], ['flowControl', 'verification/flow-control.json'], ['wireCatalog', 'verification/wire-catalog.json'], ['workerdObserver', 'verification/workerd-observer.json'], ['fuzzCampaign', 'verification/fuzz-campaign-ci.json'],
         ['authCatalog', 'verification/auth-catalog.json'], ['bootstrapCatalog', 'verification/bootstrap-catalog.json'], ['securityCatalog', 'verification/security-catalog.json'],
@@ -802,6 +820,7 @@ function assemble(root = ROOT) {
     const emulatorArtifacts = validateEmulatorArtifacts(root, report.googleEmulators);
     const lifecycleArtifacts = validateLifecycleArtifacts(root, report.emulatorLifecycle);
     const artifacts = [...OUTPUTS, provenance.artifact, ...Object.keys(validateRuntimeCopies(root)),
+        ...Object.keys(report.googlePrebundleSdks.generatedArtifacts),
         ...Object.keys(report.googleSdk.declarations.generatedArtifacts || {}), ...Object.keys(report.apiContracts.generatedArtifacts || {}),
         ...Object.keys(report.transportBenchmark.generatedArtifacts),
         ...Object.keys(report.securityCatalog.artifactInputs),

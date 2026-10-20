@@ -249,6 +249,16 @@
       "file": "docs/google-prebundle.md",
       "ordinal": 4,
       "language": "js",
+      "sha256": "2e9072ce9c0beb111e8f4c58c5153179956d3414f9ada7004fc572045b1c296b",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative wrapper binding fragment selecting a lazy SDK namespace during initialization; this exact block is not executed by the documentation gate, and the SDK matrix is separate evidence."
+    },
+    {
+      "id": "docs/google-prebundle.md#fence-5",
+      "file": "docs/google-prebundle.md",
+      "ordinal": 5,
+      "language": "js",
       "sha256": "23da7e9703f3dbb804737926a90510c8e514d5475b8d479304f86890d619a21a",
       "classification": "expected",
       "category": "illustrative-code",

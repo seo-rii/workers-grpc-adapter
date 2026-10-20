@@ -173,7 +173,8 @@ test('SERVER request abort after a response message sends CANCELLED without pull
     } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 });
 
-test('SERVER deadlines and caller cancellation stop pending work and contain late completion', async () => {
+test('SERVER deadlines and caller cancellation stop pending work and contain late completion', async t => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1700000000000 });
     for (const kind of ['deadline', 'cancel']) {
         let entered, release, returned = false, signal;
         const started = new Promise(resolve => { entered = resolve; });
@@ -188,6 +189,7 @@ test('SERVER deadlines and caller cancellation stop pending work and contain lat
             headers: kind === 'deadline' ? { 'grpc-timeout': '10m' } : {} }));
         await started;
         if (kind === 'cancel') controller.abort();
+        else t.mock.timers.tick(10);
         assert.equal((await observe(await response)).status.code, kind === 'deadline' ? 4 : 1);
         assert.equal(signal.aborted, true);
         release(); await turn(); await turn();
@@ -223,18 +225,23 @@ test('SERVER validates timeout grammar, clamps extreme values and removes comple
     } finally { globalThis.setTimeout = originalSet; globalThis.clearTimeout = originalClear; for (const timer of active) originalClear(timer); }
 });
 
-test('SERVER disposes an iterator returned by a handler promise after its deadline', async () => {
-    let release, next = 0, returned = 0;
+test('SERVER disposes an iterator returned by a handler promise after its deadline', async t => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1700000000000 });
+    let entered, release, next = 0, returned = 0;
+    const started = new Promise(resolve => { entered = resolve; });
     const pending = new Promise(resolve => { release = resolve; });
     const handler = createGrpcWebHandler({ stream }, { async stream() {
+        entered();
         await pending;
         return { [Symbol.asyncIterator]() { return this; },
             async next() { next++; return { done: false, value: Buffer.from('late') }; },
             async return() { returned++; return { done: true }; },
         };
     } });
-    const response = await handler(request(undefined, { path: stream.path, headers: { 'grpc-timeout': '10m' } }));
-    assert.equal((await observe(response)).status.code, 4);
+    const response = handler(request(undefined, { path: stream.path, headers: { 'grpc-timeout': '10m' } }));
+    await started;
+    t.mock.timers.tick(10);
+    assert.equal((await observe(await response)).status.code, 4);
     release(); await turn(); await turn();
     assert.equal(next, 0);
     assert.equal(returned, 1);

@@ -23,6 +23,7 @@ function profile(id, command) {
   const transformer = { version: 1, sha256: h, typescriptVersion: '5.8.3' };
   const profileSha256 = hash(JSON.stringify(manifest));
   const inputSha256 = hash(JSON.stringify({ packages: manifest.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]),
+    generators: manifest.schemas.map(schema => [schema.path, 'node_modules/protobufjs/index.js']),
     sources: [...manifest.files, ...manifest.schemas, ...manifest.codegenInputs].map(file => [file.path, file.sha256]) }));
   const build = { profile: id, revision: manifest.revision, profileSha256, transformer, inputSha256,
     cacheKey: hash(JSON.stringify({ profileSha256, transformer, inputSha256 })), loaderOptions: manifest.loaderOptions,

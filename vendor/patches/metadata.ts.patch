@@ -1,18 +1,19 @@
 --- a/src/metadata.ts
 +++ b/src/metadata.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2019 gRPC authors.
-+ *
+  *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-  *
++ *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
 @@ -15,9 +18,8 @@
   *
   */
- 
+
 -import * as http2 from 'http2';
 -import { log } from './logging';
 -import { LogVerbosity } from './constants';
@@ -21,19 +22,83 @@
  import { getErrorMessage } from './error';
  const LEGAL_KEY_REGEX = /^[:0-9a-z_.-]+$/;
  const LEGAL_NON_BINARY_VALUE_REGEX = /^[ -~]*$/;
-@@ -213,6 +215,11 @@
- 
-   getOptions(): MetadataOptions {
-     return this.options;
+@@ -83,6 +85,9 @@
+   corked?: boolean;
+ }
+
++/** Internal admission snapshot, including context consumed by interceptors. */
++export let snapshotMetadata: (metadata: Metadata) => Metadata;
++
+ /**
+  * A class for storing metadata. Keys are normalized to lowercase ASCII.
+  */
+@@ -91,6 +96,17 @@
+   private options: MetadataOptions;
+   private opaqueData: Map<string, unknown> = new Map();
+
++  static {
++    snapshotMetadata = metadata => {
++      const result = metadata.clone();
++      result.options = { ...metadata.options };
++      // Opaque values may have application-specific identity. Isolate their
++      // key assignments without cloning the arbitrary values themselves.
++      result.opaqueData = new Map(metadata.opaqueData);
++      return result;
++    };
 +  }
 +
+   constructor(options: MetadataOptions = {}) {
+     this.options = options;
+   }
+@@ -161,7 +177,10 @@
+     for (const [key, values] of this.internalRepr) {
+       if (values.length > 0) {
+         const v = values[0];
+-        result[key] = Buffer.isBuffer(v) ? Buffer.from(v) : v;
++        Object.defineProperty(result, key, {
++          value: Buffer.isBuffer(v) ? Buffer.from(v) : v,
++          enumerable: true, configurable: true, writable: true,
++        });
+       }
+     }
+     return result;
+@@ -215,6 +234,11 @@
+     return this.options;
+   }
+
 +  /** Internal transport iteration retaining repeated values. */
 +  entries(): IterableIterator<[string, readonly MetadataValue[]]> {
 +    return this.internalRepr.entries();
-   }
- 
++  }
++
    /**
-@@ -310,7 +317,7 @@
+    * Creates an OutgoingHttpHeaders object that can be used with the http2 API.
+    */
+@@ -228,7 +252,10 @@
+       }
+       // We assume that the user's interaction with this object is limited to
+       // through its public API (i.e. keys and values are already validated).
+-      result[key] = values.map(bufToString);
++      Object.defineProperty(result, key, {
++        value: values.map(bufToString),
++        enumerable: true, configurable: true, writable: true,
++      });
+     }
+
+     return result;
+@@ -241,7 +268,10 @@
+   toJSON() {
+     const result: { [key: string]: MetadataValue[] } = {};
+     for (const [key, values] of this.internalRepr) {
+-      result[key] = values;
++      Object.defineProperty(result, key, {
++        value: values,
++        enumerable: true, configurable: true, writable: true,
++      });
+     }
+     return result;
+   }
+@@ -310,7 +340,7 @@
          const message = `Failed to add metadata entry ${key}: ${values}. ${getErrorMessage(
            error
          )}. For more information see https://github.com/grpc/grpc-node/issues/1173`;
@@ -41,4 +106,4 @@
 +        console.error('E ' + message);
        }
      }
- 
+

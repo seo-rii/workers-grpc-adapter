@@ -61,6 +61,12 @@ credentials or inherited Java options to the processes. Logs are created under
 removes the working directory; callers must await it in `finally`.
 The launcher also stops and records its Java children when the parent receives
 SIGINT or SIGTERM, including signals received during startup.
+Readiness requires the pinned emulator's startup marker for its selected API
+endpoint as well as an HTTP response while the child is still alive. A foreign
+service that wins the port allocation race cannot satisfy that check. Cleanup
+signals the owned Java process group with SIGTERM, then SIGKILL if necessary;
+it never sends an HTTP shutdown request to a possibly reused port. A graceful
+JVM SIGTERM exit may be recorded as code `143` or signal `SIGTERM`.
 Downloaded artifacts stay cached for subsequent runs. Initial downloads require
 network access; database requests use local endpoints only.
 

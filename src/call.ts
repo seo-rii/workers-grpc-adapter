@@ -111,6 +111,7 @@ export class WorkersCall {
             this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
                 maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
                 budget: context.resources,
+                beforeFrame: () => { this.stopIfExpired(); },
                 onFrame: this.observation ? bytes => this.observation!.sent(bytes) : undefined,
                 // Fetch can cancel an upload after an early server response.
                 // Stop producers, but let that response (or the logical call
@@ -301,7 +302,7 @@ export class WorkersCall {
         }
     }
     private async refreshCredentials(): Promise<void> {
-        if (this.terminal) return;
+        if (this.stopIfExpired()) return;
         this.observation?.beginAttempt();
         const c = this.context;
         const service = c.path.slice(0, c.path.lastIndexOf('/'));
@@ -309,7 +310,9 @@ export class WorkersCall {
         try {
             // Start outside the caller stack, preserving cancellation before auth.
             await Promise.resolve();
-            if (this.terminal) return;
+            // A ready continuation can run before the deadline timer gets a
+            // turn. Check the budget again before starting credential I/O.
+            if (this.stopIfExpired()) return;
             const auth = await this.credentials.generateMetadata({ service_url: authOrigin + service, method_name: c.path });
             if (this.terminal) return;
             this.metadata = this.baseMetadata!.clone();
@@ -346,7 +349,7 @@ export class WorkersCall {
             this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             return;
         }
-        if (this.terminal) {
+        if (this.stopIfExpired()) {
             if (callback) {
                 queueMicrotask(() => notify(() => callback!(new Error('WGA_CALL_TERMINATED'))));
             }
@@ -418,6 +421,14 @@ export class WorkersCall {
         if (this.context.lifetime && !this.context.lifetime.isTerminal()) { this.context.lifetime.cancelWithStatus(code, details); return; }
         this.finish(code, details);
     }
+    private stopIfExpired(): boolean {
+        if (this.terminal) return true;
+        if (this.deadline === Infinity || this.deadline > Date.now()) return false;
+        // Ready stream reads can keep timer callbacks queued. Expiry still
+        // wins before another message or a newly selected terminal result.
+        this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+        return true;
+    }
     private armTimer(): void {
         if (this.deadline === Infinity || this.terminal) {
             return;
@@ -456,7 +467,7 @@ export class WorkersCall {
             for (let attempt = 1; !this.terminal; attempt++) {
                 try {
                     const outcome = await this.executeAttempt(policy, attempt, previous);
-                    if (!outcome || this.terminal) return;
+                    if (!outcome || this.stopIfExpired()) return;
                     this.observation?.endAttempt(outcome.result.code);
                     if (outcome.throttled) {
                         this.retryThrottle?.suppress();
@@ -472,6 +483,7 @@ export class WorkersCall {
                     }
                     if (delay === undefined) {
                         if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
+                        if (this.stopIfExpired()) return;
                         this.finishObject(outcome.result);
                         return;
                     }
@@ -490,6 +502,7 @@ export class WorkersCall {
                         this.retryThrottle.suppress();
                         this.observation?.throttled(attempt, outcome.result.code);
                         if (outcome.initial) notify(() => this.listener!.onReceiveMetadata(outcome.initial!));
+                        if (this.stopIfExpired()) return;
                         this.finishObject(outcome.result);
                         return;
                     }
@@ -564,7 +577,7 @@ export class WorkersCall {
             if (!policy) this.releaseRequest();
             // Source cancellation may never settle. Begin cleanup without
             // delaying the local terminal result or retaining attempt leases.
-            if (this.terminal) {
+            if (this.stopIfExpired()) {
                 void response.body?.cancel().catch(() => {});
                 return;
             }
@@ -592,7 +605,7 @@ export class WorkersCall {
             }
             let pendingInitial: Metadata | undefined = policy ? initial : undefined;
             if (!policy) notify(() => this.listener!.onReceiveMetadata(initial));
-            if (this.terminal) {
+            if (this.stopIfExpired()) {
                 void response.body?.cancel().catch(() => {});
                 return;
             }
@@ -601,13 +614,24 @@ export class WorkersCall {
             if (response.body) {
                 for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
                     { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes,
-                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: this.observation ? bytes => this.observation!.received(bytes) : undefined })) {
-                    if (this.terminal) return;
+                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: bytes => {
+                            this.observation?.received(bytes);
+                            // Ready partial or empty chunks can keep timer callbacks
+                            // queued indefinitely without completing another frame.
+                            if (this.stopIfExpired()) throw new TransportError(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+                        } })) {
+                    if (this.stopIfExpired()) return;
                     if (headerStatus) throw new TransportError(status.INTERNAL, 'WGA_BODY_AFTER_HEADER_STATUS');
                     if (frame.trailer) {
                         final = parseTrailers(frame.payload);
                         if (final) this.closeUploadFromResponse();
                         continue;
+                    }
+                    // Unary response cardinality belongs to the wire reader.
+                    // Async interceptors may hold or discard delivery, so the
+                    // surface callback cannot reliably count received frames.
+                    if (!c.responseStream && committed) {
+                        throw new TransportError(status.UNIMPLEMENTED, 'Too many responses received');
                     }
                     committed = true;
                     this.observation?.message(frame.payload.length);
@@ -619,10 +643,10 @@ export class WorkersCall {
                             const metadata = pendingInitial; pendingInitial = undefined;
                             notify(() => this.listener!.onReceiveMetadata(metadata));
                         }
-                        if (this.terminal) return;
+                        if (this.stopIfExpired()) return;
                         this.responseBytes = frame.payload.length;
                         while (!this.readDemand && !this.terminal) await new Promise<void>(resolve => { this.wakeRead = resolve; });
-                        if (this.terminal) return;
+                        if (this.stopIfExpired()) return;
                         this.readDemand = !c.responseStream;
                         this.responseBytes = 0;
                         this.pendingMessages = 0;
@@ -634,7 +658,7 @@ export class WorkersCall {
                     }
                 }
             }
-            if (this.terminal) return;
+            if (this.stopIfExpired()) return;
             return { result: final ?? { code: httpStatusToGrpc(response.status), details: 'WGA_MISSING_GRPC_STATUS', metadata: new Metadata() },
                 retryable: !!final && !committed, countFailure: !!final, initial: pendingInitial };
         } finally { attemptScope?.close(); }

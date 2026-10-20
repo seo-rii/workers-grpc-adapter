@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { WorkersGrpcConfigurationError as ConfigError } from './status';
+import { observeRejection } from './observe-rejection';
 export interface CallMetadataOptions {
     service_url: string;
     method_name: string;
@@ -40,15 +41,17 @@ export class CallCredentials {
                         reject(new Error('Invalid authentication metadata'));
                     }
                     else {
-                        resolve(metadata.clone());
+                        // The first callback owns its outcome, including a
+                        // failing snapshot. Do not throw back into the provider
+                        // after completed prevents its error callback settling.
+                        try { resolve(metadata.clone()); }
+                        catch (error) { reject(error); }
                     }
                 }
             };
             try {
                 const returned: unknown = generator(options, done);
-                if (returned && typeof (returned as PromiseLike<unknown>).then === 'function') {
-                    Promise.resolve(returned).catch(error => done(error instanceof Error ? error : new Error('Authentication generator failed')));
-                }
+                observeRejection(returned, error => done(error instanceof Error ? error : new Error('Authentication generator failed')));
             }
             catch (e) {
                 done(e instanceof Error ? e : new Error('Authentication generator failed'));
@@ -130,9 +133,7 @@ function createFromGoogleCredential(auth: GoogleCredential | LegacyGoogleCredent
                 });
                 // The legacy contract requires the callback. Ignore returned values,
                 // but contain a rejected promise from an accidentally async provider.
-                if (returned && typeof (returned as PromiseLike<unknown>).then === 'function') {
-                    Promise.resolve(returned).catch(reject);
-                }
+                observeRejection(returned, reject);
             }).then(headers => {
                 if (typeof headers !== 'object' || Array.isArray(headers) || headers instanceof Headers) {
                     throw new Error('Invalid authentication metadata');

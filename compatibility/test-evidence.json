@@ -460,7 +460,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 128
+              "equals": 131
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -497,7 +497,7 @@
             },
             {
               "pointer": "/packedFiles",
-              "equals": 128
+              "equals": 131
             },
             {
               "pointer": "/declarations/results/0/status",
@@ -1374,7 +1374,7 @@
           "assertions": [
             {
               "pointer": "/bundledInputs",
-              "equals": 556
+              "equals": 557
             }
           ]
         },
@@ -1408,7 +1408,7 @@
           "assertions": [
             {
               "pointer": "/bundledInputs",
-              "equals": 566
+              "equals": 567
             }
           ]
         },
@@ -1644,7 +1644,7 @@
             },
             {
               "pointer": "/files",
-              "equals": 128
+              "equals": 131
             }
           ]
         },

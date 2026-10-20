@@ -25,7 +25,7 @@ export default {
 
 Each service-definition entry uses the existing `ServerMethodDefinition` shape: `path`, `requestStream`, `responseStream`, `requestDeserialize` and `responseSerialize`. Full generated method definitions also work. Handler keys must exactly match definition keys. Registration snapshots definitions and handlers, rejects unsafe keys and duplicate paths, and supports all four combinations of request/response streaming. It dispatches only registered paths.
 
-The handler accepts `POST` with binary `application/grpc-web` or `application/grpc-web+proto`. For non-streaming requests, it reads and validates exactly one message before deserialization and application invocation. Missing or extra messages are rejected. A request-streaming handler instead receives a lazy `AsyncIterable<Request>` and may accept zero or more messages. Each iterator read validates and deserializes one frame. Request trailer frames, truncated framing and malformed compression are rejected when consumed. Native `application/grpc`, gRPC-Web text, CORS preflight and native listening sockets are outside this API. Authentication and authorization belong in the surrounding Worker or application handler.
+The handler accepts `POST` with binary `application/grpc-web` or `application/grpc-web+proto`. For non-streaming requests, it reads and validates exactly one message before deserialization and application invocation. Missing or extra messages are rejected. A request-streaming handler instead receives a lazy `AsyncIterable<Request>` and may accept zero or more messages. An absent or null Fetch body represents a zero-message request stream, just like an empty body stream. Each iterator read validates and deserializes one frame. Request trailer frames, truncated framing and malformed compression are rejected when consumed. Native `application/grpc`, gRPC-Web text, CORS preflight and native listening sockets are outside this API. Authentication and authorization belong in the surrounding Worker or application handler.
 
 Rejected methods, unsupported content types and unregistered RPCs start request-body cancellation without waiting for it; cleanup failure or an unresolved cancellation cannot delay the error response.
 
@@ -112,6 +112,13 @@ Options are `maxReceiveMessageBytes`, `maxSendMessageBytes`, `maxWireMessageByte
 Identity, deflate and gzip request messages are accepted. The optional response `compression` uses the existing enum values `0`, `1` and `2`. The configured codec is used only if the caller advertises it in `grpc-accept-encoding`; otherwise responses use identity. Codecs and bounded decompression are shared with the client transport. See [compression](compression.md).
 
 `grpc-timeout` accepts the standard one-to-eight-digit `H`, `M`, `S`, `m`, `u` and `n` forms. Extreme values are clamped safely. `defaultTimeoutMs` applies when no timeout header is present. Completed calls remove their deadline timers and request-abort listeners.
+
+The absolute deadline is checked before starting application work and at input,
+iteration, serialization and response-delivery boundaries, even when an overdue
+timer has not run yet. An expired call stops new reads and handlers and discards
+late results; it cannot publish a late message or successful terminal status.
+Messages already delivered remain delivered. An already observed cancellation
+or input failure retains its original status when the deadline later expires.
 
 Request streams retain the current Fetch chunk and one decoded frame; they do not collect all requests. Output streams retain at most one application item ahead of consumer demand. The response reader controls further iteration. Cancelling it aborts the context and invokes the iterator's `return()` when available. Pending handlers and iterator operations are raced against cancellation and deadlines; late failures remain handled. Application code must cooperate with `context.signal` to stop its own I/O or side effects. The adapter cannot forcibly interrupt an unresolved application promise or synchronous computation, and `return()` cannot bypass an async generator that ignores cancellation while awaiting work.
 

@@ -85,6 +85,9 @@ export interface MetadataOptions {
   corked?: boolean;
 }
 
+/** Internal admission snapshot, including context consumed by interceptors. */
+export let snapshotMetadata: (metadata: Metadata) => Metadata;
+
 /**
  * A class for storing metadata. Keys are normalized to lowercase ASCII.
  */
@@ -92,6 +95,17 @@ export class Metadata {
   protected internalRepr: MetadataObject = new Map<string, MetadataValue[]>();
   private options: MetadataOptions;
   private opaqueData: Map<string, unknown> = new Map();
+
+  static {
+    snapshotMetadata = metadata => {
+      const result = metadata.clone();
+      result.options = { ...metadata.options };
+      // Opaque values may have application-specific identity. Isolate their
+      // key assignments without cloning the arbitrary values themselves.
+      result.opaqueData = new Map(metadata.opaqueData);
+      return result;
+    };
+  }
 
   constructor(options: MetadataOptions = {}) {
     this.options = options;
@@ -163,7 +177,10 @@ export class Metadata {
     for (const [key, values] of this.internalRepr) {
       if (values.length > 0) {
         const v = values[0];
-        result[key] = Buffer.isBuffer(v) ? Buffer.from(v) : v;
+        Object.defineProperty(result, key, {
+          value: Buffer.isBuffer(v) ? Buffer.from(v) : v,
+          enumerable: true, configurable: true, writable: true,
+        });
       }
     }
     return result;
@@ -235,7 +252,10 @@ export class Metadata {
       }
       // We assume that the user's interaction with this object is limited to
       // through its public API (i.e. keys and values are already validated).
-      result[key] = values.map(bufToString);
+      Object.defineProperty(result, key, {
+        value: values.map(bufToString),
+        enumerable: true, configurable: true, writable: true,
+      });
     }
 
     return result;
@@ -248,7 +268,10 @@ export class Metadata {
   toJSON() {
     const result: { [key: string]: MetadataValue[] } = {};
     for (const [key, values] of this.internalRepr) {
-      result[key] = values;
+      Object.defineProperty(result, key, {
+        value: values,
+        enumerable: true, configurable: true, writable: true,
+      });
     }
     return result;
   }

@@ -5,8 +5,8 @@ const sources = ['scripts/test-bootstrap-catalog.cjs', 'scripts/bootstrap-catalo
   'fixtures/worker/bootstrap-catalog.mjs', 'fixtures/worker/bootstrap-app-probe.mjs',
   'fixtures/google/package-lock.json', 'fixtures/native/package-lock.json', 'fixtures/modern/package-lock.json',
   'fixtures/modern-native/package-lock.json', 'fixtures/worker/package-lock.json'];
-const profiles = { 'google-static-v1': { revision: 5, fixture: 'google', nativeFixture: 'native', types: 764, schemas: 14 },
-  'google-modern-v1': { revision: 3, fixture: 'modern', nativeFixture: 'modern-native', types: 1069, schemas: 15 } };
+const profiles = { 'google-static-v1': { revision: 6, fixture: 'google', nativeFixture: 'native', types: 764, schemas: 14 },
+  'google-modern-v1': { revision: 4, fixture: 'modern', nativeFixture: 'modern-native', types: 1069, schemas: 15 } };
 const firstMethods = ['fromObject', 'toObject', 'encode', 'decode'];
 const methods = ['ctor', 'create', 'verify', 'fromObject', 'toObject', 'encode', 'decode', 'encodeDelimited', 'decodeDelimited',
   'lookup', 'lookupType', 'lookupTypeOrEnum', 'lookupEnum', 'lookupService', 'getEnum', 'get',

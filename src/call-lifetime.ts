@@ -1,4 +1,4 @@
-import { Metadata } from './metadata';
+import { Metadata, snapshotMetadata } from './metadata';
 import { status, propagate, TransportError } from './status';
 import type { ResourceBudget } from './resources';
 import type { CallObservation } from './observer';
@@ -62,12 +62,18 @@ export class CallLifetime implements InterceptingCallInterface {
         if (!this.attachParent(flags)) return;
         this.armTimer();
         if (this.terminal) return;
+        // Admission can defer even an immediately available slot. Own the
+        // caller's headers and interceptor context before yielding to it.
+        if (this.resources?.limits.maxConcurrentCalls !== undefined) {
+            try { metadata = snapshotMetadata(metadata); }
+            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); return; }
+        }
         const begin = () => {
-            if (this.terminal) return;
+            if (this.stopIfExpired()) return;
             this.chainStarted = true;
             this.observation?.admitted();
             this.startChain(metadata);
-            while (!this.terminal && this.pending.length) this.pending.shift()!();
+            while (this.pending.length && !this.stopIfExpired()) this.pending.shift()!();
         };
         if (!this.resources) { begin(); return; }
         if (this.resources.limits.maxConcurrentCalls !== undefined) this.observation?.queue();
@@ -87,11 +93,19 @@ export class CallLifetime implements InterceptingCallInterface {
     private startChain(metadata: Metadata): void {
         try {
             this.nextCall!.start(metadata, {
-                onReceiveMetadata: value => { if (!this.terminal) this.listener?.onReceiveMetadata?.(value); },
-                onReceiveMessage: value => { if (!this.terminal) this.listener?.onReceiveMessage?.(value); },
-                onReceiveStatus: value => this.finish(value, true),
+                onReceiveMetadata: value => { if (!this.stopIfExpired()) this.listener?.onReceiveMetadata?.(value); },
+                onReceiveMessage: value => { if (!this.stopIfExpired()) this.listener?.onReceiveMessage?.(value); },
+                onReceiveStatus: value => { if (!this.stopIfExpired()) this.finish(value, true); },
             });
         } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); }
+    }
+    private stopIfExpired(): boolean {
+        if (this.terminal) return true;
+        if (this.deadline === Infinity || this.deadline > Date.now()) return false;
+        // Admission and interceptor continuations can run after expiry before
+        // the deadline timer gets a turn. Check work and delivery boundaries.
+        this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+        return true;
     }
     private attachParent(flags: number): boolean {
         const parent = this.options.parent;
@@ -131,7 +145,7 @@ export class CallLifetime implements InterceptingCallInterface {
         this.timer = setTimeout(() => { this.timer = undefined; this.armTimer(); }, Math.min(remaining, 2147483647));
     }
     sendMessageWithContext(context: MessageContext, message: unknown): void {
-        if (this.terminal) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
+        if (this.stopIfExpired()) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
         let settled = false;
         const done = (error?: Error | null) => {
             if (settled) return;
@@ -145,7 +159,7 @@ export class CallLifetime implements InterceptingCallInterface {
         if (this.chainStarted) send(); else this.pending.push(send);
     }
     sendMessage(message: unknown): void {
-        if (this.terminal) return;
+        if (this.stopIfExpired()) return;
         // Preserve the public entry point: custom InterceptingCall subclasses
         // may override sendMessage to supply flags such as NoCompress.
         const send = () => {

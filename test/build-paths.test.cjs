@@ -76,6 +76,43 @@ test('BUILD logical and physical onLoad paths reach exactly the same inspected s
   assert.equal(logical.contents, physical.contents);
 });
 
+test('BUILD an absent symbolic role cannot stand in for an actual onLoad or metafile input', t => {
+  const f = fixture(t), preset = f.prepare();
+  const symbolic = path.join(f.project, f.sourcePath);
+  assert.equal(fs.existsSync(symbolic), false);
+  let load; preset.plugin.setup({ onLoad(_options, callback) { load = callback; } });
+  assert.throws(() => load({ path: symbolic }), { code: 'WGA_SOURCE_IDENTITY' });
+  assert.throws(() => preset.verifyBuild({ inputs: { [symbolic]: {} }, outputs: {} }), { code: 'WGA_SOURCE_IDENTITY' });
+  assert.equal(f.api.inspectGoogleWorkerProfile({ projectRoot: f.project, typescript: ts }).passed, true,
+    'doctor resolves the symbolic role to its real source before testing AST guards');
+});
+
+for (const bypass of [false, true]) {
+  test(`BUILD logical role collision rejects a different installation at ${bypass ? 'metafile' : 'onLoad'} verification`, async t => {
+    const f = fixture(t, 'hoisted');
+    // The declared role names the application root slot, while its importer
+    // selects a private SDK dependency, as the shipped Gaxios role does.
+    const privateCodec = path.join(f.sdk, 'node_modules/codec');
+    fs.cpSync(f.codec, privateCodec, { recursive: true });
+    f.profile.packages[1].path = 'node_modules/codec';
+    f.profile.files[0].path = 'node_modules/codec/index.js';
+    f.write(path.join(f.project, 'build/profiles/google-static-v1.json'), JSON.stringify(f.profile));
+    f.write(path.join(f.project, 'entry.cjs'), 'module.exports = [require("sdk"), require("codec")];');
+    const preset = f.prepare();
+    const override = { name: 'unverified-root', setup(build) {
+      build.onLoad({ filter: /codec[/\\]index\.js$/ }, args => args.path === path.join(f.codec, 'index.js')
+        ? { contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' } : undefined);
+    } };
+    await assert.rejects(f.bundle(preset, bypass ? [override] : []), /WGA_SOURCE_IDENTITY/);
+    assert.equal(preset.manifest().transformCoverage.passed, false);
+    // The exact logical slot is valid when it reaches the inspected source.
+    fs.rmSync(f.codec, { recursive: true });
+    f.link(privateCodec, f.codec);
+    await f.bundle(preset);
+    assert.deepEqual(preset.manifest().transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
+  });
+}
+
 test('BUILD an earlier plugin bypass cannot silently bundle an original transform target', async t => {
   const f = fixture(t), preset = f.prepare();
   const bypass = { name: 'bypass', setup(build) { build.onLoad({ filter: /codec[/\\]index\.js$/ }, args => ({ contents: fs.readFileSync(args.path, 'utf8'), loader: 'js' })); } };
@@ -262,4 +299,37 @@ test('BUILD doctor checks physical AST anchors when the nested logical role does
   assert.equal(report.transformationsChecked, true);
   assert.equal(report.diagnostics[0].reason, 'anchor-count');
   assert.equal(report.diagnostics[0].actual, 2);
+});
+
+test('BUILD shipped Gaxios role never substitutes SDK-owned bytes for an application installation', async t => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-gaxios-identity-'));
+  t.after(() => fs.rmSync(project, { recursive: true, force: true }));
+  const original = fs.realpathSync(path.join(root, 'fixtures/google/node_modules'));
+  const write = (file, bytes) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); };
+  const link = (target, file) => fs.symlinkSync(target, file, process.platform === 'win32' ? 'junction' : 'dir');
+  write(path.join(project, 'package.json'), '{"private":true}');
+  fs.mkdirSync(path.join(project, 'node_modules'));
+  for (const entry of fs.readdirSync(original)) {
+    if (entry === 'gaxios' || entry.startsWith('.')) continue;
+    link(path.join(original, entry), path.join(project, 'node_modules', entry));
+  }
+  const shadow = path.join(project, 'node_modules/gaxios'), verified = path.join(original, 'gaxios');
+  write(path.join(shadow, 'package.json'), fs.readFileSync(path.join(verified, 'package.json')));
+  write(path.join(shadow, 'build/cjs/src/index.js'), 'module.exports = require("./gaxios.js");');
+  write(path.join(shadow, 'build/cjs/src/gaxios.js'), 'exports.sourceIdentity = "application-owned";');
+  write(path.join(project, 'entry.cjs'), 'module.exports = require("gaxios");');
+  const api = require('../src/build/index.cjs');
+  const report = api.inspectGoogleWorkerProfile({ projectRoot: project, typescript: ts });
+  assert.equal(report.passed, true, JSON.stringify(report.diagnostics));
+  const preset = api.createGoogleWorkerBuild({ projectRoot: project, outdir: path.join(project, 'generated'), typescript: ts });
+  const bundle = () => esbuild.build({ absWorkingDir: project, entryPoints: ['entry.cjs'], bundle: true, platform: 'node',
+    write: false, logLevel: 'silent', plugins: [preset.plugin] });
+  await assert.rejects(bundle(), /WGA_SOURCE_IDENTITY/);
+  assert.equal(preset.manifest().transformCoverage.passed, false);
+  assert.equal(preset.manifest().transformed.length, 0);
+  fs.rmSync(shadow, { recursive: true }); link(verified, shadow);
+  await bundle();
+  assert.equal(preset.manifest().transformCoverage.passed, true);
+  assert.equal(preset.manifest().transformCoverage.required, 1);
+  assert.equal(preset.manifest().transformCoverage.applied, 1);
 });

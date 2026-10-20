@@ -48,6 +48,46 @@ test('SERVER UPLOAD accepts empty and multiple messages through a lazy single it
     assert.equal(result.status.code, 7); assert.equal(incoming.body.locked, false);
 });
 
+test('SERVER UPLOAD treats null and absent bodies as zero messages only for request-streaming routes', async t => {
+    for (const requestStream of [false, true]) for (const responseStream of [false, true]) {
+        for (const kind of ['absent', 'null', 'empty-buffer']) {
+            await t.test(`${requestStream ? 'streaming' : 'unary'} input, ${responseStream ? 'streaming' : 'unary'} output, ${kind}`, async () => {
+                let calls = 0;
+                const handler = createGrpcWebHandler({ call: { ...method, requestStream, responseStream } }, {
+                    async call(input) {
+                        calls++;
+                        let count = 0;
+                        for await (const _ of input) count++;
+                        return responseStream ? (async function* () { yield String(count); })() : String(count);
+                    },
+                });
+                const result = await observe(await handler(request(
+                    kind === 'empty-buffer' ? Buffer.alloc(0) : kind === 'null' ? null : undefined,
+                    { headers: { 'content-length': '0' } })));
+                assert.equal(result.status.code, requestStream ? 0 : 3);
+                assert.deepEqual(result.messages, requestStream ? ['0'] : []);
+                assert.equal(calls, requestStream ? 1 : 0);
+            });
+        }
+    }
+});
+
+test('SERVER UPLOAD null bodies preserve pre-abort and expired-deadline outcomes', async () => {
+    for (const responseStream of [false, true]) for (const kind of ['abort', 'deadline']) {
+        let calls = 0;
+        const handler = createGrpcWebHandler({ call: { ...method, responseStream } }, {
+            call() { calls++; return responseStream ? (async function* () { yield 'unexpected'; })() : 'unexpected'; },
+        });
+        const aborter = new AbortController();
+        if (kind === 'abort') aborter.abort();
+        const result = await observe(await handler(request(null, { signal: aborter.signal,
+            ...(kind === 'deadline' ? { headers: { 'grpc-timeout': '0m' } } : {}) })));
+        assert.equal(result.status.code, kind === 'abort' ? 1 : 4);
+        assert.deepEqual(result.messages, []);
+        assert.equal(calls, 0);
+    }
+});
+
 test('SERVER UPLOAD bidi output arrives before upload EOF and input advances only on demand', async () => {
     const incoming = source(); let iterator, reads = 0;
     const handler = createGrpcWebHandler({ call: { ...method, responseStream: true } }, { async *call(input) {

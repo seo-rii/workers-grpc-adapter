@@ -2,8 +2,10 @@
 
 `HealthClient` calls the standard `grpc.health.v1.Health` service using an existing
 adapter `Client`. It reuses that client's routing, channel credentials and
-interceptors in either transport mode. The server must implement the health
-service; this helper does not make an arbitrary Google API expose one.
+interceptors in either transport mode. Generated RPC names or aliases such as
+`makeUnaryRequest` and `makeServerStreamRequest` do not change the health route.
+The server must implement the health service; this helper does not make an
+arbitrary Google API expose one.
 
 ```js
 import { Client, HealthClient } from '@grpc/grpc-js';
@@ -36,14 +38,25 @@ for managed retries and `waitForServing`. The managed monitor consumes the raw
 stream and owns its cancellation, retry timer and pending waiters. It does not
 close the underlying client.
 
+Health helpers snapshot supplied metadata before starting a call. Headers,
+binary values, metadata options and `setOpaque()` key assignments are isolated
+from later caller or interceptor changes. Opaque values retain their original
+identity so existing authentication interceptors can consume request context;
+the helper does not deep-copy arbitrary context objects. A monitor snapshots at
+creation and gives each Watch attempt a fresh copy, so interceptor changes from
+one attempt do not affect later retries. Replace the monitor to use new metadata
+assignments. The public `Metadata.clone()` behavior is unchanged.
+
 A monitor's `getState()` returns an immutable snapshot with `phase`,
 `servingStatus`, `attempt` and `lastErrorCode`. Phases are `connecting`, `serving`,
 `not-serving`, `reconnecting`, `disabled` and `closed`. Only enum value `SERVING`
 (1) satisfies `waitForServing`; `UNKNOWN`, `NOT_SERVING`, `SERVICE_UNKNOWN` and
 unrecognized future values continue waiting. Each waiter requires its own finite
 deadline and can have an independent AbortSignal. A waiter's timeout or abort
-does not close the monitor or affect other waiters. `close()` rejects remaining
-waiters, cancels the stream and clears backoff; it is safe to call repeatedly.
+does not close the monitor or affect other waiters. Each waiter checks its
+deadline again before accepting SERVING, even when its timeout callback has not
+run yet. `close()` rejects remaining waiters, cancels the stream and clears
+backoff; it is safe to call repeatedly.
 
 The standard Watch protocol retries every server terminal status, including OK,
 except `UNIMPLEMENTED`. This includes permission and authentication failures:

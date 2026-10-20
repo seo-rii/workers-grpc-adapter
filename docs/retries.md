@@ -40,6 +40,9 @@ does not by itself prove that the server performed no side effects.
 Each attempt uses the same logical deadline, fresh credential metadata and a new
 request body. Later attempts send `grpc-previous-rpc-attempts`. Cancellation and
 channel closure stop the backoff and prevent another credential exchange or Fetch.
+The absolute deadline is checked before credential acquisition, including after
+deferred startup and retry backoff. An expired call cannot start a new credential
+exchange while its deadline timer is waiting to run.
 Retries remain on the selected mode, endpoint and Fetcher; there is no failover.
 Every attempt checks the complete encoded header set against the 65,536-byte
 metadata budget, including refreshed credentials and `grpc-previous-rpc-attempts`.

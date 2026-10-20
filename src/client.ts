@@ -34,7 +34,7 @@ import {
 } from './call-surface';
 import { CallCredentials } from './credentials';
 import { StatusObject } from './call-interface';
-import { Channel } from './channel';
+import { Channel, isWorkersChannel } from './channel';
 import { WorkersGrpcConfigurationError } from './status';
 import { ChannelCredentials } from './credentials';
 import { ChannelOptions } from './options';
@@ -139,10 +139,23 @@ export class Client {
     this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
       options.callInvocationTransformer;
     delete options.callInvocationTransformer;
-    if (options.channelOverride !== undefined || options.channelFactoryOverride !== undefined) {
+    let channel: unknown;
+    if (options.channelOverride !== undefined) {
+      channel = options.channelOverride;
+    } else if (options.channelFactoryOverride !== undefined) {
+      const channelFactoryOverride = options.channelFactoryOverride;
+      if (typeof channelFactoryOverride !== 'function') {
+        throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'A channel factory function is required');
+      }
+      delete options.channelFactoryOverride;
+      channel = channelFactoryOverride(address, credentials, options);
+    } else {
+      channel = new Channel(address, credentials, options);
+    }
+    if (!isWorkersChannel(channel)) {
       throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
     }
-    this[CHANNEL_SYMBOL] = new Channel(address, credentials, options);
+    this[CHANNEL_SYMBOL] = channel;
   }
 
   close(): void {
@@ -516,10 +529,11 @@ export class Client {
         requestSerialize: serialize,
         responseDeserialize: deserialize,
       };
+    const defaultStream = new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit());
     let callProperties: CallProperties<RequestType, ResponseType> = {
       argument: argument,
       metadata: checkedArguments.metadata,
-      call: new ClientReadableStreamImpl<ResponseType>(deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()),
+      call: defaultStream,
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,
       callOptions: checkedArguments.options,
@@ -531,6 +545,9 @@ export class Client {
     }
     const stream: ClientReadableStream<ResponseType> =
       callProperties.call as ClientReadableStream<ResponseType>;
+    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
+      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
+    }
     const interceptorArgs: InterceptorArguments = {
       clientInterceptors: this[INTERCEPTOR_SYMBOL],
       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
@@ -610,13 +627,12 @@ export class Client {
         requestSerialize: serialize,
         responseDeserialize: deserialize,
       };
+    const defaultStream = new ClientDuplexStreamImpl<RequestType, ResponseType>(
+      serialize, deserialize, this[CHANNEL_SYMBOL].getReadQueueLimit()
+    );
     let callProperties: CallProperties<RequestType, ResponseType> = {
       metadata: checkedArguments.metadata,
-      call: new ClientDuplexStreamImpl<RequestType, ResponseType>(
-        serialize,
-        deserialize,
-        this[CHANNEL_SYMBOL].getReadQueueLimit()
-      ),
+      call: defaultStream,
       channel: this[CHANNEL_SYMBOL],
       methodDefinition: methodDefinition,
       callOptions: checkedArguments.options,
@@ -628,6 +644,9 @@ export class Client {
     }
     const stream: ClientDuplexStream<RequestType, ResponseType> =
       callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
+    if (stream === defaultStream && isWorkersChannel(callProperties.channel)) {
+      defaultStream.setReadQueueLimit(callProperties.channel.getReadQueueLimit());
+    }
     const interceptorArgs: InterceptorArguments = {
       clientInterceptors: this[INTERCEPTOR_SYMBOL],
       clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
@@ -681,6 +700,6 @@ export type { StatusObject } from './call-interface';
 export type { ClientMethodDefinition } from './factory';
 export type { ClientUnaryCall, ClientReadableStream, ClientWritableStream, ClientDuplexStream, ServiceError, SurfaceCall } from './call-surface';
 export { callErrorFromStatus } from './call-surface';
-export function closeClient(client: Client): void { client.close(); }
+export function closeClient(client: Client): void { Client.prototype.close.call(client); }
 export function getClientChannel(client: Client): Channel { return Client.prototype.getChannel.call(client); }
-export function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void { client.waitForReady(deadline, callback); }
+export function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void { Client.prototype.waitForReady.call(client, deadline, callback); }

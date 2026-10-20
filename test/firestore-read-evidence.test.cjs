@@ -9,8 +9,8 @@ const envoyPin = require('../fixtures/envoy/binary.json');
 function fixture() {
   const hash = 'a'.repeat(64), results = [], wire = [], sources = {}, evidence = {}, installedInputs = {}, nativeInputs = {};
   const profiles = [
-    { id: 'google-static-v1', version: '8.3.0', fixture: 'google', native: 'native', revision: 5 },
-    { id: 'google-modern-v1', version: '9.2.0', fixture: 'modern', native: 'modern-native', revision: 3 },
+    { id: 'google-static-v1', version: '8.3.0', fixture: 'google', native: 'native', revision: 6 },
+    { id: 'google-modern-v1', version: '9.2.0', fixture: 'modern', native: 'modern-native', revision: 4 },
   ];
   for (const file of ['scripts/test-firestore-read-errors.cjs', 'scripts/firestore-read-error-server.cjs', 'scripts/firestore-read-evidence.cjs',
     'fixtures/google/shared/firestore-read-errors.mjs', 'fixtures/worker/firestore-read-errors.mjs',

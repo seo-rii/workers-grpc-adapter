@@ -77,7 +77,7 @@ The versioned JSON files in [`src/build/profiles`](../src/build/profiles) declar
 | `packages` | Dependency role paths, optional `resolveFrom` importer role, exact package names, versions and `package.json` SHA256 hashes |
 | `files` | Exact source SHA256 hashes and enabled transform rules with expected match counts |
 | `schemas` | Exact protobuf JSON, proto or well-known schema input hashes |
-| `codegenInputs` | Exact protobuf generator implementation hashes |
+| `codegenInputs` | Exact protobuf generator entry, bootstrap and implementation hashes |
 | `loaderOptions` | Supported loader configuration |
 | `capabilities` | Features this profile is intended to support |
 | `requiredChecks` | Repository commands required when changing the profile |
@@ -107,6 +107,15 @@ listed source/schema/codegen files are content-pinned, not every file in every
 transitive package. The import-graph doctor separately checks replacement
 resolution throughout the installed dependency closure.
 
+Static profile revision 6 and modern profile revision 4 also pin the protobuf
+entry and bootstrap files. Before loading any generator, every schema's
+importer-resolved `protobufjs` entry must identify the same physical installation
+as a declared, hash-checked protobuf role. An additional SDK-local installation
+fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte copies;
+symlinks to the inspected installation remain valid. Hash-only inspection
+performs this identity check without executing a generator. Build startup and
+completion repeat it. These revisions keep the existing dependency versions.
+
 ## Generated artifact identity
 
 `createGoogleWorkerBuild(...).manifest()` exposes `cacheKey`, `inputSha256` and
@@ -116,6 +125,7 @@ resolution throughout the installed dependency closure.
 - Transformer semantic version **and the SHA256 of its implementation bytes**.
 - The supplied TypeScript compiler's version.
 - All validated package-manifest, source, schema and code-generator hashes.
+- The mapping from each schema to its validated generator role and entry.
 
 Identical inputs generate the same registry identity regardless of output
 directory. Changes to any of those inputs select another registry namespace,
@@ -173,7 +183,11 @@ Both the inspection report and build manifest include `resolvedPaths` with
 profile `path`, `logicalPath` and canonical `physicalPath`. Hash diagnostics also
 carry those paths. A second physical installation of an imported transform
 target fails with `WGA_SOURCE_IDENTITY`, including equal-version/equal-byte
-copies. Use the graph doctor for adapter identity as well. Normal Node/esbuild
+copies, even when its path equals a profile's symbolic role. The loader and
+metafile audit always check the actual module's physical source; doctor first
+resolves the symbolic role through its declared importer. A missing symbolic
+path cannot substitute for a loaded file. Use the graph doctor for adapter
+identity as well. Normal Node/esbuild
 symlink resolution is the tested path; custom loaders and `preserveSymlinks`
 can change dependency lookup and need separate validation.
 
@@ -193,6 +207,11 @@ file. Real paths containing literal `?` or `#` take precedence over suffix parsi
 Another plugin swallowing `onLoad`, an unverified physical source, or
 dependency-link drift fails the build. Rebuilds clear all target and module
 receipts. Package/source/schema/codegen checks run again before completion.
+
+Use a separate prepared preset for concurrent builds or esbuild contexts.
+Overlapping use of one preset fails with `WGA_BUILD_CONCURRENT`, so one build
+cannot borrow another build's transformation receipts. Sequential builds and
+context rebuilds may reuse a preset after its previous build finishes.
 
 `manifest().transformCoverage` reports `required`, `applied`, `unused` and
 `passed`. These counts describe distinct profile targets, rather than module
@@ -231,7 +250,7 @@ reported checks passed; `2` means a failed check, missing dependency or invalid
 invocation. A report filename writes the complete graph with restrictive file
 permissions and prints a compact summary.
 
-The same graph check is available without shelling out:
+The same graph check is available through the Node API:
 
 ```js
 const { inspectGoogleWorkerGraph } = require('@grpc/grpc-js/build');
@@ -247,7 +266,43 @@ The report records the declared package manager and hashes existing npm, pnpm,
 Yarn or Bun text lockfiles. npm package-level integrity records retain their
 original scope; another lockfile's presence is fingerprinted without claiming
 its full lock graph was parsed. The graph check reads manifests and source
-files without importing SDK, auth or adapter modules. Profile AST checks also
-load the installed compiler and hash-checked protobuf generators. Neither check
+files without importing SDK, auth or adapter modules. It checks grpc-js imports
+in `.js`, `.cjs`, `.mjs`, `.d.ts`, `.d.cts` and `.d.mts` files throughout each
+dependency; an unresolved root or deep import fails the graph check.
+Hidden runtime directories and source symlinks are included. Symlink imports
+resolve from the physical source location, and repeated physical files and
+directory cycles are visited once per package. Dependency `node_modules` trees
+are followed through package dependencies; version-control internals are skipped.
+Profile AST checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.
+
+Graph inspection assumes Node's default import/require conditions. Each graph
+import records `kind`: `require`, `import`, or `declaration`.
+Runtime static imports, re-exports and dynamic `import()` use Node's ESM
+conditions, including dynamic imports inside CommonJS files. `require()` uses
+CommonJS conditions; using both forms for one specifier checks both targets.
+Each check batches Node's import and CommonJS resolvers in a fresh process without
+loading inspected modules. This also avoids stale CommonJS paths and package
+metadata when the API re-inspects an installation after dependency changes.
+Missing files and directory targets fail, even when
+Node's resolver can construct their URLs. User preload scripts, loader hooks and
+custom conditions are excluded; validate those environments separately.
+
+The compiler-free source scanner recognizes literal import and re-export
+specifiers, including comments between tokens, string escapes and static
+template literals in `require()` or `import()`. It ignores comment/string/regex
+contents, property calls, and ordinary locally bound `require` functions. A
+`require` initialized directly by an imported `node:module`/`module`
+`createRequire` factory remains a CommonJS loader. Its literal absolute path or
+file URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
+are resolved from that declared location. An unproven base is reported as
+`resolution-base-unverified`; it never falls back to the source directory.
+This is static module-site
+inspection, not arbitrary loader-alias or computed-specifier data-flow analysis.
+
+Declaration files retain the graph check's package-entry availability check
+through CommonJS resolution and are recorded separately from runtime imports.
+This check does not resolve TypeScript's `types` conditions or validate declaration
+semantics. Run the application's TypeScript checks with its chosen module
+resolution settings to validate those contracts.

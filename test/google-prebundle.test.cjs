@@ -123,6 +123,80 @@ test('PREBUNDLE records reproducible artifact hashes and invalidates changed wra
   assert.notEqual(c.artifactSha256, types.artifactSha256);
   assert.equal(c.artifacts['index.cjs'].sha256, types.artifacts['index.cjs'].sha256);
 });
+test('PREBUNDLE rejects input drift after esbuild consumes same-length source bytes', async t => {
+  for (const kind of ['wrapper', 'dependency', 'json', 'typescript', 'declaration', 'package metadata', 'physical identity', 'transient source']) await t.test(kind, async t => {
+    const fixture = synthetic(t);
+    let file = path.join(fixture.adapterRoot, 'state.js');
+    if (kind === 'wrapper' || kind === 'transient source') {
+      file = path.join(fixture.projectRoot, 'wrapper.mjs');
+      fs.appendFileSync(file, 'const marker = "before"; void marker;\n');
+    } else if (kind === 'json' || kind === 'typescript') {
+      file = path.join(fixture.projectRoot, kind === 'json' ? 'data.json' : 'data.ts');
+      write(file, kind === 'json' ? '{"marker":"before"}' : 'export const marker: string = "before";');
+      fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.mjs'), `import * as data from "./${path.basename(file)}"; console.log(data);\n`);
+    } else if (kind === 'declaration') file = path.join(fixture.projectRoot, 'wrapper.d.ts');
+    else if (kind === 'package metadata') file = path.join(fixture.adapterRoot, 'package.json');
+    const original = fs.readFileSync(file, 'utf8');
+    const changed = kind === 'declaration' ? original.replace('number', 'string')
+      : kind === 'package metadata' ? original.replace('0.0.1', '0.0.2')
+      : original.includes('before') ? original.replace('before', 'after_') : original.replace('1000', '9000');
+    assert.equal(Buffer.byteLength(changed), Buffer.byteLength(original));
+    assert.notEqual(changed, original);
+    const racing = { ...esbuild, async build(options) {
+      if (kind === 'transient source') write(file, changed);
+      const built = await esbuild.build(options);
+      if (kind === 'physical identity') {
+        const replacement = path.join(fixture.projectRoot, 'replacement.js');
+        write(replacement, original);
+        fs.unlinkSync(file);
+        fs.symlinkSync(replacement, file);
+      } else write(file, kind === 'transient source' ? original : changed);
+      return built;
+    } };
+    await assert.rejects(fixture.build({ esbuild: racing }), error => error.code === 'WGA_PREBUNDLE_INPUT_CHANGED'
+      && error.diagnostic.logicalPath === file && typeof error.diagnostic.physicalPath === 'string');
+    assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false, 'never publish a stale source receipt');
+    assert.equal(fs.readdirSync(fixture.projectRoot).some(name => name.startsWith('.wga-prebundle-output-')), false);
+  });
+});
+test('PREBUNDLE accepts identical rewrites and records the source bytes supplied to esbuild', async t => {
+  const fixture = synthetic(t), file = path.join(fixture.adapterRoot, 'state.js'), original = fs.readFileSync(file);
+  const rewriting = { ...esbuild, async build(options) {
+    const built = await esbuild.build(options);
+    write(file, original);
+    return built;
+  } };
+  const result = await fixture.build({ esbuild: rewriting }), manifest = JSON.parse(fs.readFileSync(result.manifestPath));
+  assert.equal(require(result.bundlePath).createClient().timeout, 1000);
+  assert.deepEqual(manifest.sources.find(input => input.path === 'workers-grpc-adapter@0.0.1/state.js'),
+    { path: 'workers-grpc-adapter@0.0.1/state.js', sha256: hash(original), bytes: original.length });
+  assert.equal(manifest.wrapper.sha256, hash(fs.readFileSync(path.join(fixture.projectRoot, 'wrapper.mjs'))));
+});
+test('PREBUNDLE captures default loaders, module suffixes, and one symlinked runtime', async t => {
+  const fixture = synthetic(t), physical = path.join(fixture.projectRoot, 'store/adapter');
+  fs.mkdirSync(path.dirname(physical));
+  fs.renameSync(fixture.adapterRoot, physical);
+  fs.symlinkSync(physical, fixture.adapterRoot, 'junction');
+  const json = '{"marker":"source-한글"}', typescript = 'export const value: number = 17;';
+  write(path.join(fixture.projectRoot, 'data.json'), json);
+  write(path.join(fixture.projectRoot, 'value.ts'), typescript);
+  fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.mjs'), 'import data from "./data.json"; export const marker = data.marker; export {value} from "./value.ts?query#fragment";\n');
+  fs.appendFileSync(path.join(fixture.projectRoot, 'wrapper.d.ts'), 'export declare const marker: string; export declare const value: number;\n');
+  const result = await fixture.build({ exports: ['createClient', 'configure', 'marker', 'value'] }), manifest = JSON.parse(fs.readFileSync(result.manifestPath));
+  const api = require(result.bundlePath);
+  assert.equal(api.marker, 'source-한글');
+  assert.equal(api.value, 17);
+  api.configure({ timeout: 19 });
+  assert.equal(api.createClient().timeout, 19);
+  assert.equal(manifest.runtime.physicalInstallations, 1);
+  for (const [file, bytes] of [['data.json', json], ['value.ts', typescript]]) assert.deepEqual(manifest.sources.find(input => input.path === file),
+    { path: file, sha256: hash(bytes), bytes: Buffer.byteLength(bytes) });
+});
+test('PREBUNDLE rejects consumed files that bypass source capture', async t => {
+  const fixture = synthetic(t), bypass = { ...esbuild, build: options => esbuild.build({ ...options, plugins: [] }) };
+  await assert.rejects(fixture.build({ esbuild: bypass }), { code: 'WGA_PREBUNDLE_AUDIT' });
+  assert.equal(fs.existsSync(path.join(fixture.projectRoot, 'out')), false);
+});
 test('PREBUNDLE file modes and npm archives are reproducible across caller umasks', async t => {
   const fixture = synthetic(t), built = [], initial = process.umask();
   try {
@@ -167,6 +241,10 @@ test('PREBUNDLE audits imported transform targets and rejects an unverified SDK 
   assert.deepEqual(manifest.transformCoverage, { required: 1, applied: 1, unused: 0, passed: true });
   assert.equal(manifest.transformed.length, 1);
   assert.equal(manifest.transformed[0].upstreamSha256, fixture.profile.files[0].sha256);
+  const original = fs.readFileSync(path.join(fixture.sdkRoot, 'static.js'));
+  assert.deepEqual(manifest.sources.find(input => input.path === 'example-sdk@1.0.0/static.js'),
+    { path: 'example-sdk@1.0.0/static.js', sha256: hash(original), bytes: original.length }, 'source size and hash describe the same upstream bytes, not replacement text');
+  assert.ok(manifest.sources.some(input => input.path.endsWith(`static-protobuf-${manifest.registrySha256}.cjs`) && input.sha256 === manifest.registrySha256), 'generated registry receipts identify the actual generated module');
   const duplicate = path.join(fixture.projectRoot, 'duplicate/example-sdk');
   fs.cpSync(fixture.sdkRoot, duplicate, { recursive: true });
   fixture.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; export {root} from "./duplicate/example-sdk/static.js";');

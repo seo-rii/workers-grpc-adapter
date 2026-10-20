@@ -32,11 +32,17 @@ The numbers above are examples, not workload recommendations or platform connect
 
 The configuration is copied and frozen. All channels created from one factory's `grpcOptions()` or `gaxOptions()` share its budget, including different service targets. Separate factories remain independent even when their settings match. Globally configured channels share the global snapshot's budget. Reuse the factory when the application needs a common limit; creating a factory for every request creates separate budgets.
 
+When a `callInvocationTransformer` selects a different adapter channel, the adapter-created stream uses that channel's `readableHighWaterMark`. A replacement stream supplied by the transformer keeps its own queue settings.
+
 ## Admission and cancellation
 
 Waiting calls enter a FIFO queue before outgoing interceptor startup, authentication, serialization, and Fetch. The whole-call deadline and parent cancellation remain active while waiting. Cancellation and channel close remove waiting calls, prevent later startup, and preserve one final result. Interceptor constructors still execute synchronously while the call is constructed.
 
 Supplying `maxConcurrentCalls` makes outgoing startup asynchronous even when a slot is immediately available. Omitting it preserves synchronous requester startup. A slot counts the whole admitted logical call, including adapter retry backoff. An SDK retry creates a new call and obtains its own admission. Slots count logical calls, not sockets, responses awaiting headers, or Cloudflare connection allowances.
+
+The absolute deadline is checked again when admission completes and before each queued outgoing operation. An expired call returns its slot without starting another interceptor or serialization operation, even if the deadline timer has not run yet. Work already executing synchronously cannot be interrupted.
+
+With `maxConcurrentCalls`, each call snapshots its supplied metadata before admission: headers and binary values, metadata options, and opaque key assignments. Reusing or editing the caller's `Metadata` while a call waits cannot replace that call's authorization or interceptor context. Outgoing interceptors receive the call's own snapshot and can rewrite it normally. Opaque values retain their application-defined object identity; the adapter does not clone arbitrary objects stored with `setOpaque()`.
 
 Cancelling an admitted RPC returns its admission slot. Buffer ownership is independent: a custom Fetch implementation that ignores `AbortSignal` can retain an encoded request body until it settles. Those leases remain charged even after the local RPC has terminated, so another call may still encounter the byte budget.
 
