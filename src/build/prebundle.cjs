@@ -337,7 +337,32 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
     if (!output) fail('WGA_PREBUNDLE_AUDIT', 'A captured module has no compiled output');
     // A module's hashbang is meaningful only as the first line of the final
     // entry file, never inside an embedded factory.
-    const code = output.text.replace(/^#![^\n]*(?:\n|$)/, '');
+    let code = output.text.replace(/^#![^\n]*(?:\n|$)/, '');
+    if (receipt.nodeEsm) {
+      // A Node ESM importer was compiled without bundling, so esbuild treats
+      // every target as CJS and emits __toESM(require(token), 1). Captured ESM
+      // targets are now CJS factories with __esModule, but must still expose
+      // their original default export instead of the whole exports object.
+      // Only tagged static import edges identify these compiler-owned calls;
+      // original require calls and imports of actual CJS retain Node interop.
+      const ast = ts.createSourceFile(output.path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), replacements = [];
+      function preserveEsmInterop(node) {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.arguments.length === 2
+          && ts.isNumericLiteral(node.arguments[1]) && node.arguments[1].text === '1') {
+          const required = node.arguments[0];
+          if (ts.isCallExpression(required) && ts.isIdentifier(required.expression) && required.expression.text === 'require'
+            && required.arguments.length === 1 && ts.isStringLiteral(required.arguments[0])) {
+            const edge = edges.get(required.arguments[0].text), target = edge && !edge.external && modules.get(edge.path);
+            if (edge?.kind === 'import-statement' && target && target.info.format === 'esm') {
+              replacements.push({ start: node.arguments[1].getStart(ast), end: node.arguments[1].end });
+            }
+          }
+        }
+        ts.forEachChild(node, preserveEsmInterop);
+      }
+      preserveEsmInterop(ast);
+      for (const replacement of replacements.sort((a, b) => b.start - a.start)) code = code.slice(0, replacement.start) + '0' + code.slice(replacement.end);
+    }
     receipt.contents = (receipt.info.format === 'esm' ? '"use strict";\n' : '') + code;
     receipt.loader = 'js';
   }
