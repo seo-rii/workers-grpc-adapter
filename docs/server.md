@@ -103,6 +103,11 @@ Every application handler receives its decoded request and a context containing:
 
 Use the package's `Metadata` class for outgoing metadata. Reserved protocol headers and status keys cannot be supplied through it. Binary values use `-bin` keys. For an async generator, set initial metadata before its first yield; later initial-metadata changes fail. Trailing metadata may be set from normal generator completion.
 
+Incoming application fields with HTTP-valid tabs or non-ASCII string values are
+discarded before the handler runs, while valid metadata is retained. Their bytes
+still count toward the complete incoming metadata budget. Invalid names, unsafe
+control bytes and malformed binary metadata fail the request.
+
 Throw `new GrpcWebServerError(status.PERMISSION_DENIED, 'Public explanation', metadata)` to deliberately return an application status and public details. The optional metadata is merged with context trailers. All other handler or iterator exceptions become `INTERNAL` with `WGA_SERVER_HANDLER`; raw exception messages, payloads and credentials are not copied into responses. Serialization and framing failures likewise use fixed diagnostics.
 
 ## Resource bounds

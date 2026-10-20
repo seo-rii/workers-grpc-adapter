@@ -38,10 +38,6 @@ function isBinaryKey(key: string): boolean {
   return key.endsWith('-bin');
 }
 
-function isCustomMetadata(key: string): boolean {
-  return !key.startsWith('grpc-');
-}
-
 function normalizeKey(key: string): string {
   return key.toLowerCase();
 }
@@ -313,17 +309,13 @@ export class Metadata {
 
       try {
         if (isBinaryKey(key)) {
-          if (Array.isArray(values)) {
-            values.forEach(value => {
-              result.add(key, Buffer.from(value, 'base64'));
-            });
-          } else if (values !== undefined) {
-            if (isCustomMetadata(key)) {
-              values.split(',').forEach(v => {
+          if (values !== undefined) {
+            // HTTP/2 may combine repeated binary fields in any array entry.
+            // Split before decoding, including reserved grpc- binary fields.
+            for (const value of Array.isArray(values) ? values : [values]) {
+              value.split(',').forEach(v => {
                 result.add(key, Buffer.from(v.trim(), 'base64'));
               });
-            } else {
-              result.add(key, Buffer.from(values, 'base64'));
             }
           }
         } else {

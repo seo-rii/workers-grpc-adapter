@@ -73,7 +73,8 @@ The patch boundary follows P-01 through P-06 of the
   conversions preserve validated keys including `__proto__` as own enumerable
   data properties without changing the object's prototype. The public HTTP/2
   conversion helper silently discards rejected values so validation failures do
-  not log credentials or application metadata.
+  not log credentials or application metadata. It splits every comma-combined
+  binary field before decoding, including reserved `grpc-` fields.
 - HTTP/2 and TLS references are type-only. Parent calls use the adapter's structural
   deadline/cancellation contract; native channel, resolver, retry, server and
   transport code is excluded.

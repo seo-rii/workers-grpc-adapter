@@ -36,9 +36,9 @@
       "source": "vendor/client/metadata.ts",
       "sha256": "53cd9e7a30986c69ffc6753b68d0b0434893c5ac0b5ac31cc6febf52c695fe46",
       "target": "src/metadata.ts",
-      "patchedSha256": "4e4fbf531811c5035e0ac1fc24922b9f1aa966849d11c6f2314f997ea03644cb",
+      "patchedSha256": "a8bbfff13ca84938c3eb5999e75405d40e8246c45f0e4d005119101ef34fec75",
       "patch": "vendor/patches/metadata.ts.patch",
-      "patchSha256": "1ec15564f81c599f13ec01e5197e68afa4cac8a5dc4caebee59e2c24f6c2aba7"
+      "patchSha256": "14ed0b72781e31073678c1dc9b38449c8693eeb9c6ad6288d65e68fb6728cbd2"
     },
     {
       "upstreamPath": "src/call.ts",

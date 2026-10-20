@@ -23,7 +23,18 @@
  const LEGAL_KEY_REGEX = /^[:0-9a-z_.-]+$/;
  const LEGAL_NON_BINARY_VALUE_REGEX = /^[ -~]*$/;
  
-@@ -83,6 +84,9 @@
+@@ -37,10 +38,6 @@
+   return key.endsWith('-bin');
+ }
+ 
+-function isCustomMetadata(key: string): boolean {
+-  return !key.startsWith('grpc-');
+-}
+-
+ function normalizeKey(key: string): string {
+   return key.toLowerCase();
+ }
+@@ -83,6 +80,9 @@
    corked?: boolean;
  }
  
@@ -33,7 +44,7 @@
  /**
   * A class for storing metadata. Keys are normalized to lowercase ASCII.
   */
-@@ -91,6 +95,17 @@
+@@ -91,6 +91,17 @@
    private options: MetadataOptions;
    private opaqueData: Map<string, unknown> = new Map();
  
@@ -51,7 +62,7 @@
    constructor(options: MetadataOptions = {}) {
      this.options = options;
    }
-@@ -161,7 +176,10 @@
+@@ -161,7 +172,10 @@
      for (const [key, values] of this.internalRepr) {
        if (values.length > 0) {
          const v = values[0];
@@ -63,7 +74,7 @@
        }
      }
      return result;
-@@ -215,6 +233,11 @@
+@@ -215,6 +229,11 @@
      return this.options;
    }
  
@@ -75,7 +86,7 @@
    /**
     * Creates an OutgoingHttpHeaders object that can be used with the http2 API.
     */
-@@ -228,7 +251,10 @@
+@@ -228,7 +247,10 @@
        }
        // We assume that the user's interaction with this object is limited to
        // through its public API (i.e. keys and values are already validated).
@@ -87,7 +98,7 @@
      }
  
      return result;
-@@ -241,7 +267,10 @@
+@@ -241,7 +263,10 @@
    toJSON() {
      const result: { [key: string]: MetadataValue[] } = {};
      for (const [key, values] of this.internalRepr) {
@@ -99,7 +110,30 @@
      }
      return result;
    }
-@@ -306,11 +335,9 @@
+@@ -284,17 +309,13 @@
+ 
+       try {
+         if (isBinaryKey(key)) {
+-          if (Array.isArray(values)) {
+-            values.forEach(value => {
+-              result.add(key, Buffer.from(value, 'base64'));
+-            });
+-          } else if (values !== undefined) {
+-            if (isCustomMetadata(key)) {
+-              values.split(',').forEach(v => {
++          if (values !== undefined) {
++            // HTTP/2 may combine repeated binary fields in any array entry.
++            // Split before decoding, including reserved grpc- binary fields.
++            for (const value of Array.isArray(values) ? values : [values]) {
++              value.split(',').forEach(v => {
+                 result.add(key, Buffer.from(v.trim(), 'base64'));
+               });
+-            } else {
+-              result.add(key, Buffer.from(values, 'base64'));
+             }
+           }
+         } else {
+@@ -306,11 +327,9 @@
              result.add(key, values);
            }
          }
