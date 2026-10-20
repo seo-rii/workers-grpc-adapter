@@ -108,6 +108,62 @@ function getErrorStackString(error: Error): string {
   return error.stack?.split('\n').slice(1).join('\n') || 'no stack trace available';
 }
 
+// Argument parsers live outside the generated client's string-keyed RPC namespace.
+function checkOptionalUnaryResponseArguments<ResponseType>(
+  arg1: Metadata | CallOptions | UnaryCallback<ResponseType>,
+  arg2?: CallOptions | UnaryCallback<ResponseType>,
+  arg3?: UnaryCallback<ResponseType>
+): {
+  metadata: Metadata;
+  options: CallOptions;
+  callback: UnaryCallback<ResponseType>;
+} {
+  if (isFunction(arg1)) {
+    return { metadata: new Metadata(), options: {}, callback: arg1 };
+  } else if (isFunction(arg2)) {
+    if (arg1 instanceof Metadata) {
+      return { metadata: arg1, options: {}, callback: arg2 };
+    } else {
+      return { metadata: new Metadata(), options: arg1, callback: arg2 };
+    }
+  } else {
+    if (
+      !(
+        arg1 instanceof Metadata &&
+        arg2 instanceof Object &&
+        isFunction(arg3)
+      )
+    ) {
+      throw new Error('Incorrect arguments passed');
+    }
+    return { metadata: arg1, options: arg2, callback: arg3 };
+  }
+}
+
+function checkMetadataAndOptions(
+  arg1?: Metadata | CallOptions,
+  arg2?: CallOptions
+): { metadata: Metadata; options: CallOptions } {
+  let metadata: Metadata;
+  let options: CallOptions;
+  if (arg1 instanceof Metadata) {
+    metadata = arg1;
+    if (arg2) {
+      options = arg2;
+    } else {
+      options = {};
+    }
+  } else {
+    if (arg1) {
+      options = arg1;
+    } else {
+      options = {};
+    }
+    metadata = new Metadata();
+  }
+  return { metadata, options };
+}
+
 /**
  * A generic gRPC client. Primarily useful as a base class for all generated
  * clients.
@@ -171,37 +227,6 @@ export class Client {
     queueMicrotask(() => callback(Object.assign(new Error('WGA_CONNECTIVITY_UNSUPPORTED'), { code: Status.UNIMPLEMENTED })));
   }
 
-  private checkOptionalUnaryResponseArguments<ResponseType>(
-    arg1: Metadata | CallOptions | UnaryCallback<ResponseType>,
-    arg2?: CallOptions | UnaryCallback<ResponseType>,
-    arg3?: UnaryCallback<ResponseType>
-  ): {
-    metadata: Metadata;
-    options: CallOptions;
-    callback: UnaryCallback<ResponseType>;
-  } {
-    if (isFunction(arg1)) {
-      return { metadata: new Metadata(), options: {}, callback: arg1 };
-    } else if (isFunction(arg2)) {
-      if (arg1 instanceof Metadata) {
-        return { metadata: arg1, options: {}, callback: arg2 };
-      } else {
-        return { metadata: new Metadata(), options: arg1, callback: arg2 };
-      }
-    } else {
-      if (
-        !(
-          arg1 instanceof Metadata &&
-          arg2 instanceof Object &&
-          isFunction(arg3)
-        )
-      ) {
-        throw new Error('Incorrect arguments passed');
-      }
-      return { metadata: arg1, options: arg2, callback: arg3 };
-    }
-  }
-
   makeUnaryRequest<RequestType, ResponseType>(
     method: string,
     serialize: (value: RequestType) => Buffer,
@@ -244,7 +269,7 @@ export class Client {
     callback?: UnaryCallback<ResponseType>
   ): ClientUnaryCall {
     const checkedArguments =
-      this.checkOptionalUnaryResponseArguments<ResponseType>(
+      checkOptionalUnaryResponseArguments<ResponseType>(
         metadata,
         options,
         callback
@@ -377,7 +402,7 @@ export class Client {
     callback?: UnaryCallback<ResponseType>
   ): ClientWritableStream<RequestType> {
     const checkedArguments =
-      this.checkOptionalUnaryResponseArguments<ResponseType>(
+      checkOptionalUnaryResponseArguments<ResponseType>(
         metadata,
         options,
         callback
@@ -473,30 +498,6 @@ export class Client {
     return emitter;
   }
 
-  private checkMetadataAndOptions(
-    arg1?: Metadata | CallOptions,
-    arg2?: CallOptions
-  ): { metadata: Metadata; options: CallOptions } {
-    let metadata: Metadata;
-    let options: CallOptions;
-    if (arg1 instanceof Metadata) {
-      metadata = arg1;
-      if (arg2) {
-        options = arg2;
-      } else {
-        options = {};
-      }
-    } else {
-      if (arg1) {
-        options = arg1;
-      } else {
-        options = {};
-      }
-      metadata = new Metadata();
-    }
-    return { metadata, options };
-  }
-
   makeServerStreamRequest<RequestType, ResponseType>(
     method: string,
     serialize: (value: RequestType) => Buffer,
@@ -520,7 +521,7 @@ export class Client {
     metadata?: Metadata | CallOptions,
     options?: CallOptions
   ): ClientReadableStream<ResponseType> {
-    const checkedArguments = this.checkMetadataAndOptions(metadata, options);
+    const checkedArguments = checkMetadataAndOptions(metadata, options);
     const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
       {
         path: method,
@@ -618,7 +619,7 @@ export class Client {
     metadata?: Metadata | CallOptions,
     options?: CallOptions
   ): ClientDuplexStream<RequestType, ResponseType> {
-    const checkedArguments = this.checkMetadataAndOptions(metadata, options);
+    const checkedArguments = checkMetadataAndOptions(metadata, options);
     const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
       {
         path: method,
