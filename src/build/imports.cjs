@@ -251,9 +251,39 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
         return names;
     }
     const bind = (scope, names, loader = false) => { for (const name of names) scope.bindings.set(name, loader); };
-    function expressionEnd(start) {
+    const expressionPrefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
+    const expressionContinuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
+        '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
+    function lineEndsExpression(index, prefixes = expressionPrefixes) {
+        const token = tokens[index], previous = tokens[index - 1];
+        if (!previous || !/[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) return false;
+        const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
+            || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
+            || [')', ']', '}', '++', '--'].includes(previous.value);
+        return finished && !expressionContinuations.has(token.value) && !token.template && token.kind !== 'template-start';
+    }
+    const asyncArrowAt = index => {
+        const first = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
+        return first !== undefined && value(first - 1) === 'async'
+            && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[first - 1].end, tokens[first].start));
+    };
+    function expressionEnd(start, asyncArrow, depth = 0) {
+        if (depth > 128) throw new Error('WGA_DOCTOR_SOURCE_NESTING');
+        // Sloppy Script arrows can use await/yield as ordinary identifiers.
+        // Only an async arrow gives await its operator meaning; arrows cannot
+        // be generators, so yield never prefixes their concise expression.
+        const prefixes = new Set(expressionPrefixes);
+        prefixes.delete('yield');
+        if (!asyncArrow) prefixes.delete('await');
         let index = start;
         for (; index < tokens.length; index++) {
+            // A concise arrow owns an AssignmentExpression, not the following
+            // ASI statement. Preserve calls, operators and tagged templates
+            // that continue the same expression across a line terminator.
+            if (index > start && lineEndsExpression(index, prefixes)) break;
+            if (value(index) === '=>' && value(index + 1) !== '{') {
+                index = expressionEnd(index + 1, asyncArrowAt(index), depth + 1); continue;
+            }
             if (pairs.get(index) > index) { index = pairs.get(index); continue; }
             if ([',', ';', ')', ']', '}'].includes(value(index))) break;
         }
@@ -292,19 +322,13 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
         // Expression statements can contain commas and paired groups. A line
         // break ends one only when the next token cannot continue it; calls,
         // members and operators across lines remain in the same loop body.
-        const prefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
-        const continuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
-            '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
         for (let index = start; index < tokens.length; index++) {
             const token = tokens[index], previous = tokens[index - 1];
             if (value(index) === ';') return index + 1;
             if (value(index) === '}' || value(index) === 'else' && !property(index)) return index;
             if (index > start && /[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) {
-                const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
-                    || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
-                    || [')', ']', '}', '++', '--'].includes(previous.value);
                 if (index === start + 1 && ['return', 'break', 'continue', 'debugger'].includes(keyword)
-                    || finished && !continuations.has(token.value) && !token.template && token.kind !== 'template-start') return index;
+                    || lineEndsExpression(index)) return index;
             }
             if (pairs.get(index) > index) index = pairs.get(index);
         }
@@ -344,7 +368,7 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
         if (value(index) === '=>') {
             const start = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
             if (start === undefined) continue;
-            const body = index + 1, end = value(body) === '{' ? pairs.get(body) : expressionEnd(body);
+            const body = index + 1, end = value(body) === '{' ? pairs.get(body) : expressionEnd(body, asyncArrowAt(index));
             if (end === undefined) continue;
             const scope = addScope(start, end, true);
             if (value(body) === '{') addScope(body, end, true);
