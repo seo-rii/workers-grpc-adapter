@@ -15372,7 +15372,7 @@
       "fixture": "google",
       "imports": [
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15424,7 +15424,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15461,7 +15461,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15496,7 +15496,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15517,7 +15517,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15569,7 +15569,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15606,7 +15606,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15641,7 +15641,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15667,7 +15667,7 @@
       "fixture": "modern",
       "imports": [
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15719,7 +15719,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15756,7 +15756,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15791,7 +15791,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15812,7 +15812,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15864,7 +15864,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15901,7 +15901,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15936,7 +15936,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15962,7 +15962,7 @@
       "fixture": "native",
       "imports": [
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16014,7 +16014,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16051,7 +16051,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16086,7 +16086,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16107,7 +16107,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16159,7 +16159,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16196,7 +16196,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16231,7 +16231,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16257,7 +16257,7 @@
       "fixture": "modern-native",
       "imports": [
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16309,7 +16309,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16346,7 +16346,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16381,7 +16381,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16402,7 +16402,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16454,7 +16454,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/grpc.js",
+          "file": "node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16491,7 +16491,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/index.d.ts",
+          "file": "node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16526,7 +16526,7 @@
           ]
         },
         {
-          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/index.js",
+          "file": "node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
