@@ -136,6 +136,10 @@ with `WGA_PREBUNDLE_DYNAMIC_IMPORT`; use explicit static imports instead.
 Ordinary objects may still have a `require` method, and non-loader APIs such as
 `node:module`'s `isBuiltin()` remain available. This source and artifact audit
 checks module-loading boundaries; it does not sandbox arbitrary wrapper code.
+Static ES module imports and re-exports retain the Node namespace's identity,
+including named, default, namespace and star exports through local modules.
+The audit follows esbuild's captured resolutions, so package export conditions
+and aliases select the same sources that enter the bundle.
 The source audit also follows `await import('node:module')` (including import
 options), destructuring and namespace rest bindings,
 statically known computed property names, and fulfillment callbacks passed to

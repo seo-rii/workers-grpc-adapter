@@ -569,8 +569,49 @@ function checkModuleLoaders(ts, captured) {
     || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
-  const checker = bindSources(ts, sources), values = new Map();
+  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set();
   const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
+  const loaderMembers = ['createRequire', '_load', 'register', 'registerHooks'];
+  const builtinExportNames = new Set([...Object.keys(require('node:module')), 'default']);
+  const modules = new Map(captured.map(receipt => [receipt.input, receipt])), byFile = new Map();
+  const exportsByFile = new Map(), starsByFile = new Map();
+  for (const receipt of captured) {
+    const file = receipt.source.physical;
+    if (!byFile.has(file)) byFile.set(file, []);
+    byFile.get(file).push(receipt);
+  }
+  function isRuntimeExport(symbol, seen = new Set()) {
+    // Unknown runtime aliases still shadow stars. Only declarations known to
+    // disappear during TypeScript erasure may expose the star's binding again.
+    if (!symbol || seen.has(symbol)) return true;
+    const declarations = symbol.declarations || [];
+    if (symbol.flags & ts.SymbolFlags.Value) return !declarations.length || declarations.some(declaration =>
+      !(declaration.flags & ts.NodeFlags.Ambient) && !ts.isInterfaceDeclaration(declaration) && !ts.isTypeAliasDeclaration(declaration));
+    if (!(symbol.flags & ts.SymbolFlags.Alias)) return false;
+    const next = new Set([...seen, symbol]);
+    return !declarations.length || declarations.some(declaration => {
+      if (ts.isExportSpecifier(declaration)) {
+        const statement = declaration.parent.parent;
+        if (declaration.isTypeOnly || statement.isTypeOnly) return false;
+        return !!statement.moduleSpecifier || isRuntimeExport(checker.getExportSpecifierLocalTargetSymbol(declaration), next);
+      }
+      if (ts.isNamespaceExport(declaration)) return !declaration.parent.isTypeOnly;
+      if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration) || ts.isNamespaceImport(declaration)) {
+        const statement = ts.findAncestor(declaration, ts.isImportDeclaration);
+        return !statement?.importClause?.isTypeOnly && !declaration.isTypeOnly;
+      }
+      return !ts.isImportEqualsDeclaration(declaration) || !declaration.isTypeOnly;
+    });
+  }
+  for (const [file, source] of sources) {
+    const symbol = checker.getSymbolAtLocation(source);
+    // getExportsOfModule flattens stars and can pick one conflicting symbol.
+    // Keep only own exports; resolve stars and their binding identities below.
+    exportsByFile.set(file, new Map([...(symbol?.exports?.values() || [])]
+      .filter(item => !(item.flags & ts.SymbolFlags.ExportStar) && isRuntimeExport(item)).map(item => [item.name, item])));
+    starsByFile.set(file, source.statements.filter(statement => ts.isExportDeclaration(statement)
+      && !statement.isTypeOnly && !statement.exportClause && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)));
+  }
   const containers = new Map(), containerFlags = new Map();
   let nextContainer = 16n;
   function container(kind, value) {
@@ -604,27 +645,124 @@ function checkModuleLoaders(ts, captured) {
       }
     }
   }
-  const member = (origin, name) => {
+  function importedNamespace(node, specifier) {
+    if (['module', 'node:module'].includes(specifier)) return NAMESPACE;
+    let result = 0n;
+    // Use the consumed graph's resolutions, including package export conditions
+    // and aliases. A second filesystem resolver could inspect another module.
+    for (const receipt of byFile.get(node.getSourceFile().fileName) || []) {
+      for (const edge of receipt.info.imports) {
+        if (edge.kind !== 'import-statement' || (edge.original || edge.path) !== specifier || edge.external) continue;
+        const file = modules.get(edge.path)?.source.physical;
+        if (sources.has(file)) result |= container('exports', file);
+      }
+    }
+    return result;
+  }
+  // Each query unions reachable names/bindings, so share its visited set
+  // across branches. Path-local copies re-expand diamonds exponentially;
+  // caching partial cyclic results would instead lose reachable bindings.
+  function exportedNames(file, seen = new Set()) {
+    if (seen.has(file)) return new Set();
+    seen.add(file);
+    const names = new Set(exportsByFile.get(file)?.keys());
+    for (const declaration of starsByFile.get(file) || []) {
+      const imported = importedNamespace(declaration, declaration.moduleSpecifier.text);
+      if (imported & NAMESPACE) for (const name of builtinExportNames) if (name !== 'default') names.add(name);
+      for (const [flag, shape] of containers) if (imported & flag && shape.kind === 'exports') {
+        for (const name of exportedNames(shape.value, seen)) if (name !== 'default') names.add(name);
+      }
+    }
+    return names;
+  }
+  function namespaceBindings(namespace, name, seen) {
+    const bindings = new Map();
+    if (namespace & NAMESPACE && (name === undefined || builtinExportNames.has(name))) bindings.set(name === undefined ? NAMESPACE : `node:module:${name}`,
+      name === undefined ? NAMESPACE : member(NAMESPACE, name));
+    for (const [flag, shape] of containers) if (namespace & flag && shape.kind === 'exports') {
+      if (name === undefined) bindings.set(flag, flag);
+      else for (const [key, value] of exportedBindings(shape.value, name, seen)) bindings.set(key, value);
+    }
+    return bindings;
+  }
+  function symbolBindings(symbol, seen) {
+    if (!symbol || seen.has(symbol)) return new Map();
+    seen.add(symbol);
+    for (const declaration of symbol.declarations || []) {
+      if (ts.isExportSpecifier(declaration)) {
+        const statement = declaration.parent.parent;
+        if (declaration.isTypeOnly || statement.isTypeOnly) return new Map();
+        return statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
+          ? namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), (declaration.propertyName || declaration.name).text, seen)
+          : symbolBindings(checker.getExportSpecifierLocalTargetSymbol(declaration), seen);
+      }
+      if (ts.isNamespaceExport(declaration)) {
+        return namespaceBindings(importedNamespace(declaration, declaration.parent.moduleSpecifier.text), undefined, seen);
+      }
+      if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration) || ts.isNamespaceImport(declaration)) {
+        const statement = ts.findAncestor(declaration, ts.isImportDeclaration);
+        if (!statement || statement.importClause?.isTypeOnly || declaration.isTypeOnly) return new Map();
+        const name = ts.isNamespaceImport(declaration) ? undefined : ts.isImportClause(declaration)
+          ? 'default' : (declaration.propertyName || declaration.name).text;
+        return namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), name, seen);
+      }
+    }
+    // Local declarations (including default export expressions) have their own
+    // binding identity even when their values share the same provenance.
+    return new Map([[symbol, symbol]]);
+  }
+  function exportedBindings(file, name, seen = new Set()) {
+    const marker = JSON.stringify([file, name]);
+    if (seen.has(marker)) return new Map();
+    seen.add(marker);
+    const exported = exportsByFile.get(file);
+    if (exported?.has(name)) return symbolBindings(exported.get(name), seen);
+    const bindings = new Map();
+    if (name !== 'default') for (const declaration of starsByFile.get(file) || []) {
+      for (const [key, value] of namespaceBindings(importedNamespace(declaration, declaration.moduleSpecifier.text), name, seen)) bindings.set(key, value);
+    }
+    return bindings;
+  }
+  function exportedOrigin(file, name, seen) {
+    const marker = JSON.stringify([file, name]);
+    if (seen.has(marker)) return 0n;
+    const next = new Set([...seen, marker]);
+    // Enumerate effective names, then use ordinary lookup so explicit exports
+    // shadow star exports even when the consuming property is not known.
+    if (name === undefined) return [...exportedNames(file)].reduce((flags, item) => flags | exportedOrigin(file, item, next), 0n);
+    const bindings = exportedBindings(file, name);
+    // Namespace objects omit ambiguous star exports. Compare final binding
+    // identities, not flags: distinct bindings can contain the same namespace,
+    // while multiple paths through a diamond can refer to one binding.
+    if (bindings.size !== 1) return 0n;
+    const value = bindings.values().next().value;
+    return typeof value === 'bigint' ? value : symbolOrigin(value, next);
+  }
+  const member = (origin, name, seen = new Set()) => {
     let result = 0n;
     // Descriptors can themselves be reflected upon. Intern structural
     // containers instead of dropping provenance at a fixed nesting depth.
     for (const [flag, shape] of containers) if (origin & flag) {
-      result |= shape.kind === 'value'
+      result |= shape.kind === 'exports' ? exportedOrigin(shape.value, name, seen) : shape.kind === 'value'
         ? name === 'value' ? shape.value : name === undefined ? LOADER : 0n
-        : container('value', member(shape.value, name));
+        : container('value', member(shape.value, name, seen));
     }
     // Unknown computed access on a known module object could select a loader.
     // Ordinary application objects have no module provenance and stay valid.
     if (name === undefined && origin & (MODULE | NAMESPACE)) return LOADER;
     if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0n;
-    if (origin & NAMESPACE) result |= ['createRequire', '_load', 'register', 'registerHooks'].includes(name) ? LOADER
+    if (origin & NAMESPACE) result |= loaderMembers.includes(name) ? LOADER
       : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0n;
     return result;
   };
   function bind(name, value, keys = []) {
     if (ts.isIdentifier(name)) {
       const symbol = checker.getSymbolAtLocation(name);
-      if (symbol) { if (!values.has(symbol)) values.set(symbol, []); values.get(symbol).push({ value, keys }); }
+      if (symbol) {
+        if (symbol.flags & ts.SymbolFlags.Alias) boundAliasNames.add(symbol.name);
+        if (!values.has(symbol)) values.set(symbol, []);
+        values.get(symbol).push({ value, keys });
+      }
     } else if (ts.isObjectBindingPattern(name)) {
       for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
         ? keys : [...keys, key(element.propertyName || element.name)]);
@@ -645,12 +783,13 @@ function checkModuleLoaders(ts, captured) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
     if (objectAssign(node) && node.arguments.length && ts.isIdentifier(node.arguments[0])) bind(node.arguments[0], node);
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && ['module', 'node:module'].includes(node.moduleSpecifier.text)) {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && !node.importClause?.isTypeOnly) {
       const clause = node.importClause;
-      if (clause?.name) bind(clause.name, NAMESPACE);
+      const imported = importedNamespace(node, node.moduleSpecifier.text);
+      if (clause?.name) bind(clause.name, imported, ['default']);
       if (clause?.namedBindings) {
-        if (ts.isNamespaceImport(clause.namedBindings)) bind(clause.namedBindings.name, NAMESPACE);
-        else for (const item of clause.namedBindings.elements) bind(item.name, member(NAMESPACE, (item.propertyName || item.name).text));
+        if (ts.isNamespaceImport(clause.namedBindings)) bind(clause.namedBindings.name, imported);
+        else for (const item of clause.namedBindings.elements) if (!item.isTypeOnly) bind(item.name, imported, [(item.propertyName || item.name).text]);
       }
     }
     if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)
@@ -659,28 +798,50 @@ function checkModuleLoaders(ts, captured) {
     ts.forEachChild(node, collect);
   }
   for (const source of sources.values()) collect(source);
+  function symbolOrigin(symbol, seen) {
+    if (!symbol || seen.has(symbol)) return 0n;
+    const next = new Set([...seen, symbol]);
+    let result = (values.get(symbol) || []).reduce((flags, value) => flags
+      | value.keys.reduce((current, name) => member(current, name, next), origin(value.value, next)), 0n);
+    for (const declaration of symbol.declarations || []) {
+      if (ts.isExportSpecifier(declaration)) {
+        const statement = declaration.parent.parent;
+        if (declaration.isTypeOnly || statement.isTypeOnly) continue;
+        result |= statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
+          ? member(importedNamespace(statement, statement.moduleSpecifier.text), (declaration.propertyName || declaration.name).text, next)
+          : symbolOrigin(checker.getExportSpecifierLocalTargetSymbol(declaration), next);
+      } else if (ts.isNamespaceExport(declaration) && ts.isStringLiteral(declaration.parent.moduleSpecifier)) {
+        result |= importedNamespace(declaration, declaration.parent.moduleSpecifier.text);
+      } else if (ts.isExportAssignment(declaration)) result |= origin(declaration.expression, next);
+    }
+    return result;
+  }
   function origin(expression, seen = new Set()) {
     if (typeof expression === 'bigint') return expression;
     const node = unwrap(expression);
     if (ts.isIdentifier(node)) {
-      const symbol = checker.getSymbolAtLocation(node);
+      // The checker can omit a value reference when a TypeScript-only export
+      // shadows its import in type space. Recover the bound lexical import;
+      // esbuild's runtime graph can still supply that name through a star.
+      const parent = node.parent;
+      const reference = parent.name !== node && parent.propertyName !== node && parent.label !== node;
+      const symbol = checker.getSymbolAtLocation(node) || (reference && boundAliasNames.has(node.text)
+        ? checker.getSymbolsInScope(node, ts.SymbolFlags.Alias).find(item => item.name === node.text && values.has(item)) : undefined);
       // TypeScript can attach synthetic Identifier/BinaryExpression declarations
       // to the implicit CommonJS globals. Lexical declarations still shadow them.
       const local = symbol?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration));
       if (!local && node.text === 'module') return MODULE;
       if (!local && node.text === 'require') return REQUIRE;
-      if (!symbol || seen.has(symbol)) return 0n;
-      const next = new Set(seen); next.add(symbol);
-      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0n);
+      return symbolOrigin(symbol, seen);
     }
-    if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
-    if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
+    if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text, seen);
+    if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true), seen);
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
       result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
     if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
-    if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true));
+    if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen);
     if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
-      && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true)));
+      && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen));
     if (builtinMethod(node, 'Object', 'getOwnPropertyDescriptors') && node.arguments.length >= 1) return container('members', origin(node.arguments[0], seen));
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
