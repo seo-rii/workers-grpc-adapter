@@ -72,7 +72,7 @@ function validateManifest(manifest) {
         const [original, target] = requiredFiles[index];
         need(file.upstreamPath === `src/${original}` && file.source === `vendor/client/${original}` && file.target === `src/${target}`, 'exact client source/target set and order');
         need(hash(file.sha256) && hash(file.patchedSha256), `${file.target}: required source/output hashes`);
-        if (['events.ts', 'error.ts'].includes(original)) {
+        if (original === 'events.ts') {
             need(file.patch === null && file.patchSha256 === null && file.sha256 === file.patchedSha256, `${file.target}: unmodified upstream file pins`);
         } else {
             need(file.patch === `vendor/patches/${target}.patch` && hash(file.patchSha256), `${file.target}: required patch pins`);

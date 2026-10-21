@@ -1,34 +1,44 @@
 --- a/src/call-surface.ts
 +++ b/src/call-surface.ts
-@@ -1,6 +1,9 @@
+@@ -1,5 +1,8 @@
  /*
   * Copyright 2019 gRPC authors.
-  *
++ *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-+ *
+  *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at
-@@ -15,11 +18,11 @@
+@@ -15,16 +18,17 @@
   *
   */
- 
+
 -import { EventEmitter } from 'events';
 -import { Duplex, Readable, Writable } from 'stream';
 +import { EventEmitter } from 'node:events';
 +import { Duplex, Readable, Writable } from 'node:stream';
- 
+
  import { StatusObject, MessageContext } from './call-interface';
 -import { Status } from './constants';
 +import { status as Status } from './status';
  import { EmitterAugmentation1 } from './events';
  import { Metadata } from './metadata';
  import { ObjectReadable, ObjectWritable, WriteCallback } from './object-stream';
-@@ -86,6 +89,74 @@
+ import { InterceptingCallInterface } from './client-interceptors';
+ import { AuthContext } from './auth-context';
++import { getErrorStack } from './error';
+
+ /**
+  * A type extending the built-in Error object with additional fields.
+@@ -82,8 +86,76 @@
+ ): ServiceError {
+   const message = `${status.code} ${Status[status.code]}: ${status.details}`;
+   const error = new Error(message);
+-  const stack = `${error.stack}\nfor call at\n${callerStack}`;
++  const stack = `${getErrorStack(error) ?? 'no stack trace available'}\nfor call at\n${callerStack}`;
    return Object.assign(new Error(message), status, { stack });
- }
- 
++}
++
 +const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
 +
 +function setReadableQueueLimit(stream: Readable, limit: number): void {
@@ -95,12 +105,10 @@
 +      callback(error);
 +    }
 +  }
-+}
-+
+ }
+
  export class ClientUnaryCallImpl
-   extends EventEmitter
-   implements ClientUnaryCall
-@@ -113,12 +184,24 @@
+@@ -113,12 +185,24 @@
    implements ClientReadableStream<ResponseType>
  {
    public call?: InterceptingCallInterface;
@@ -109,46 +117,52 @@
 +  private readonly defaultReadQueueLimit: number;
 +  constructor(readonly deserialize: (chunk: Buffer) => ResponseType, readableHighWaterMark?: number) {
      super({ objectMode: true });
+-  }
+-
+-  cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    this.defaultReadQueueLimit = this.readableHighWaterMark;
 +    this.setReadQueueLimit(readableHighWaterMark);
 +  }
 +
 +  setReadQueueLimit(limit: number | undefined): void {
 +    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
-   }
- 
-   cancel(): void {
--    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++  }
++
++  cancel(): void {
 +    this.lifecycle.cancel();
 +  }
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
    }
- 
+
    getPeer(): string {
-@@ -139,12 +222,17 @@
+@@ -139,12 +223,17 @@
    implements ClientWritableStream<RequestType>
  {
    public call?: InterceptingCallInterface;
 +  private readonly lifecycle = new ClientStreamLifecycle(this, true);
    constructor(readonly serialize: (value: RequestType) => Buffer) {
 -    super({ objectMode: true });
-+    super({ objectMode: true, autoDestroy: false });
-   }
- 
-   cancel(): void {
+-  }
+-
+-  cancel(): void {
 -    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++    super({ objectMode: true, autoDestroy: false });
++  }
++
++  cancel(): void {
 +    this.lifecycle.cancel();
 +  }
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
    }
- 
+
    getPeer(): string {
-@@ -157,7 +245,7 @@
- 
+@@ -157,7 +246,7 @@
+
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {
 -      callback: cb,
@@ -156,7 +170,7 @@
      };
      const flags = Number(encoding);
      if (!Number.isNaN(flags)) {
-@@ -177,15 +265,28 @@
+@@ -177,15 +266,28 @@
    implements ClientDuplexStream<RequestType, ResponseType>
  {
    public call?: InterceptingCallInterface;
@@ -169,26 +183,29 @@
 +    readableHighWaterMark?: number
    ) {
      super({ objectMode: true });
+-  }
+-
+-  cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
 +    this.defaultReadQueueLimit = this.readableHighWaterMark;
 +    this.setReadQueueLimit(readableHighWaterMark);
 +  }
 +
 +  setReadQueueLimit(limit: number | undefined): void {
 +    setReadableQueueLimit(this, limit ?? this.defaultReadQueueLimit);
-   }
- 
-   cancel(): void {
--    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++  }
++
++  cancel(): void {
 +    this.lifecycle.cancel();
 +  }
 +
 +  _destroy(error: Error | null, callback: (error: Error | null) => void): void {
 +    this.lifecycle.destroy(error, callback);
    }
- 
+
    getPeer(): string {
-@@ -202,7 +303,7 @@
- 
+@@ -202,7 +304,7 @@
+
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {
 -      callback: cb,
