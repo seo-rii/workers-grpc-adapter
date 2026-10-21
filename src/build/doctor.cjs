@@ -105,6 +105,30 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
             status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
     };
+    const sourceGoals = new Map();
+    const sourceGoal = file => {
+        if (/\.(?:mjs|d\.[cm]?ts)$/.test(file)) return 'module';
+        if (file.endsWith('.cjs')) return 'script';
+        // Node assigns .js files the nearest physical package scope. Source
+        // symlinks and nested package.json files can differ from the package
+        // whose dependency graph we are currently inspecting.
+        const visited = [];
+        let directory = path.dirname(file), goal = 'script';
+        for (;;) {
+            if (sourceGoals.has(directory)) { goal = sourceGoals.get(directory); break; }
+            if (path.basename(directory) === 'node_modules') break;
+            visited.push(directory);
+            try {
+                goal = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8')).type === 'module' ? 'module' : 'script';
+                break;
+            } catch (error) { if (error.code !== 'ENOENT') throw error; }
+            const parent = path.dirname(directory);
+            if (parent === directory) break;
+            directory = parent;
+        }
+        for (const directory of visited) sourceGoals.set(directory, goal);
+        return goal;
+    };
     const readPackage = manifestPath => {
         const directory = path.dirname(manifestPath);
         if (packageFailures.has(directory)) throw packageFailures.get(directory);
@@ -152,7 +176,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                     if (visitedFiles.has(full)) continue;
                     visitedFiles.add(full);
                     const source = fs.readFileSync(full, 'utf8');
-                    for (const { kind, specifier, base: loaderBase } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
+                    for (const { kind, specifier, base: loaderBase } of literalImports(source,
+                        [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)), { sourceType: sourceGoal(full) })) {
                         let parent = pathToFileURL(full).href;
                         if (loaderBase === null) parent = null;
                         else if (loaderBase?.kind === 'literal') parent = loaderBase.value;

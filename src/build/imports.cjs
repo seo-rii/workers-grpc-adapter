@@ -3,9 +3,9 @@
 // Graph inspection has no compiler peer requirement. This scanner identifies
 // literal module sites without evaluating inspected code. It is deliberately
 // separate from the profile compiler's full AST and semantic validation.
-function tokensFor(source) {
+function tokensFor(source, sourceType) {
     const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
-    let offset = 0;
+    let offset = 0, lineStart = true;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
     const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
     const prefix = new Set(['return', 'throw', 'case', 'delete', 'void', 'typeof', 'instanceof', 'in', 'of', 'yield', 'await', 'else', 'do']);
@@ -44,6 +44,7 @@ function tokensFor(source) {
         return ![']', '++', '--', '.', '?.'].includes(last.value);
     };
     function add(kind, value, start, extra = {}) {
+        lineStart = false;
         const token = { kind, value, start, end: offset, ...extra }, index = tokens.length;
         const header = classes[classes.length - 1];
         if (header?.depth === groups.length && header.stage !== 'heritage') {
@@ -155,13 +156,23 @@ function tokensFor(source) {
         let braces = 0;
         while (offset < source.length) {
             const char = source[offset], next = source[offset + 1], start = offset;
-            if (/\s/.test(char)) { offset++; continue; }
-            if ((offset === 0 && source.startsWith('#!')) || (char === '/' && next === '/')) {
+            if (/\s/.test(char)) {
+                if (/[\r\n]/.test(char)) lineStart = true;
+                offset++; continue;
+            }
+            // Annex B HTML comments belong to the Script goal. A close
+            // comment may follow whitespace/comments at the start of a line,
+            // but the same characters in `value --> other` are operators.
+            if ((offset === 0 && source.startsWith('#!')) || (char === '/' && next === '/')
+                || (sourceType === 'script' && (source.startsWith('<!--', offset)
+                    || lineStart && source.startsWith('-->', offset)))) {
                 while (offset < source.length && !/[\r\n]/.test(source[offset])) offset++;
                 continue;
             }
             if (char === '/' && next === '*') {
-                const end = source.indexOf('*/', offset + 2); offset = end < 0 ? source.length : end + 2; continue;
+                const end = source.indexOf('*/', offset + 2), after = end < 0 ? source.length : end + 2;
+                if (/[\r\n]/.test(source.slice(offset, after))) lineStart = true;
+                offset = after; continue;
             }
             if (char === '"' || char === "'" || char === '`') { quoted(char, depth); continue; }
             if (char === '/' && allowsRegex() && regex()) continue;
@@ -189,8 +200,8 @@ function tokensFor(source) {
     return { tokens, pairs, definitions };
 }
 
-function literalImports(source, declaration = false) {
-    const { tokens, pairs, definitions } = tokensFor(source), imports = new Map();
+function literalImports(source, declaration = false, { sourceType = 'script' } = {}) {
+    const { tokens, pairs, definitions } = tokensFor(source, sourceType), imports = new Map();
     if (!tokens.some(token => token.kind === 'literal' && typeof token.value === 'string' && /^@grpc\/grpc-js(?:\/|$)/.test(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
