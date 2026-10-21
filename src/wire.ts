@@ -20,7 +20,7 @@ export interface FrameParserDiagnostics {
     runtimeChunkBytes: number;
 }
 const owned = new Set(['content-type', 'content-length', 'content-encoding', 'connection', 'transfer-encoding', 'host', 'te', 'grpc-timeout', 'grpc-encoding', 'grpc-accept-encoding', 'x-grpc-web', 'accept', 'grpc-previous-rpc-attempts']);
-const responseControl = new Set(['content-type', 'content-length', 'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'transfer-encoding', 'connection', 'date']);
+const responseControl = new Set(['content-type', 'content-length', 'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'transfer-encoding', 'connection']);
 function wireError(code: status, id: string): never {
     throw new TransportError(code, id);
 }
