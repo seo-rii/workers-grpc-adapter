@@ -73,6 +73,16 @@ const unsafe = [
   ['reflective default namespace', 'import * as m from "node:module"; export function load(name) { return Reflect.get(m, "default").createRequire("/app.cjs")(name); }'],
   ['reflective module require', 'import helper from "./helper.cjs"; export function load(name) { return helper.load(name); }', 'exports.load = name => Reflect.get(module, "require").call(module, name);'],
   ['reflective unknown module member', 'import helper from "./helper.cjs"; export function load(name) { return helper.load(name); }', 'exports.load = name => Reflect.get(module, name);'],
+  ['descriptor value', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptor(m, "createRequire").value; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['descriptor destructuring', 'import m from "node:module"; const {value: factory} = Object.getOwnPropertyDescriptor(m, "createRequire"); export function load(name) { return factory("/app.cjs")(name); }'],
+  ['computed descriptor read', 'import m from "node:module"; const key = "create" + "Require"; const factory = (Object)["getOwnPropertyDescriptor"](m, key)["value"]; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['Reflect descriptor value', 'import m from "node:module"; const factory = (Reflect).getOwnPropertyDescriptor(m, "createRequire").value; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['descriptor default namespace', 'import * as m from "node:module"; const native = Object.getOwnPropertyDescriptor(m, "default").value; export function load(name) { return native.createRequire("/app.cjs")(name); }'],
+  ['descriptor prototype method', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptor(m.prototype, "require").value; export function load(name) { return factory.call({}, name); }'],
+  ['descriptor collection', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptors(m).createRequire.value; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['nested descriptor collection', 'import m from "node:module"; const descriptor = Object.getOwnPropertyDescriptor(m, "createRequire"); const factory = Object.getOwnPropertyDescriptors(descriptor).value.value; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['repeated descriptor collection', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptors(Object.getOwnPropertyDescriptors(m)).createRequire.value.value; export function load(name) { return factory("/app.cjs")(name); }'],
+  ['descriptor of collection', 'import m from "node:module"; const descriptors = Object.getOwnPropertyDescriptors(m); const factory = Object.getOwnPropertyDescriptor(descriptors, "createRequire").value.value; export function load(name) { return factory("/app.cjs")(name); }'],
 ];
 for (const [name, body, helper] of unsafe) test(`PREBUNDLE rejects ${name} module loaders`, async t => {
   const f = synthetic(t);
@@ -99,6 +109,11 @@ for (const [name, body] of [
   ['parenthesized Reflect builtin read', 'import m from "node:module"; export function probe() { return (Reflect).get(m, "isBuiltin")("node:fs"); }'],
   ['parenthesized shadowed Reflect', 'import m from "node:module"; const Reflect = {get: () => () => 7}; export function probe() { return (Reflect).get(m, "createRequire")(); }'],
   ['shadowed Reflect', 'import m from "node:module"; const Reflect = {get: () => () => 7}; export function probe() { return Reflect.get(m, "createRequire")(); }'],
+  ['descriptor builtin', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptor(m, "isBuiltin").value; export function probe() { return factory("node:fs"); }'],
+  ['descriptor collection builtin', 'import m from "node:module"; const factory = Object.getOwnPropertyDescriptors(m).isBuiltin.value; export function probe() { return factory("node:fs"); }'],
+  ['descriptor application object', 'const ordinary = {createRequire: () => 7}; const factory = Object.getOwnPropertyDescriptor(ordinary, "createRequire").value; export function probe() { return factory(); }'],
+  ['shadowed descriptor receiver', 'import m from "node:module"; const Object = {getOwnPropertyDescriptor: () => ({value: () => 7})}; export function probe() { return Object.getOwnPropertyDescriptor(m, "createRequire").value(); }'],
+  ['nested descriptor builtin', 'import m from "node:module"; const descriptor = Object.getOwnPropertyDescriptor(m, "isBuiltin"); const factory = Object.getOwnPropertyDescriptors(descriptor).value.value; export function probe() { return factory("node:fs"); }'],
 ]) test(`PREBUNDLE preserves ordinary objects and non-loading builtin APIs: ${name}`, async t => {
   const f = synthetic(t);
   f.writeEntry('export {createClient} from "example-sdk"; export {configure} from "@grpc/grpc-js/config"; ' + body);
