@@ -299,8 +299,10 @@ select the goal, including nested package scopes and source symlinks.
 Line comments and hashbangs end at LF, CR, U+2028 or U+2029; escaped line
 continuations in literal specifiers follow the same line-terminator rules.
 A `require` initialized directly by an imported `node:module`/`module`
-`createRequire` factory remains a CommonJS loader. Its literal absolute path or
-file URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
+`createRequire` factory remains a CommonJS loader. Raw and escaped Unicode
+factory identifiers, including non-BMP characters, retain that identity without
+extending the scanner's alias-analysis scope. Its literal absolute path or file
+URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
 are resolved from that declared location. An unproven base is reported as
 `resolution-base-unverified`; it never falls back to the source directory.
 This is static module-site

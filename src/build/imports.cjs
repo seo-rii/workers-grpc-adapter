@@ -7,8 +7,9 @@ function tokensFor(source, sourceType) {
     const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
     let offset = 0, lineStart = true;
     const lineTerminator = /[\r\n\u2028\u2029]/;
+    const codePointAt = index => index < source.length ? String.fromCodePoint(source.codePointAt(index)) : undefined;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
-    const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
+    const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\u200c\u200d\p{ID_Continue}]/u.test(char);
     const prefix = new Set(['return', 'throw', 'case', 'delete', 'void', 'typeof', 'instanceof', 'in', 'of', 'yield', 'await', 'else', 'do']);
     const controls = new Set(['if', 'while', 'for', 'with', 'switch', 'catch']);
     const expressionPrefixes = new Set(['=', '(', '[', ',', ':', '?', '=>', '${', '...',
@@ -148,7 +149,11 @@ function tokensFor(source, sourceType) {
             if (char === '[') characterClass = true;
             else if (char === ']') characterClass = false;
             else if (char === '/' && !characterClass) {
-                while (identifierPart(source[end])) end++;
+                while (end < source.length) {
+                    const part = codePointAt(end);
+                    if (!identifierPart(part)) break;
+                    end += part.length;
+                }
                 const start = offset; offset = end; add('regex', undefined, start); return true;
             }
         }
@@ -179,11 +184,13 @@ function tokensFor(source, sourceType) {
             }
             if (char === '"' || char === "'" || char === '`') { quoted(char, depth); continue; }
             if (char === '/' && allowsRegex() && regex()) continue;
-            if (identifierStart(char) || (char === '\\' && next === 'u')) {
+            if (identifierStart(codePointAt(offset)) || (char === '\\' && next === 'u')) {
                 let value = '';
-                while (identifierPart(source[offset]) || (source[offset] === '\\' && source[offset + 1] === 'u')) {
-                    if (source[offset] === '\\') { offset++; value += escaped(); }
-                    else value += source[offset++];
+                while (offset < source.length) {
+                    if (source[offset] === '\\' && source[offset + 1] === 'u') { offset++; value += escaped(); continue; }
+                    const part = codePointAt(offset);
+                    if (!identifierPart(part)) break;
+                    value += part; offset += part.length;
                 }
                 add('identifier', value, start); continue;
             }
