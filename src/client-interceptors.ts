@@ -40,6 +40,7 @@ import { ClientMethodDefinition } from './factory';
 import { getErrorMessage } from './error';
 import { AuthContext } from './auth-context';
 import type { CallLifetime } from './call-lifetime';
+import { inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
 
 /**
  * Error class associated with passing both interceptors and interceptor
@@ -237,6 +238,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     private nextCall: InterceptingCallInterface,
     requester?: Requester
   ) {
+    inheritCallExpiryCheck(this, nextCall);
     if (requester) {
       this.requester = {
         start: requester.start ?? defaultRequester.start,
@@ -277,19 +279,19 @@ export class InterceptingCall implements InterceptingCallInterface {
   }
 
   private flushPendingOperations() {
-    if (this.disposed || this.processingMetadata || this.flushing) return;
+    if (this.disposed || stopExpiredCall(this) || this.processingMetadata || this.flushing) return;
     this.flushing = true;
     try {
-      while (!this.disposed && this.pendingMessages[0]?.ready) {
+      while (!this.disposed && !stopExpiredCall(this) && this.pendingMessages[0]?.ready) {
         // Release ownership before forwarding: a write callback can enqueue
         // another message or request half-close synchronously.
         const pending = this.pendingMessages.shift()!;
-        this.nextCall.sendMessageWithContext(pending.context, pending.message);
+        invokeWithCallExpiry(this, () => this.nextCall.sendMessageWithContext(pending.context, pending.message));
       }
-      if (!this.disposed && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
+      if (!this.disposed && !stopExpiredCall(this) && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
         this.pendingHalfClose = false;
         this.halfClosed = true;
-        this.nextCall.halfClose();
+        invokeWithCallExpiry(this, () => this.nextCall.halfClose());
       }
     } finally {
       this.flushing = false;
@@ -300,7 +302,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     metadata: Metadata,
     interceptingListener?: Partial<InterceptingListener>
   ): void {
-    if (this.disposed) return;
+    if (this.disposed || stopExpiredCall(this)) return;
     const fullInterceptingListener: InterceptingListener = {
       onReceiveMetadata:
         interceptingListener?.onReceiveMetadata?.bind(interceptingListener) ??
@@ -315,7 +317,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.processingMetadata = true;
     let continued = false;
     this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
-      if (continued || this.disposed) return;
+      if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       let finalInterceptingListener: InterceptingListenerImpl;
       if (isInterceptingListener(listener)) {
@@ -337,14 +339,14 @@ export class InterceptingCall implements InterceptingCallInterface {
         );
       }
       this.responseListener = finalInterceptingListener;
-      this.nextCall.start(md, finalInterceptingListener);
+      invokeWithCallExpiry(this, () => this.nextCall.start(md, finalInterceptingListener));
       this.processingMetadata = false;
       this.flushPendingOperations();
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
-    if (this.disposed) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
+    if (this.disposed || stopExpiredCall(this)) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
     if (this.halfCloseRequested) {
       const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
       if (context.callback) context.callback(error);
@@ -355,7 +357,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.pendingMessages.push(pending);
     let continued = false;
     this.requester.sendMessage(message, finalMessage => {
-      if (continued || this.disposed) return;
+      if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       pending.message = finalMessage;
       pending.ready = true;
@@ -367,14 +369,14 @@ export class InterceptingCall implements InterceptingCallInterface {
     this.sendMessageWithContext({}, message);
   }
   startRead(): void {
-    if (!this.disposed) this.nextCall.startRead();
+    if (!this.disposed && !stopExpiredCall(this)) invokeWithCallExpiry(this, () => this.nextCall.startRead());
   }
   halfClose(): void {
-    if (this.disposed || this.halfCloseRequested) return;
+    if (this.disposed || stopExpiredCall(this) || this.halfCloseRequested) return;
     this.halfCloseRequested = true;
     let continued = false;
     this.requester.halfClose(() => {
-      if (continued || this.disposed) return;
+      if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       this.pendingHalfClose = true;
       this.flushPendingOperations();
@@ -405,7 +407,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protected methodDefinition: ClientMethodDefinition<any, any>,
     protected lifetime: CallLifetime
-  ) {}
+  ) { inheritCallExpiryCheck(this, lifetime); }
   cancelWithStatus(status: Status, details: string): void {
     this.call.cancelWithStatus(status, details);
   }
@@ -414,11 +416,12 @@ class BaseInterceptingCall implements InterceptingCallInterface {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
-    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
+    if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
     let serialized: Buffer;
     try {
       serialized = this.methodDefinition.requestSerialize(message);
     } catch (e) {
+      if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
       this.call.cancelWithStatus(
         Status.INTERNAL,
         `Request message serialization failure: ${getErrorMessage(e)}`
@@ -428,6 +431,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
       context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
       return;
     }
+    if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
     this.call.sendMessageWithContext(context, serialized);
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -438,7 +442,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
     metadata: Metadata,
     interceptingListener?: Partial<InterceptingListener>
   ): void {
-    if (this.lifetime.isTerminal()) return;
+    if (stopExpiredCall(this)) return;
     let readError: StatusObject | null = null;
     this.call.start(metadata, {
       onReceiveMetadata: metadata => {
@@ -470,10 +474,10 @@ class BaseInterceptingCall implements InterceptingCallInterface {
     });
   }
   startRead() {
-    this.call.startRead();
+    if (!stopExpiredCall(this)) this.call.startRead();
   }
   halfClose(): void {
-    this.call.halfClose();
+    if (!stopExpiredCall(this)) this.call.halfClose();
   }
   getAuthContext(): AuthContext | null {
     return this.call.getAuthContext();
@@ -626,7 +630,11 @@ export function getInterceptingCall(
    * channel. */
   const getCall: NextCall = interceptors.reduceRight<NextCall>(
     (nextCall: NextCall, nextInterceptor: Interceptor) => {
-      return currentOptions => nextInterceptor(currentOptions, nextCall);
+      return currentOptions => {
+        const call = nextInterceptor(currentOptions, nextCall);
+        inheritCallExpiryCheck(call, lifetime);
+        return call;
+      };
     },
     (finalOptions: InterceptorOptions) =>
       getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
