@@ -582,7 +582,8 @@ function checkModuleLoaders(ts, captured) {
     }
     return containerFlags.get(key);
   }
-  const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
+  const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)
+    || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node)
     || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
   function key(expression, computed = false, seen = new Set()) {
     const node = unwrap(expression);
