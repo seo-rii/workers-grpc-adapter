@@ -345,8 +345,10 @@ export class WorkersCall {
         // BufferHint=1 keeps the single request buffered; NoCompress=2 bypasses
         // the configured message codec. WriteThrough=4 cannot promise a fetch flush.
         if (context.flags !== undefined && (!Number.isInteger(context.flags) || context.flags < 0 || context.flags > 3)) {
+            // Settle the logical call before Node can auto-destroy a Duplex in
+            // response to its write error and replace this failure with CANCELLED.
+            this.cancelWithStatus(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             callback?.(new Error('WGA_WRITE_FLAGS'));
-            this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             return;
         }
         if (this.stopIfExpired()) {
