@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import { nextTick } from 'node:process';
 import { Metadata } from './metadata';
 import { propagate, status } from './status';
+import { observeRejection } from './observe-rejection';
 import type { ParentCall } from './call';
 import type { ServiceError } from './call-surface';
 
@@ -132,8 +133,10 @@ export function cancellableCall<T, Options extends object = object>(
         if (!pending || cancelledPending) return;
         cancelledPending = true;
         try {
-            const cancellable = pending as PromiseLike<T> & { cancel?: () => void };
-            if (typeof cancellable.cancel === 'function') cancellable.cancel();
+            const cancellable = pending as PromiseLike<T> & { cancel?: () => unknown };
+            if (typeof cancellable.cancel === 'function') {
+                observeRejection(cancellable.cancel(), () => { /* Cleanup cannot replace the cancellation outcome. */ });
+            }
         } catch { /* Local cancellation is final even if an SDK cancel hook fails. */ }
     };
     const stop = (error: ServiceError) => {
@@ -199,7 +202,9 @@ export function cancellableQueryStream<T = unknown, Options extends object = obj
         // page. destroy() alone does not set that flag; end() must run here.
         try {
             const end = (source as Partial<SdkQuerySource>).end;
-            if (typeof end === 'function') end.call(source);
+            if (typeof end === 'function') {
+                observeRejection(end.call(source), () => { /* Cleanup cannot replace the stream outcome. */ });
+            }
         } catch { /* Still destroy the owned source after end() fails. */ }
         try { source.destroy(); } catch { removeListeners(); }
         // closed can become true before Node emits its queued error/close.
