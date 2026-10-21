@@ -658,14 +658,18 @@ function checkModuleLoaders(ts, captured) {
     }
     return result;
   }
+  // Each query unions reachable names/bindings, so share its visited set
+  // across branches. Path-local copies re-expand diamonds exponentially;
+  // caching partial cyclic results would instead lose reachable bindings.
   function exportedNames(file, seen = new Set()) {
     if (seen.has(file)) return new Set();
-    const next = new Set([...seen, file]), names = new Set(exportsByFile.get(file)?.keys());
+    seen.add(file);
+    const names = new Set(exportsByFile.get(file)?.keys());
     for (const declaration of starsByFile.get(file) || []) {
       const imported = importedNamespace(declaration, declaration.moduleSpecifier.text);
       if (imported & NAMESPACE) for (const name of builtinExportNames) if (name !== 'default') names.add(name);
       for (const [flag, shape] of containers) if (imported & flag && shape.kind === 'exports') {
-        for (const name of exportedNames(shape.value, next)) if (name !== 'default') names.add(name);
+        for (const name of exportedNames(shape.value, seen)) if (name !== 'default') names.add(name);
       }
     }
     return names;
@@ -682,24 +686,24 @@ function checkModuleLoaders(ts, captured) {
   }
   function symbolBindings(symbol, seen) {
     if (!symbol || seen.has(symbol)) return new Map();
-    const next = new Set([...seen, symbol]);
+    seen.add(symbol);
     for (const declaration of symbol.declarations || []) {
       if (ts.isExportSpecifier(declaration)) {
         const statement = declaration.parent.parent;
         if (declaration.isTypeOnly || statement.isTypeOnly) return new Map();
         return statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
-          ? namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), (declaration.propertyName || declaration.name).text, next)
-          : symbolBindings(checker.getExportSpecifierLocalTargetSymbol(declaration), next);
+          ? namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), (declaration.propertyName || declaration.name).text, seen)
+          : symbolBindings(checker.getExportSpecifierLocalTargetSymbol(declaration), seen);
       }
       if (ts.isNamespaceExport(declaration)) {
-        return namespaceBindings(importedNamespace(declaration, declaration.parent.moduleSpecifier.text), undefined, next);
+        return namespaceBindings(importedNamespace(declaration, declaration.parent.moduleSpecifier.text), undefined, seen);
       }
       if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration) || ts.isNamespaceImport(declaration)) {
         const statement = ts.findAncestor(declaration, ts.isImportDeclaration);
         if (!statement || statement.importClause?.isTypeOnly || declaration.isTypeOnly) return new Map();
         const name = ts.isNamespaceImport(declaration) ? undefined : ts.isImportClause(declaration)
           ? 'default' : (declaration.propertyName || declaration.name).text;
-        return namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), name, next);
+        return namespaceBindings(importedNamespace(statement, statement.moduleSpecifier.text), name, seen);
       }
     }
     // Local declarations (including default export expressions) have their own
@@ -709,11 +713,12 @@ function checkModuleLoaders(ts, captured) {
   function exportedBindings(file, name, seen = new Set()) {
     const marker = JSON.stringify([file, name]);
     if (seen.has(marker)) return new Map();
-    const next = new Set([...seen, marker]), exported = exportsByFile.get(file);
-    if (exported?.has(name)) return symbolBindings(exported.get(name), next);
+    seen.add(marker);
+    const exported = exportsByFile.get(file);
+    if (exported?.has(name)) return symbolBindings(exported.get(name), seen);
     const bindings = new Map();
     if (name !== 'default') for (const declaration of starsByFile.get(file) || []) {
-      for (const [key, value] of namespaceBindings(importedNamespace(declaration, declaration.moduleSpecifier.text), name, next)) bindings.set(key, value);
+      for (const [key, value] of namespaceBindings(importedNamespace(declaration, declaration.moduleSpecifier.text), name, seen)) bindings.set(key, value);
     }
     return bindings;
   }
