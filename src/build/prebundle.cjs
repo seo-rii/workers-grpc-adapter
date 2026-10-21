@@ -209,7 +209,7 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
   const checker = bindSources(ts, sources);
   const edges = new Map(), dynamicModules = new Map();
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)
-    || ts.isNonNullExpression(node) ? unwrap(node.expression) : node;
+    || ts.isNonNullExpression(node) || ts.isSatisfiesExpression(node) ? unwrap(node.expression) : node;
   function specifierText(expression) {
     const node = unwrap(expression);
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
