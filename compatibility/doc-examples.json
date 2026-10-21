@@ -309,7 +309,7 @@
       "file": "docs/interceptors.md",
       "ordinal": 1,
       "language": "sh",
-      "sha256": "bce40b347a3c3859d0f90ccb3b3cf5c501841735028c6b708b3eddc30b1fdcb0",
+      "sha256": "173f7d213e9caebc991e48905196106e08fc06906bcc312a3dd1e00be1108caf",
       "classification": "expected",
       "category": "shell-command",
       "reason": "Operator command example; this inventory does not execute shell commands, provision resources, or infer a passing result."
