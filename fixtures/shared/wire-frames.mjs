@@ -159,7 +159,7 @@ export function* frameCases() {
   const compressed = [
     { variant: 'compressed-trailer-unsupported', flag: 0x81, bytes: Buffer.alloc(0), code: 12, details: 'WGA_COMPRESSED_TRAILER' },
     { variant: 'compressed-with-identity', flag: 1, bytes: Buffer.alloc(0), code: 13, details: 'WGA_COMPRESSED_WITH_IDENTITY' },
-    { variant: 'compressed-with-unsupported-snappy', flag: 1, encoding: 'snappy', bytes: Buffer.alloc(0), code: 12, details: 'WGA_COMPRESSION_ENCODING' },
+    { variant: 'compressed-with-unsupported-snappy', flag: 1, encoding: 'snappy', bytes: Buffer.alloc(0), code: 13, details: 'WGA_COMPRESSION_ENCODING' },
     { variant: 'malformed-gzip', flag: 1, encoding: 'gzip', bytes: Buffer.from([1, 2, 3, 4]), code: 13, details: 'WGA_COMPRESSION_DATA' },
     { variant: 'malformed-deflate', flag: 1, encoding: 'deflate', bytes: Buffer.from([1, 2, 3, 4]), code: 13, details: 'WGA_COMPRESSION_DATA' },
     { variant: 'supported-gzip', flag: 1, encoding: 'gzip', bytes: gzipSync(normal), code: 0, decoded: normal },

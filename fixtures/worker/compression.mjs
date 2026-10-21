@@ -27,7 +27,7 @@ async function exercise(mode, algorithm, invocation, kind) {
     for (const [key, value] of Object.entries({ mode, algorithm, invocation, kind })) metadata.set(`x-fixture-${key}`, String(value));
     const streaming = ['stream', 'cancel', 'deadline'].includes(kind);
     const expected = ({ malformed: 13, truncated: 13, 'decoded-limit': 8, 'wire-limit': 8,
-        'compressed-trailer': 12, 'unsupported-encoding': 12, 'identity-flag': 13, cancel: 1, deadline: 4 })[kind] ?? 0;
+        'compressed-trailer': 12, 'unsupported-encoding': 13, 'identity-flag': 13, cancel: 1, deadline: 4 })[kind] ?? 0;
     let surface, callbacks = 0, errors = 0, received = 0;
     const statuses = [];
     try {

@@ -7,7 +7,9 @@ const zlib = require('node:zlib');
 const { encodeFrame, encodeMessageFrame, decodeFrames, requestHeaders, responseCompression } = require('../dist/wire.js');
 const { transformMessage } = require('../dist/compression.js');
 const { validateOptions } = require('../dist/options.js');
-const { Metadata, compressionAlgorithms } = require('../dist/index.js');
+const grpc = require('../dist/index.js');
+const { Metadata, compressionAlgorithms } = grpc;
+const { createWorkersGrpcTransport } = require('../dist/adapter.js');
 const nativeRequire = createRequire(path.resolve(__dirname, '../fixtures/native/package.json'));
 const native = nativeRequire('@grpc/grpc-js');
 const { CompressionFilter } = nativeRequire('@grpc/grpc-js/build/src/compression-filter');
@@ -72,9 +74,52 @@ test('COMPRESSION strict channel enum and metadata negotiation support identity/
         metadata.set('grpc-encoding', encoding);
         oracle.receiveMetadata(metadata);
         assert.deepEqual((await decode(bytes, actual))[0].payload, await oracle.receiveMessage(Promise.resolve(bytes)));
-        await assert.rejects(decode(frame(Buffer.alloc(0)), actual), { code: 12, diagnostic: 'WGA_COMPRESSION_ENCODING' });
+        await assert.rejects(decode(frame(Buffer.alloc(0)), actual), { code: 13, diagnostic: 'WGA_COMPRESSION_ENCODING' });
     }
 });
+
+for (const mode of ['cloudflare', 'grpc-web']) for (const streaming of [false, true]) {
+    test(`COMPRESSION ${mode} ${streaming ? 'stream' : 'unary'} classifies unsupported response codecs as INTERNAL`, async () => {
+        const payload = Buffer.from('response');
+        for (const [name, encoding, bytes, flag, code, details] of [
+            ['unsupported', 'snappy', payload, 1, 13, 'WGA_COMPRESSION_ENCODING'],
+            ['plain under unknown', 'snappy', payload, 0, 0, ''],
+            ['missing encoding', undefined, payload, 1, 13, 'WGA_COMPRESSED_WITH_IDENTITY'],
+            ['malformed gzip', 'gzip', payload, 1, 13, 'WGA_COMPRESSION_DATA'],
+            ['gzip', 'gzip', zlib.gzipSync(payload), 1, 0, ''],
+        ]) {
+            let decodes = 0;
+            const factory = createWorkersGrpcTransport({ mode,
+                ...(mode === 'grpc-web' ? { endpoints: { 'codec.test': 'https://gateway.test' } } : {}),
+                fetcher: { async fetch() {
+                    return new Response(Buffer.concat([frame(bytes, flag), encodeFrame(Buffer.from('grpc-status: 0\r\n'), true)]), {
+                        headers: { 'content-type': 'application/grpc-web+proto', ...(encoding === undefined ? {} : { 'grpc-encoding': encoding }) },
+                    });
+                } },
+            });
+            const client = new grpc.Client('codec.test', factory.channelCredentials, factory.grpcOptions());
+            try {
+                const deserialize = bytes => { decodes++; return bytes; };
+                const result = await new Promise(resolve => {
+                    if (streaming) {
+                        const values = [];
+                        const call = client.makeServerStreamRequest('/fixture.Compression/Stream', value => value, deserialize, payload);
+                        call.on('data', value => values.push(value)); call.on('error', () => {});
+                        call.on('status', status => resolve({ ...status, values }));
+                    } else {
+                        client.makeUnaryRequest('/fixture.Compression/Unary', value => value, deserialize, payload,
+                            (error, value) => resolve(error ? { ...error, values: [] } : { code: 0, details: '', values: [value] }));
+                    }
+                });
+                assert.equal(result.code, code, name); assert.equal(result.details, details, name);
+                assert.equal(decodes, code === 0 ? 1 : 0, name);
+                assert.deepEqual(result.values, code === 0 ? [payload] : [], name);
+                const usage = factory.resourceUsage();
+                assert.equal(usage.activeCalls, 0); assert.equal(usage.bufferedBytes, 0);
+            } finally { client.close(); }
+        }
+    });
+}
 
 test('COMPRESSION framing and decoded bytes match pinned native grpc-js codecs and NoCompress', async () => {
     assert.equal(nativeRequire('@grpc/grpc-js/package.json').version, '1.14.5');

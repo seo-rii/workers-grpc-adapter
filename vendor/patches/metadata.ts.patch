@@ -10,32 +10,44 @@
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
-@@ -15,9 +18,8 @@
+@@ -15,10 +18,8 @@
   *
   */
-
+ 
 -import * as http2 from 'http2';
 -import { log } from './logging';
 -import { LogVerbosity } from './constants';
+-import { getErrorMessage } from './error';
 +import type * as http2 from 'node:http2';
 +import { Buffer } from 'node:buffer';
- import { getErrorMessage } from './error';
  const LEGAL_KEY_REGEX = /^[:0-9a-z_.-]+$/;
  const LEGAL_NON_BINARY_VALUE_REGEX = /^[ -~]*$/;
-@@ -83,6 +85,9 @@
+ 
+@@ -37,10 +38,6 @@
+   return key.endsWith('-bin');
+ }
+ 
+-function isCustomMetadata(key: string): boolean {
+-  return !key.startsWith('grpc-');
+-}
+-
+ function normalizeKey(key: string): string {
+   return key.toLowerCase();
+ }
+@@ -83,6 +80,9 @@
    corked?: boolean;
  }
-
+ 
 +/** Internal admission snapshot, including context consumed by interceptors. */
 +export let snapshotMetadata: (metadata: Metadata) => Metadata;
 +
  /**
   * A class for storing metadata. Keys are normalized to lowercase ASCII.
   */
-@@ -91,6 +96,17 @@
+@@ -91,6 +91,17 @@
    private options: MetadataOptions;
    private opaqueData: Map<string, unknown> = new Map();
-
+ 
 +  static {
 +    snapshotMetadata = metadata => {
 +      const result = metadata.clone();
@@ -50,7 +62,7 @@
    constructor(options: MetadataOptions = {}) {
      this.options = options;
    }
-@@ -161,7 +177,10 @@
+@@ -161,7 +172,10 @@
      for (const [key, values] of this.internalRepr) {
        if (values.length > 0) {
          const v = values[0];
@@ -62,10 +74,10 @@
        }
      }
      return result;
-@@ -215,6 +234,11 @@
+@@ -215,6 +229,11 @@
      return this.options;
    }
-
+ 
 +  /** Internal transport iteration retaining repeated values. */
 +  entries(): IterableIterator<[string, readonly MetadataValue[]]> {
 +    return this.internalRepr.entries();
@@ -74,7 +86,7 @@
    /**
     * Creates an OutgoingHttpHeaders object that can be used with the http2 API.
     */
-@@ -228,7 +252,10 @@
+@@ -228,7 +247,10 @@
        }
        // We assume that the user's interaction with this object is limited to
        // through its public API (i.e. keys and values are already validated).
@@ -84,9 +96,9 @@
 +        enumerable: true, configurable: true, writable: true,
 +      });
      }
-
+ 
      return result;
-@@ -241,7 +268,10 @@
+@@ -241,7 +263,10 @@
    toJSON() {
      const result: { [key: string]: MetadataValue[] } = {};
      for (const [key, values] of this.internalRepr) {
@@ -98,12 +110,41 @@
      }
      return result;
    }
-@@ -310,7 +340,7 @@
-         const message = `Failed to add metadata entry ${key}: ${values}. ${getErrorMessage(
-           error
-         )}. For more information see https://github.com/grpc/grpc-node/issues/1173`;
+@@ -284,17 +309,13 @@
+ 
+       try {
+         if (isBinaryKey(key)) {
+-          if (Array.isArray(values)) {
+-            values.forEach(value => {
+-              result.add(key, Buffer.from(value, 'base64'));
+-            });
+-          } else if (values !== undefined) {
+-            if (isCustomMetadata(key)) {
+-              values.split(',').forEach(v => {
++          if (values !== undefined) {
++            // HTTP/2 may combine repeated binary fields in any array entry.
++            // Split before decoding, including reserved grpc- binary fields.
++            for (const value of Array.isArray(values) ? values : [values]) {
++              value.split(',').forEach(v => {
+                 result.add(key, Buffer.from(v.trim(), 'base64'));
+               });
+-            } else {
+-              result.add(key, Buffer.from(values, 'base64'));
+             }
+           }
+         } else {
+@@ -306,11 +327,9 @@
+             result.add(key, values);
+           }
+         }
+-      } catch (error) {
+-        const message = `Failed to add metadata entry ${key}: ${values}. ${getErrorMessage(
+-          error
+-        )}. For more information see https://github.com/grpc/grpc-node/issues/1173`;
 -        log(LogVerbosity.ERROR, message);
-+        console.error('E ' + message);
++      } catch {
++        // Rejected metadata can contain credentials or private application
++        // values. Discard it without logging the value or validation error.
        }
      }
-
+ 

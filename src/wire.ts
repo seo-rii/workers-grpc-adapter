@@ -20,7 +20,7 @@ export interface FrameParserDiagnostics {
     runtimeChunkBytes: number;
 }
 const owned = new Set(['content-type', 'content-length', 'content-encoding', 'connection', 'transfer-encoding', 'host', 'te', 'grpc-timeout', 'grpc-encoding', 'grpc-accept-encoding', 'x-grpc-web', 'accept', 'grpc-previous-rpc-attempts']);
-const responseControl = new Set(['content-type', 'content-length', 'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'transfer-encoding', 'connection', 'date']);
+const responseControl = new Set(['content-type', 'content-length', 'grpc-status', 'grpc-message', 'grpc-encoding', 'grpc-accept-encoding', 'transfer-encoding', 'connection']);
 function wireError(code: status, id: string): never {
     throw new TransportError(code, id);
 }
@@ -58,7 +58,7 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; direction?: 'request' | 'response'; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
     const diagnostics = compression.diagnostics;
     const chunkScope = compression.budget?.scope();
@@ -142,7 +142,9 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                     return wireError(status.INTERNAL, 'WGA_COMPRESSED_WITH_IDENTITY');
                 }
                 if (flag === 1 && encoding !== 'gzip' && encoding !== 'deflate') {
-                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION_ENCODING');
+                    // gRPC distinguishes an unsupported request codec at the
+                    // server from an unsupported response codec at the client.
+                    return wireError(compression.direction === 'request' ? status.UNIMPLEMENTED : status.INTERNAL, 'WGA_COMPRESSION_ENCODING');
                 }
                 const wireLimit = compression.maxWireBytes ?? maxMessageBytes;
                 if (length > (trailer ? METADATA_LIMIT : flag === 1 ? wireLimit : Math.min(wireLimit, maxMessageBytes))) {
@@ -190,14 +192,20 @@ function decodeBase64(value: string): Buffer {
 }
 function addHeader(metadata: Metadata, key: string, value: string): void {
     try {
+        if (!/^[0-9a-z_.-]+$/.test(key) || /[\x00-\x08\x0a-\x1f\x7f]/.test(value)) {
+            return wireError(status.INTERNAL, 'WGA_INVALID_METADATA');
+        }
         if (key.endsWith('-bin')) {
             for (const part of value.split(',')) {
-                metadata.add(key, decodeBase64(part.trim()));
+                metadata.add(key, decodeBase64(part.replace(/^[ \t]+|[ \t]+$/g, '')));
             }
         }
-        else {
+        else if (/^[\x20-\x7e]*$/.test(value)) {
             metadata.add(key, value);
         }
+        // HTTP permits HTAB and non-ASCII field values that gRPC ASCII
+        // metadata cannot represent. Discard those fields without failing the
+        // RPC, after budgeting and validating their names and control bytes.
     }
     catch (e) {
         if (e instanceof TransportError) {
@@ -244,9 +252,12 @@ function statusFromPairs(entries: Iterable<[
     string,
     string
 ]>): StatusObject | null {
+    // Each wire boundary budgets encoded fields before calling this parser.
+    // Re-encoding recovered status text would count replacement characters
+    // instead of the original bytes received from the peer.
     let code: string | undefined, details = '';
     const metadata = new Metadata();
-    for (const [key, value] of headerBudget(entries)) {
+    for (const [key, value] of entries) {
         if (key === 'grpc-status') {
             if (code !== undefined) {
                 return wireError(status.INTERNAL, 'WGA_DUPLICATE_STATUS');
@@ -278,29 +289,38 @@ function statusFromPairs(entries: Iterable<[
     return { code: Number(code), details, metadata };
 }
 export function statusFromHeaders(headers: Headers): StatusObject | null {
-    return statusFromPairs(headers.entries());
+    return statusFromPairs(headerBudget(headers.entries()));
 }
 export function parseTrailers(payload: Buffer): StatusObject | null {
     if (payload.length > METADATA_LIMIT) {
         return wireError(status.RESOURCE_EXHAUSTED, 'WGA_METADATA_SIZE');
     }
-    if (payload.some(byte => byte > 127)) {
-        return wireError(status.INTERNAL, 'WGA_INVALID_TRAILERS');
-    }
-    const text = payload.toString('ascii');
     const entries: [
         string,
         string
     ][] = [];
-    for (const line of text.split('\r\n')) {
-        if (!line) {
-            continue;
-        }
+    let size = 0;
+    for (let start = 0; start < payload.length;) {
+        const end = payload.indexOf('\r\n', start);
+        const line = payload.subarray(start, end < 0 ? payload.length : end);
+        start = end < 0 ? payload.length : end + 2;
+        if (line.length === 0) continue;
         const colon = line.indexOf(':');
-        if (colon <= 0 || /[\r\n]/.test(line)) {
+        const key = line.subarray(0, colon).toString('latin1');
+        if (colon <= 0 || !/^[0-9a-z_.-]+$/i.test(key)
+            || line.subarray(colon + 1).some(byte => byte < 0x20 && byte !== 0x09 || byte === 0x7f)) {
             return wireError(status.INTERNAL, 'WGA_INVALID_TRAILERS');
         }
-        entries.push([line.slice(0, colon).toLowerCase(), line.slice(colon + 1).trim()]);
+        let first = colon + 1, last = line.length;
+        while (first < last && (line[first] === 0x20 || line[first] === 0x09)) first++;
+        while (last > first && (line[last - 1] === 0x20 || line[last - 1] === 0x09)) last--;
+        const value = line.subarray(first, last);
+        size += key.length + value.length + 32;
+        if (size > METADATA_LIMIT) return wireError(status.RESOURCE_EXHAUSTED, 'WGA_METADATA_SIZE');
+        // grpc-message must remain recoverable even if the peer sends raw or
+        // malformed UTF-8. Budget its original bytes before replacement decoding
+        // so recovery cannot inflate an otherwise valid encoded field list.
+        entries.push([key.toLowerCase(), value.toString('utf8')]);
     }
     return statusFromPairs(entries);
 }

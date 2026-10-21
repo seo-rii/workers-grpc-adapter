@@ -91,7 +91,7 @@ function malformed(value) {
         case 'invalid-trailer': tail = trailer('grpc-status: 0\r\nno-colon\r\n'); break;
         case 'nonascii-trailer': tail = record(Buffer.from([255, 13, 10]), 128); break;
         case 'compressed-trailer': tail = record(text('grpc-status: 0\r\n'), 129); code = 12; break;
-        case 'unsupported-encoding': tail = record(zlib.gzipSync(value.payload), 1); headers['grpc-encoding'] = 'fixture-unknown'; code = 12; break;
+        case 'unsupported-encoding': tail = record(zlib.gzipSync(value.payload), 1); headers['grpc-encoding'] = 'fixture-unknown'; code = 13; break;
         case 'compressed-identity': tail = record(value.payload, 1); break;
         case 'corrupt-gzip': tail = record(Buffer.from([31, 139, 0, value.selector % 256]), 1); headers['grpc-encoding'] = 'gzip'; break;
         case 'decoded-limit': tail = record(zlib.gzipSync(Buffer.alloc(513 + value.selector % 512, 65)), 1); headers['grpc-encoding'] = 'gzip'; code = 8; break;

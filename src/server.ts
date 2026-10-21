@@ -170,7 +170,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         const pendingInterruptions = new Set<(error: TransportError) => void>();
         let timer: ReturnType<typeof setTimeout> | undefined, cleaned = false, headersSent = false, closed = false;
         let deadline = Infinity, interruptionError: TransportError | undefined;
-        let iterator: AsyncIterator<unknown> | undefined, returnStarted = false;
+        let iterator: AsyncIterator<unknown> | undefined, returnStarted = false, iterableOutput = false;
         let inputIterator: AsyncIterator<unknown> | undefined, inputClosed = false, inputReading = false;
         let inputFailure: unknown;
         let initial = new Metadata(), trailing = new Metadata();
@@ -265,7 +265,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 // as an empty stream for client- and bidi-streaming methods.
                 if (!requestBody) return;
                 for await (const value of decodeFrames(requestBody, receiveLimit, inputAborter.signal,
-                    { encoding: requestEncoding, maxWireBytes: wireLimit, onChunk: checkActive })) {
+                    { encoding: requestEncoding, direction: 'request', maxWireBytes: wireLimit, onChunk: checkActive })) {
                     checkActive();
                     if (value.trailer) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
                     yield value.payload;
@@ -362,8 +362,10 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 // Own the iterator as part of handler completion, before any
                 // awaiting continuation can observe cancellation. The same
                 // owner also disposes a handler that resolves after race ended.
-                if (output && typeof output[Symbol.asyncIterator] === 'function') {
-                    iterator = output[Symbol.asyncIterator]();
+                const factory = output && output[Symbol.asyncIterator];
+                if (typeof factory === 'function') {
+                    iterableOutput = true;
+                    iterator = Reflect.apply(factory, output, []);
                     if (aborter.signal.aborted) disposeIterator();
                 }
                 return output;
@@ -373,13 +375,13 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             if (inputFailure !== undefined) throw inputFailure;
             let first: IteratorResult<unknown>;
             if (route.definition.responseStream) {
-                if (!output || typeof output[Symbol.asyncIterator] !== 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                if (!iterableOutput) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 checkActive();
                 first = await race(iterator!.next());
-                if (!first || typeof first !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                if (!first || (typeof first !== 'object' && typeof first !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
             } else {
                 checkActive();
-                if (output && typeof output[Symbol.asyncIterator] === 'function') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                if (iterableOutput) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 first = { done: false, value: output };
                 iterator = { next: async () => ({ done: true, value: undefined }) };
             }
@@ -399,7 +401,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                         const item = buffered ?? await race(iterator!.next());
                         buffered = undefined;
                         checkActive();
-                        if (!item || typeof item !== 'object') throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
+                        if (!item || (typeof item !== 'object' && typeof item !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                         if (item.done) {
                             if (inputFailure !== undefined) throw inputFailure;
                             disposeInput();
