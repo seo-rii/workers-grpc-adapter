@@ -97,7 +97,8 @@ async function runtime() {
         return name;
     });
     for (const required of ['LICENSE', 'NOTICE', 'vendor/LICENSE', 'vendor/NOTICE', 'vendor/UPSTREAM.json',
-        'dist/build/profiles/google-static-v1.json', 'dist/build/profiles/google-modern-v1.json']) assert.ok(files.includes(required));
+        'dist/build/profiles/google-static-v1.json', 'dist/build/profiles/google-modern-v1.json',
+        'docs/fetcher.md', 'docs/parent-calls.md', 'docs/compression.md', 'docs/health.md', 'docs/request-streaming.md']) assert.ok(files.includes(required));
     for (const name of manifest.files) assert.ok(files.some(file => file === name || file.startsWith(name + '/')), `Missing published asset: ${name}`);
     return { consumers, gax, exports, packedFiles: files.length, inventorySha256: hash(JSON.stringify(inventory)),
         noNativeGrpcPackage: true, noWorkspaceResolution: true, esmCjsIdentity: true, credentialComposition: true, unsupportedDeepImportsRejected: true,

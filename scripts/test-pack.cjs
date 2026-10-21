@@ -85,6 +85,9 @@ async function main() {
     fs.mkdirSync(path.join(root, 'artifacts'), { recursive: true });
     fs.mkdirSync(path.join(root, 'verification'), { recursive: true });
     const packed = pack(root, path.join(root, 'artifacts')), actualTarball = packed.file;
+    for (const name of ['fetcher', 'parent-calls', 'compression', 'health', 'request-streaming']) {
+        assert.ok(packed.files.some(file => file.path === `docs/${name}.md`), `Missing published feature guide: ${name}`);
+    }
     const manifest = json(path.join(root, 'package.json'));
     addPackage(manifest, actualTarball);
     const upstream = await prepareLockedPackages();
