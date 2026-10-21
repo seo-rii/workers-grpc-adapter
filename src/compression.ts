@@ -18,7 +18,14 @@ export function transformMessage(bytes: Uint8Array, encoding: Exclude<Compressio
         const options = { chunkSize: 16384 };
         const codec = decompress ? (encoding === 'gzip' ? createGunzip(options) : createInflate(options))
             : (encoding === 'gzip' ? createGzip(options) : createDeflate(options));
-        let total = 0, settled = false;
+        let total = 0, settled = false, inputPending = false;
+        let delivery: (() => void) | undefined;
+        const deliver = () => {
+            if (inputPending) return;
+            const complete = delivery;
+            delivery = undefined;
+            complete?.();
+        };
         const parts: Buffer[] = [];
         const finish = (error?: TransportError) => {
             if (settled) return;
@@ -38,12 +45,13 @@ export function transformMessage(bytes: Uint8Array, encoding: Exclude<Compressio
             parts.length = 0;
             partsLease?.release();
             if (error) {
+                delivery = () => reject(error);
                 codec.destroy();
-                reject(error);
             }
             else {
-                resolve(result!);
+                delivery = () => resolve(result!);
             }
+            deliver();
         };
         const abort = () => finish(new TransportError(status.CANCELLED, 'WGA_ABORTED'));
         signal?.addEventListener('abort', abort, { once: true });
@@ -62,16 +70,35 @@ export function transformMessage(bytes: Uint8Array, encoding: Exclude<Compressio
             parts.push(chunk);
         });
         // Never include a codec's message, input or partial output in diagnostics.
-        codec.on('error', () => finish(new TransportError(status.INTERNAL, decompress ? 'WGA_COMPRESSION_DATA' : 'WGA_COMPRESSION_ENCODE')));
+        codec.on('error', () => {
+            // Native zlib failures can omit the write callback. Unlike a local
+            // destroy/close, this error reports completion of the failed work.
+            inputPending = false;
+            finish(new TransportError(status.INTERNAL, decompress ? 'WGA_COMPRESSION_DATA' : 'WGA_COMPRESSION_ENCODE'));
+            deliver();
+        });
         codec.once('end', () => finish());
         codec.once('close', () => {
             if (!settled) finish(new TransportError(status.INTERNAL, 'WGA_COMPRESSION_CLOSED'));
         });
         try {
-            codec.end(bytes);
+            // A destroyed/closed native codec may still own this input until
+            // its write callback runs. Keep the caller's encoding/parser scope
+            // alive through that callback; public call cancellation is separate.
+            inputPending = true;
+            codec.write(bytes, error => {
+                inputPending = false;
+                if (error) finish(new TransportError(status.INTERNAL, decompress ? 'WGA_COMPRESSION_DATA' : 'WGA_COMPRESSION_ENCODE'));
+                deliver();
+            });
         }
         catch {
+            inputPending = false;
             finish(new TransportError(status.INTERNAL, decompress ? 'WGA_COMPRESSION_DATA' : 'WGA_COMPRESSION_ENCODE'));
+            deliver();
+            return;
         }
+        try { codec.end(); }
+        catch { finish(new TransportError(status.INTERNAL, decompress ? 'WGA_COMPRESSION_DATA' : 'WGA_COMPRESSION_ENCODE')); }
     });
 }

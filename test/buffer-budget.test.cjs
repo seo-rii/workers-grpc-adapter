@@ -9,6 +9,13 @@ const { RequestStreamBody } = require('../dist/request-stream.js');
 const turn = () => new Promise(resolve => setImmediate(resolve));
 const used = budget => budget.diagnostics().bufferedBytes;
 const exhausted = { code: 8, diagnostic: 'WGA_BUFFER_BUDGET' };
+async function released(budget) {
+    const deadline = Date.now() + 5000;
+    // A canceled writer settles before the native codec releases its input.
+    // Event-loop turns alone do not establish that the worker has completed.
+    while (used(budget) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 1));
+    assert.equal(used(budget), 0);
+}
 function source(chunks, hold = false) {
     let pulls = 0, cancelled = 0;
     const body = new ReadableStream({
@@ -221,7 +228,7 @@ test('BUFFER cancel during compression cannot enqueue late frames or reserve aft
     assert.equal(used(budget), 1024 * 1024);
     const rejected = assert.rejects(pending, { code: 1 });
     request.abort(); await rejected; await turn(); await turn();
-    assert.equal(used(budget), 0); assert.equal(request.bufferedBytes(), 0);
+    await released(budget); assert.equal(request.bufferedBytes(), 0);
     const reader = request.body.getReader(); await assert.rejects(reader.read(), { code: 1 }); reader.releaseLock();
     const scope = budget.scope();
     const encoding = transformMessage(Buffer.alloc(100000, 2), 'gzip', false, 200000, undefined, scope);
@@ -265,7 +272,7 @@ test('BUFFER same-turn cancellation cannot reuse bytes still owned by encoding P
             assert.deepEqual(await Promise.all(writes), [1, 1, 8]);
         }
         await turn();
-        assert.equal(used(budget), 0);
+        await released(budget);
         assert.ok(budget.diagnostics().peakBufferedBytes <= budget.limits.maxBufferedBytes);
         const recovered = new RequestStreamBody({ maxMessageBytes: 100, maxWireBytes: 100, compression: 'identity', budget });
         const write = recovered.write(Buffer.from([1])), reader = recovered.body.getReader();
