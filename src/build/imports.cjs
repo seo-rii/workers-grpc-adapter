@@ -67,7 +67,9 @@ function tokensFor(source, sourceType) {
                     let keyword = (pairs.get(index - 1) ?? index) - 1;
                     if (tokens[keyword]?.kind === 'identifier' && tokens[keyword]?.value !== 'function') keyword--;
                     if (tokens[keyword]?.value === '*') keyword--;
-                    if (tokens[keyword]?.value === 'function') {
+                    // A property named function can be called before an ASI
+                    // block; it does not turn that block into a function body.
+                    if (tokens[keyword]?.value === 'function' && !['.', '?.'].includes(tokens[keyword - 1]?.value)) {
                         functionBody = true;
                         const definition = keyword;
                         if (tokens[keyword - 1]?.value === 'async'

@@ -37,6 +37,10 @@ for (const [name, setup, call] of [
     ['computed call', 'const object = { noop() {} };', 'object["noop"](require)'],
     ['catch property call', 'const object = { catch() {} };', 'object.catch(require)'],
     ['for property call', 'const object = { for() {} };', 'object.for(require)'],
+    ['function property call', 'const object = { function() {} };', 'object.function(require)'],
+    ['optional function property call', 'const object = { function() {} };', 'object?.function(require)'],
+    ['optional call of function property', 'const object = { function() {} };', 'object.function?.(require)'],
+    ['computed function property call', 'const object = { function() {} };', 'object["function"](require)'],
     ['constructor call', 'function Noop() {}', 'new Noop(require)'],
     ['parenthesized call', '', '(function () {})(require)'],
 ]) for (const separator of ['\n', ';\n']) {
