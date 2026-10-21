@@ -113,6 +113,46 @@ function generatorFixture(t, layout = 'hoisted') {
 }
 
 for (const layout of ['hoisted', 'isolated', 'workspace']) {
+  test(`BUILD generator uses reviewed bytes after replacing a cached encoder in ${layout} layout`, t => {
+    const clean = generatorFixture(t, layout), expected = clean.prepare();
+    const f = generatorFixture(t, layout), encoder = path.join(f.generator, 'src/encoder.js');
+    const reviewed = fs.readFileSync(encoder, 'utf8');
+    const previous = reviewed.replace('(\"if(!w)\")',
+      '(\"throw Error(\\\"previous encoder implementation\\\")\")\n    (\"if(!w)\")');
+    assert.notEqual(previous, reviewed, 'the previous implementation is observably different');
+    fs.writeFileSync(encoder, previous);
+    const callerProtobuf = require(path.join(f.generator, 'index.js'));
+    fs.writeFileSync(encoder, reviewed);
+    assert.equal(hash(fs.readFileSync(encoder)), f.profile.codegenInputs.find(input => input.path.endsWith('/src/encoder.js')).sha256);
+    assert.equal(f.build.inspectGoogleWorkerProfile({ projectRoot: f.project }).passed, true);
+    const cache = new Map(Object.entries(require.cache));
+    const prepared = f.prepare();
+    for (const [file, module] of cache) assert.strictEqual(require.cache[file], module, 'preparation preserves caller modules');
+    assert.strictEqual(require(path.join(f.generator, 'index.js')), callerProtobuf);
+    assert.equal(prepared.manifest().cacheKey, expected.manifest().cacheKey);
+    assert.equal(prepared.manifest().registrySha256, expected.manifest().registrySha256);
+    const json = JSON.parse(fs.readFileSync(path.join(f.project, 'schemas/example.json')));
+    const codec = require(prepared.registryFile).fromJSON(callerProtobuf, json).lookupType('Example');
+    assert.equal(Buffer.from(codec.encode({ value: 'works' }).finish()).toString('hex'), '0a05776f726b73');
+    assert.match(callerProtobuf.encoder(codec).toString(), /previous encoder implementation/,
+      'the caller retains its original generator without contaminating the prepared registry');
+  });
+}
+
+test('BUILD isolated generation ignores caller Node preload settings', t => {
+  const f = generatorFixture(t), preload = path.join(f.project, 'preload.cjs'), marker = path.join(f.project, 'preloaded');
+  write(preload, `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'unexpected preload');`);
+  const previous = process.env.NODE_OPTIONS;
+  process.env.NODE_OPTIONS = '--require=' + preload;
+  t.after(() => {
+    if (previous === undefined) delete process.env.NODE_OPTIONS;
+    else process.env.NODE_OPTIONS = previous;
+  });
+  f.prepare();
+  assert.equal(fs.existsSync(marker), false, 'the generator process cannot run caller-supplied preload modules');
+});
+
+for (const layout of ['hoisted', 'isolated', 'workspace']) {
   test(`BUILD pinned generator bootstrap changes fail before execution in ${layout} layout`, t => {
     const f = generatorFixture(t, layout), baseline = f.prepare().manifest();
     const file = path.join(f.generator, 'index.js');
