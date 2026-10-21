@@ -1,6 +1,8 @@
 # gRPC message compression
 
-The adapter supports `identity`, `deflate` and `gzip` for unary and server-streaming RPCs. Compression applies independently to each protobuf message. It does not use HTTP `Content-Encoding` or compress gRPC-Web trailer frames.
+The adapter supports `identity`, `deflate` and `gzip` for unary and server-streaming RPCs. The same codecs support client-streaming and bidirectional RPCs when `experimentalRequestStreaming` is enabled for an explicitly configured `grpc-web` gateway. Request streaming is disabled by default; see [experimental request streaming](request-streaming.md) for setup and transport limitations.
+
+Compression applies independently to each protobuf message. It does not use HTTP `Content-Encoding` or compress gRPC-Web trailer frames.
 
 Select the request algorithm with the grpc-js channel option:
 
@@ -14,7 +16,7 @@ const client = new Client('service.example', credentials.createSsl(), {
 
 The enum values match grpc-js: `identity = 0`, `deflate = 1`, `gzip = 2`. Identity remains the default. Generated Google clients can pass the same option through `gaxOptions()`. Metadata cannot override adapter-owned encoding headers. User and credential metadata containing HTTP `Content-Encoding` are rejected with `WGA_RESERVED_METADATA` before Fetch, because the adapter does not encode the enclosing HTTP body.
 
-Requests advertise `grpc-accept-encoding: identity,deflate,gzip`; `grpc-encoding` identifies the configured request codec. The grpc-js `NoCompress` write flag preserves an individual message without compression while retaining that header, as native grpc-js does. The supported client API still accepts only one request message.
+Requests advertise `grpc-accept-encoding: identity,deflate,gzip`; `grpc-encoding` identifies the configured request codec. The grpc-js `NoCompress` write flag preserves an individual message without compression while retaining that header, as native grpc-js does. Compressed and plain messages may coexist within an enabled request stream.
 
 Responses select their own codec with `grpc-encoding`. A compressed frame requires gzip or deflate; a compressed frame declaring identity is malformed. Unknown response encodings fail with `INTERNAL` when a compressed message uses them. The Fetch server rejects unsupported compressed request encodings with `UNIMPLEMENTED` and advertises its supported encodings, following the [gRPC compression specification](https://github.com/grpc/grpc/blob/master/doc/compression.md). Plain frames remain valid under any declared encoding, matching the pinned native codec behavior. Compressed and plain messages may coexist in one response stream.
 
