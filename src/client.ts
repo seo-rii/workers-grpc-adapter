@@ -269,6 +269,7 @@ export class Client {
     options?: CallOptions | UnaryCallback<ResponseType>,
     callback?: UnaryCallback<ResponseType>
   ): ClientUnaryCall {
+    const callStartTime = Date.now();
     const checkedArguments =
       checkOptionalUnaryResponseArguments<ResponseType>(
         metadata,
@@ -309,7 +310,8 @@ export class Client {
       interceptorArgs,
       callProperties.methodDefinition,
       callProperties.callOptions,
-      callProperties.channel
+      callProperties.channel,
+      callStartTime
     );
     /* This needs to happen before the emitter is used. Unfortunately we can't
      * enforce this with the type system. We need to construct this emitter
@@ -402,6 +404,7 @@ export class Client {
     options?: CallOptions | UnaryCallback<ResponseType>,
     callback?: UnaryCallback<ResponseType>
   ): ClientWritableStream<RequestType> {
+    const callStartTime = Date.now();
     const checkedArguments =
       checkOptionalUnaryResponseArguments<ResponseType>(
         metadata,
@@ -442,7 +445,8 @@ export class Client {
       interceptorArgs,
       callProperties.methodDefinition,
       callProperties.callOptions,
-      callProperties.channel
+      callProperties.channel,
+      callStartTime
     );
     /* This needs to happen before the emitter is used. Unfortunately we can't
      * enforce this with the type system. We need to construct this emitter
@@ -522,6 +526,7 @@ export class Client {
     metadata?: Metadata | CallOptions,
     options?: CallOptions
   ): ClientReadableStream<ResponseType> {
+    const callStartTime = Date.now();
     const checkedArguments = checkMetadataAndOptions(metadata, options);
     const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
       {
@@ -561,7 +566,8 @@ export class Client {
       interceptorArgs,
       callProperties.methodDefinition,
       callProperties.callOptions,
-      callProperties.channel
+      callProperties.channel,
+      callStartTime
     );
     /* This needs to happen before the emitter is used. Unfortunately we can't
      * enforce this with the type system. We need to construct this emitter
@@ -620,6 +626,7 @@ export class Client {
     metadata?: Metadata | CallOptions,
     options?: CallOptions
   ): ClientDuplexStream<RequestType, ResponseType> {
+    const callStartTime = Date.now();
     const checkedArguments = checkMetadataAndOptions(metadata, options);
     const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
       {
@@ -660,7 +667,8 @@ export class Client {
       interceptorArgs,
       callProperties.methodDefinition,
       callProperties.callOptions,
-      callProperties.channel
+      callProperties.channel,
+      callStartTime
     );
     /* This needs to happen before the emitter is used. Unfortunately we can't
      * enforce this with the type system. We need to construct this emitter

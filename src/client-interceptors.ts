@@ -562,7 +562,8 @@ export function getInterceptingCall(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   methodDefinition: ClientMethodDefinition<any, any>,
   options: CallOptions,
-  channel: Channel
+  channel: Channel,
+  callStartTime = Date.now()
 ): InterceptingCallInterface {
   if (
     interceptorArgs.clientInterceptors.length > 0 &&
@@ -609,7 +610,10 @@ export function getInterceptingCall(
     // Filter out falsy values when providers return nothing
   }
   if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
-  const lifetime = channel.createCallLifetime(options);
+  // Provider construction and invocation transformation consume the same
+  // default budget as startup. Register only after providers return, retaining
+  // the public invocation's timestamp without owning work on provider errors.
+  const lifetime = channel.createCallLifetime(options, callStartTime);
   const interceptorOptions = Object.assign({}, options, {
     method_definition: methodDefinition,
   });

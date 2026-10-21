@@ -87,9 +87,9 @@ export class Channel {
         return call;
     }
     /** The logical call stays registered through asynchronous interceptors. */
-    createCallLifetime(options: CallOptions): CallLifetime {
+    createCallLifetime(options: CallOptions, callStartTime = Date.now()): CallLifetime {
         const observation = this.config.observer ? new CallObservation(this.config.observer) : undefined;
-        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); }, this.resources, observation);
+        const lifetime = new CallLifetime(options, this.config.defaultTimeoutMs, () => { this.active.delete(lifetime); }, this.resources, observation, callStartTime);
         this.active.add(lifetime);
         if (this.closed) lifetime.cancelWithStatus(status.UNAVAILABLE, 'WGA_CHANNEL_CLOSED');
         return lifetime;

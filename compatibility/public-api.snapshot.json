@@ -6592,7 +6592,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "72b90991af32cbff22039f121cb04f77cfa8a3f0a1fc61316d68585a47c0d783",
+          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6605,7 +6605,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -6631,6 +6630,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -6652,6 +6652,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -6659,7 +6660,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -6743,7 +6743,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "b313f9518b04662c4b651ef060162a3eac208190ba514352d0d59f9f9350bf49",
+          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6756,7 +6756,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -6782,6 +6781,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -6803,13 +6803,13 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
             "c9f0d66b66643233ceb8a989c8c5cb1948d64c15f5cc31c606eabb8b37695e3a",
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -6841,8 +6841,8 @@
           "type": true,
           "value": true,
           "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}",
-          "sha256": "3e1a95b325eb2e1251736603c97f3e861f8c89d35430211dd04e201eb4f3f7dd",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}",
+          "sha256": "4943e8d11b39e0dfc55841a78c973065426646d603809aaad2eabe91bee0ccc9",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6899,13 +6899,13 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
             "c9f0d66b66643233ceb8a989c8c5cb1948d64c15f5cc31c606eabb8b37695e3a",
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -6947,8 +6947,8 @@
           "type": true,
           "value": false,
           "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}",
-          "sha256": "c8a4dbbb0242f2e1d9133ebad3a46c71c7d00c4ff6728e1aaf9ed14fc48f67a4",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}",
+          "sha256": "b694f56fe9fea4d3c0a2faf7a2c471d66df631fb3fd06c66a5b9b98fef169129",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -7005,13 +7005,13 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
             "c9f0d66b66643233ceb8a989c8c5cb1948d64c15f5cc31c606eabb8b37695e3a",
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -7042,7 +7042,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "bf57bddac74303bb1b6ffbe7015260acabf4dbf9ebe6549e14286df8790bddb1",
+          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7057,7 +7057,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -7087,6 +7086,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -7112,6 +7112,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -7119,7 +7120,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -7194,7 +7194,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "f068fe839032297f67612cc610dfba0cdf68609255d6df411e6950a06d436eed",
+          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -7207,7 +7207,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -7233,6 +7232,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -7255,6 +7255,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -7262,7 +7263,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -7437,7 +7437,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface GrpcObject {\n    [index: string]: GrpcObject | ServiceClientConstructor | ProtobufTypeDefinition;\n}",
-          "sha256": "8c3b74cfb16c2cff36500e20bd0927a004eababe4a3a9a19145347d6673a0bae",
+          "sha256": "8c0faf227c4bd41727398b310417b2dd35c1e9f8c06428ea9f2523a16a577726",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7452,7 +7452,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -7487,6 +7486,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -7512,6 +7512,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -7521,7 +7522,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -7611,7 +7611,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class HealthClient {\n    constructor(client: Client);\n    check(service?: string, options?: HealthCallOptions): Promise<HealthCheckResponse>;\n    watch(service?: string, options?: Omit<HealthCallOptions, 'signal'>): ClientReadableStream<HealthCheckResponse>;\n    monitor(service?: string, options?: HealthWatchOptions): HealthWatch;\n}",
-          "sha256": "0e0a520e94438aabcd675adf45aeaadf29a9770a98f77d88c27fa1122684fe93",
+          "sha256": "867b4bc9f345f6629aef585a1c58223ae7f7f527b857135b95ccb51fc1d7c1c6",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7626,7 +7626,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -7661,6 +7660,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -7687,6 +7687,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -7694,7 +7695,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -7745,7 +7745,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class HealthWatch {\n    constructor(client: HealthClient, service?: string, options?: HealthWatchOptions);\n    getState(): HealthWatchState;\n    waitForServing(options: HealthWaitOptions): Promise<HealthWatchState>;\n    close(): void;\n}",
-          "sha256": "af9cdd46e0b431c7391bf64a4d9dd5b3eb72096356e8b97b1d16692097962245",
+          "sha256": "9c0d95f0eb1258caf0586ecfff198512ef86cf328c051c2ff7e0c893ca6470b6",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7760,7 +7760,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -7795,6 +7794,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -7821,6 +7821,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -7828,7 +7829,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -8527,7 +8527,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface ServiceClient extends Client {\n    [methodName: string]: Function;\n}",
-          "sha256": "b2b49a1f6a98593ab4417d7b294f87004e0b6c641e36f34ef759942a476f0a57",
+          "sha256": "43f3e65bcee5cdb0df400538415a70f48e95fb383abf8e038d52c7a0aec9ad6d",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8542,7 +8542,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -8573,6 +8572,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -8598,6 +8598,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -8605,7 +8606,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -8632,7 +8632,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface ServiceClientConstructor {\n    new (address: string, credentials: ChannelCredentials, options?: Partial<ChannelOptions>): ServiceClient;\n    service: ServiceDefinition;\n    serviceName: string;\n}",
-          "sha256": "18412ecd00a61e3ca0f6db2faf6cef6dbe6dadf4756904e2b825f8576f50d22b",
+          "sha256": "b6be3628cd2d1de4abf6e5d0d50fd90ab785a921d85a5742dd6fd4130d07db83",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8647,7 +8647,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -8680,6 +8679,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -8705,6 +8705,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -8714,7 +8715,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -8862,7 +8862,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "c8e75bae231028d8baf6634c298cd47d98c698015f2e89a19520f556fd45676b",
+          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8877,7 +8877,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -8908,6 +8907,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -8933,6 +8933,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -8940,7 +8941,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9022,7 +9022,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "a2430982c2c88fc1850b73708124e2685b39a4aa7174c060542f1b1abe2dc345",
+          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9037,7 +9037,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -9068,6 +9067,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -9093,6 +9093,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -9100,7 +9101,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9127,7 +9127,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function loadPackageDefinition(packageDef: PackageDefinition): GrpcObject;",
-          "sha256": "b90dc0bf3d775581b1f991b090f2ebc1038b52c6c5ff70c98b903ff232edcd76",
+          "sha256": "3055416ae14b1c128747d530b27927ce1301332af28386c68240964d1a740532",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9142,7 +9142,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -9178,6 +9177,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -9203,6 +9203,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -9213,7 +9214,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9241,7 +9241,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function makeClientConstructor(methods: ServiceDefinition, serviceName: string, classOptions?: {}): ServiceClientConstructor;",
-          "sha256": "ec07c0a2ee1c42b6fef263fcdd6f39ab1277c8cd20b6ac015354ca4f09d029eb",
+          "sha256": "d7fa0400b7c225c78a22b1f5095123bd8d64e72dc0fdd2ca5735d7bd31004839",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9256,7 +9256,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -9290,6 +9289,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -9315,6 +9315,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -9324,7 +9325,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9352,7 +9352,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function makeClientConstructor(methods: ServiceDefinition, serviceName: string, classOptions?: {}): ServiceClientConstructor;",
-          "sha256": "ddaa6f90fa1c02568262a03f71e7e2150eab3f527608d5c23ddbbad9cbb60121",
+          "sha256": "f0719c3bbf0863c6a8fc2c3154603b9361b6866e92b1977a9805d66323ace55d",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9367,7 +9367,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -9401,6 +9400,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -9426,6 +9426,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -9435,7 +9436,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9510,7 +9510,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "7ee2e5524e05e965c6bd33ff622d307d9b45dc0fca5f7616f02085225f1e4784",
+          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9525,7 +9525,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -9556,6 +9555,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -9581,6 +9581,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -9588,7 +9589,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -9680,11 +9680,6 @@
           "name": "dist/object-stream.d.ts#ObjectWritable",
           "kind": "InterfaceDeclaration",
           "signature": "interface ObjectWritable<T> extends IntermediateObjectWritable<T> {\n    _write(chunk: T, encoding: string, callback: Function): void;\n    write(chunk: T, cb?: Function): boolean;\n    write(chunk: T, encoding?: any, cb?: Function): boolean;\n    setDefaultEncoding(encoding: string): this;\n    end(): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, encoding?: any, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n}"
-        },
-        "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb": {
-          "name": "dist/channel.d.ts#Channel",
-          "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}"
         },
         "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276": {
           "name": "dist/client-interceptors.d.ts#CloseRequester",
@@ -9896,6 +9891,11 @@
           "kind": "EnumDeclaration",
           "signature": "enum status {\n    OK = 0,\n    CANCELLED = 1,\n    UNKNOWN = 2,\n    INVALID_ARGUMENT = 3,\n    DEADLINE_EXCEEDED = 4,\n    NOT_FOUND = 5,\n    ALREADY_EXISTS = 6,\n    PERMISSION_DENIED = 7,\n    RESOURCE_EXHAUSTED = 8,\n    FAILED_PRECONDITION = 9,\n    ABORTED = 10,\n    OUT_OF_RANGE = 11,\n    UNIMPLEMENTED = 12,\n    INTERNAL = 13,\n    UNAVAILABLE = 14,\n    DATA_LOSS = 15,\n    UNAUTHENTICATED = 16\n}"
         },
+        "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725": {
+          "name": "dist/channel.d.ts#Channel",
+          "kind": "ClassDeclaration",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}"
+        },
         "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6": {
           "name": "dist/client-interceptors.d.ts#Interceptor",
           "kind": "InterfaceDeclaration",
@@ -10031,6 +10031,11 @@
           "kind": "ClassDeclaration",
           "signature": "class InterceptingCall implements InterceptingCallInterface {\n    constructor(nextCall: InterceptingCallInterface, requester?: Requester);\n    cancelWithStatus(status: Status, details: string): void;\n    disposePending(): void;\n    getPeer(): string;\n    start(metadata: Metadata, interceptingListener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: any): void;\n    sendMessage(message: any): void;\n    startRead(): void;\n    halfClose(): void;\n    getAuthContext(): AuthContext | null;\n}"
         },
+        "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6": {
+          "name": "dist/call-lifetime.d.ts#CallLifetime",
+          "kind": "ClassDeclaration",
+          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined, createdAt?: number);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
+        },
         "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9": {
           "name": "typescript/lib/lib.es5.d.ts#Record",
           "kind": "external",
@@ -10080,11 +10085,6 @@
           "name": "dist/observer.d.ts#WorkersGrpcObserver",
           "kind": "TypeAliasDeclaration",
           "signature": "type WorkersGrpcObserver = (event: WorkersGrpcEvent) => void | PromiseLike<void>;"
-        },
-        "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9": {
-          "name": "dist/call-lifetime.d.ts#CallLifetime",
-          "kind": "ClassDeclaration",
-          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
         },
         "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026": {
           "name": "dist/call-interface.d.ts#MetadataListener",
@@ -10616,7 +10616,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function createWorkersGrpcTransport(config?: WorkersGrpcConfig): {\n    channelCredentials: grpc.ChannelCredentials;\n    grpcOptions: (existing?: ClientOptions) => ClientOptions;\n    resourceUsage(): import(\"./resources\").ResourceDiagnostics;\n    retryUsage(target: string): import(\"./retry\").WorkersGrpcRetryUsage | undefined;\n    gaxOptions<T extends Record<string, unknown>>(existing: T): T & {\n        grpc: typeof grpc;\n        fallback: false;\n    };\n};",
-          "sha256": "ad32eb1e6aa698c91bfe3860f43aa2a49191622ff2e0bde2063cdbf13bbf11f6",
+          "sha256": "0e16e08c38882a8837d21b413a44d3465718153992e227c92c5562fc70f005d8",
           "dependencies": [
             "0162278b73d696951e34121a89dd22c692765b5c177f53e92189c223626923f4",
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
@@ -10636,7 +10636,6 @@
             "18f3f53c167252976b3f71fe25320cd20cdcf1d17dd11e226da946db9afda2e9",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -10688,6 +10687,7 @@
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
             "821e0a7317a7f1603a3e7ece8906325d31b845224df55949bcf45abdce2d11ac",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "89d3bf779ef538b372095982e7cfd1e5291ce02574e7310242f548f393b8c0da",
@@ -10718,6 +10718,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -10732,7 +10733,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "de09ae8d321945dd09ac4964169e828e2d3b7370770e9b5f41be85e6f359a9a3",
@@ -10849,11 +10849,6 @@
           "name": "dist/object-stream.d.ts#ObjectWritable",
           "kind": "InterfaceDeclaration",
           "signature": "interface ObjectWritable<T> extends IntermediateObjectWritable<T> {\n    _write(chunk: T, encoding: string, callback: Function): void;\n    write(chunk: T, cb?: Function): boolean;\n    write(chunk: T, encoding?: any, cb?: Function): boolean;\n    setDefaultEncoding(encoding: string): this;\n    end(): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, encoding?: any, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n}"
-        },
-        "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb": {
-          "name": "dist/channel.d.ts#Channel",
-          "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}"
         },
         "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276": {
           "name": "dist/client-interceptors.d.ts#CloseRequester",
@@ -11110,6 +11105,11 @@
           "kind": "TypeAliasDeclaration",
           "signature": "type Call = import('./call-surface').ClientUnaryCall | import('./call-surface').ClientReadableStream<any> | import('./call-surface').ClientWritableStream<any> | import('./call-surface').ClientDuplexStream<any, any>;"
         },
+        "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725": {
+          "name": "dist/channel.d.ts#Channel",
+          "kind": "ClassDeclaration",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}"
+        },
         "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6": {
           "name": "dist/client-interceptors.d.ts#Interceptor",
           "kind": "InterfaceDeclaration",
@@ -11260,6 +11260,11 @@
           "kind": "ClassDeclaration",
           "signature": "class InterceptingCall implements InterceptingCallInterface {\n    constructor(nextCall: InterceptingCallInterface, requester?: Requester);\n    cancelWithStatus(status: Status, details: string): void;\n    disposePending(): void;\n    getPeer(): string;\n    start(metadata: Metadata, interceptingListener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: any): void;\n    sendMessage(message: any): void;\n    startRead(): void;\n    halfClose(): void;\n    getAuthContext(): AuthContext | null;\n}"
         },
+        "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6": {
+          "name": "dist/call-lifetime.d.ts#CallLifetime",
+          "kind": "ClassDeclaration",
+          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined, createdAt?: number);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
+        },
         "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9": {
           "name": "typescript/lib/lib.es5.d.ts#Record",
           "kind": "external",
@@ -11329,11 +11334,6 @@
           "name": "dist/observer.d.ts#WorkersGrpcObserver",
           "kind": "TypeAliasDeclaration",
           "signature": "type WorkersGrpcObserver = (event: WorkersGrpcEvent) => void | PromiseLike<void>;"
-        },
-        "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9": {
-          "name": "dist/call-lifetime.d.ts#CallLifetime",
-          "kind": "ClassDeclaration",
-          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
         },
         "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026": {
           "name": "dist/call-interface.d.ts#MetadataListener",
@@ -12427,7 +12427,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "72b90991af32cbff22039f121cb04f77cfa8a3f0a1fc61316d68585a47c0d783",
+          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12440,7 +12440,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -12466,6 +12465,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -12487,6 +12487,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -12494,7 +12495,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -12569,7 +12569,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "b313f9518b04662c4b651ef060162a3eac208190ba514352d0d59f9f9350bf49",
+          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12582,7 +12582,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -12608,6 +12607,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -12629,13 +12629,13 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
             "c9f0d66b66643233ceb8a989c8c5cb1948d64c15f5cc31c606eabb8b37695e3a",
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -12659,7 +12659,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "bf57bddac74303bb1b6ffbe7015260acabf4dbf9ebe6549e14286df8790bddb1",
+          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -12674,7 +12674,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -12704,6 +12703,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -12729,6 +12729,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -12736,7 +12737,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -12811,7 +12811,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "f068fe839032297f67612cc610dfba0cdf68609255d6df411e6950a06d436eed",
+          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12824,7 +12824,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -12850,6 +12849,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -12872,6 +12872,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -12879,7 +12880,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -13104,7 +13104,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "c8e75bae231028d8baf6634c298cd47d98c698015f2e89a19520f556fd45676b",
+          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13119,7 +13119,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -13150,6 +13149,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -13175,6 +13175,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -13182,7 +13183,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -13209,7 +13209,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "a2430982c2c88fc1850b73708124e2685b39a4aa7174c060542f1b1abe2dc345",
+          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13224,7 +13224,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -13255,6 +13254,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -13280,6 +13280,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -13287,7 +13288,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -13314,7 +13314,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "7ee2e5524e05e965c6bd33ff622d307d9b45dc0fca5f7616f02085225f1e4784",
+          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13329,7 +13329,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -13360,6 +13359,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -13385,6 +13385,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -13392,7 +13393,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -13479,11 +13479,6 @@
           "name": "dist/object-stream.d.ts#ObjectWritable",
           "kind": "InterfaceDeclaration",
           "signature": "interface ObjectWritable<T> extends IntermediateObjectWritable<T> {\n    _write(chunk: T, encoding: string, callback: Function): void;\n    write(chunk: T, cb?: Function): boolean;\n    write(chunk: T, encoding?: any, cb?: Function): boolean;\n    setDefaultEncoding(encoding: string): this;\n    end(): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, encoding?: any, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n}"
-        },
-        "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb": {
-          "name": "dist/channel.d.ts#Channel",
-          "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}"
         },
         "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276": {
           "name": "dist/client-interceptors.d.ts#CloseRequester",
@@ -13635,6 +13630,11 @@
           "kind": "EnumDeclaration",
           "signature": "enum status {\n    OK = 0,\n    CANCELLED = 1,\n    UNKNOWN = 2,\n    INVALID_ARGUMENT = 3,\n    DEADLINE_EXCEEDED = 4,\n    NOT_FOUND = 5,\n    ALREADY_EXISTS = 6,\n    PERMISSION_DENIED = 7,\n    RESOURCE_EXHAUSTED = 8,\n    FAILED_PRECONDITION = 9,\n    ABORTED = 10,\n    OUT_OF_RANGE = 11,\n    UNIMPLEMENTED = 12,\n    INTERNAL = 13,\n    UNAVAILABLE = 14,\n    DATA_LOSS = 15,\n    UNAUTHENTICATED = 16\n}"
         },
+        "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725": {
+          "name": "dist/channel.d.ts#Channel",
+          "kind": "ClassDeclaration",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}"
+        },
         "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6": {
           "name": "dist/client-interceptors.d.ts#Interceptor",
           "kind": "InterfaceDeclaration",
@@ -13760,6 +13760,11 @@
           "kind": "ClassDeclaration",
           "signature": "class InterceptingCall implements InterceptingCallInterface {\n    constructor(nextCall: InterceptingCallInterface, requester?: Requester);\n    cancelWithStatus(status: Status, details: string): void;\n    disposePending(): void;\n    getPeer(): string;\n    start(metadata: Metadata, interceptingListener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: any): void;\n    sendMessage(message: any): void;\n    startRead(): void;\n    halfClose(): void;\n    getAuthContext(): AuthContext | null;\n}"
         },
+        "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6": {
+          "name": "dist/call-lifetime.d.ts#CallLifetime",
+          "kind": "ClassDeclaration",
+          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined, createdAt?: number);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
+        },
         "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9": {
           "name": "typescript/lib/lib.es5.d.ts#Record",
           "kind": "external",
@@ -13794,11 +13799,6 @@
           "name": "dist/observer.d.ts#WorkersGrpcObserver",
           "kind": "TypeAliasDeclaration",
           "signature": "type WorkersGrpcObserver = (event: WorkersGrpcEvent) => void | PromiseLike<void>;"
-        },
-        "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9": {
-          "name": "dist/call-lifetime.d.ts#CallLifetime",
-          "kind": "ClassDeclaration",
-          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
         },
         "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026": {
           "name": "dist/call-interface.d.ts#MetadataListener",
@@ -13901,7 +13901,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "72b90991af32cbff22039f121cb04f77cfa8a3f0a1fc61316d68585a47c0d783",
+          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -13914,7 +13914,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -13940,6 +13939,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -13961,6 +13961,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -13968,7 +13969,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -14043,7 +14043,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "b313f9518b04662c4b651ef060162a3eac208190ba514352d0d59f9f9350bf49",
+          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -14056,7 +14056,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14082,6 +14081,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -14103,13 +14103,13 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
             "c9f0d66b66643233ceb8a989c8c5cb1948d64c15f5cc31c606eabb8b37695e3a",
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -14133,7 +14133,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "bf57bddac74303bb1b6ffbe7015260acabf4dbf9ebe6549e14286df8790bddb1",
+          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14148,7 +14148,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14178,6 +14177,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -14203,6 +14203,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -14210,7 +14211,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -14285,7 +14285,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "f068fe839032297f67612cc610dfba0cdf68609255d6df411e6950a06d436eed",
+          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -14298,7 +14298,6 @@
             "1511c6422f0b82a5f4a59763fa6181ec466c8903a7c2978fec546efd9147e427",
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14324,6 +14323,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e5682e850cf601043bab2899de18aba2eebaa3670891347a1fce3e5299c0915",
@@ -14346,6 +14346,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -14353,7 +14354,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "e0bf07045b5b38a55eb583748cf630f465e84f5872163fcb0ee7af03fd176005",
@@ -14578,7 +14578,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "c8e75bae231028d8baf6634c298cd47d98c698015f2e89a19520f556fd45676b",
+          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14593,7 +14593,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14624,6 +14623,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -14649,6 +14649,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -14656,7 +14657,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -14683,7 +14683,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "a2430982c2c88fc1850b73708124e2685b39a4aa7174c060542f1b1abe2dc345",
+          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14698,7 +14698,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14729,6 +14728,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -14754,6 +14754,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -14761,7 +14762,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -14788,7 +14788,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "7ee2e5524e05e965c6bd33ff622d307d9b45dc0fca5f7616f02085225f1e4784",
+          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14803,7 +14803,6 @@
             "16e1411eef5a8aef61f43167be3aa01919cd5ab715c85e196d5ba2ee8cbf2124",
             "1b517f3b9140f5375c3ff3f3faae38984ae27a7631bfda7f75dea813863b04f3",
             "1b5f97299d03b650215c397d9a7c1f5fe998eb01800c5127a53113041ce68fb5",
-            "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb",
             "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276",
             "21c8327b4e187fc9365ddf41fa8a03a9e8d2cad187112eb2fc419eb88a771d35",
             "22310143b17fae19ed2a53f71658dc058b85ff13a63e98882a37e0995dc816c0",
@@ -14834,6 +14833,7 @@
             "7f763b51edaad3a832e40a0da759dd5f840f2b98c4c460b5d76d0da60ee843b6",
             "811a63ed2d1965a04dc3d94696c968194a2de7ac52b91a9ba085c09b2e3742ae",
             "8176cd4103c7f0845891732e359cdd186f38236a58bfb499d4a161b21591eaf0",
+            "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725",
             "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6",
             "874ca27f7960c7c3b5d318274a0a0d40f025aac38e890f924889b1658b991200",
             "8e52f400b670161c745c701a1037f974de38c3b0e74352368e1db2cb494c9c10",
@@ -14859,6 +14859,7 @@
             "c05a9536b0a84703aae93174a44bfa53d272393ac8f7d21004748c0079f5b740",
             "c0c08aed826f068bb80a3086446177352b79069069e173508ecd45c37bc53c94",
             "c3c68eb6114379cb0d3c8472aa627a25b8275394ed75c99bcfaf27382f7577b6",
+            "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6",
             "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9",
             "c75ec68e7911c3bd12a01cb2e69e01c2985db2cbea95696f07275c5d2c7b2e07",
             "c7bc7172f4e1f0c58f377e466649b91c15b7ea65d990e2bb1fad430b6b13ce8a",
@@ -14866,7 +14867,6 @@
             "d502a4f8cc88cce7188fca57707fb5d7717f54bfe28346bf4f18702790d82226",
             "d7d900ee4ff495a1322f71df914b5741e4d528996fb99eff852070baa0569694",
             "db39dc19d144aa91964918c828b2571b2a2912583253799a965caa0d8421fcdc",
-            "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9",
             "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026",
             "dc54d477e3584961f0577347bfb5d31d616353504566582e0dc24788a8b152c2",
             "df819912385d69956691b4c630df41a6cb1b86f84217fcf6662d3640f8bad75c",
@@ -14953,11 +14953,6 @@
           "name": "dist/object-stream.d.ts#ObjectWritable",
           "kind": "InterfaceDeclaration",
           "signature": "interface ObjectWritable<T> extends IntermediateObjectWritable<T> {\n    _write(chunk: T, encoding: string, callback: Function): void;\n    write(chunk: T, cb?: Function): boolean;\n    write(chunk: T, encoding?: any, cb?: Function): boolean;\n    setDefaultEncoding(encoding: string): this;\n    end(): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n    end(chunk: T, encoding?: any, cb?: Function): ReturnType<Writable['end']> extends Writable ? this : void;\n}"
-        },
-        "1dfd74d00343e8eef3c4ecb5eb390eef87adbb836daa0c9f1b0de3eb02b6d9eb": {
-          "name": "dist/channel.d.ts#Channel",
-          "kind": "ClassDeclaration",
-          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions): CallLifetime;\n    activeCallCount(): number;\n}"
         },
         "1e87abac6df2c2844a13a461f83d0248b6ad89615f9d94d3e3eac55b1afa0276": {
           "name": "dist/client-interceptors.d.ts#CloseRequester",
@@ -15109,6 +15104,11 @@
           "kind": "EnumDeclaration",
           "signature": "enum status {\n    OK = 0,\n    CANCELLED = 1,\n    UNKNOWN = 2,\n    INVALID_ARGUMENT = 3,\n    DEADLINE_EXCEEDED = 4,\n    NOT_FOUND = 5,\n    ALREADY_EXISTS = 6,\n    PERMISSION_DENIED = 7,\n    RESOURCE_EXHAUSTED = 8,\n    FAILED_PRECONDITION = 9,\n    ABORTED = 10,\n    OUT_OF_RANGE = 11,\n    UNIMPLEMENTED = 12,\n    INTERNAL = 13,\n    UNAVAILABLE = 14,\n    DATA_LOSS = 15,\n    UNAUTHENTICATED = 16\n}"
         },
+        "836b02521c9af491521ffd01e53b89c16e23092227e89600253c142a067d9725": {
+          "name": "dist/channel.d.ts#Channel",
+          "kind": "ClassDeclaration",
+          "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}"
+        },
         "861fcc140310d9543bec5b3152c057f4ad2abea2a3bb31ce1fc5b7b005a5a6d6": {
           "name": "dist/client-interceptors.d.ts#Interceptor",
           "kind": "InterfaceDeclaration",
@@ -15234,6 +15234,11 @@
           "kind": "ClassDeclaration",
           "signature": "class InterceptingCall implements InterceptingCallInterface {\n    constructor(nextCall: InterceptingCallInterface, requester?: Requester);\n    cancelWithStatus(status: Status, details: string): void;\n    disposePending(): void;\n    getPeer(): string;\n    start(metadata: Metadata, interceptingListener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: any): void;\n    sendMessage(message: any): void;\n    startRead(): void;\n    halfClose(): void;\n    getAuthContext(): AuthContext | null;\n}"
         },
+        "c68ee2d60cd36e4677f665a6e13b47aff4c95b15b00764dc80862a36baf603a6": {
+          "name": "dist/call-lifetime.d.ts#CallLifetime",
+          "kind": "ClassDeclaration",
+          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined, createdAt?: number);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
+        },
         "c6e20001997799f6eb2d7482575b1ff0110e67ef8b4510db93d2b15f6fd74da9": {
           "name": "typescript/lib/lib.es5.d.ts#Record",
           "kind": "external",
@@ -15268,11 +15273,6 @@
           "name": "dist/observer.d.ts#WorkersGrpcObserver",
           "kind": "TypeAliasDeclaration",
           "signature": "type WorkersGrpcObserver = (event: WorkersGrpcEvent) => void | PromiseLike<void>;"
-        },
-        "dc30143c7ecc6bf83820df389c6712b2fba0c7cf97fc2c266484e7a625c32aa9": {
-          "name": "dist/call-lifetime.d.ts#CallLifetime",
-          "kind": "ClassDeclaration",
-          "signature": "class CallLifetime implements InterceptingCallInterface {\n    readonly observation?: CallObservation | undefined;\n    constructor(options: CallOptions, defaultTimeoutMs: number | undefined, onFinish: () => void, resources?: ResourceBudget | undefined, observation?: CallObservation | undefined);\n    applyOptions(options: CallOptions): CallOptions;\n    bind(nextCall: InterceptingCallInterface): this;\n    addTransport(call: WorkersCall): void;\n    isTerminal(): boolean;\n    timerActive(): boolean;\n    getPeer(): string;\n    getAuthContext(): import(\"./auth-context\").AuthContext | null;\n    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;\n    sendMessageWithContext(context: MessageContext, message: unknown): void;\n    sendMessage(message: unknown): void;\n    startRead(): void;\n    halfClose(): void;\n    cancelWithStatus(code: status, details: string): void;\n}"
         },
         "dc4a6e19c4be7f8a6e8d8f7f5dba09e2b417f3bddb930bb413f439ed6309c026": {
           "name": "dist/call-interface.d.ts#MetadataListener",
@@ -15372,7 +15372,7 @@
       "fixture": "google",
       "imports": [
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15424,7 +15424,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15461,7 +15461,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15496,7 +15496,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15517,7 +15517,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15569,7 +15569,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15606,7 +15606,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15641,7 +15641,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/google/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15667,7 +15667,7 @@
       "fixture": "modern",
       "imports": [
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15719,7 +15719,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15756,7 +15756,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15791,7 +15791,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15812,7 +15812,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15864,7 +15864,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15901,7 +15901,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15936,7 +15936,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -15962,7 +15962,7 @@
       "fixture": "native",
       "imports": [
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16014,7 +16014,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16051,7 +16051,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16086,7 +16086,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/@google-cloud/secret-manager/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16107,7 +16107,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16159,7 +16159,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16196,7 +16196,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16231,7 +16231,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/native/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16257,7 +16257,7 @@
       "fixture": "modern-native",
       "imports": [
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16309,7 +16309,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16346,7 +16346,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16381,7 +16381,7 @@
           ]
         },
         {
-          "file": "node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/@google-cloud/firestore-api/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16402,7 +16402,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/grpc.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16454,7 +16454,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/grpc.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/grpc.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16491,7 +16491,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.d.ts",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/index.d.ts",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
@@ -16526,7 +16526,7 @@
           ]
         },
         {
-          "file": "node_modules/google-gax/build/src/index.js",
+          "file": "../../../../workers-grpc-adapter/fixtures/modern-native/node_modules/google-gax/build/src/index.js",
           "records": [
             {
               "specifier": "@grpc/grpc-js",
