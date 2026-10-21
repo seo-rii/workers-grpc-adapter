@@ -236,16 +236,28 @@
    }
 
    makeUnaryRequest<RequestType, ResponseType>(
-@@ -274,7 +270,7 @@
+@@ -273,8 +269,9 @@
+     options?: CallOptions | UnaryCallback<ResponseType>,
      callback?: UnaryCallback<ResponseType>
    ): ClientUnaryCall {
++    const callStartTime = Date.now();
      const checkedArguments =
 -      this.checkOptionalUnaryResponseArguments<ResponseType>(
 +      checkOptionalUnaryResponseArguments<ResponseType>(
          metadata,
          options,
          callback
-@@ -365,7 +361,7 @@
+@@ -313,7 +310,8 @@
+       interceptorArgs,
+       callProperties.methodDefinition,
+       callProperties.callOptions,
+-      callProperties.channel
++      callProperties.channel,
++      callStartTime
+     );
+     /* This needs to happen before the emitter is used. Unfortunately we can't
+      * enforce this with the type system. We need to construct this emitter
+@@ -365,7 +363,7 @@
          emitter.emit('status', status);
        },
      });
@@ -254,16 +266,28 @@
      call.halfClose();
      return emitter;
    }
-@@ -407,7 +403,7 @@
+@@ -406,8 +404,9 @@
+     options?: CallOptions | UnaryCallback<ResponseType>,
      callback?: UnaryCallback<ResponseType>
    ): ClientWritableStream<RequestType> {
++    const callStartTime = Date.now();
      const checkedArguments =
 -      this.checkOptionalUnaryResponseArguments<ResponseType>(
 +      checkOptionalUnaryResponseArguments<ResponseType>(
          metadata,
          options,
          callback
-@@ -473,6 +469,7 @@
+@@ -446,7 +445,8 @@
+       interceptorArgs,
+       callProperties.methodDefinition,
+       callProperties.callOptions,
+-      callProperties.channel
++      callProperties.channel,
++      callStartTime
+     );
+     /* This needs to happen before the emitter is used. Unfortunately we can't
+      * enforce this with the type system. We need to construct this emitter
+@@ -473,6 +473,7 @@
            return;
          }
          receivedStatus = true;
@@ -271,7 +295,7 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -502,30 +499,6 @@
+@@ -502,30 +503,6 @@
      return emitter;
    }
 
@@ -302,16 +326,17 @@
    makeServerStreamRequest<RequestType, ResponseType>(
      method: string,
      serialize: (value: RequestType) => Buffer,
-@@ -549,7 +522,7 @@
+@@ -549,7 +526,8 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientReadableStream<ResponseType> {
 -    const checkedArguments = this.checkMetadataAndOptions(metadata, options);
++    const callStartTime = Date.now();
 +    const checkedArguments = checkMetadataAndOptions(metadata, options);
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -558,10 +531,11 @@
+@@ -558,10 +536,11 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -324,7 +349,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -573,6 +547,9 @@
+@@ -573,6 +552,9 @@
      }
      const stream: ClientReadableStream<ResponseType> =
        callProperties.call as ClientReadableStream<ResponseType>;
@@ -334,7 +359,17 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -606,8 +583,9 @@
+@@ -584,7 +566,8 @@
+       interceptorArgs,
+       callProperties.methodDefinition,
+       callProperties.callOptions,
+-      callProperties.channel
++      callProperties.channel,
++      callStartTime
+     );
+     /* This needs to happen before the emitter is used. Unfortunately we can't
+      * enforce this with the type system. We need to construct this emitter
+@@ -606,8 +589,9 @@
            return;
          }
          receivedStatus = true;
@@ -345,7 +380,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +595,7 @@
+@@ -617,7 +601,7 @@
          stream.emit('status', status);
        },
      });
@@ -354,16 +389,17 @@
      call.halfClose();
      return stream;
    }
-@@ -642,7 +620,7 @@
+@@ -642,7 +626,8 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientDuplexStream<RequestType, ResponseType> {
 -    const checkedArguments = this.checkMetadataAndOptions(metadata, options);
++    const callStartTime = Date.now();
 +    const checkedArguments = checkMetadataAndOptions(metadata, options);
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -651,12 +629,12 @@
+@@ -651,12 +636,12 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -380,7 +416,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -668,6 +646,9 @@
+@@ -668,6 +653,9 @@
      }
      const stream: ClientDuplexStream<RequestType, ResponseType> =
        callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
@@ -390,7 +426,17 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -700,8 +681,9 @@
+@@ -679,7 +667,8 @@
+       interceptorArgs,
+       callProperties.methodDefinition,
+       callProperties.callOptions,
+-      callProperties.channel
++      callProperties.channel,
++      callStartTime
+     );
+     /* This needs to happen before the emitter is used. Unfortunately we can't
+      * enforce this with the type system. We need to construct this emitter
+@@ -700,8 +689,9 @@
            return;
          }
          receivedStatus = true;
@@ -401,7 +447,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +696,12 @@
+@@ -714,3 +704,12 @@
      return stream;
    }
  }

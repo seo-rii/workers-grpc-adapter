@@ -31,7 +31,7 @@ Build and run the focused state-machine and public-client tests:
 
 ```sh
 npm run build
-node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs
+node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs test/startup-deadline.test.cjs
 ```
 
 The fixed regressions cover all four synchronous/asynchronous startup and
@@ -65,7 +65,7 @@ patch and `vendor/UPSTREAM.json` hashes must reproduce the implementation throug
 
 ## Logical completion
 
-The logical RPC owns its deadline and parent cancellation outside the interceptor chain. Default timeouts are anchored when the call is created, before interceptor construction and asynchronous startup. Final interceptor call options still select the explicit deadline. The call remains active until the final listener receives its status, including time spent in asynchronous response interceptors.
+The logical RPC owns its deadline and parent cancellation outside the interceptor chain. Default timeouts are anchored at the public call's entry, before invocation transformation, interceptor provider execution, interceptor construction and asynchronous startup. If an invocation transformer selects another adapter channel, that channel's configured default applies to the original entry time. Final interceptor call options still select the explicit deadline, including `Infinity` to disable the default. A hook that returns after the budget expires cannot start authentication or Fetch. The call remains active until the final listener receives its status, including time spent in asynchronous response interceptors.
 
 Cancellation, channel closure and deadlines complete the local callback/status once even when a requester withholds `next()`. Late startup, message and response continuations cannot restart Fetch or deliver another result. Outstanding write callbacks are settled on termination. Cancellation requesters are notified, but cannot veto local cleanup by withholding their continuation or throwing. Finite deadlines remain necessary when an interceptor intentionally never completes and the caller does not cancel.
 
@@ -74,3 +74,5 @@ Response delivery checks the absolute deadline as well as the timer's state. If 
 Incoming status waits for both metadata and message transformations to finish. Duplicate continuations cannot repeat delivery, and termination clears adapter-owned incoming and outgoing queues. References held by application interceptor code remain the application's responsibility. Custom `InterceptingCall.sendMessage()` overrides still run, including overrides that supply message flags.
 
 `test/call-lifetime.test.cjs` and `test/call-lifetime-property.test.cjs` verify stalled startup/status delivery and generated completion/cancellation schedules in both transport modes. `test/deadline-expiry.test.cjs` advances wall time independently of timer delivery to check message, trailer, EOF and interceptor boundaries, including inherited deadlines.
+
+`test/startup-deadline.test.cjs` covers time spent in invocation transformers and both provider scopes across supported RPC shapes. It checks the remaining timeout at Fetch, rejects expired startup before authentication, preserves explicit and final interceptor deadlines, applies the selected channel's default, and verifies cleanup when a provider throws.

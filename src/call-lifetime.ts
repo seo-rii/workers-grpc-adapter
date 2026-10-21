@@ -8,7 +8,6 @@ import type { InterceptingListener, MessageContext, StatusObject } from './call-
 
 /** Logical completion includes interceptor time, independently of transport EOF. */
 export class CallLifetime implements InterceptingCallInterface {
-    private readonly createdAt = Date.now();
     private options: CallOptions;
     private deadline = Infinity;
     private nextCall?: InterceptingCallInterface;
@@ -25,7 +24,8 @@ export class CallLifetime implements InterceptingCallInterface {
     private readonly transports = new Set<WorkersCall>();
     private readonly writes = new Set<(error?: Error | null) => void>();
     constructor(options: CallOptions, private readonly defaultTimeoutMs: number | undefined,
-        private readonly onFinish: () => void, private readonly resources?: ResourceBudget, readonly observation?: CallObservation) {
+        private readonly onFinish: () => void, private readonly resources?: ResourceBudget, readonly observation?: CallObservation,
+        private readonly createdAt = Date.now()) {
         this.options = options;
         this.applyOptions(options);
     }

@@ -24,12 +24,12 @@
  import { getErrorMessage } from './error';
  import { AuthContext } from './auth-context';
 +import type { CallLifetime } from './call-lifetime';
- 
+
  /**
   * Error class associated with passing both interceptors and interceptor
 @@ -190,6 +195,8 @@
  }
- 
+
  export interface InterceptingCallInterface {
 +  /** Internal cleanup must not depend on a cancellation requester forwarding. */
 +  disposePending?(): void;
@@ -73,14 +73,14 @@
      requester?: Requester
 @@ -244,29 +250,49 @@
    }
- 
+
    cancelWithStatus(status: Status, details: string) {
 +    this.disposePending();
      this.requester.cancel(() => {
        this.nextCall.cancelWithStatus(status, details);
      });
    }
- 
+
 +  disposePending(): void {
 +    if (this.disposed) return;
 +    this.disposed = true;
@@ -100,7 +100,7 @@
    getPeer() {
      return this.nextCall.getPeer();
    }
- 
+
 -  private processPendingMessage() {
 -    if (this.pendingMessageContext) {
 -      this.nextCall.sendMessageWithContext(
@@ -134,7 +134,7 @@
 +      this.flushing = false;
      }
    }
- 
+
 @@ -274,6 +300,7 @@
      metadata: Metadata,
      interceptingListener?: Partial<InterceptingListener>
@@ -231,7 +231,7 @@
 @@ -345,17 +385,14 @@
    }
  }
- 
+
 -function getCall(channel: Channel, path: string, options: CallOptions): Call {
 -  const deadline = options.deadline ?? Infinity;
 -  const host = options.host;
@@ -252,7 +252,7 @@
 +  const { method_definition, interceptors, interceptor_providers, ...callOptions } = options;
 +  return channel.createCallForMethod(methodDefinition.path, methodDefinition.requestStream, methodDefinition.responseStream, lifetime.applyOptions(callOptions), lifetime);
  }
- 
+
  /**
 @@ -366,7 +403,8 @@
    constructor(
@@ -319,17 +319,30 @@
 +    return new BaseUnaryInterceptingCall(call, methodDefinition, lifetime);
    }
  }
- 
-@@ -564,6 +608,8 @@
+
+@@ -518,7 +562,8 @@
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   methodDefinition: ClientMethodDefinition<any, any>,
+   options: CallOptions,
+-  channel: Channel
++  channel: Channel,
++  callStartTime = Date.now()
+ ): InterceptingCallInterface {
+   if (
+     interceptorArgs.clientInterceptors.length > 0 &&
+@@ -564,6 +609,11 @@
        .filter(interceptor => interceptor);
      // Filter out falsy values when providers return nothing
    }
 +  if (!isWorkersChannel(channel)) throw new WorkersGrpcConfigurationError('WGA_UNSUPPORTED_OPTION', 'Foreign channel overrides are not supported');
-+  const lifetime = channel.createCallLifetime(options);
++  // Provider construction and invocation transformation consume the same
++  // default budget as startup. Register only after providers return, retaining
++  // the public invocation's timestamp without owning work on provider errors.
++  const lifetime = channel.createCallLifetime(options, callStartTime);
    const interceptorOptions = Object.assign({}, options, {
      method_definition: methodDefinition,
    });
-@@ -579,7 +625,8 @@
+@@ -579,7 +629,8 @@
        return currentOptions => nextInterceptor(currentOptions, nextCall);
      },
      (finalOptions: InterceptorOptions) =>
