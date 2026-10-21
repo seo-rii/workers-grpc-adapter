@@ -92,6 +92,12 @@ export function callErrorFromStatus(
 
 const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
 
+/** Replay stream cancellation requested by synchronous startup hooks before I/O. */
+export function bindCallSurface(surface: SurfaceCall, call: InterceptingCallInterface): void {
+  surface.call = call;
+  streamLifecycles.get(surface)?.flushCancellation();
+}
+
 function setReadableQueueLimit(stream: Readable, limit: number): void {
   // Node and Workers nodejs_compat streams expose this state but no public
   // setter. Update only our own surface, before starting its transport, so a
@@ -108,6 +114,7 @@ export function markCallSurfaceTerminal(surface: SurfaceCall): void {
 class ClientStreamLifecycle {
   private terminal = false;
   private cancellationRequested = false;
+  private cancellationDispatched = false;
   private pendingWrite?: WriteCallback;
 
   constructor(
@@ -125,9 +132,18 @@ class ClientStreamLifecycle {
   }
 
   cancel(): void {
-    if (this.terminal || this.cancellationRequested) return;
+    if (this.terminal) return;
     this.cancellationRequested = true;
-    this.stream.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    this.flushCancellation();
+  }
+
+  flushCancellation(): void {
+    if (this.terminal || !this.cancellationRequested || this.cancellationDispatched) return;
+    const call = this.stream.call;
+    if (!call) return;
+    // Dispatch once, including when a cancellation interceptor reenters cancel().
+    this.cancellationDispatched = true;
+    call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
   }
 
   writeCallback(callback: WriteCallback): WriteCallback {
