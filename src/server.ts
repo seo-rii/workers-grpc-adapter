@@ -239,6 +239,14 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 reject(error);
             });
         });
+        const nextOutput = (): Promise<IteratorResult<unknown>> => {
+            const source = iterator!;
+            const next = source.next;
+            // An application accessor can cancel or exhaust the deadline while
+            // retrieving the method, before its operation has even started.
+            checkActive();
+            return race(Reflect.apply(next, source, []));
+        };
         const errorResponse = (error: unknown): Response => {
             error = terminalError(error);
             const result = failure(error);
@@ -377,7 +385,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
             if (route.definition.responseStream) {
                 if (!iterableOutput) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
                 checkActive();
-                first = await race(iterator!.next());
+                first = await nextOutput();
                 if (!first || (typeof first !== 'object' && typeof first !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
             } else {
                 checkActive();
@@ -398,11 +406,13 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                         // Caller abort may already have disposed the iterator
                         // while the consumer was not requesting response data.
                         checkActive();
-                        const item = buffered ?? await race(iterator!.next());
+                        const item = buffered ?? await nextOutput();
                         buffered = undefined;
                         checkActive();
                         if (!item || (typeof item !== 'object' && typeof item !== 'function')) throw new TransportError(status.INTERNAL, 'WGA_SERVER_HANDLER_KIND');
-                        if (item.done) {
+                        const done = item.done;
+                        checkActive();
+                        if (done) {
                             if (inputFailure !== undefined) throw inputFailure;
                             disposeInput();
                             const terminal = trailer(status.OK, '', trailing);
@@ -413,8 +423,12 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                             controller.close();
                             return;
                         }
+                        let value: unknown;
+                        try { value = item.value; }
+                        catch { throw new TransportError(status.INTERNAL, 'WGA_SERVER_SERIALIZE'); }
+                        checkActive();
                         let bytes: Buffer;
-                        try { bytes = route.definition.responseSerialize(item.value); }
+                        try { bytes = route.definition.responseSerialize(value); }
                         catch { throw new TransportError(status.INTERNAL, 'WGA_SERVER_SERIALIZE'); }
                         checkActive();
                         if (!(bytes instanceof Uint8Array)) throw new TransportError(status.INTERNAL, 'WGA_SERVER_SERIALIZE');

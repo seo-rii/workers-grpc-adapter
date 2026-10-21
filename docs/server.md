@@ -128,6 +128,8 @@ timer has not run yet. An expired call stops new reads and handlers and discards
 late results; it cannot publish a late message or successful terminal status.
 Messages already delivered remain delivered. An already observed cancellation
 or input failure retains its original status when the deadline later expires.
+Iterator method or result accessors may cancel the call or exhaust its deadline.
+The server checks again before starting the next operation or serializing the item.
 
 Request streams retain the current Fetch chunk and one decoded frame; they do not collect all requests. Output streams retain at most one application item ahead of consumer demand. The response reader controls further iteration. Cancelling it aborts the context and invokes the iterator's `return()` when available. Pending handlers and iterator operations are raced against cancellation and deadlines; late failures remain handled. Application code must cooperate with `context.signal` to stop its own I/O or side effects. The adapter cannot forcibly interrupt an unresolved application promise or synchronous computation, and `return()` cannot bypass an async generator that ignores cancellation while awaiting work.
 
