@@ -71,7 +71,7 @@ function expectedPublic(mode) {
   for (const [variant, code, detail, valid] of [
     ['compressed-trailer-unsupported', 12, 'WGA_COMPRESSED_TRAILER'],
     ['compressed-with-identity', 13, 'WGA_COMPRESSED_WITH_IDENTITY'],
-    ['compressed-with-unsupported-snappy', 12, 'WGA_COMPRESSION_ENCODING'],
+    ['compressed-with-unsupported-snappy', 13, 'WGA_COMPRESSION_ENCODING'],
     ['malformed-gzip', 13, 'WGA_COMPRESSION_DATA'], ['malformed-deflate', 13, 'WGA_COMPRESSION_DATA'],
     ['supported-gzip', 0, '', true], ['supported-deflate', 0, '', true],
     ['unknown-encoding-with-uncompressed-message', 0, '', true],
@@ -254,7 +254,7 @@ function expectedAllocations() {
   for (let size = 1; size <= 4; size++) failure(10, `truncated-header-${size}`, 13, 'WGA_TRUNCATED_FRAME', [5], size, 1, [size], 0);
   failure(11, 'truncated-payload', 13, 'WGA_TRUNCATED_FRAME', [5, 12], 8, 2, [8], 0);
   for (let flag = 0; flag <= 255; flag++) if (![0, 1, 128, 129].includes(flag)) failure(12, `reserved-flag-${flag}`, 13, 'WGA_FRAME_FLAGS');
-  for (const [name, code, error] of [['identity', 13, 'WGA_COMPRESSED_WITH_IDENTITY'], ['unknown-codec', 12, 'WGA_COMPRESSION_ENCODING'],
+  for (const [name, code, error] of [['identity', 13, 'WGA_COMPRESSED_WITH_IDENTITY'], ['unknown-codec', 13, 'WGA_COMPRESSION_ENCODING'],
     ['compressed-trailer', 12, 'WGA_COMPRESSED_TRAILER']]) failure(13, name, code, error);
   for (const [number, scenario] of [[14, 'duplicate-trailer'], [15, 'data-after-trailer']]) {
     failure(number, scenario, 13, 'WGA_FRAME_AFTER_TRAILER', [5, 16, 5], 26, 3, [21, 5], 1, [frame(trailer, true)]);

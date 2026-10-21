@@ -194,7 +194,7 @@ async function runAllocationChecks({ sourceBuild = false } = {}) {
   }
   for (const [name, flag, encoding, code, errorId] of [
     ['identity', 1, 'identity', 13, 'WGA_COMPRESSED_WITH_IDENTITY'],
-    ['unknown-codec', 1, 'snappy', 12, 'WGA_COMPRESSION_ENCODING'],
+    ['unknown-codec', 1, 'snappy', 13, 'WGA_COMPRESSION_ENCODING'],
     ['compressed-trailer', 129, 'gzip', 12, 'WGA_COMPRESSED_TRAILER'],
   ]) {
     await check('WIRE-013', name, { chunks: [header(17, flag), new Uint8Array(17)], encoding },

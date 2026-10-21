@@ -67,12 +67,20 @@ The patch boundary follows P-01 through P-06 of the
 - Factory, metadata, typed stream surfaces, error stacks, and StatusBuilder reuse
   the upstream implementations with the recorded patches. Async interceptor
   ordering and stream-destroy cancellation have explicit adapter corrections.
+  Error stacks accept ordinary string traces and use a fixed fallback for
+  structured or throwing stack formatters, so stack rendering cannot interrupt
+  RPC completion.
+  Error message rendering also contains throwing accessors, proxies and string
+  coercions. Unrenderable codec failures use `Unknown error` and still deliver
+  their `INTERNAL` status without logging the thrown value.
   Metadata adds a transport iterator and an internal admission snapshot that
   preserves interceptor context while isolating headers, options and opaque key
   assignments. Public `clone()` semantics remain unchanged. Plain-object
   conversions preserve validated keys including `__proto__` as own enumerable
-  data properties without changing the object's prototype. It substitutes the
-  default error logger to avoid native process/environment tracing initialization.
+  data properties without changing the object's prototype. The public HTTP/2
+  conversion helper silently discards rejected values so validation failures do
+  not log credentials or application metadata. It splits every comma-combined
+  binary field before decoding, including reserved `grpc-` fields.
 - HTTP/2 and TLS references are type-only. Parent calls use the adapter's structural
   deadline/cancellation contract; native channel, resolver, retry, server and
   transport code is excluded.

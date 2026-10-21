@@ -20,6 +20,14 @@ Client interceptors, interceptor providers, `InterceptingCall`, `ListenerBuilder
 
 `Metadata` provides `set`, `add`, `remove`, `get`, `getMap`, `clone`, `merge`, `getOptions` and `setOptions`. Binary `-bin` entries use Buffer values; other values use printable ASCII strings. Transport serialization preserves repeated entries rather than flattening them through `getMap()`.
 
+Incoming request and response headers, including trailers, discard HTTP-valid
+non-binary application metadata that contains tabs or non-ASCII values without failing the RPC.
+Invalid field names, unsafe control bytes and malformed binary values still fail.
+Discarded fields count toward the metadata budget. The public
+`Metadata.fromHttp2Headers()` compatibility helper also discards rejected entries
+without console logging and splits comma-combined binary fields, including
+`grpc-status-details-bin`, into separate values.
+
 `waitForReady: true` and `corked: true` are unsupported call options. Idempotency and cacheability hints are stored but do not enable adapter retries or caching. Duplicate authorization, CR/LF injection and transport-owned headers are rejected.
 
 ## Global configuration
@@ -151,13 +159,20 @@ The adapter delegates token acquisition to the supplied Google auth client. With
 | Local cancellation | `CANCELLED` |
 | Expired deadline | `DEADLINE_EXCEEDED` |
 | Network failure or channel close | `UNAVAILABLE` |
-| Truncated frame or invalid metadata | `INTERNAL` |
+| Truncated frame, invalid metadata name/control bytes or malformed binary metadata | `INTERNAL` |
 | Message or metadata budget exceeded | `RESOURCE_EXHAUSTED` |
-| Unsupported RPC or compression algorithm | `UNIMPLEMENTED` |
+| Unsupported RPC or compressed request algorithm | `UNIMPLEMENTED` |
+| Unsupported compressed response algorithm | `INTERNAL` |
 | HTTP 200 without gRPC status | `UNKNOWN` |
 | Authentication failure | Preserves permitted explicit codes; absent codes become `UNKNOWN`, invalid control-plane codes become `INTERNAL` |
 
 Fetch redirects use `manual` mode and are not followed. Local error details use bounded `WGA_*` diagnostics. Callback results and status events remain distinct parts of the call surface.
+
+Malformed `grpc-message` text does not replace the peer's valid gRPC status.
+Malformed percent escapes retain their text; raw UTF-8 is accepted and invalid
+UTF-8 bytes in trailers are replaced. Trailer budgets use the original encoded
+field bytes, including 32 bytes per field, before text recovery. The raw trailer
+payload and encoded field list remain limited to 65,536 bytes each.
 
 ## Build-time SDK support
 

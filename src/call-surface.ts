@@ -28,6 +28,7 @@ import { Metadata } from './metadata';
 import { ObjectReadable, ObjectWritable, WriteCallback } from './object-stream';
 import { InterceptingCallInterface } from './client-interceptors';
 import { AuthContext } from './auth-context';
+import { getErrorStack } from './error';
 
 /**
  * A type extending the built-in Error object with additional fields.
@@ -85,7 +86,7 @@ export function callErrorFromStatus(
 ): ServiceError {
   const message = `${status.code} ${Status[status.code]}: ${status.details}`;
   const error = new Error(message);
-  const stack = `${error.stack}\nfor call at\n${callerStack}`;
+  const stack = `${getErrorStack(error) ?? 'no stack trace available'}\nfor call at\n${callerStack}`;
   return Object.assign(new Error(message), status, { stack });
 }
 

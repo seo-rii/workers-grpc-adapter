@@ -55,16 +55,25 @@ function publicPath(projectRoot, file, pkg) {
 }
 function captureBuildInputs(projectRoot, preset, ts) {
   const files = new Map(), modules = new Map(), packages = new Map(), scopes = new Map();
-  const absent = new Set(), configDirectories = new Set();
+  const absent = new Set(), configDirectories = new Set(), configurationInputs = new Set();
+  let sealed = false;
+  function fileVersion(logical, physical) {
+    const file = fs.statSync(physical, { bigint: true });
+    const link = logical === physical ? file : fs.lstatSync(logical, { bigint: true });
+    return [file, link].map(stat => [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':')).join('|');
+  }
   function read(logical) {
     logical = path.resolve(logical);
     if (!files.has(logical)) {
-      const physical = fs.realpathSync(logical), contents = fs.readFileSync(physical);
-      files.set(logical, { logical, physical, contents, sha256: hash(contents) });
+      if (sealed) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'The build discovered a new input after its snapshot was sealed; retry with a stable source tree', { logicalPath: logical });
+      const physical = fs.realpathSync(logical), version = fileVersion(logical, physical), contents = fs.readFileSync(physical);
+      if (configurationInputs.has(logical) && fileVersion(logical, physical) !== version) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'Compiler configuration changed while it was captured; retry with a stable source tree', { logicalPath: logical });
+      files.set(logical, { logical, physical, contents, sha256: hash(contents), version });
     }
     return files.get(logical);
   }
-  function optionalRead(file) {
+  function optionalRead(file, configuration = false) {
+    if (configuration) configurationInputs.add(path.resolve(file));
     if (fs.existsSync(file) && fs.statSync(file).isFile()) return read(file);
     absent.add(path.resolve(file));
   }
@@ -73,14 +82,14 @@ function captureBuildInputs(projectRoot, preset, ts) {
     while (!configDirectories.has(directory)) {
       configDirectories.add(directory);
       const config = path.join(directory, 'tsconfig.json');
-      if (optionalRead(config)) {
+      if (optionalRead(config, true)) {
         // Track inherited configs and package resolution receipts as well as
         // the nearest config. esbuild owns validation/lowering; TypeScript's
         // config reader only discovers the files that must remain stable.
         ts.getParsedCommandLineOfConfigFile(config, {}, {
           useCaseSensitiveFileNames: true, getCurrentDirectory: () => projectRoot,
-          readDirectory: () => [], fileExists: file => !!optionalRead(file),
-          readFile: file => optionalRead(file)?.contents.toString('utf8'),
+          readDirectory: () => [], fileExists: file => !!optionalRead(file, true),
+          readFile: file => optionalRead(file, true)?.contents.toString('utf8'),
           onUnRecoverableConfigFileDiagnostic() {},
         });
         break;
@@ -91,10 +100,17 @@ function captureBuildInputs(projectRoot, preset, ts) {
     }
   }
   function unchanged(source) {
-    let physical = null, sha256 = null;
-    try { physical = fs.realpathSync(source.logical); sha256 = hash(fs.readFileSync(physical)); } catch { /* Diagnose removed inputs like changed inputs. */ }
-    if (physical !== source.physical || sha256 !== source.sha256) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A build input changed after it was captured; retry with a stable source tree', {
+    let physical = null, sha256 = null, version = null, changedDuringRead = false;
+    const configuration = configurationInputs.has(source.logical);
+    try {
+      physical = fs.realpathSync(source.logical);
+      if (configuration) version = fileVersion(source.logical, physical);
+      sha256 = hash(fs.readFileSync(physical));
+      if (configuration) changedDuringRead = version !== fileVersion(source.logical, physical);
+    } catch { /* Diagnose removed inputs like changed inputs. */ }
+    if (physical !== source.physical || sha256 !== source.sha256 || configuration && (version !== source.version || changedDuringRead)) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A build input changed after it was captured; retry with a stable source tree', {
       logicalPath: source.logical, physicalPath: source.physical, actualPhysicalPath: physical, expectedSha256: source.sha256, actualSha256: sha256,
+      metadataChanged: configuration && (version !== source.version || changedDuringRead),
     });
   }
   function nodeEsm(file) {
@@ -155,7 +171,10 @@ function captureBuildInputs(projectRoot, preset, ts) {
       return { contents: source.contents, loader: 'default', resolveDir: path.dirname(args.path) };
     });
   } };
-  return { plugin, read, verify() {
+  return { plugin, read, prepare(entry) {
+    // The resolver may consume entry settings before its first onLoad hook.
+    captureConfig(entry); nodeEsm(entry); packageOf(entry, packages, read);
+  }, seal() { sealed = true; }, verify() {
     for (const source of files.values()) unchanged(source);
     for (const logical of absent) if (fs.existsSync(logical) && fs.statSync(logical).isFile()) fail('WGA_PREBUNDLE_INPUT_CHANGED', 'A configuration lookup changed during the build; retry with a stable source tree', { logicalPath: logical });
   },
@@ -169,11 +188,11 @@ function captureBuildInputs(projectRoot, preset, ts) {
   };
 }
 async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entry, names, outfile) {
-  // ESM is implicitly strict, but a flat CJS bundle loses that context. Convert
-  // each captured ESM module into its own strict CJS factory before rebundling.
-  // Original CJS factories keep their own strict/sloppy mode. Resolve only the
-  // previously audited edges: changing import to require must not select a
-  // different package export condition or introduce another runtime copy.
+  // Keep the captured ESM graph together inside one strict factory. Separately
+  // lowering its files to CJS loses instantiation-time re-export bindings in
+  // cycles and creates a fresh namespace wrapper at each import. Original CJS
+  // factories stay outside that strict boundary and retain their own mode.
+  // Every stage resolves only the previously audited edges.
   const modules = new Map(captured.map((receipt, index) => [receipt.input, { ...receipt, id: `module-${index}.cjs` }]));
   const byId = new Map([...modules.values()].map(receipt => [receipt.id, receipt]));
   const extensionLoader = file => ({ '.ts': 'ts', '.mts': 'ts', '.cts': 'ts', '.tsx': 'tsx', '.jsx': 'jsx',
@@ -260,50 +279,50 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
       if (callee && ts.isIdentifier(callee) && callee.text === 'require' && node.arguments.length === 1
         && !checker.getSymbolAtLocation(callee)?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration))) {
         const argument = node.arguments[0], start = argument.getStart(ast);
-        // Let esbuild fold the same static expression it originally accepted,
-        // while tagging its require condition independently of injected JSX.
-        replacements.push({ start, end: argument.end, text: `"wga-original-require:" + (${source.slice(start, argument.end)})` });
+        const value = specifierText(argument);
+        if (value !== undefined && receipt.info.imports.some(edge => edge.kind === 'require-call' && (edge.original || edge.path) === value)) {
+          const token = `wga-captured-import:${edges.size}`;
+          edges.set(token, resolveEdge(receipt, value, 'require-call'));
+          replacements.push({ start, end: argument.end, text: JSON.stringify(token) });
+        } else {
+          // Let esbuild fold the same static expression it originally accepted,
+          // while tagging its require condition independently of injected JSX.
+          replacements.push({ start, end: argument.end, text: `"wga-original-require:" + (${source.slice(start, argument.end)})` });
+        }
       }
-      if (receipt.nodeEsm && callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2) {
+      if (callee?.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2) {
         const choices = specifierChoices(node.arguments[0]);
-        // The first artifact has already passed the runtime-import audits.
-        // esbuild omits erased calls/branches from its captured graph; leave
-        // those to the compiler instead of inventing a resolution for them.
+        // Only surviving, finite imports from the first audited graph may be
+        // dispatched. Preserve evaluation of the original arguments/options.
         const resolutions = (choices || []).flatMap(specifier => {
           if (!isBuiltin(specifier) && !receipt.info.imports.some(edge => edge.kind === 'dynamic-import'
             && (edge.original || edge.path) === specifier)) return [];
           const edge = resolveEdge(receipt, specifier, 'dynamic-import');
-          const target = !edge.external && modules.get(edge.path);
-          return [{ specifier, edge, commonJs: target && target.info.format !== 'esm' }];
+          const target = edge.external ? undefined : modules.get(edge.path);
+          return [{ specifier, edge, esm: target?.info.format === 'esm', commonJs: target && target.info.format !== 'esm' }];
         });
-        if (resolutions.some(resolution => resolution.commonJs)) {
-          // Keep Node's CJS default-namespace interop in an ESM importer.
-          // Merely moving import() into a virtual .cjs factory would enable
-          // Babel __esModule interop and change a CJS module's default value.
+        if ((receipt.nodeEsm && resolutions.some(resolution => resolution.commonJs))
+          || (receipt.info.format !== 'esm' && resolutions.some(resolution => resolution.esm))) {
           let name = '__wgaDynamicImport'; while (identifiers.has(name)) name += '_'; identifiers.add(name);
-          const branches = resolutions.map(({ specifier, edge, commonJs }) => {
-            const targetToken = `wga-captured-import:${edges.size}`; edges.set(targetToken, edge);
-            let load = `import(${JSON.stringify(targetToken)})`;
-            if (commonJs) {
+          const branches = resolutions.map(({ specifier, edge, esm, commonJs }) => {
+            const token = `wga-captured-import:${edges.size}`; edges.set(token, edge);
+            let load = esm ? `Promise.resolve().then(() => require(${JSON.stringify(token)}))` : `import(${JSON.stringify(token)})`;
+            if (receipt.nodeEsm && commonJs) {
+              // The final CJS bundle must still apply a Node ESM importer's
+              // CJS default interop, including modules with __esModule set.
               const id = `dynamic-${dynamicModules.size}.mjs`;
               dynamicModules.set(id, `export function load() { return ${load}; }`);
-              const bridgeToken = `wga-captured-import:${edges.size}`; edges.set(bridgeToken, { dynamicModule: id });
-              load = `require(${JSON.stringify(bridgeToken)}).load()`;
+              const bridge = `wga-captured-import:${edges.size}`; edges.set(bridge, { dynamicModule: id });
+              load = `require(${JSON.stringify(bridge)}).load()`;
             }
             return `case ${JSON.stringify(specifier)}: return ${load};`;
           });
-          // Compiled ESM targets need the CJS importer's __esModule interop;
-          // external builtins keep native import(). Only original CJS targets
-          // go through an ESM bridge. Select from the audited edges at runtime.
           const id = `dynamic-${dynamicModules.size}.cjs`;
           dynamicModules.set(id, `exports.load = function(specifier) { switch(specifier) { ${branches.join('\n')} } throw new Error('Uncaptured dynamic import target'); };`);
           const token = `wga-captured-import:${edges.size}`;
           edges.set(token, { dynamicModule: id });
-          imports.push(`import {load as ${name}} from ${JSON.stringify(token)};`);
-          // Preserve the original argument, including predicate evaluation,
-          // await/yield, and nested imports/requires. Replacing only the callee
-          // also preserves evaluation of captured import options and keeps
-          // independent source rewrites from overlapping.
+          imports.push(receipt.info.format === 'esm' ? `import {load as ${name}} from ${JSON.stringify(token)};`
+            : `function ${name}(specifier) { return import(${JSON.stringify(token)}).then(loaded => loaded.load(specifier)); }`);
           replacements.push({ start: node.expression.getStart(ast), end: node.expression.end, text: name });
         }
       }
@@ -312,8 +331,23 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
     rewriteCalls(ast);
     for (const replacement of replacements.sort((a, b) => b.start - a.start)) source = source.slice(0, replacement.start) + replacement.text + source.slice(replacement.end);
     if (imports.length) {
-      const hashbang = source.match(/^#![^\n]*(?:\n|$)/)?.[0] || '';
-      source = hashbang + imports.join('\n') + '\n' + source.slice(hashbang.length);
+      let insertion = source.match(/^#![^\r\n\u2028\u2029]*(?:\r\n|[\r\n\u2028\u2029]|$)/)?.[0].length || 0;
+      let strict = false, escapedStrict;
+      for (const statement of ast.statements) {
+        if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) break;
+        insertion = statement.end;
+        if (statement.expression.text === 'use strict') {
+          const literal = statement.expression.getText(ast);
+          if (literal === '"use strict"' || literal === "'use strict'") strict = true;
+          else escapedStrict ??= statement.getStart(ast);
+        }
+      }
+      // Declarations before a directive disable CJS strictness. Keep the whole
+      // prologue and terminate an ASI directive before inserting the helpers.
+      // An escaped pseudo-directive is not strict; leave it after a declaration
+      // so esbuild cannot reprint its decoded text as a new strict directive.
+      if (!strict && escapedStrict !== undefined) insertion = escapedStrict;
+      source = source.slice(0, insertion) + ';\n' + imports.join('\n') + '\n' + source.slice(insertion);
     }
     receipt.contents = source;
   }
@@ -322,57 +356,116 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
   // Keep the original file paths for this non-bundling compilation. esbuild
   // then retains package type/default-import interop and per-file tsconfig
   // lowering, which transform(sourcefile) alone cannot infer.
-  const compiled = await esbuild.build({ absWorkingDir: projectRoot,
-    entryPoints: Object.fromEntries(scripts.map(receipt => [receipt.id, path.resolve(projectRoot, receipt.input)])),
-    outdir: path.join(path.dirname(outfile), 'modules'), bundle: false, format: 'cjs', platform: 'node', target: 'es2022',
-    write: false, legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [{ name: 'wga-captured-module-compilation', setup(build) {
-      build.onLoad({ filter: /.*/, namespace: 'file' }, args => {
-        const receipt = byPath.get(path.resolve(args.path) + (args.suffix || ''));
-        if (!receipt) fail('WGA_PREBUNDLE_AUDIT', 'Module compilation requested uncaptured source');
-        return { contents: receipt.contents, loader: receipt.loader, resolveDir: path.dirname(args.path) };
+  for (const esm of [false, true]) {
+    const group = scripts.filter(receipt => (receipt.info.format === 'esm') === esm);
+    if (!group.length) continue;
+    const compiled = await esbuild.build({ absWorkingDir: projectRoot,
+      entryPoints: Object.fromEntries(group.map(receipt => [receipt.id, path.resolve(projectRoot, receipt.input)])),
+      outdir: path.join(path.dirname(outfile), 'modules'), bundle: false, format: esm ? 'esm' : 'cjs', platform: 'node', target: 'es2022',
+      write: false, legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [{ name: 'wga-captured-module-compilation', setup(build) {
+        build.onLoad({ filter: /.*/, namespace: 'file' }, args => {
+          const receipt = byPath.get(path.resolve(args.path) + (args.suffix || ''));
+          if (!receipt) fail('WGA_PREBUNDLE_AUDIT', 'Module compilation requested uncaptured source');
+          return { contents: receipt.contents, loader: receipt.loader, resolveDir: path.dirname(args.path) };
+        });
+      } }] });
+    for (const receipt of group) {
+      const output = compiled.outputFiles.find(file => path.basename(file.path) === `${receipt.id}.js`);
+      if (!output) fail('WGA_PREBUNDLE_AUDIT', 'A captured module has no compiled output');
+      // Hashbangs belong only at the start of an entry, never inside a factory.
+      receipt.contents = output.text.replace(/^#![^\n]*(?:\n|$)/, '');
+      receipt.loader = 'js';
+    }
+  }
+  function capturedEdge(args, importer) {
+    if (edges.has(args.path)) return edges.get(args.path);
+    // Original require calls were tagged before compilation, unlike imports
+    // introduced by JSX lowering. Never reselect the other export condition.
+    return args.path.startsWith('wga-original-require:')
+      ? resolveEdge(importer, args.path.slice('wga-original-require:'.length), 'require-call')
+      : resolveEdge(importer, args.path, args.kind === 'require-call'
+        && importer.info.imports.some(item => item.kind === 'import-statement' && (item.original || item.path) === args.path)
+        ? 'import-statement' : args.kind);
+  }
+  const esmModules = [...modules.values()].filter(receipt => receipt.info.format === 'esm');
+  const esmById = new Map(esmModules.map(receipt => [`${receipt.id}.${receipt.nodeEsm ? 'mjs' : 'js'}`, receipt]));
+  const externalModules = new Map();
+  const esmGraph = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: ['wga-esm-entry'],
+    bundle: true, format: 'cjs', platform: 'node', target: 'es2022', write: false, minify: false,
+    legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [{ name: 'wga-captured-esm-graph', setup(build) {
+      build.onResolve({ filter: /.*/ }, args => {
+        if (args.kind === 'entry-point') return { path: 'entry.cjs', namespace: 'wga-esm' };
+        if (args.importer === 'entry.cjs') return args.path.startsWith('wga-esm-value:')
+          ? { path: args.path.slice('wga-esm-value:'.length), namespace: 'wga-esm' }
+          : { path: args.path, namespace: 'wga-esm-namespace' };
+        if (args.namespace === 'wga-esm-namespace') return { path: args.path, namespace: 'wga-esm' };
+        const importer = esmById.get(args.importer);
+        if (!importer) fail('WGA_PREBUNDLE_AUDIT', 'The ESM graph requested an uncaptured importer');
+        const edge = capturedEdge(args, importer);
+        if (edge.dynamicModule) {
+          const token = `wga-dynamic:${edge.dynamicModule}`;
+          edges.set(token, edge);
+          return { path: token, external: true };
+        }
+        if (edge.external && isBuiltin(edge.path)) return { path: edge.path, external: true };
+        const target = !edge.external && modules.get(edge.path);
+        if (!target) fail('WGA_PREBUNDLE_AUDIT', 'The ESM graph requested an uncaptured module');
+        if (args.kind === 'dynamic-import' && importer.nodeEsm && target.info.format !== 'esm') {
+          fail('WGA_PREBUNDLE_AUDIT', 'A surviving strict dynamic import of a non-ESM target must use captured static targets', { path: importer.input });
+        }
+        if (target.info.format === 'esm' && args.kind !== 'require-call') return { path: `${target.id}.${target.nodeEsm ? 'mjs' : 'js'}`, namespace: 'wga-esm' };
+        const token = `wga-cjs:${target.id}`;
+        externalModules.set(token, target);
+        return { path: token, external: true };
+      });
+      build.onLoad({ filter: /.*/, namespace: 'wga-esm-namespace' }, args => ({ loader: 'js', contents:
+        `export * as namespace from ${JSON.stringify(args.path)};` }));
+      build.onLoad({ filter: /.*/, namespace: 'wga-esm' }, args => {
+        if (args.path === 'entry.cjs') return { loader: 'js', contents: esmModules.map(receipt =>
+          `exports[${JSON.stringify(receipt.id)}] = () => require(${JSON.stringify(`wga-esm-value:${receipt.id}.${receipt.nodeEsm ? 'mjs' : 'js'}`)});\n`
+          + `exports[${JSON.stringify(`${receipt.id}:namespace`)}] = () => require(${JSON.stringify(`${receipt.id}.${receipt.nodeEsm ? 'mjs' : 'js'}`)}).namespace;`).join('\n') };
+        const receipt = esmById.get(args.path);
+        if (!receipt) fail('WGA_PREBUNDLE_AUDIT', 'The ESM graph loaded uncaptured source');
+        return { contents: receipt.contents, loader: receipt.loader };
       });
     } }] });
-  for (const receipt of scripts) {
-    const output = compiled.outputFiles.find(file => path.basename(file.path) === `${receipt.id}.js`);
-    if (!output) fail('WGA_PREBUNDLE_AUDIT', 'A captured module has no compiled output');
-    // A module's hashbang is meaningful only as the first line of the final
-    // entry file, never inside an embedded factory.
-    const code = output.text.replace(/^#![^\n]*(?:\n|$)/, '');
-    receipt.contents = (receipt.info.format === 'esm' ? '"use strict";\n' : '') + code;
-    receipt.loader = 'js';
-  }
+  if (esmGraph.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one captured ESM graph');
+  // The registry exports lazy accessors to actual bundled namespace objects.
+  // It evaluates no original module until its accessor is called, so dynamic
+  // imports remain lazy and CJS/ESM cycles can reenter the completed registry.
+  const esmSource = '"use strict";\n' + esmGraph.outputFiles[0].text;
+  const namespaces = new Map(esmModules.map(receipt => [`namespace:${receipt.id}`, receipt]));
   const plugin = { name: 'wga-prebundle-module-strictness', setup(build) {
     build.onResolve({ filter: /.*/ }, args => {
       if (args.kind === 'entry-point' && args.path === 'wga-entry') return { path: 'facade.mjs', namespace: 'wga-strict' };
+      if (args.path === 'wga-esm-graph') return { path: 'esm-graph.cjs', namespace: 'wga-strict' };
+      if (args.importer === 'esm-graph.cjs' && isBuiltin(args.path)) return { path: args.path, external: true };
       let edge;
       if (args.importer === 'facade.mjs' && args.path === 'wga-original-entry') edge = { path: entry.input };
+      else if (externalModules.has(args.path)) edge = { path: externalModules.get(args.path).input };
       else if (edges.has(args.path)) edge = edges.get(args.path);
       else {
         const importer = byId.get(args.importer);
-        if (!importer) fail('WGA_PREBUNDLE_AUDIT', 'The strict bundle requested an uncaptured importer');
-        // All original require-call edges were tokenized, so an untagged
-        // require introduced by JSX lowering must use its import edge.
-        edge = args.path.startsWith('wga-original-require:')
-          ? resolveEdge(importer, args.path.slice('wga-original-require:'.length), 'require-call')
-          : resolveEdge(importer, args.path, args.kind === 'require-call'
-          && importer.info.imports.some(item => item.kind === 'import-statement' && (item.original || item.path) === args.path)
-          ? 'import-statement' : args.kind);
-        const target = !edge.external && modules.get(edge.path);
-        if (args.kind === 'dynamic-import' && importer.nodeEsm && target && target.info.format !== 'esm') {
-          fail('WGA_PREBUNDLE_AUDIT', 'A surviving strict dynamic import of a non-ESM target must use captured static targets', { path: importer.input });
-        }
+        if (!importer) fail('WGA_PREBUNDLE_AUDIT', 'The strict bundle requested an uncaptured importer', { importer: args.importer, path: args.path });
+        edge = capturedEdge(args, importer);
       }
       if (edge.dynamicModule) return { path: edge.dynamicModule, namespace: 'wga-strict' };
       if (edge.external && isBuiltin(edge.path)) return { path: edge.path, external: true };
       const target = modules.get(edge.path);
       if (!target || edge.external) fail('WGA_PREBUNDLE_AUDIT', 'The strict bundle requested an uncaptured module', { import: edge.path });
+      if (target.info.format === 'esm' && edge.kind === 'dynamic-import') return { path: `namespace:${target.id}`, namespace: 'wga-strict' };
       return { path: target.id, namespace: 'wga-strict' };
     });
     build.onLoad({ filter: /.*/, namespace: 'wga-strict' }, args => {
+      if (args.path === 'esm-graph.cjs') return { contents: esmSource, loader: 'js' };
       if (dynamicModules.has(args.path)) return { contents: dynamicModules.get(args.path), loader: 'js' };
+      if (namespaces.has(args.path)) return { loader: 'js', contents:
+        `module.exports = require('wga-esm-graph')[${JSON.stringify(`${namespaces.get(args.path).id}:namespace`)}]();` };
       if (args.path === 'facade.mjs') return { loader: 'js', contents: `import owned from 'wga-original-entry';\n${names.map((name, index) => `const value${index} = owned[${JSON.stringify(name)}]; export {value${index} as ${name}};`).join('\n')}` };
       const receipt = byId.get(args.path);
       if (!receipt) fail('WGA_PREBUNDLE_AUDIT', 'The strict bundle loaded an uncaptured module');
+      if (receipt.info.format === 'esm') return { loader: 'js', contents:
+        `module.exports = require('wga-esm-graph')[${JSON.stringify(receipt.id)}]();` };
       return { contents: receipt.contents, loader: receipt.loader };
     });
   } };
@@ -477,7 +570,18 @@ function checkModuleLoaders(ts, captured) {
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
   const checker = bindSources(ts, sources), values = new Map();
-  const MODULE = 1, NAMESPACE = 2, LOADER = 4, REQUIRE = 8;
+  const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
+  const containers = new Map(), containerFlags = new Map();
+  let nextContainer = 16n;
+  function container(kind, value) {
+    if (!value) return 0n;
+    const key = `${kind}:${value}`;
+    if (!containerFlags.has(key)) {
+      const flag = nextContainer; nextContainer <<= 1n;
+      containerFlags.set(key, flag); containers.set(flag, { kind, value });
+    }
+    return containerFlags.get(key);
+  }
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)
     || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
   function key(expression, computed = false, seen = new Set()) {
@@ -500,13 +604,20 @@ function checkModuleLoaders(ts, captured) {
     }
   }
   const member = (origin, name) => {
-    let result = 0;
+    let result = 0n;
+    // Descriptors can themselves be reflected upon. Intern structural
+    // containers instead of dropping provenance at a fixed nesting depth.
+    for (const [flag, shape] of containers) if (origin & flag) {
+      result |= shape.kind === 'value'
+        ? name === 'value' ? shape.value : name === undefined ? LOADER : 0n
+        : container('value', member(shape.value, name));
+    }
     // Unknown computed access on a known module object could select a loader.
     // Ordinary application objects have no module provenance and stay valid.
     if (name === undefined && origin & (MODULE | NAMESPACE)) return LOADER;
-    if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0;
+    if (origin & MODULE) result |= name === 'require' ? LOADER : name === 'constructor' ? NAMESPACE : 0n;
     if (origin & NAMESPACE) result |= ['createRequire', '_load', 'register', 'registerHooks'].includes(name) ? LOADER
-      : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0;
+      : ['Module', 'default'].includes(name) ? NAMESPACE : name === 'prototype' ? MODULE : 0n;
     return result;
   };
   function bind(name, value, keys = []) {
@@ -518,22 +629,17 @@ function checkModuleLoaders(ts, captured) {
         ? keys : [...keys, key(element.propertyName || element.name)]);
     }
   }
-  function objectAssign(node) {
-    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)
-      || node.expression.name.text !== 'assign' || !ts.isIdentifier(node.expression.expression)
-      || node.expression.expression.text !== 'Object') return false;
-    // A lexical Object binding may implement an unrelated application method.
-    return !checker.getSymbolAtLocation(node.expression.expression)?.declarations?.length;
-  }
-  function reflectGet(node) {
+  function builtinMethod(node, receiver, method) {
     if (!ts.isCallExpression(node)) return false;
     const callee = unwrap(node.expression);
     const object = (ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) && unwrap(callee.expression);
     const name = ts.isPropertyAccessExpression(callee) ? callee.name.text
       : ts.isElementAccessExpression(callee) && callee.argumentExpression ? key(callee.argumentExpression, true) : undefined;
-    return name === 'get' && object && ts.isIdentifier(object) && object.text === 'Reflect'
+    return name === method && object && ts.isIdentifier(object) && object.text === receiver
       && !checker.getSymbolAtLocation(object)?.declarations?.length;
   }
+  const objectAssign = node => builtinMethod(node, 'Object', 'assign');
+  const reflectGet = node => builtinMethod(node, 'Reflect', 'get');
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
@@ -553,7 +659,7 @@ function checkModuleLoaders(ts, captured) {
   }
   for (const source of sources.values()) collect(source);
   function origin(expression, seen = new Set()) {
-    if (typeof expression === 'number') return expression;
+    if (typeof expression === 'bigint') return expression;
     const node = unwrap(expression);
     if (ts.isIdentifier(node)) {
       const symbol = checker.getSymbolAtLocation(node);
@@ -562,22 +668,25 @@ function checkModuleLoaders(ts, captured) {
       const local = symbol?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration));
       if (!local && node.text === 'module') return MODULE;
       if (!local && node.text === 'require') return REQUIRE;
-      if (!symbol || seen.has(symbol)) return 0;
+      if (!symbol || seen.has(symbol)) return 0n;
       const next = new Set(seen); next.add(symbol);
-      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0);
+      return (values.get(symbol) || []).reduce((result, value) => result | value.keys.reduce(member, origin(value.value, next)), 0n);
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true));
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
-      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0), 0);
-    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0);
+      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
     if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true));
+    if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
+      && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true)));
+    if (builtinMethod(node, 'Object', 'getOwnPropertyDescriptors') && node.arguments.length >= 1) return container('members', origin(node.arguments[0], seen));
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
       && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
-    return 0;
+    return 0n;
   }
   function bindCallback(expression, value, seen = new Set()) {
     const node = unwrap(expression);
@@ -989,31 +1098,43 @@ async function buildGoogleWorkerPrebundle(options) {
     const preset = createGoogleWorkerBuild({ projectRoot, outdir: path.join(temporary, 'registry'), profile: options.profile, typescript: ts });
     if (typeof preset.verifyBuild !== 'function') fail('WGA_PREBUNDLE_AUDIT', 'This prebundle helper requires the matching fail-closed build preset');
     const capture = captureBuildInputs(projectRoot, preset, ts), declaration = capture.read(declarationFile).contents;
-    let built;
-    try {
-      built = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: [entryPoint], bundle: true, format: 'cjs', platform: 'node',
-        target: 'es2022', outfile: path.join(temporary, 'index.cjs'), write: false, metafile: true, minify: true,
-        legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [capture.plugin] });
-    } catch (error) {
-      // esbuild wraps plugin errors. Preserve the profile diagnostic contract.
-      const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
-      throw cause || error;
+    capture.prepare(entryPoint);
+    async function auditBuild() {
+      let built;
+      try {
+        built = await esbuild.build({ absWorkingDir: projectRoot, entryPoints: [entryPoint], bundle: true, format: 'cjs', platform: 'node',
+          target: 'es2022', outfile: path.join(temporary, 'index.cjs'), write: false, metafile: true, minify: true,
+          legalComments: 'eof', sourcemap: false, logLevel: 'silent', plugins: [capture.plugin] });
+      } catch (error) {
+        // esbuild wraps plugin errors. Preserve the profile diagnostic contract.
+        const cause = error.errors?.map(item => item.detail).find(detail => typeof detail?.code === 'string' && detail.code.startsWith('WGA_'));
+        throw cause || error;
+      }
+      const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
+      if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
+        path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
+      });
+      const coverage = preset.verifyBuild(built.metafile);
+      const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
+      if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
+      if (built.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one self-contained JavaScript artifact');
+      let source = built.outputFiles[0].text;
+      checkArtifact(ts, source, names);
+      const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest, captured);
+      checkModuleLoaders(ts, captured);
+      checkExportStability(ts, entryPoint, entry.source.contents.toString('utf8'), source, names);
+      checkDeclarations(ts, declaration.toString('utf8'), names);
+      capture.verify();
+      return { coverage, captured, entry, source, presetManifest, graph };
     }
-    const unsupportedMeta = built.warnings.find(warning => warning.id === 'empty-import-meta');
-    if (unsupportedMeta) fail('WGA_PREBUNDLE_IMPORT_META', 'import.meta is unavailable in the CommonJS prebundle; use an explicit portable value', {
-      path: unsupportedMeta.location?.file, line: unsupportedMeta.location?.line,
-    });
-    const coverage = preset.verifyBuild(built.metafile);
-    const captured = capture.inputs(built.metafile), entry = captured.find(({ source }) => source.physical === entryPoint);
-    if (entry?.info.format !== 'esm') fail('WGA_PREBUNDLE_EXPORTS', 'entryPoint must be an ES module with explicit named exports');
-    if (built.outputFiles.length !== 1) fail('WGA_PREBUNDLE_OUTPUT', 'Expected one self-contained JavaScript artifact');
-    let source = built.outputFiles[0].text;
-    checkArtifact(ts, source, names);
-    const presetManifest = preset.manifest(), graph = checkRuntimeGraph(projectRoot, built.metafile, presetManifest, captured);
-    checkModuleLoaders(ts, captured);
-    checkExportStability(ts, entryPoint, entry.source.contents.toString('utf8'), source, names);
-    checkDeclarations(ts, declaration.toString('utf8'), names);
-    capture.verify();
+    // Discover the whole graph before the authoritative compilation. Config
+    // receipts gathered by a dependency's onLoad may postdate resolver reads
+    // in that discovery pass. The second build starts with all those receipts
+    // frozen, rechecks them, and cannot introduce a previously uncaptured file.
+    await auditBuild();
+    capture.seal();
+    const { coverage, captured, entry, source: auditedSource, presetManifest, graph } = await auditBuild();
+    let source = auditedSource;
     let strict;
     try {
       strict = await preserveModuleStrictness(esbuild, ts, projectRoot, captured, entry, names, path.join(temporary, 'index.cjs'));

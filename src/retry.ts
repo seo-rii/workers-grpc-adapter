@@ -69,8 +69,11 @@ export function validateRetryPolicy(input: WorkersGrpcRetryPolicy | undefined): 
     for (const key of Object.keys(input)) {
         if (!['methods', 'maxAttempts', 'initialBackoffMs', 'maxBackoffMs', 'backoffMultiplier', 'retryableStatusCodes', 'retryOnFetchError'].includes(key)) return fail();
     }
-    if (!Array.isArray(input.methods) || input.methods.length === 0 || input.methods.length > 128 ||
-        input.methods.some(method => typeof method !== 'string' || method.length > 1024 || !/^\/[A-Za-z_][A-Za-z0-9_.]*\/[A-Za-z_][A-Za-z0-9_]*$/.test(method))) return fail();
+    if (!Array.isArray(input.methods) || input.methods.length === 0 || input.methods.length > 128) return fail();
+    // Iteration visits sparse slots as undefined, just as the snapshot's Set does.
+    for (const method of input.methods) {
+        if (typeof method !== 'string' || method.length > 1024 || !/^\/[A-Za-z_][A-Za-z0-9_.]*\/[A-Za-z_][A-Za-z0-9_]*$/.test(method)) return fail();
+    }
     if (!Number.isSafeInteger(input.maxAttempts) || input.maxAttempts < 2 || input.maxAttempts > 10) return fail();
     for (const value of [input.initialBackoffMs, input.maxBackoffMs]) {
         if (!Number.isSafeInteger(value) || value < 1 || value > 300000) return fail();
@@ -78,8 +81,10 @@ export function validateRetryPolicy(input: WorkersGrpcRetryPolicy | undefined): 
     if (input.initialBackoffMs > input.maxBackoffMs) return fail();
     const multiplier = input.backoffMultiplier ?? 2;
     if (typeof multiplier !== 'number' || !Number.isFinite(multiplier) || multiplier < 1 || multiplier > 10) return fail();
-    if (!Array.isArray(input.retryableStatusCodes) || input.retryableStatusCodes.length === 0 ||
-        input.retryableStatusCodes.some(code => !Number.isInteger(code) || code < 1 || code > 16 || code === status.CANCELLED || code === status.DEADLINE_EXCEEDED)) return fail();
+    if (!Array.isArray(input.retryableStatusCodes) || input.retryableStatusCodes.length === 0) return fail();
+    for (const code of input.retryableStatusCodes) {
+        if (!Number.isInteger(code) || code < 1 || code > 16 || code === status.CANCELLED || code === status.DEADLINE_EXCEEDED) return fail();
+    }
     if (input.retryOnFetchError !== undefined && typeof input.retryOnFetchError !== 'boolean') return fail();
     return Object.freeze({ methods: Object.freeze([...new Set(input.methods)].sort()), maxAttempts: input.maxAttempts,
         initialBackoffMs: input.initialBackoffMs, maxBackoffMs: input.maxBackoffMs, backoffMultiplier: multiplier,

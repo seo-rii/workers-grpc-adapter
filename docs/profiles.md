@@ -269,6 +269,13 @@ its full lock graph was parsed. The graph check reads manifests and source
 files without importing SDK, auth or adapter modules. It checks grpc-js imports
 in `.js`, `.cjs`, `.mjs`, `.d.ts`, `.d.cts` and `.d.mts` files throughout each
 dependency; an unresolved root or deep import fails the graph check.
+Runtime files with no extension or another extension are also inspected when
+selected by a static local `require`/`import` edge, a package `main`, a literal
+`exports`/`imports` target, or a `bin` with a Node shebang. These edges reuse
+Node's import/require resolvers and proven `createRequire` bases. JSON and native
+addon targets remain data; unreferenced extensionless README/data files are not
+treated as JavaScript. Computed module paths, export-pattern expansion, and
+non-Node command scripts are outside this discovery pass.
 Hidden runtime directories and source symlinks are included. Symlink imports
 resolve from the physical source location, and repeated physical files and
 directory cycles are visited once per package. Dependency `node_modules` trees
@@ -292,10 +299,17 @@ custom conditions are excluded; validate those environments separately.
 The compiler-free source scanner recognizes literal import and re-export
 specifiers, including comments between tokens, string escapes and static
 template literals in `require()` or `import()`. It ignores comment/string/regex
-contents, property calls, and ordinary locally bound `require` functions. A
-`require` initialized directly by an imported `node:module`/`module`
-`createRequire` factory remains a CommonJS loader. Its literal absolute path or
-file URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
+contents, property calls, and ordinary locally bound `require` functions.
+Script/CommonJS scan also ignores legacy HTML comments; known ES modules do not
+use that comment goal. Physical file extensions and the nearest package scope
+select the goal, including nested package scopes and source symlinks.
+Line comments and hashbangs end at LF, CR, U+2028 or U+2029; escaped line
+continuations in literal specifiers follow the same line-terminator rules.
+A `require` initialized directly by an imported `node:module`/`module`
+`createRequire` factory remains a CommonJS loader. Raw and escaped Unicode
+factory identifiers, including non-BMP characters, retain that identity without
+extending the scanner's alias-analysis scope. Its literal absolute path or file
+URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases
 are resolved from that declared location. An unproven base is reported as
 `resolution-base-unverified`; it never falls back to the source directory.
 This is static module-site

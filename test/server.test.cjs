@@ -104,6 +104,37 @@ test('SERVER accepts compressed requests and negotiates bounded response compres
     }
 });
 
+for (const requestStream of [false, true]) {
+    test(`SERVER rejects unsupported request compression as UNIMPLEMENTED, streaming=${requestStream}`, async () => {
+        const payload = Buffer.from('request');
+        const compressed = await encodeMessageFrame(payload, 'gzip', 1024);
+        const flagged = encodeFrame(payload); flagged[0] = 1;
+        for (const [encoding, body, code, details] of [
+            ['snappy', flagged, 12, 'WGA_COMPRESSION_ENCODING'],
+            ['snappy', encodeFrame(payload), 0, ''],
+            [undefined, flagged, 13, 'WGA_COMPRESSED_WITH_IDENTITY'],
+            ['gzip', flagged, 13, 'WGA_COMPRESSION_DATA'],
+            ['gzip', compressed, 0, ''],
+        ]) {
+            let decodes = 0;
+            const handler = createGrpcWebHandler({ echo: { ...unary, requestStream,
+                requestDeserialize(bytes) { decodes++; return bytes; } } }, {
+                async echo(value) {
+                    if (!requestStream) return value;
+                    const values = [];
+                    for await (const bytes of value) values.push(bytes);
+                    return Buffer.concat(values);
+                },
+            });
+            const result = await observe(await handler(request(body, { headers: encoding === undefined ? {} : { 'grpc-encoding': encoding } })));
+            assert.equal(result.status.code, code); assert.equal(result.status.details, details);
+            assert.equal(result.headers.get('grpc-accept-encoding'), 'identity,deflate,gzip');
+            assert.equal(decodes, code === 0 ? 1 : 0);
+            assert.deepEqual(result.messages, code === 0 ? [payload] : []);
+        }
+    });
+}
+
 test('SERVER exposes only intentional status details and validates outgoing metadata', async () => {
     const details = 'Permission denied: 한글 % value';
     const trailing = new Metadata(); trailing.set('trace-bin', Buffer.from([0, 128, 255])); trailing.set('x-result', 'denied');

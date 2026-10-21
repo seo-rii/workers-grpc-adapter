@@ -20,13 +20,20 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const read = (base, file) => fs.readFileSync(path.join(base, file));
 test('DOC every modified upstream source prominently identifies the adapter modifications', () => {
     const modified = manifest.files.filter(file => file.patch);
-    assert.equal(modified.length, 10);
+    assert.equal(modified.length, 11);
     for (const file of modified) {
         const source = read(root, file.target).toString('utf8');
         const header = source.slice(0, source.indexOf('*/') + 2);
         assert.match(header, /Modified by workers-grpc-adapter contributors for the Fetch-based Workers\n \* transport\. See vendor\/UPSTREAM\.json and vendor\/patches for provenance\./, file.target);
         assert.match(header, /Licensed under the Apache License, Version 2\.0/, file.target);
     }
+});
+test('DOC the error stack correction requires its recorded patch and output hash', () => {
+    const value = clone(manifest);
+    const file = value.files.find(file => file.target === 'src/error.ts');
+    file.patch = file.patchSha256 = null;
+    file.patchedSha256 = file.sha256;
+    assert.throws(() => validateManifest(value), /src\/error\.ts: required patch pins/);
 });
 function put(base, file, bytes) {
     fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true });

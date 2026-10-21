@@ -345,13 +345,18 @@ export class WorkersCall {
         // BufferHint=1 keeps the single request buffered; NoCompress=2 bypasses
         // the configured message codec. WriteThrough=4 cannot promise a fetch flush.
         if (context.flags !== undefined && (!Number.isInteger(context.flags) || context.flags < 0 || context.flags > 3)) {
+            // Settle the logical call before Node can auto-destroy a Duplex in
+            // response to its write error and replace this failure with CANCELLED.
+            this.cancelWithStatus(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             callback?.(new Error('WGA_WRITE_FLAGS'));
-            this.finish(status.UNIMPLEMENTED, 'WGA_WRITE_FLAGS');
             return;
         }
         if (this.stopIfExpired()) {
             if (callback) {
-                queueMicrotask(() => notify(() => callback!(new Error('WGA_CALL_TERMINATED'))));
+                if (this.requestBody) {
+                    this.stoppedUploadCallbacks.push(() => callback!(new Error('WGA_CALL_TERMINATED')));
+                    this.releaseStoppedUploadCallbacks();
+                } else queueMicrotask(() => notify(() => callback!(new Error('WGA_CALL_TERMINATED'))));
             }
             return;
         }
@@ -359,15 +364,17 @@ export class WorkersCall {
             void this.requestBody.write(message, ((context.flags ?? 0) & 2) !== 0).then(() => {
                 if (callback) queueMicrotask(() => notify(() => callback!()));
             }).catch(error => {
-                if (!this.terminal && this.uploadCancelled) {
-                    // Preserve the remote RPC status ahead of a Writable's
-                    // generic write error while response EOF is still pending.
-                    if (callback) this.stoppedUploadCallbacks.push(() => callback!(error));
-                    return;
-                }
                 if (!this.terminal && !this.uploadCancelled) this.finish(error instanceof TransportError ? error.code : status.INTERNAL,
                     error instanceof TransportError ? error.diagnostic : 'WGA_REQUEST_STREAM_FAILED');
-                if (callback) queueMicrotask(() => notify(() => callback!(error)));
+                if (callback) {
+                    // A failed write auto-destroys a Duplex and requests local
+                    // cancellation. Wait through response EOF AND asynchronous
+                    // inbound interceptors so that cleanup cannot replace the
+                    // actual RPC status. An explicit cancel/deadline still owns
+                    // the logical result and releases these callbacks below.
+                    this.stoppedUploadCallbacks.push(() => callback!(error));
+                    this.releaseStoppedUploadCallbacks();
+                }
             });
             this.maybeFetch();
             return;
@@ -420,6 +427,9 @@ export class WorkersCall {
     cancelWithStatus(code: status, details: string): void {
         if (this.context.lifetime && !this.context.lifetime.isTerminal()) { this.context.lifetime.cancelWithStatus(code, details); return; }
         this.finish(code, details);
+        // The logical call can complete after this transport has already
+        // finished, when an inbound interceptor finally forwards its status.
+        this.releaseStoppedUploadCallbacks();
     }
     private stopIfExpired(): boolean {
         if (this.terminal) return true;
@@ -706,6 +716,10 @@ export class WorkersCall {
         wake?.();
         this.context.onFinish();
         this.deliverTerminal();
+        this.releaseStoppedUploadCallbacks();
+    }
+    private releaseStoppedUploadCallbacks(): void {
+        if (!this.terminal || (this.context.lifetime && !this.context.lifetime.isTerminal())) return;
         for (const callback of this.stoppedUploadCallbacks.splice(0)) queueMicrotask(() => notify(callback));
     }
     private deliverTerminal(): void {
