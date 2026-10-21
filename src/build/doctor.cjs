@@ -69,6 +69,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
     const allPackages = new Map();
     const packageFailures = new Map();
     const pendingImports = [];
+    const pendingRuntimeImports = [];
     const adapterInstallations = new Map();
     const recordResolution = (manifestPath, consumer, specifier) => {
         // Module identity follows physical paths, not package names or matching versions.
@@ -97,6 +98,28 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
             status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
+    };
+    const inspectSource = (state, full, declaration = false, nodeBin = false) => {
+        if (state.visitedFiles.has(full)) return;
+        const source = fs.readFileSync(full, 'utf8');
+        // npm bins may be shell scripts or native programs. Only a Node
+        // shebang makes an otherwise unknown bin file a JavaScript source.
+        if (nodeBin && !/^#!(?:[^\r\n]*[\/\t ])?node(?:\s|$)/.test(source)) return;
+        state.visitedFiles.add(full);
+        for (const { kind, specifier, base: loaderBase } of literalImports(source, declaration, { includeLocal: !declaration })) {
+            let parent = pathToFileURL(full).href;
+            if (loaderBase === null) parent = null;
+            else if (loaderBase?.kind === 'literal') parent = loaderBase.value;
+            else if (loaderBase?.kind === 'url') {
+                try { parent = new URL(loaderBase.value, loaderBase.relative ? parent : undefined).href; }
+                catch { parent = null; }
+            }
+            if (/^@grpc\/grpc-js(?:\/|$)/.test(specifier)) {
+                const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
+                state.record.grpcImports.push(imported);
+                pendingImports.push({ full, entry: imported, parent });
+            } else pendingRuntimeImports.push({ state, entry: { kind, specifier }, parent });
+        }
     };
     const readPackage = manifestPath => {
         const directory = path.dirname(manifestPath);
@@ -128,7 +151,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         }
         // Inspect all installed runtime and declaration imports, not only one GAX selected at the root.
         const pending = [directory];
-        const visitedDirectories = new Set(), visitedFiles = new Set();
+        const visitedDirectories = new Set();
+        const state = { directory, record, visitedFiles: new Set() };
         while (pending.length) {
             const current = fs.realpathSync(pending.pop());
             if (visitedDirectories.has(current)) continue;
@@ -142,25 +166,26 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 const info = entry.isSymbolicLink() ? fs.statSync(full) : entry;
                 if (info.isDirectory()) pending.push(full);
                 else if (info.isFile() && [full, entry.name].some(name => /\.(?:[cm]?js|d\.[cm]?ts)$/.test(name))) {
-                    if (visitedFiles.has(full)) continue;
-                    visitedFiles.add(full);
-                    const source = fs.readFileSync(full, 'utf8');
-                    for (const { kind, specifier, base: loaderBase } of literalImports(source, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)))) {
-                        let parent = pathToFileURL(full).href;
-                        if (loaderBase === null) parent = null;
-                        else if (loaderBase?.kind === 'literal') parent = loaderBase.value;
-                        else if (loaderBase?.kind === 'url') {
-                            try { parent = new URL(loaderBase.value, loaderBase.relative ? parent : undefined).href; }
-                            catch { parent = null; }
-                        }
-                        const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
-                        record.grpcImports.push(imported);
-                        pendingImports.push({ full, entry: imported, parent });
-                    }
+                    inspectSource(state, full, [full, entry.name].some(name => /\.d\.[cm]?ts$/.test(name)));
                 }
             }
         }
-        record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
+        const seed = (specifier, kind = 'require', nodeBin = false) => {
+            if (typeof specifier !== 'string' || !specifier) return;
+            pendingRuntimeImports.push({ state, entry: { kind, specifier: path.isAbsolute(specifier) || specifier.startsWith('./') ? specifier : './' + specifier },
+                parent: pathToFileURL(manifestPath).href, nodeBin });
+        };
+        seed(manifest.main);
+        // Literal package targets are exact files, not CommonJS extension or
+        // directory searches. Use the same ESM file resolver for discovery.
+        const targets = [manifest.exports, manifest.imports];
+        while (targets.length) {
+            const target = targets.pop();
+            if (typeof target === 'string') {
+                if (target.startsWith('./') && !target.includes('*')) seed(target, 'import');
+            } else if (target && typeof target === 'object') targets.push(...Object.values(target));
+        }
+        for (const bin of typeof manifest.bin === 'string' ? [manifest.bin] : Object.values(manifest.bin || {})) seed(bin, 'require', true);
         return record;
     };
     const results = [];
@@ -189,12 +214,36 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
             results.push({ sdk, status: 'blocked', reason: error.code === 'MODULE_NOT_FOUND' ? 'dependency-not-installed' : 'resolution-failed' });
         }
     }
+    // Batch local edges across the graph. Only resolved module targets enter
+    // this walk, so README/data files do not become code based on their text.
+    // Each physical file is visited once per owning package, bounding cycles.
+    for (let next = 0; next < pendingRuntimeImports.length;) {
+        const batch = pendingRuntimeImports.slice(next);
+        next = pendingRuntimeImports.length;
+        const runtimeFiles = resolveImports(batch);
+        if (runtimeFiles.length !== batch.length) {
+            for (const { state } of batch) packageFailures.set(state.directory, new Error('WGA_DOCTOR_RUNTIME_RESOLUTION'));
+            continue;
+        }
+        for (let index = 0; index < batch.length; index++) {
+            const full = runtimeFiles[index];
+            if (!full || /\.(?:json|node)$/.test(full)) continue;
+            const { state, entry, nodeBin } = batch[index];
+            try { inspectSource(state, full, [full, entry.specifier].some(name => /\.d\.[cm]?ts$/.test(name)), nodeBin); }
+            catch (error) { packageFailures.set(state.directory, error); }
+        }
+    }
+    for (const record of allPackages.values()) record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
     const resolved = resolveImports(pendingImports);
     for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
         const { full, entry, parent } = pendingImports[index];
         try { resolvedImport(entry, full, resolved[index], parent); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {
+        if (result.graph.some(item => packageFailures.has(path.resolve(base, item.path)))) {
+            result.status = 'blocked'; result.reason = 'resolution-failed'; continue;
+        }
+        result.grpcImportCount = result.graph.reduce((count, item) => count + item.grpcImports.length, 0);
         const passed = result.gax.length > 0 && result.grpc.length > 0 && result.grpc.every(item => item.implementation === expected)
             && result.grpcImportCount > 0 && result.graph.every(item => item.grpcImports.every(entry => entry.status === successStatus))
             && result.unresolved.length === 0;

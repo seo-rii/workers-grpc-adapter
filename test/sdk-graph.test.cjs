@@ -93,7 +93,8 @@ test('SDK doctor treats aliases symlinked to one physical installation as one id
 test('SDK doctor inspects without credentials or network and executes zero dependency auth or Fetch calls', t => {
     const base = fixture(t);
     packageAt(base, 'node_modules/google-auth-library', { name: 'google-auth-library' }, "globalThis.authCalls++; throw new Error('AUTH_EXECUTED');");
-    packageAt(base, 'node_modules/example-sdk', { name: 'example-sdk', dependencies: { 'google-gax': '*', helper: '*', 'google-auth-library': '*' } }, "require('google-auth-library'); fetch('https://credentials.invalid'); throw new Error('SDK_EXECUTED');");
+    packageAt(base, 'node_modules/example-sdk', { name: 'example-sdk', dependencies: { 'google-gax': '*', helper: '*', 'google-auth-library': '*' } }, "require('./runtime'); require('google-auth-library'); fetch('https://credentials.invalid'); throw new Error('SDK_EXECUTED');");
+    fs.writeFileSync(path.join(base, 'node_modules/example-sdk/runtime'), "require('@grpc/grpc-js'); require('google-auth-library'); fetch('https://credentials.invalid'); throw new Error('RUNTIME_EXECUTED');");
     fs.writeFileSync(path.join(base, 'node_modules/@grpc/grpc-js/index.js'), "throw new Error('ADAPTER_EXECUTED');");
     const script = `
       const assert = require('node:assert/strict');
@@ -113,13 +114,13 @@ test('SDK doctor inspects without credentials or network and executes zero depen
       for (const key of ['lookup', 'resolve', 'resolve4', 'resolve6']) dns[key] = dns.promises[key] = denied;
       const cp = require('node:child_process');
       const spawnSync = cp.spawnSync;
-      let resolverRuns = 0;
+      const resolutionRequests = [];
       for (const key of ['exec', 'execSync', 'execFile', 'execFileSync', 'spawn', 'fork']) cp[key] = denied;
       cp.spawnSync = (executable, args, options) => {
         assert.equal(executable, process.execPath);
         assert.deepEqual(args.slice(0, 3), ['--experimental-import-meta-resolve', '--input-type=module', '--eval']);
         assert.equal(options.env.NODE_OPTIONS, '');
-        resolverRuns++;
+        resolutionRequests.push(...JSON.parse(options.input));
         return spawnSync(executable, args, options);
       };
       const load = Module._load;
@@ -143,7 +144,11 @@ test('SDK doctor inspects without credentials or network and executes zero depen
       assert.deepEqual(Object.keys(process.env).filter(key => /^(GOOGLE_|GCLOUD_|GCE_|CLOUDSDK_)/.test(key)), []);
       const report = require(process.argv[2]).inspect(process.argv[1], ['example-sdk']);
       assert.equal(report.passed, true);
-      assert.equal(resolverRuns, 1);
+      assert.ok(resolutionRequests.some(([specifier]) => specifier === './runtime'), 'discovers local runtime modules');
+      assert.ok(resolutionRequests.some(([specifier]) => specifier === '@grpc/grpc-js'), 'checks grpc-js resolution');
+      assert.deepEqual(report.results[0].graph.flatMap(pkg => pkg.grpcImports).filter(entry => entry.file.endsWith('/runtime')),
+        [{ file: 'node_modules/example-sdk/runtime', specifier: '@grpc/grpc-js', kind: 'require',
+          resolved: 'node_modules/@grpc/grpc-js/index.js', implementation: 'workers-grpc-adapter', version: '1.0.0', status: 'resolved-to-replacement' }]);
       assert.deepEqual(counters, { network: 0, fetch: 0, auth: 0, runtimeImports: 0, credentialReads: 0 });
       process.stdout.write(JSON.stringify({ passed: report.passed, counters, scope: report.scope }));
     `;

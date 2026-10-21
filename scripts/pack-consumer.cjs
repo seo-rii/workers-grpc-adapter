@@ -141,13 +141,13 @@ function offline() {
     for (const key of ['lookup', 'resolve', 'resolve4', 'resolve6']) dns[key] = dns.promises[key] = denied;
     const cp = require('node:child_process');
     const spawnSync = cp.spawnSync;
-    let resolverRuns = 0;
+    const resolutionRequests = [];
     for (const key of ['exec', 'execSync', 'execFile', 'execFileSync', 'spawn', 'fork']) cp[key] = denied;
     cp.spawnSync = (executable, args, options) => {
         assert.equal(executable, process.execPath);
         assert.deepEqual(args.slice(0, 3), ['--experimental-import-meta-resolve', '--input-type=module', '--eval']);
         assert.equal(options.env.NODE_OPTIONS, '');
-        resolverRuns++;
+        resolutionRequests.push(...JSON.parse(options.input));
         return spawnSync(executable, args, options);
     };
     const load = Module._load;
@@ -169,7 +169,10 @@ function offline() {
     assert.deepEqual(Object.keys(process.env).filter(key => /^(GOOGLE_|GCLOUD_|GCE_|CLOUDSDK_)/.test(key)), []);
     const result = require(process.argv[3]).inspect(base);
     assert.equal(result.passed, true);
-    assert.equal(resolverRuns, 1);
+    assert.ok(resolutionRequests.some(([specifier]) => /^(?:\.{1,2}\/|\/|file:)/.test(specifier)),
+        'discovers local runtime modules');
+    assert.ok(resolutionRequests.some(([specifier]) => /^@grpc\/grpc-js(?:\/|$)/.test(specifier)),
+        'checks grpc-js resolution');
     assert.deepEqual(counters, { network: 0, fetch: 0, auth: 0, runtimeImports: 0, credentialReads: 0 });
     return { status: 'passed', doctorPassed: true, credentialsEnvironmentAbsent: true, networkDenied: true,
         counters, graphSha256: result.graphSha256, identity: result.identity.status };
