@@ -569,7 +569,7 @@ function checkModuleLoaders(ts, captured) {
     || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
-  const checker = bindSources(ts, sources), values = new Map();
+  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set();
   const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
   const loaderMembers = ['createRequire', '_load', 'register', 'registerHooks'];
   const builtinExportNames = new Set([...Object.keys(require('node:module')), 'default']);
@@ -580,12 +580,35 @@ function checkModuleLoaders(ts, captured) {
     if (!byFile.has(file)) byFile.set(file, []);
     byFile.get(file).push(receipt);
   }
+  function isRuntimeExport(symbol, seen = new Set()) {
+    // Unknown runtime aliases still shadow stars. Only declarations known to
+    // disappear during TypeScript erasure may expose the star's binding again.
+    if (!symbol || seen.has(symbol)) return true;
+    const declarations = symbol.declarations || [];
+    if (symbol.flags & ts.SymbolFlags.Value) return !declarations.length || declarations.some(declaration =>
+      !(declaration.flags & ts.NodeFlags.Ambient) && !ts.isInterfaceDeclaration(declaration) && !ts.isTypeAliasDeclaration(declaration));
+    if (!(symbol.flags & ts.SymbolFlags.Alias)) return false;
+    const next = new Set([...seen, symbol]);
+    return !declarations.length || declarations.some(declaration => {
+      if (ts.isExportSpecifier(declaration)) {
+        const statement = declaration.parent.parent;
+        if (declaration.isTypeOnly || statement.isTypeOnly) return false;
+        return !!statement.moduleSpecifier || isRuntimeExport(checker.getExportSpecifierLocalTargetSymbol(declaration), next);
+      }
+      if (ts.isNamespaceExport(declaration)) return !declaration.parent.isTypeOnly;
+      if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration) || ts.isNamespaceImport(declaration)) {
+        const statement = ts.findAncestor(declaration, ts.isImportDeclaration);
+        return !statement?.importClause?.isTypeOnly && !declaration.isTypeOnly;
+      }
+      return !ts.isImportEqualsDeclaration(declaration) || !declaration.isTypeOnly;
+    });
+  }
   for (const [file, source] of sources) {
     const symbol = checker.getSymbolAtLocation(source);
     // getExportsOfModule flattens stars and can pick one conflicting symbol.
     // Keep only own exports; resolve stars and their binding identities below.
     exportsByFile.set(file, new Map([...(symbol?.exports?.values() || [])]
-      .filter(item => !(item.flags & ts.SymbolFlags.ExportStar)).map(item => [item.name, item])));
+      .filter(item => !(item.flags & ts.SymbolFlags.ExportStar) && isRuntimeExport(item)).map(item => [item.name, item])));
     starsByFile.set(file, source.statements.filter(statement => ts.isExportDeclaration(statement)
       && !statement.isTypeOnly && !statement.exportClause && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)));
   }
@@ -729,7 +752,11 @@ function checkModuleLoaders(ts, captured) {
   function bind(name, value, keys = []) {
     if (ts.isIdentifier(name)) {
       const symbol = checker.getSymbolAtLocation(name);
-      if (symbol) { if (!values.has(symbol)) values.set(symbol, []); values.get(symbol).push({ value, keys }); }
+      if (symbol) {
+        if (symbol.flags & ts.SymbolFlags.Alias) boundAliasNames.add(symbol.name);
+        if (!values.has(symbol)) values.set(symbol, []);
+        values.get(symbol).push({ value, keys });
+      }
     } else if (ts.isObjectBindingPattern(name)) {
       for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
         ? keys : [...keys, key(element.propertyName || element.name)]);
@@ -787,7 +814,13 @@ function checkModuleLoaders(ts, captured) {
     if (typeof expression === 'bigint') return expression;
     const node = unwrap(expression);
     if (ts.isIdentifier(node)) {
-      const symbol = checker.getSymbolAtLocation(node);
+      // The checker can omit a value reference when a TypeScript-only export
+      // shadows its import in type space. Recover the bound lexical import;
+      // esbuild's runtime graph can still supply that name through a star.
+      const parent = node.parent;
+      const reference = parent.name !== node && parent.propertyName !== node && parent.label !== node;
+      const symbol = checker.getSymbolAtLocation(node) || (reference && boundAliasNames.has(node.text)
+        ? checker.getSymbolsInScope(node, ts.SymbolFlags.Alias).find(item => item.name === node.text && values.has(item)) : undefined);
       // TypeScript can attach synthetic Identifier/BinaryExpression declarations
       // to the implicit CommonJS globals. Lexical declarations still shadow them.
       const local = symbol?.declarations?.some(declaration => !ts.isIdentifier(declaration) && !ts.isBinaryExpression(declaration) && !ts.isSourceFile(declaration));

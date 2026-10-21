@@ -134,3 +134,75 @@ test('PREBUNDLE follows captured package export conditions for namespace re-expo
   f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {native} from "bridge"; export function inspect(base) { return native.createRequire(base)("./external.cjs"); }');
   await assert.rejects(f.build(), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
 });
+
+for (const [name, declaration] of [
+  ['type-only re-export', 'export type {native} from "./types.ts";'],
+  ['inline type-only re-export', 'export {type native} from "./types.ts";'],
+  ['interface export', 'export interface native {example: string}'],
+  ['type alias export', 'export type native = {example: string};'],
+  ['local type alias re-export', 'type Local = {example: string}; export {Local as native};'],
+  ['local interface re-export', 'interface Local {example: string} export {Local as native};'],
+  ['type-only named import', 'import type {native} from "./types.ts"; export {native};'],
+  ['inline type-only import', 'import {type Module as native} from "node:module"; export {native};'],
+  ['type-only default import', 'import type native from "./types.ts"; export {native};'],
+  ['type-only namespace export', 'export type * as native from "./helper.mjs";'],
+  ['type-only namespace import', 'import type * as native from "./helper.mjs"; export {native};'],
+  ['ambient value export', 'export declare const native: unknown;'],
+]) test(`PREBUNDLE retains runtime star loaders beside an erased ${name}`, async t => {
+  const f = fixture(t);
+  f.write('helper.mjs', 'export * as native from "node:module";');
+  f.write('types.ts', 'export interface native {example: string} export default interface Default {example: string}');
+  const barrel = 'export * from "./helper.mjs"; ' + declaration;
+  f.write('bridge.ts', barrel);
+  // Independently erase TypeScript before asking Node which binding survives.
+  const native = f.write('native.mjs', ts.transpileModule(barrel, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  }).outputText);
+  const namespace = await import(pathToFileURL(native).href);
+  assert.equal(namespace.native.createRequire(native)('./external.cjs'), 'outside');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {native} from "./bridge.ts"; '
+    + 'export function inspect(base) { return native.createRequire(base)("./external.cjs"); }');
+  await assert.rejects(f.build(), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
+  assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+});
+
+for (const [name, declarations] of [
+  ['interface before value', 'export interface native {example: string} export const native = {createRequire: () => "ordinary"};'],
+  ['interface after value', 'export const native = {createRequire: () => "ordinary"}; export interface native {example: string}'],
+  ['local type and value alias', 'type Local = {example: string}; const Local = {createRequire: () => "ordinary"}; export {Local as native};'],
+  ['interface and class', 'export interface native {example: string} export class native {static createRequire() { return "ordinary"; }}'],
+]) test(`PREBUNDLE preserves runtime shadowing with merged ${name}`, async t => {
+  const f = fixture(t);
+  f.write('helper.mjs', 'export * as native from "node:module";');
+  const barrel = 'export * from "./helper.mjs"; ' + declarations;
+  f.write('bridge.ts', barrel);
+  const native = f.write('native.mjs', ts.transpileModule(barrel, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  }).outputText);
+  assert.equal((await import(pathToFileURL(native).href)).native.createRequire(), 'ordinary');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {native} from "./bridge.ts"; '
+    + 'export function inspect() { return native.createRequire(); }');
+  const built = await f.build();
+  assert.equal(require(built.bundlePath).inspect(built.bundlePath), 'ordinary');
+});
+
+test('PREBUNDLE preserves lexical shadowing of an import beside an erased interface', async t => {
+  const f = fixture(t);
+  f.write('helper.mjs', 'export * as native from "node:module";');
+  f.write('bridge.ts', 'export * from "./helper.mjs"; export interface native {example: string}');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {native} from "./bridge.ts"; '
+    + 'export function inspect() { return ((native) => native.createRequire())({createRequire: () => "ordinary"}); }');
+  const built = await f.build();
+  assert.equal(require(built.bundlePath).inspect(built.bundlePath), 'ordinary');
+});
+
+test('PREBUNDLE does not mistake property names or labels for an erased export import', async t => {
+  const f = fixture(t);
+  f.write('helper.mjs', 'export * as native from "node:module";');
+  f.write('bridge.ts', 'export * from "./helper.mjs"; export interface native {example: string}');
+  f.write('wrapper.mjs', 'export {client} from "@grpc/grpc-js"; import {native} from "./bridge.ts"; '
+    + 'export function inspect() { native: { break native; } '
+    + 'const ordinary = {native: {createRequire: () => "ordinary"}}; return ordinary.native.createRequire(); }');
+  const built = await f.build();
+  assert.equal(require(built.bundlePath).inspect(built.bundlePath), 'ordinary');
+});
