@@ -420,7 +420,9 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
         if (keyword !== 'import') continue;
         const source = value(from + 1), names = [], factories = [], namespaces = [];
         let cursor = index + 1;
-        if (value(cursor) === 'type') cursor++;
+        // `type` is also a legal JavaScript default binding, including the
+        // combined `type, { ... }` and `type, * as ...` import clauses.
+        if (value(cursor) === 'type' && cursor + 1 < from && value(cursor + 1) !== ',') cursor++;
         if (identifier(cursor)) {
             names.push(value(cursor));
             if (['module', 'node:module'].includes(source)) namespaces.push(value(cursor));
