@@ -3,11 +3,13 @@
 // Graph inspection has no compiler peer requirement. This scanner identifies
 // literal module sites without evaluating inspected code. It is deliberately
 // separate from the profile compiler's full AST and semantic validation.
-function tokensFor(source) {
+function tokensFor(source, sourceType) {
     const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
-    let offset = 0;
+    let offset = 0, lineStart = true;
+    const lineTerminator = /[\r\n\u2028\u2029]/;
+    const codePointAt = index => index < source.length ? String.fromCodePoint(source.codePointAt(index)) : undefined;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
-    const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
+    const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\u200c\u200d\p{ID_Continue}]/u.test(char);
     const prefix = new Set(['return', 'throw', 'case', 'delete', 'void', 'typeof', 'instanceof', 'in', 'of', 'yield', 'await', 'else', 'do']);
     const controls = new Set(['if', 'while', 'for', 'with', 'switch', 'catch']);
     const expressionPrefixes = new Set(['=', '(', '[', ',', ':', '?', '=>', '${', '...',
@@ -15,7 +17,7 @@ function tokensFor(source) {
         '<', '>', '==', '!=', '+=', '-=', '/=', 'return', 'throw', 'yield', 'await',
         'new', 'void', 'typeof', 'delete', 'in', 'instanceof', 'of', 'case', 'extends']);
     const previous = () => tokens[tokens.length - 1];
-    const expressionBefore = index => {
+    const expressionBefore = (index, start = tokens[index]?.start ?? offset) => {
         const before = tokens[index - 1];
         if (before?.value === ':' && groups[groups.length - 1]?.control === 'switch') {
             // A switch clause starts statements, while an unmatched question
@@ -33,7 +35,7 @@ function tokensFor(source) {
         // A line break after return/yield ends that expression before a new
         // declaration; comments are already absent from the token stream.
         return expressionPrefixes.has(before?.value) && !(['return', 'yield'].includes(before.value)
-            && /[\r\n\u2028\u2029]/.test(source.slice(before.end, tokens[index].start)));
+            && lineTerminator.test(source.slice(before.end, start)));
     };
     const allowsRegex = () => {
         const last = previous();
@@ -44,6 +46,7 @@ function tokensFor(source) {
         return ![']', '++', '--', '.', '?.'].includes(last.value);
     };
     function add(kind, value, start, extra = {}) {
+        lineStart = false;
         const token = { kind, value, start, end: offset, ...extra }, index = tokens.length;
         const header = classes[classes.length - 1];
         if (header?.depth === groups.length && header.stage !== 'heritage') {
@@ -54,6 +57,9 @@ function tokensFor(source) {
         if (kind === 'punctuation') {
             if (['(', '[', '{', '${'].includes(value)) {
                 const last = previous();
+                token.parent = groups[groups.length - 1]?.index;
+                if (value === '{') token.container = last?.value !== '=>' && (expressionBefore(index, start)
+                    || last?.value === 'default' && tokens[index - 2]?.value === 'export') ? 'object' : 'block';
                 let statementEnd = value === '(' ? controls.has(last?.value)
                     : value === '{' && (!last || !['=', '(', '[', ',', ':', 'return'].includes(last.value));
                 let functionBody = false;
@@ -65,7 +71,7 @@ function tokensFor(source) {
                         functionBody = true;
                         const definition = keyword;
                         if (tokens[keyword - 1]?.value === 'async'
-                            && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
+                            && !lineTerminator.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
                         statementEnd = !expressionBefore(keyword);
                         definitions.set(definition, { expression: !statementEnd, body: index });
                     }
@@ -76,6 +82,7 @@ function tokensFor(source) {
                     // nested parentheses/classes/functions own their own bodies.
                     statementEnd = !definition.expression;
                     definitions.set(definition.index, { expression: definition.expression, body: index });
+                    token.container = 'class';
                     classes.pop();
                 }
                 groups.push({ index, value, statementEnd,
@@ -96,8 +103,10 @@ function tokensFor(source) {
     }
     function escaped() {
         const char = source[offset++];
-        if (char === '\n') return '';
-        if (char === '\r') { if (source[offset] === '\n') offset++; return ''; }
+        if (lineTerminator.test(char)) {
+            if (char === '\r' && source[offset] === '\n') offset++;
+            return '';
+        }
         if (char === 'x' || char === 'u') {
             const braced = char === 'u' && source[offset] === '{';
             if (braced) offset++;
@@ -138,13 +147,17 @@ function tokensFor(source) {
     }
     function regex() {
         let end = offset + 1, characterClass = false;
-        while (end < source.length && !/[\r\n]/.test(source[end])) {
+        while (end < source.length && !lineTerminator.test(source[end])) {
             const char = source[end++];
             if (char === '\\') { end++; continue; }
             if (char === '[') characterClass = true;
             else if (char === ']') characterClass = false;
             else if (char === '/' && !characterClass) {
-                while (identifierPart(source[end])) end++;
+                while (end < source.length) {
+                    const part = codePointAt(end);
+                    if (!identifierPart(part)) break;
+                    end += part.length;
+                }
                 const start = offset; offset = end; add('regex', undefined, start); return true;
             }
         }
@@ -155,21 +168,33 @@ function tokensFor(source) {
         let braces = 0;
         while (offset < source.length) {
             const char = source[offset], next = source[offset + 1], start = offset;
-            if (/\s/.test(char)) { offset++; continue; }
-            if ((offset === 0 && source.startsWith('#!')) || (char === '/' && next === '/')) {
-                while (offset < source.length && !/[\r\n]/.test(source[offset])) offset++;
+            if (/\s/.test(char)) {
+                if (lineTerminator.test(char)) lineStart = true;
+                offset++; continue;
+            }
+            // Annex B HTML comments belong to the Script goal. A close
+            // comment may follow whitespace/comments at the start of a line,
+            // but the same characters in `value --> other` are operators.
+            if ((offset === 0 && source.startsWith('#!')) || (char === '/' && next === '/')
+                || (sourceType === 'script' && (source.startsWith('<!--', offset)
+                    || lineStart && source.startsWith('-->', offset)))) {
+                while (offset < source.length && !lineTerminator.test(source[offset])) offset++;
                 continue;
             }
             if (char === '/' && next === '*') {
-                const end = source.indexOf('*/', offset + 2); offset = end < 0 ? source.length : end + 2; continue;
+                const end = source.indexOf('*/', offset + 2), after = end < 0 ? source.length : end + 2;
+                if (lineTerminator.test(source.slice(offset, after))) lineStart = true;
+                offset = after; continue;
             }
             if (char === '"' || char === "'" || char === '`') { quoted(char, depth); continue; }
             if (char === '/' && allowsRegex() && regex()) continue;
-            if (identifierStart(char) || (char === '\\' && next === 'u')) {
+            if (identifierStart(codePointAt(offset)) || (char === '\\' && next === 'u')) {
                 let value = '';
-                while (identifierPart(source[offset]) || (source[offset] === '\\' && source[offset + 1] === 'u')) {
-                    if (source[offset] === '\\') { offset++; value += escaped(); }
-                    else value += source[offset++];
+                while (offset < source.length) {
+                    if (source[offset] === '\\' && source[offset + 1] === 'u') { offset++; value += escaped(); continue; }
+                    const part = codePointAt(offset);
+                    if (!identifierPart(part)) break;
+                    value += part; offset += part.length;
                 }
                 add('identifier', value, start); continue;
             }
@@ -189,8 +214,8 @@ function tokensFor(source) {
     return { tokens, pairs, definitions };
 }
 
-function literalImports(source, declaration = false, { includeLocal = false } = {}) {
-    const { tokens, pairs, definitions } = tokensFor(source), imports = new Map();
+function literalImports(source, declaration = false, { includeLocal = false, sourceType = 'script' } = {}) {
+    const { tokens, pairs, definitions } = tokensFor(source, sourceType), imports = new Map();
     const included = specifier => typeof specifier === 'string' && (/^@grpc\/grpc-js(?:\/|$)/.test(specifier)
         || includeLocal && /^(?:\.{1,2}\/|\/|file:)/.test(specifier));
     if (!tokens.some(token => token.kind === 'literal' && included(token.value))) return [];
@@ -232,9 +257,39 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
         return names;
     }
     const bind = (scope, names, loader = false) => { for (const name of names) scope.bindings.set(name, loader); };
-    function expressionEnd(start) {
+    const expressionPrefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
+    const expressionContinuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
+        '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
+    function lineEndsExpression(index, prefixes = expressionPrefixes) {
+        const token = tokens[index], previous = tokens[index - 1];
+        if (!previous || !/[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) return false;
+        const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
+            || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
+            || [')', ']', '}', '++', '--'].includes(previous.value);
+        return finished && !expressionContinuations.has(token.value) && !token.template && token.kind !== 'template-start';
+    }
+    const asyncArrowAt = index => {
+        const first = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
+        return first !== undefined && value(first - 1) === 'async'
+            && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[first - 1].end, tokens[first].start));
+    };
+    function expressionEnd(start, asyncArrow, depth = 0) {
+        if (depth > 128) throw new Error('WGA_DOCTOR_SOURCE_NESTING');
+        // Sloppy Script arrows can use await/yield as ordinary identifiers.
+        // Only an async arrow gives await its operator meaning; arrows cannot
+        // be generators, so yield never prefixes their concise expression.
+        const prefixes = new Set(expressionPrefixes);
+        prefixes.delete('yield');
+        if (!asyncArrow) prefixes.delete('await');
         let index = start;
         for (; index < tokens.length; index++) {
+            // A concise arrow owns an AssignmentExpression, not the following
+            // ASI statement. Preserve calls, operators and tagged templates
+            // that continue the same expression across a line terminator.
+            if (index > start && lineEndsExpression(index, prefixes)) break;
+            if (value(index) === '=>' && value(index + 1) !== '{') {
+                index = expressionEnd(index + 1, asyncArrowAt(index), depth + 1); continue;
+            }
             if (pairs.get(index) > index) { index = pairs.get(index); continue; }
             if ([',', ';', ')', ']', '}'].includes(value(index))) break;
         }
@@ -273,19 +328,13 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
         // Expression statements can contain commas and paired groups. A line
         // break ends one only when the next token cannot continue it; calls,
         // members and operators across lines remain in the same loop body.
-        const prefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
-        const continuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
-            '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
         for (let index = start; index < tokens.length; index++) {
             const token = tokens[index], previous = tokens[index - 1];
             if (value(index) === ';') return index + 1;
             if (value(index) === '}' || value(index) === 'else' && !property(index)) return index;
             if (index > start && /[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) {
-                const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
-                    || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
-                    || [')', ']', '}', '++', '--'].includes(previous.value);
                 if (index === start + 1 && ['return', 'break', 'continue', 'debugger'].includes(keyword)
-                    || finished && !continuations.has(token.value) && !token.template && token.kind !== 'template-start') return index;
+                    || lineEndsExpression(index)) return index;
             }
             if (pairs.get(index) > index) index = pairs.get(index);
         }
@@ -294,16 +343,38 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
     // Establish function/arrow and loop scopes before assigning any binding,
     // so declarations also shadow references earlier in their lexical scope.
     const parameters = [];
+    const functionBodies = new Set([...definitions].filter(([index]) => value(index) === 'function').map(([, definition]) => definition.body));
+    if (!declaration) for (const [index, definition] of definitions) {
+        if (value(index) !== 'class') continue;
+        // A class static block has its own var environment. Visit only direct
+        // class elements: nested method/initializer bodies establish their own
+        // environments and must not make an ordinary block var-isolating.
+        const end = pairs.get(definition.body);
+        for (let member = definition.body + 1; member < end; member++) {
+            if (value(member) === 'static' && value(member + 1) === '{' && pairs.has(member + 1)) {
+                addScope(member + 1, pairs.get(member + 1), true);
+            }
+            if (pairs.get(member) > member) member = pairs.get(member);
+        }
+    }
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (value(index) === '(' && pairs.has(index)) {
             const close = pairs.get(index), body = close + 1, before = value(index - 1);
-            const forLoop = before === 'for' || before === 'await' && value(index - 2) === 'for';
-            if (value(body) === '{' && pairs.has(body) && !forLoop && !['if', 'while', 'with', 'switch'].includes(before)) {
-                const scope = addScope(index, pairs.get(body), before !== 'catch');
+            // Parameters belong to actual function definitions, direct object/
+            // class methods, or a catch clause. A call followed by an ASI block
+            // has none of these contexts, even if its callee is named catch.
+            const method = tokens[body]?.container === 'block'
+                && ['object', 'class'].includes(tokens[tokens[index].parent]?.container)
+                && (identifier(index - 1) || ['literal', 'number'].includes(tokens[index - 1]?.kind) || before === ']');
+            const catchClause = before === 'catch' && !property(index - 1) && !method;
+            const forLoop = !method && !property(index - 1)
+                && (before === 'for' || before === 'await' && value(index - 2) === 'for');
+            if (value(body) === '{' && pairs.has(body) && (functionBodies.has(body) || method || catchClause)) {
+                const scope = addScope(index, pairs.get(body), !catchClause);
                 // The body block is the same function scope for var bindings.
-                if (before !== 'catch') addScope(body, pairs.get(body), true);
+                if (!catchClause) addScope(body, pairs.get(body), true);
                 parameters.push({ scope, start: index + 1, end: close });
-                if (before === 'catch') bind(scopeAt(body), bindings(index + 1, close));
+                if (catchClause) bind(scopeAt(body), bindings(index + 1, close));
             }
             if (forLoop) {
                 addScope(index, statementAfter(body) - 1);
@@ -312,7 +383,7 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
         if (value(index) === '=>') {
             const start = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
             if (start === undefined) continue;
-            const body = index + 1, end = value(body) === '{' ? pairs.get(body) : expressionEnd(body);
+            const body = index + 1, end = value(body) === '{' ? pairs.get(body) : expressionEnd(body, asyncArrowAt(index));
             if (end === undefined) continue;
             const scope = addScope(start, end, true);
             if (value(body) === '{') addScope(body, end, true);
@@ -351,7 +422,9 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
         if (keyword !== 'import') continue;
         const source = value(from + 1), names = [], factories = [], namespaces = [];
         let cursor = index + 1;
-        if (value(cursor) === 'type') cursor++;
+        // `type` is also a legal JavaScript default binding, including the
+        // combined `type, { ... }` and `type, * as ...` import clauses.
+        if (value(cursor) === 'type' && cursor + 1 < from && value(cursor + 1) !== ',') cursor++;
         if (identifier(cursor)) {
             names.push(value(cursor));
             if (['module', 'node:module'].includes(source)) namespaces.push(value(cursor));
@@ -462,10 +535,15 @@ function literalImports(source, declaration = false, { includeLocal = false } = 
         let call = index + 1, first = index;
         while (value(first - 1) === '(' && pairs.get(first - 1) === call) { first--; call++; }
         if (value(call) === '?.') call++;
-        if (value(call) !== '(' || ![',', ')'].includes(value(call + 2))) continue;
+        if (value(call) !== '(' || !pairs.has(call)) continue;
+        // Parentheses around a literal do not compute a module specifier.
+        // Split arguments first so import options and trailing commas retain
+        // their ordinary meaning, then unwrap only the complete first one.
+        const [start, end] = unparenthesized(...separated(call + 1, pairs.get(call))[0]);
+        if (end !== start + 1) continue;
         const loader = kind === 'require' ? loaderAt(index) : true;
         if (!loader) continue;
-        record(kind, tokens[call + 1], typeof loader === 'object' ? loader.base : undefined);
+        record(kind, tokens[start], typeof loader === 'object' ? loader.base : undefined);
     }
     return [...imports.values()];
 }

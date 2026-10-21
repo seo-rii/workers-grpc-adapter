@@ -14,11 +14,18 @@ function packageFor(req, name) {
     for (const base of req.resolve.paths('__wga_dependency__') || []) {
         const directory = path.join(base, name);
         const candidate = path.join(directory, 'package.json');
-        if (fs.existsSync(candidate)) return fs.realpathSync(candidate);
+        // Legacy CommonJS resolution tries these files before a directory's
+        // main (and before searching ancestor node_modules directories). An
+        // exports map takes precedence over that legacy load-as-file step.
+        const bareFile = ['.js', '.json', '.node'].some(extension => {
+            const file = directory + extension;
+            return fs.existsSync(file) && fs.statSync(file).isFile();
+        });
+        if (fs.existsSync(candidate) && (!bareFile || JSON.parse(fs.readFileSync(candidate, 'utf8')).exports != null)) return fs.realpathSync(candidate);
         // Node can load an installed directory's index.js without a manifest.
         // Do not call it absent or substitute an ancestor's package: either
         // would skip inspection of the installation the SDK actually loads.
-        if (fs.existsSync(directory)) throw Object.assign(new Error('dependency-manifest-missing'), { code: 'WGA_DOCTOR_MANIFEST_MISSING' });
+        if (fs.existsSync(directory) || bareFile) throw Object.assign(new Error('dependency-manifest-missing'), { code: 'WGA_DOCTOR_MANIFEST_MISSING' });
     }
     throw Object.assign(new Error('dependency-not-installed'), { code: 'MODULE_NOT_FOUND' });
 }
@@ -99,6 +106,30 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
             status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
     };
+    const sourceGoals = new Map();
+    const sourceGoal = file => {
+        if (/\.(?:mjs|d\.[cm]?ts)$/.test(file)) return 'module';
+        if (file.endsWith('.cjs')) return 'script';
+        // Node assigns .js files the nearest physical package scope. Source
+        // symlinks and nested package.json files can differ from the package
+        // whose dependency graph we are currently inspecting.
+        const visited = [];
+        let directory = path.dirname(file), goal = 'script';
+        for (;;) {
+            if (sourceGoals.has(directory)) { goal = sourceGoals.get(directory); break; }
+            if (path.basename(directory) === 'node_modules') break;
+            visited.push(directory);
+            try {
+                goal = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8')).type === 'module' ? 'module' : 'script';
+                break;
+            } catch (error) { if (error.code !== 'ENOENT') throw error; }
+            const parent = path.dirname(directory);
+            if (parent === directory) break;
+            directory = parent;
+        }
+        for (const directory of visited) sourceGoals.set(directory, goal);
+        return goal;
+    };
     const inspectSource = (state, full, declaration = false, nodeBin = false) => {
         if (state.visitedFiles.has(full)) return;
         const source = fs.readFileSync(full, 'utf8');
@@ -106,7 +137,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         // shebang makes an otherwise unknown bin file a JavaScript source.
         if (nodeBin && !/^#!(?:[^\r\n]*[\/\t ])?node(?:\s|$)/.test(source)) return;
         state.visitedFiles.add(full);
-        for (const { kind, specifier, base: loaderBase } of literalImports(source, declaration, { includeLocal: !declaration })) {
+        for (const { kind, specifier, base: loaderBase } of literalImports(source, declaration, { includeLocal: !declaration, sourceType: sourceGoal(full) })) {
             let parent = pathToFileURL(full).href;
             if (loaderBase === null) parent = null;
             else if (loaderBase?.kind === 'literal') parent = loaderBase.value;

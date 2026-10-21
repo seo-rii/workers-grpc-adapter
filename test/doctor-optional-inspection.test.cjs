@@ -89,6 +89,50 @@ test('DOCTOR still rejects a genuinely absent required dependency', t => {
   assert.deepEqual(report.results[0].unresolved,['node_modules/sdk:helper']);
 });
 
+for (const extension of ['.js', '.json', '.node']) for (const nested of [false, true]) {
+  test(`DOCTOR blocks a manifestless optional file ${extension}${nested ? ' before an ancestor package' : ''}`, t => {
+    const f = fixture(t);
+    f.write('node_modules/sdk/package.json', { name: 'sdk', version: '1.0.0',
+      dependencies: { 'google-gax': '*' }, optionalDependencies: { helper: '*' } });
+    if (nested) {
+      f.write('node_modules/helper/package.json', { name: 'helper', version: '1.0.0', main: 'index.js' });
+      f.write('node_modules/helper/index.js', 'module.exports = {};');
+    }
+    const entry = f.write(`${nested ? 'node_modules/sdk/' : ''}node_modules/helper${extension}`,
+      extension === '.json' ? '{}' : 'module.exports = require("@grpc/grpc-js/missing");');
+    const loader = createRequire(path.join(f.root, 'node_modules/sdk/package.json'));
+    assert.equal(loader.resolve('helper'), entry, 'Node loads the extension candidate before an ancestor package');
+    const report = f.inspect();
+    assert.equal(report.passed, false);
+    assert.equal(report.results[0].status, 'blocked');
+    assert.equal(report.results[0].reason, 'resolution-failed');
+  });
+}
+
+for (const hasExports of [false, true]) {
+  test(`DOCTOR respects ${hasExports ? 'package exports' : 'a bare file before a legacy directory main'}`, t => {
+    const f = fixture(t);
+    f.write('node_modules/sdk/package.json', { name: 'sdk', version: '1.0.0',
+      dependencies: { 'google-gax': '*' }, optionalDependencies: { helper: '*' } });
+    const manifest = f.write('node_modules/helper/package.json', { name: 'helper', version: '1.0.0',
+      main: 'index.js', ...(hasExports ? { exports: './index.js' } : {}) });
+    const main = f.write('node_modules/helper/index.js', 'module.exports = {};');
+    const file = f.write('node_modules/helper.js', 'module.exports = require("@grpc/grpc-js/missing");');
+    const loader = createRequire(path.join(f.root, 'node_modules/sdk/package.json'));
+    assert.equal(loader.resolve('helper'), hasExports ? main : file);
+    assert.equal(f.inspect().passed, hasExports, manifest);
+  });
+}
+
+test('DOCTOR does not mistake a helper.cjs file for a loadable bare optional package', t => {
+  const f = fixture(t);
+  f.write('node_modules/sdk/package.json', { name: 'sdk', version: '1.0.0',
+    dependencies: { 'google-gax': '*' }, optionalDependencies: { helper: '*' } });
+  f.write('node_modules/helper.cjs', 'require("@grpc/grpc-js/missing");');
+  assert.throws(() => createRequire(path.join(f.root, 'node_modules/sdk/package.json')).resolve('helper'), { code: 'MODULE_NOT_FOUND' });
+  assert.equal(f.inspect().passed, true);
+});
+
 for (const cycle of [false,true]) test('DOCTOR never reuses a failed partial package across SDK roots'+(cycle?' through a dependency cycle':''), t => {
   const f=fixture(t);
   f.write('node_modules/sdk/package.json',{name:'sdk',version:'1.0.0',dependencies:{'google-gax':'*'},optionalDependencies:{helper:'*'}});
