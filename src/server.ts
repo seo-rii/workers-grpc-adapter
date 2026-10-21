@@ -265,7 +265,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
                 // as an empty stream for client- and bidi-streaming methods.
                 if (!requestBody) return;
                 for await (const value of decodeFrames(requestBody, receiveLimit, inputAborter.signal,
-                    { encoding: requestEncoding, maxWireBytes: wireLimit, onChunk: checkActive })) {
+                    { encoding: requestEncoding, direction: 'request', maxWireBytes: wireLimit, onChunk: checkActive })) {
                     checkActive();
                     if (value.trailer) throw new TransportError(status.INVALID_ARGUMENT, 'WGA_SERVER_REQUEST_MESSAGE');
                     yield value.payload;

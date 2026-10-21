@@ -58,7 +58,7 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; direction?: 'request' | 'response'; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
     const diagnostics = compression.diagnostics;
     const chunkScope = compression.budget?.scope();
@@ -142,7 +142,9 @@ export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessage
                     return wireError(status.INTERNAL, 'WGA_COMPRESSED_WITH_IDENTITY');
                 }
                 if (flag === 1 && encoding !== 'gzip' && encoding !== 'deflate') {
-                    return wireError(status.UNIMPLEMENTED, 'WGA_COMPRESSION_ENCODING');
+                    // gRPC distinguishes an unsupported request codec at the
+                    // server from an unsupported response codec at the client.
+                    return wireError(compression.direction === 'request' ? status.UNIMPLEMENTED : status.INTERNAL, 'WGA_COMPRESSION_ENCODING');
                 }
                 const wireLimit = compression.maxWireBytes ?? maxMessageBytes;
                 if (length > (trailer ? METADATA_LIMIT : flag === 1 ? wireLimit : Math.min(wireLimit, maxMessageBytes))) {

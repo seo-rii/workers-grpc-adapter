@@ -161,7 +161,8 @@ The adapter delegates token acquisition to the supplied Google auth client. With
 | Network failure or channel close | `UNAVAILABLE` |
 | Truncated frame, invalid metadata name/control bytes or malformed binary metadata | `INTERNAL` |
 | Message or metadata budget exceeded | `RESOURCE_EXHAUSTED` |
-| Unsupported RPC or compression algorithm | `UNIMPLEMENTED` |
+| Unsupported RPC or compressed request algorithm | `UNIMPLEMENTED` |
+| Unsupported compressed response algorithm | `INTERNAL` |
 | HTTP 200 without gRPC status | `UNKNOWN` |
 | Authentication failure | Preserves permitted explicit codes; absent codes become `UNKNOWN`, invalid control-plane codes become `INTERNAL` |
 
