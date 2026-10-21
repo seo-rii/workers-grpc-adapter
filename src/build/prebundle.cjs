@@ -312,8 +312,23 @@ async function preserveModuleStrictness(esbuild, ts, projectRoot, captured, entr
     rewriteCalls(ast);
     for (const replacement of replacements.sort((a, b) => b.start - a.start)) source = source.slice(0, replacement.start) + replacement.text + source.slice(replacement.end);
     if (imports.length) {
-      const hashbang = source.match(/^#![^\n]*(?:\n|$)/)?.[0] || '';
-      source = hashbang + imports.join('\n') + '\n' + source.slice(hashbang.length);
+      let insertion = source.match(/^#![^\r\n\u2028\u2029]*(?:\r\n|[\r\n\u2028\u2029]|$)/)?.[0].length || 0;
+      let strict = false, escapedStrict;
+      for (const statement of ast.statements) {
+        if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) break;
+        insertion = statement.end;
+        if (statement.expression.text === 'use strict') {
+          const literal = statement.expression.getText(ast);
+          if (literal === '"use strict"' || literal === "'use strict'") strict = true;
+          else escapedStrict ??= statement.getStart(ast);
+        }
+      }
+      // Declarations before a directive disable CJS strictness. Keep the whole
+      // prologue and terminate an ASI directive before inserting the helpers.
+      // An escaped pseudo-directive is not strict; leave it after a declaration
+      // so esbuild cannot reprint its decoded text as a new strict directive.
+      if (!strict && escapedStrict !== undefined) insertion = escapedStrict;
+      source = source.slice(0, insertion) + ';\n' + imports.join('\n') + '\n' + source.slice(insertion);
     }
     receipt.contents = source;
   }
