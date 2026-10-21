@@ -17,7 +17,7 @@ function tokensFor(source, sourceType) {
         '<', '>', '==', '!=', '+=', '-=', '/=', 'return', 'throw', 'yield', 'await',
         'new', 'void', 'typeof', 'delete', 'in', 'instanceof', 'of', 'case', 'extends']);
     const previous = () => tokens[tokens.length - 1];
-    const expressionBefore = index => {
+    const expressionBefore = (index, start = tokens[index]?.start ?? offset) => {
         const before = tokens[index - 1];
         if (before?.value === ':' && groups[groups.length - 1]?.control === 'switch') {
             // A switch clause starts statements, while an unmatched question
@@ -35,7 +35,7 @@ function tokensFor(source, sourceType) {
         // A line break after return/yield ends that expression before a new
         // declaration; comments are already absent from the token stream.
         return expressionPrefixes.has(before?.value) && !(['return', 'yield'].includes(before.value)
-            && lineTerminator.test(source.slice(before.end, tokens[index].start)));
+            && lineTerminator.test(source.slice(before.end, start)));
     };
     const allowsRegex = () => {
         const last = previous();
@@ -57,6 +57,9 @@ function tokensFor(source, sourceType) {
         if (kind === 'punctuation') {
             if (['(', '[', '{', '${'].includes(value)) {
                 const last = previous();
+                token.parent = groups[groups.length - 1]?.index;
+                if (value === '{') token.container = last?.value !== '=>' && (expressionBefore(index, start)
+                    || last?.value === 'default' && tokens[index - 2]?.value === 'export') ? 'object' : 'block';
                 let statementEnd = value === '(' ? controls.has(last?.value)
                     : value === '{' && (!last || !['=', '(', '[', ',', ':', 'return'].includes(last.value));
                 let functionBody = false;
@@ -79,6 +82,7 @@ function tokensFor(source, sourceType) {
                     // nested parentheses/classes/functions own their own bodies.
                     statementEnd = !definition.expression;
                     definitions.set(definition.index, { expression: definition.expression, body: index });
+                    token.container = 'class';
                     classes.pop();
                 }
                 groups.push({ index, value, statementEnd,
@@ -337,6 +341,7 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
     // Establish function/arrow and loop scopes before assigning any binding,
     // so declarations also shadow references earlier in their lexical scope.
     const parameters = [];
+    const functionBodies = new Set([...definitions].filter(([index]) => value(index) === 'function').map(([, definition]) => definition.body));
     if (!declaration) for (const [index, definition] of definitions) {
         if (value(index) !== 'class') continue;
         // A class static block has its own var environment. Visit only direct
@@ -353,13 +358,21 @@ function literalImports(source, declaration = false, { sourceType = 'script' } =
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (value(index) === '(' && pairs.has(index)) {
             const close = pairs.get(index), body = close + 1, before = value(index - 1);
-            const forLoop = before === 'for' || before === 'await' && value(index - 2) === 'for';
-            if (value(body) === '{' && pairs.has(body) && !forLoop && !['if', 'while', 'with', 'switch'].includes(before)) {
-                const scope = addScope(index, pairs.get(body), before !== 'catch');
+            // Parameters belong to actual function definitions, direct object/
+            // class methods, or a catch clause. A call followed by an ASI block
+            // has none of these contexts, even if its callee is named catch.
+            const method = tokens[body]?.container === 'block'
+                && ['object', 'class'].includes(tokens[tokens[index].parent]?.container)
+                && (identifier(index - 1) || ['literal', 'number'].includes(tokens[index - 1]?.kind) || before === ']');
+            const catchClause = before === 'catch' && !property(index - 1) && !method;
+            const forLoop = !method && !property(index - 1)
+                && (before === 'for' || before === 'await' && value(index - 2) === 'for');
+            if (value(body) === '{' && pairs.has(body) && (functionBodies.has(body) || method || catchClause)) {
+                const scope = addScope(index, pairs.get(body), !catchClause);
                 // The body block is the same function scope for var bindings.
-                if (before !== 'catch') addScope(body, pairs.get(body), true);
+                if (!catchClause) addScope(body, pairs.get(body), true);
                 parameters.push({ scope, start: index + 1, end: close });
-                if (before === 'catch') bind(scopeAt(body), bindings(index + 1, close));
+                if (catchClause) bind(scopeAt(body), bindings(index + 1, close));
             }
             if (forLoop) {
                 addScope(index, statementAfter(body) - 1);
