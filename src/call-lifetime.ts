@@ -5,6 +5,7 @@ import type { CallObservation } from './observer';
 import type { CallOptions, WorkersCall } from './call';
 import type { InterceptingCallInterface } from './client-interceptors';
 import type { InterceptingListener, MessageContext, StatusObject } from './call-interface';
+import { invokeWithCallExpiry, setCallExpiryCheck } from './call-expiry';
 
 /** Logical completion includes interceptor time, independently of transport EOF. */
 export class CallLifetime implements InterceptingCallInterface {
@@ -28,6 +29,9 @@ export class CallLifetime implements InterceptingCallInterface {
         private readonly createdAt = Date.now()) {
         this.options = options;
         this.applyOptions(options);
+        // Constructors can still replace provisional options. Activate the
+        // deadline gate only once startup has selected options and parent state.
+        setCallExpiryCheck(this, () => this.terminal !== undefined || (this.started && this.stopIfExpired()));
     }
     /** Interceptor constructors are synchronous; snapshot their final call options. */
     applyOptions(options: CallOptions): CallOptions {
@@ -97,7 +101,7 @@ export class CallLifetime implements InterceptingCallInterface {
                 onReceiveMessage: value => { if (!this.stopIfExpired()) this.listener?.onReceiveMessage?.(value); },
                 onReceiveStatus: value => { if (!this.stopIfExpired()) this.finish(value, true); },
             });
-        } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); }
+        } catch { if (!this.stopIfExpired()) this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_START'); }
     }
     private stopIfExpired(): boolean {
         if (this.terminal) return true;
@@ -154,7 +158,7 @@ export class CallLifetime implements InterceptingCallInterface {
         if (context.callback) this.writes.add(done);
         const send = () => {
             try { this.nextCall!.sendMessageWithContext({ ...context, ...(context.callback ? { callback: done } : {}) }, message); }
-            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+            catch { if (!this.stopIfExpired()) this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
         };
         if (this.chainStarted) send(); else this.pending.push(send);
     }
@@ -164,19 +168,21 @@ export class CallLifetime implements InterceptingCallInterface {
         // may override sendMessage to supply flags such as NoCompress.
         const send = () => {
             try { this.nextCall!.sendMessage(message); }
-            catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
+            catch { if (!this.stopIfExpired()) this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_SEND'); }
         };
         if (this.chainStarted) send(); else this.pending.push(send);
     }
     startRead(): void {
-        if (this.terminal) return;
-        if (this.chainStarted) this.nextCall?.startRead();
-        else this.pending.push(() => this.nextCall?.startRead());
+        if (this.stopIfExpired()) return;
+        const read = () => invokeWithCallExpiry(this, () => this.nextCall?.startRead());
+        if (this.chainStarted) read();
+        else this.pending.push(read);
     }
     halfClose(): void {
-        if (this.terminal) return;
+        if (this.stopIfExpired()) return;
         const close = () => {
-            try { this.nextCall!.halfClose(); } catch { this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_HALF_CLOSE'); }
+            try { this.nextCall!.halfClose(); }
+            catch { if (!this.stopIfExpired()) this.cancelWithStatus(status.INTERNAL, 'WGA_INTERCEPTOR_HALF_CLOSE'); }
         };
         if (this.chainStarted) close(); else this.pending.push(close);
     }
