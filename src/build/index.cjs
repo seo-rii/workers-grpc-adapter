@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
+const { spawnSync } = require('node:child_process');
 const hash = value => createHash('sha256').update(value).digest('hex');
 function fail(code, detail) { const error = new Error(`${code}: ${detail}`); error.code = code; throw error; }
 function readProfile(id) {
@@ -193,6 +194,56 @@ function generateHydrator(P, json) {
   source.push('return root;}');
   return { source: source.join('\n'), count: types.length };
 }
+function generateVerifiedSchemas(projectRoot, profile, resolution, codegen) {
+  if (!profile.schemas.length) return [];
+  // A build process can already contain an older protobuf module at the same
+  // path. Execute a private graph without changing the caller's module cache,
+  // and compile pinned JavaScript from the bytes whose hashes we checked.
+  const sources = new Map();
+  for (const [kind, files] of [['codegen-hash', profile.codegenInputs], ['schema-hash', profile.schemas]]) {
+    for (const file of files) {
+      const physicalPath = resolution.resolve(file.path), contents = fs.readFileSync(physicalPath);
+      const actual = hash(contents);
+      if (actual !== file.sha256) throwDiagnostic({ kind, path: file.path, expected: file.sha256, actual, ...resolution.context(file.path) });
+      sources.set(physicalPath, contents.toString('utf8'));
+    }
+  }
+  const tasks = profile.schemas.map(schema => ({ ...schema, file: resolution.resolve(schema.path),
+    generator: codegen.generators.get(schema.path).physicalPath }));
+  const script = `
+    'use strict';
+    const fs = require('node:fs'), Module = require('node:module');
+    const {sources, tasks} = JSON.parse(fs.readFileSync(0, 'utf8'));
+    const captured = new Map(sources), load = Module._extensions['.js'];
+    Module._extensions['.js'] = (module, filename) => captured.has(filename)
+      ? module._compile(captured.get(filename), filename) : load(module, filename);
+    ${allTypes.toString()}
+    ${generateHydrator.toString()}
+    const codecs = new Map();
+    const generated = tasks.map(task => {
+      const P = require(task.generator);
+      const json = task.common ? P.common[task.common] : task.file.endsWith('.proto')
+        ? P.loadSync(task.file).toJSON() : JSON.parse(captured.get(task.file));
+      if (!json || typeof json !== 'object') throw new Error('Unknown static schema');
+      const key = JSON.stringify(json);
+      if (!codecs.has(key)) codecs.set(key, generateHydrator(P, json));
+      return {json, ...codecs.get(key)};
+    });
+    process.stdout.write(JSON.stringify(generated));
+  `;
+  const result = spawnSync(process.execPath, ['--input-type=commonjs', '--eval', script], {
+    cwd: projectRoot, env: {}, encoding: 'utf8', input: JSON.stringify({ sources: [...sources], tasks }),
+    timeout: 60_000, maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.error || result.status !== 0) fail('WGA_SCHEMA_MISMATCH', 'Verified protobuf generation failed in an isolated process');
+  let generated;
+  try { generated = JSON.parse(result.stdout); } catch { /* Fail closed on an incomplete generator response. */ }
+  if (!Array.isArray(generated) || generated.length !== tasks.length) fail('WGA_SCHEMA_MISMATCH', 'Verified protobuf generation returned an invalid result');
+  // Keep the usual file checks around generation, even though captured pinned
+  // JavaScript does not depend on later reads of those files.
+  validateProfile(projectRoot, profile);
+  return generated;
+}
 /** Prepare an esbuild plugin and an auditable static registry without mutating dependencies. */
 function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'google-static-v1', typescript }) {
   projectRoot = path.resolve(projectRoot);
@@ -209,18 +260,14 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   fs.mkdirSync(outdir, { recursive: true });
   const unique = new Map();
   let legacyKeySchema, datastoreStructSchema;
-  for (const schema of profile.schemas) {
-    const file = resolution.resolve(schema.path);
-    // Load only the physical entry whose role and generator hashes were checked,
-    // never resolve protobufjs independently a second time while executing it.
-    const P = require(codegen.generators.get(schema.path).physicalPath);
-    const json = schema.common ? P.common[schema.common] : file.endsWith('.proto') ? P.loadSync(file).toJSON() : JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!json || typeof json !== 'object') fail('WGA_SCHEMA_MISMATCH', `${schema.path}: unknown common schema`);
+  const generated = generateVerifiedSchemas(projectRoot, profile, resolution, codegen);
+  for (let index = 0; index < profile.schemas.length; index++) {
+    const schema = profile.schemas[index], file = resolution.resolve(schema.path), { json, source, count } = generated[index];
     if (file.endsWith('app_engine_key.proto')) legacyKeySchema = json;
     if (schema.common === 'google/protobuf/struct.proto') datastoreStructSchema = json;
     const key = hash(JSON.stringify(json));
     if (!unique.has(key)) {
-      unique.set(key, { ...generateHydrator(P, json), schema: schema.path, sha256: schema.sha256, common: schema.common });
+      unique.set(key, { source, count, schema: schema.path, sha256: schema.sha256, common: schema.common });
     }
   }
   // Includes actual transformer bytes as well as an explicit semantic version: even

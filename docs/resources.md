@@ -46,6 +46,8 @@ With `maxConcurrentCalls`, each call snapshots its supplied metadata before admi
 
 Cancelling an admitted RPC returns its admission slot. Buffer ownership is independent: a custom Fetch implementation that ignores `AbortSignal` can retain an encoded request body until it settles. Those leases remain charged even after the local RPC has terminated, so another call may still encounter the byte budget.
 
+Compression and decompression can also retain their input after local cancellation and even after the codec stream reports itself closed. Their reservations remain charged until the native input operation completes or reports a codec failure. Public cancellation does not wait for this work; a burst of canceled compressed requests still shares the same byte budget.
+
 ## Byte ownership and diagnostics
 
 Reservations cover adapter-managed request snapshots and framing, parser buffers, and exposed compression/decompression buffers. Allocation paths reserve before creating their accounted buffers. Encoding and parsing can temporarily need multiple copies; choose a budget larger than one message's wire size. Some borrowed or aliased buffers are conservatively charged more than once while different asynchronous owners can retain them. Counts therefore describe reservations, not a heap profiler's live-byte measurement.
