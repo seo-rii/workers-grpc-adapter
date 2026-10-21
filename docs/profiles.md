@@ -296,6 +296,8 @@ contents, property calls, and ordinary locally bound `require` functions.
 Script/CommonJS scan also ignores legacy HTML comments; known ES modules do not
 use that comment goal. Physical file extensions and the nearest package scope
 select the goal, including nested package scopes and source symlinks.
+Line comments and hashbangs end at LF, CR, U+2028 or U+2029; escaped line
+continuations in literal specifiers follow the same line-terminator rules.
 A `require` initialized directly by an imported `node:module`/`module`
 `createRequire` factory remains a CommonJS loader. Its literal absolute path or
 file URL, `import.meta.url`, and literal `new URL(..., import.meta.url)` bases

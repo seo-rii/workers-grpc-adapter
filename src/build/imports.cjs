@@ -6,6 +6,7 @@
 function tokensFor(source, sourceType) {
     const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
     let offset = 0, lineStart = true;
+    const lineTerminator = /[\r\n\u2028\u2029]/;
     const identifierStart = char => char !== undefined && /[A-Za-z_$\p{ID_Start}]/u.test(char);
     const identifierPart = char => char !== undefined && /[A-Za-z0-9_$\p{ID_Continue}]/u.test(char);
     const prefix = new Set(['return', 'throw', 'case', 'delete', 'void', 'typeof', 'instanceof', 'in', 'of', 'yield', 'await', 'else', 'do']);
@@ -33,7 +34,7 @@ function tokensFor(source, sourceType) {
         // A line break after return/yield ends that expression before a new
         // declaration; comments are already absent from the token stream.
         return expressionPrefixes.has(before?.value) && !(['return', 'yield'].includes(before.value)
-            && /[\r\n\u2028\u2029]/.test(source.slice(before.end, tokens[index].start)));
+            && lineTerminator.test(source.slice(before.end, tokens[index].start)));
     };
     const allowsRegex = () => {
         const last = previous();
@@ -66,7 +67,7 @@ function tokensFor(source, sourceType) {
                         functionBody = true;
                         const definition = keyword;
                         if (tokens[keyword - 1]?.value === 'async'
-                            && !/[\r\n\u2028\u2029]/.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
+                            && !lineTerminator.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start))) keyword--;
                         statementEnd = !expressionBefore(keyword);
                         definitions.set(definition, { expression: !statementEnd, body: index });
                     }
@@ -97,8 +98,10 @@ function tokensFor(source, sourceType) {
     }
     function escaped() {
         const char = source[offset++];
-        if (char === '\n') return '';
-        if (char === '\r') { if (source[offset] === '\n') offset++; return ''; }
+        if (lineTerminator.test(char)) {
+            if (char === '\r' && source[offset] === '\n') offset++;
+            return '';
+        }
         if (char === 'x' || char === 'u') {
             const braced = char === 'u' && source[offset] === '{';
             if (braced) offset++;
@@ -139,7 +142,7 @@ function tokensFor(source, sourceType) {
     }
     function regex() {
         let end = offset + 1, characterClass = false;
-        while (end < source.length && !/[\r\n]/.test(source[end])) {
+        while (end < source.length && !lineTerminator.test(source[end])) {
             const char = source[end++];
             if (char === '\\') { end++; continue; }
             if (char === '[') characterClass = true;
@@ -157,7 +160,7 @@ function tokensFor(source, sourceType) {
         while (offset < source.length) {
             const char = source[offset], next = source[offset + 1], start = offset;
             if (/\s/.test(char)) {
-                if (/[\r\n]/.test(char)) lineStart = true;
+                if (lineTerminator.test(char)) lineStart = true;
                 offset++; continue;
             }
             // Annex B HTML comments belong to the Script goal. A close
@@ -166,12 +169,12 @@ function tokensFor(source, sourceType) {
             if ((offset === 0 && source.startsWith('#!')) || (char === '/' && next === '/')
                 || (sourceType === 'script' && (source.startsWith('<!--', offset)
                     || lineStart && source.startsWith('-->', offset)))) {
-                while (offset < source.length && !/[\r\n]/.test(source[offset])) offset++;
+                while (offset < source.length && !lineTerminator.test(source[offset])) offset++;
                 continue;
             }
             if (char === '/' && next === '*') {
                 const end = source.indexOf('*/', offset + 2), after = end < 0 ? source.length : end + 2;
-                if (/[\r\n]/.test(source.slice(offset, after))) lineStart = true;
+                if (lineTerminator.test(source.slice(offset, after))) lineStart = true;
                 offset = after; continue;
             }
             if (char === '"' || char === "'" || char === '`') { quoted(char, depth); continue; }
