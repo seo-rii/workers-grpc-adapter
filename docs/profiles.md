@@ -116,6 +116,15 @@ symlinks to the inspected installation remain valid. Hash-only inspection
 performs this identity check without executing a generator. Build startup and
 completion repeat it. These revisions keep the existing dependency versions.
 
+Registry generation runs in a fresh Node subprocess. It compiles the captured,
+hash-checked protobuf JavaScript instead of reusing modules previously loaded by
+the build application's `require()`. Replacing an installed generator at the
+same path therefore cannot reuse its earlier executable code. Generation leaves
+the application's module cache and protobuf objects intact, and does not inherit
+environment variables or Node preload settings. This is a Node build step;
+generated Worker codecs still need no runtime code generation. File validation
+runs again after generation before the registry is published.
+
 ## Generated artifact identity
 
 `createGoogleWorkerBuild(...).manifest()` exposes `cacheKey`, `inputSha256` and
