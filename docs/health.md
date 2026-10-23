@@ -56,7 +56,9 @@ deadline and can have an independent AbortSignal. A waiter's timeout or abort
 does not close the monitor or affect other waiters. Each waiter checks its
 deadline again before accepting SERVING, even when its timeout callback has not
 run yet. `close()` rejects remaining waiters, cancels the stream and clears
-backoff; it is safe to call repeatedly.
+backoff; it is safe to call repeatedly. This also covers closing from a synchronous
+invocation transformer or interceptor constructor while a Watch attempt starts:
+the newly returned stream is cancelled, and the wrapped client remains reusable.
 
 The standard Watch protocol retries every server terminal status, including OK,
 except `UNIMPLEMENTED`. This includes permission and authentication failures:

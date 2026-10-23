@@ -187,6 +187,13 @@ export class HealthWatch {
         } catch {
             this.complete(status.UNKNOWN); return;
         }
+        // Startup hooks can close the monitor before watch() returns its stream.
+        // Observe cancellation errors before releasing that newly acquired call.
+        stream.on('error', () => {});
+        if (this.getState().phase === 'closed') {
+            stream.cancel();
+            return;
+        }
         this.stream = stream;
         stream.on('data', (response: HealthCheckResponse) => {
             if (this.stream !== stream || this.state.phase === 'closed') return;
@@ -194,9 +201,8 @@ export class HealthWatch {
             this.setState({ phase: response.status === HealthServingStatus.SERVING ? 'serving' : 'not-serving',
                 servingStatus: response.status, attempt: this.state.attempt, lastErrorCode: null });
         });
-        // grpc-js emits error before the terminal status. Keep an error listener
-        // installed through cancellation; retry exactly once from status.
-        stream.on('error', () => {});
+        // grpc-js emits error before the terminal status. The error listener
+        // remains installed through cancellation; retry exactly once from status.
         stream.once('status', result => {
             if (this.stream !== stream) return;
             this.stream = undefined;
