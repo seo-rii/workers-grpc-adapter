@@ -122,8 +122,13 @@ the build application's `require()`. Replacing an installed generator at the
 same path therefore cannot reuse its earlier executable code. Generation leaves
 the application's module cache and protobuf objects intact, and does not inherit
 environment variables or Node preload settings. This is a Node build step;
-generated Worker codecs still need no runtime code generation. File validation
-runs again after generation before the registry is published.
+generated Worker codecs still need no runtime code generation. JSON and `.proto`
+schemas also use the captured, hash-checked bytes, so a temporary file change
+during generation cannot change their codecs. The current profiles' `.proto`
+inputs have no imports. Ordinary, public and weak imports are rejected with
+`WGA_SCHEMA_MISMATCH` before publication; supporting imports would require a
+profile that captures and verifies their complete closure. File validation runs
+again after generation before the registry is published.
 
 ## Generated artifact identity
 

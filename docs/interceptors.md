@@ -78,11 +78,15 @@ surface supplied by a transformer continues to own its cancellation behavior.
 
 Response delivery checks the absolute deadline as well as the timer's state. If immediately available Fetch chunks or interceptor continuations delay timer execution, a new response message or final success cannot pass an expired deadline. The same check applies after response EOF and after an inbound interceptor resumes. A terminal result already selected for the logical call remains unchanged. These checks do not guarantee that timer callbacks can interrupt synchronous application code or an unbounded stream of immediately available chunks.
 
+Outgoing requester hooks and continuations also check that deadline before forwarding startup, messages, reads or half-close. A continuation resumed at or after expiry cannot invoke a downstream requester or serialize another request while waiting for the timer. If a synchronous hook or request serializer throws after consuming the remaining budget, the call finishes with `DEADLINE_EXCEEDED`. Failures handled before expiry retain their existing status. An already selected terminal result is preserved.
+
 Incoming status waits for both metadata and message transformations to finish. Duplicate continuations cannot repeat delivery, and termination clears adapter-owned incoming and outgoing queues. References held by application interceptor code remain the application's responsibility. Custom `InterceptingCall.sendMessage()` overrides still run, including overrides that supply message flags.
 
 `test/call-lifetime.test.cjs` and `test/call-lifetime-property.test.cjs` verify stalled startup/status delivery and generated completion/cancellation schedules in both transport modes. `test/deadline-expiry.test.cjs` advances wall time independently of timer delivery to check message, trailer, EOF and interceptor boundaries, including inherited deadlines.
 
 `test/startup-deadline.test.cjs` covers time spent in invocation transformers and both provider scopes across supported RPC shapes. It checks the remaining timeout at Fetch, rejects expired startup before authentication, preserves explicit and final interceptor deadlines, applies the selected channel's default, and verifies cleanup when a provider throws.
+
+`test/outgoing-deadline.test.cjs` holds outgoing continuations while advancing absolute time independently of timer delivery. It checks request serialization, nested requester hooks, public stream half-close, synchronous hook overruns, effective default and inherited deadlines, explicit `Infinity`, write callback settlement and terminal status preservation.
 
 `test/stream-startup-cancellation.test.cjs` checks cancellation and destruction in
 both startup hooks for every supported streaming shape, with and without admission

@@ -86,6 +86,79 @@ test('BUILD shipped profile accepts schema-local links to the same pinned genera
   assert.equal(first.build.registry, second.build.registry);
 });
 
+test('BUILD shipped proto codecs use the verified snapshot during a change-and-restore race', t => {
+  const f = fixture(t);
+  const result = spawnSync(process.execPath, ['-e', `
+    const fs = require('node:fs'), path = require('node:path');
+    const childProcess = require('node:child_process');
+    const projectRoot = ${JSON.stringify(f.project)};
+    const file = path.join(projectRoot, 'node_modules/@google-cloud/datastore/build/protos/app_engine_key.proto');
+    const reviewed = fs.readFileSync(file, 'utf8');
+    const transient = reviewed.replace('required string app = 13;', 'required uint32 app = 13;');
+    if (reviewed === transient) throw new Error('Expected pinned proto field not found');
+    const spawn = childProcess.spawnSync;
+    let inject = false, changes = 0;
+    // Schedule only the external file change. The real generator's arguments,
+    // captured input, code and response remain untouched.
+    childProcess.spawnSync = (...args) => {
+      if (!inject) return spawn(...args);
+      changes++;
+      fs.writeFileSync(file, transient);
+      try { return spawn(...args); } finally { fs.writeFileSync(file, reviewed); }
+    };
+    const api = require(${JSON.stringify(api)});
+    const P = require(${JSON.stringify(path.join(original, 'protobufjs'))});
+    const options = {projectRoot, typescript: require(${JSON.stringify(typescript)})};
+    const expectedJson = P.loadSync(file).toJSON();
+    const unreviewedJson = P.parse(transient).root.toJSON();
+    const clean = api.createGoogleWorkerBuild({...options, outdir: path.join(projectRoot, 'clean')});
+    inject = true;
+    const raced = api.createGoogleWorkerBuild({...options, outdir: path.join(projectRoot, 'raced')});
+    inject = false;
+    const load = (preset, json) => {
+      try {
+        const type = require(preset.registryFile).fromJSON(P, json).lookupType('Reference');
+        return {fieldType: type.fields.app.type, databaseField: type.fields.databaseId.name,
+          encoded: Buffer.from(type.encode({app: '123', path: {element: []}, databaseId: 'db'}).finish()).toString('hex')};
+      } catch (error) { return {error: error.code}; }
+    };
+    const before = clean.manifest(), after = raced.manifest();
+    console.log(JSON.stringify({changes, restored: fs.readFileSync(file, 'utf8') === reviewed,
+      profilePassed: api.inspectGoogleWorkerProfile({projectRoot}).passed,
+      cacheKeyEqual: before.cacheKey === after.cacheKey,
+      inputSha256Equal: before.inputSha256 === after.inputSha256,
+      registrySha256Equal: before.registrySha256 === after.registrySha256,
+      registryFilenameEqual: path.basename(clean.registryFile) === path.basename(raced.registryFile),
+      clean: load(clean, expectedJson), raced: load(raced, expectedJson), unreviewed: load(raced, unreviewedJson)}));
+  `], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout);
+  assert.equal(value.changes, 1, 'the real generator ran while the live proto held different bytes');
+  assert.equal(value.restored, true);
+  assert.equal(value.profilePassed, true);
+  assert.equal(value.cacheKeyEqual, true);
+  assert.equal(value.inputSha256Equal, true);
+  assert.equal(value.registrySha256Equal, true, 'reviewed inputs must determine the registry bytes');
+  assert.equal(value.registryFilenameEqual, true);
+  assert.deepEqual(value.clean, {fieldType: 'string', databaseField: 'databaseId', encoded: '6a033132337200ba01026462'});
+  assert.deepEqual(value.raced, value.clean, 'proto2 groups and default camel casing match the original loader');
+  assert.deepEqual(value.unreviewed, {error: 'WGA_SCHEMA_MISMATCH'});
+});
+
+test('BUILD shipped profile still rejects a persistent proto change before publishing a registry', t => {
+  const f = fixture(t);
+  const relative = 'node_modules/@google-cloud/datastore/build/protos/app_engine_key.proto';
+  const file = path.join(f.project, relative), reviewed = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, reviewed.replace('required string app = 13;', 'required uint32 app = 13;'));
+  const result = inspect(f.project, true);
+  assert.equal(result.report.passed, false);
+  assert.equal(result.report.diagnostics[0].kind, 'schema-hash');
+  assert.equal(result.report.diagnostics[0].path, relative);
+  assert.equal(result.error.code, 'WGA_SCHEMA_MISMATCH');
+  assert.equal(result.error.diagnostic.path, relative);
+  assert.equal(fs.existsSync(path.join(f.project, 'generated')), false);
+});
+
 function generatorFixture(t, layout = 'hoisted') {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-pinned-generator-'));
   t.after(() => fs.rmSync(project, { recursive: true, force: true }));
@@ -110,6 +183,19 @@ function generatorFixture(t, layout = 'hoisted') {
   const build = require(path.join(project, 'build/index.cjs'));
   const options = { projectRoot: project, outdir: path.join(project, 'generated'), typescript: require(typescript) };
   return { project, generator, profile, save, build, options, prepare: () => build.createGoogleWorkerBuild(options) };
+}
+
+for (const qualifier of ['', 'public ', 'weak ']) {
+  test(`BUILD proto generation rejects ${qualifier || 'ordinary '}imports instead of reading undeclared files`, t => {
+    const f = generatorFixture(t);
+    const schema = `syntax = "proto3"; import ${qualifier}"other.proto"; message Example { string value = 1; }`;
+    write(path.join(f.project, 'schemas/example.proto'), schema);
+    write(path.join(f.project, 'schemas/other.proto'), 'syntax = "proto3"; message Unreviewed { string value = 1; }');
+    f.profile.schemas = [{path: 'schemas/example.proto', sha256: hash(schema)}];
+    f.save();
+    assert.throws(f.prepare, {code: 'WGA_SCHEMA_MISMATCH'});
+    assert.deepEqual(fs.readdirSync(f.options.outdir), [], 'no registry can be published with an undeclared import');
+  });
 }
 
 for (const layout of ['hoisted', 'isolated', 'workspace']) {

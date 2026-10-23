@@ -9,7 +9,7 @@
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
-@@ -29,12 +32,14 @@
+@@ -29,12 +32,15 @@
    MessageContext,
    Call,
  } from './call-interface';
@@ -24,10 +24,11 @@
  import { getErrorMessage } from './error';
  import { AuthContext } from './auth-context';
 +import type { CallLifetime } from './call-lifetime';
++import { inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
 
  /**
   * Error class associated with passing both interceptors and interceptor
-@@ -190,6 +195,8 @@
+@@ -190,6 +196,8 @@
  }
 
  export interface InterceptingCallInterface {
@@ -36,7 +37,7 @@
    cancelWithStatus(status: Status, details: string): void;
    getPeer(): string;
    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;
-@@ -212,21 +219,20 @@
+@@ -212,25 +220,25 @@
     * method but it has not been passed to the corresponding next callback
     */
    private processingMetadata = false;
@@ -71,7 +72,12 @@
    constructor(
      private nextCall: InterceptingCallInterface,
      requester?: Requester
-@@ -244,29 +250,49 @@
+   ) {
++    inheritCallExpiryCheck(this, nextCall);
+     if (requester) {
+       this.requester = {
+         start: requester.start ?? defaultRequester.start,
+@@ -244,29 +252,49 @@
    }
 
    cancelWithStatus(status: Status, details: string) {
@@ -116,34 +122,34 @@
 -    if (this.pendingHalfClose) {
 -      this.nextCall.halfClose();
 +  private flushPendingOperations() {
-+    if (this.disposed || this.processingMetadata || this.flushing) return;
++    if (this.disposed || stopExpiredCall(this) || this.processingMetadata || this.flushing) return;
 +    this.flushing = true;
 +    try {
-+      while (!this.disposed && this.pendingMessages[0]?.ready) {
++      while (!this.disposed && !stopExpiredCall(this) && this.pendingMessages[0]?.ready) {
 +        // Release ownership before forwarding: a write callback can enqueue
 +        // another message or request half-close synchronously.
 +        const pending = this.pendingMessages.shift()!;
-+        this.nextCall.sendMessageWithContext(pending.context, pending.message);
++        invokeWithCallExpiry(this, () => this.nextCall.sendMessageWithContext(pending.context, pending.message));
 +      }
-+      if (!this.disposed && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
++      if (!this.disposed && !stopExpiredCall(this) && this.pendingHalfClose && this.pendingMessages.length === 0 && !this.halfClosed) {
 +        this.pendingHalfClose = false;
 +        this.halfClosed = true;
-+        this.nextCall.halfClose();
++        invokeWithCallExpiry(this, () => this.nextCall.halfClose());
 +      }
 +    } finally {
 +      this.flushing = false;
      }
    }
 
-@@ -274,6 +300,7 @@
+@@ -274,6 +302,7 @@
      metadata: Metadata,
      interceptingListener?: Partial<InterceptingListener>
    ): void {
-+    if (this.disposed) return;
++    if (this.disposed || stopExpiredCall(this)) return;
      const fullInterceptingListener: InterceptingListener = {
        onReceiveMetadata:
          interceptingListener?.onReceiveMetadata?.bind(interceptingListener) ??
-@@ -286,11 +313,15 @@
+@@ -286,11 +315,15 @@
          (status => {}),
      };
      this.processingMetadata = true;
@@ -151,7 +157,7 @@
      this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
 -      this.processingMetadata = false;
 -      let finalInterceptingListener: InterceptingListener;
-+      if (continued || this.disposed) return;
++      if (continued || this.disposed || stopExpiredCall(this)) return;
 +      continued = true;
 +      let finalInterceptingListener: InterceptingListenerImpl;
        if (isInterceptingListener(listener)) {
@@ -162,14 +168,15 @@
        } else {
          const fullListener: FullListener = {
            onReceiveMetadata:
-@@ -305,23 +336,30 @@
+@@ -305,23 +338,30 @@
            fullInterceptingListener
          );
        }
-+      this.responseListener = finalInterceptingListener;
-       this.nextCall.start(md, finalInterceptingListener);
+-      this.nextCall.start(md, finalInterceptingListener);
 -      this.processPendingMessage();
 -      this.processPendingHalfClose();
++      this.responseListener = finalInterceptingListener;
++      invokeWithCallExpiry(this, () => this.nextCall.start(md, finalInterceptingListener));
 +      this.processingMetadata = false;
 +      this.flushPendingOperations();
      });
@@ -177,7 +184,7 @@
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    sendMessageWithContext(context: MessageContext, message: any): void {
 -    this.processingMessage = true;
-+    if (this.disposed) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
++    if (this.disposed || stopExpiredCall(this)) { queueMicrotask(() => context.callback?.(new Error('WGA_CALL_TERMINATED'))); return; }
 +    if (this.halfCloseRequested) {
 +      const error = Object.assign(new Error('WGA_WRITE_AFTER_HALF_CLOSE: Cannot send a message after half-close'), { code: Status.INTERNAL });
 +      if (context.callback) context.callback(error);
@@ -196,7 +203,7 @@
 -        this.nextCall.sendMessageWithContext(context, finalMessage);
 -        this.processPendingHalfClose();
 -      }
-+      if (continued || this.disposed) return;
++      if (continued || this.disposed || stopExpiredCall(this)) return;
 +      continued = true;
 +      pending.message = finalMessage;
 +      pending.ready = true;
@@ -204,15 +211,15 @@
      });
    }
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-@@ -329,15 +367,17 @@
+@@ -329,15 +369,17 @@
      this.sendMessageWithContext({}, message);
    }
    startRead(): void {
 -    this.nextCall.startRead();
-+    if (!this.disposed) this.nextCall.startRead();
++    if (!this.disposed && !stopExpiredCall(this)) invokeWithCallExpiry(this, () => this.nextCall.startRead());
    }
    halfClose(): void {
-+    if (this.disposed || this.halfCloseRequested) return;
++    if (this.disposed || stopExpiredCall(this) || this.halfCloseRequested) return;
 +    this.halfCloseRequested = true;
 +    let continued = false;
      this.requester.halfClose(() => {
@@ -221,14 +228,14 @@
 -      } else {
 -        this.nextCall.halfClose();
 -      }
-+      if (continued || this.disposed) return;
++      if (continued || this.disposed || stopExpiredCall(this)) return;
 +      continued = true;
 +      this.pendingHalfClose = true;
 +      this.flushPendingOperations();
      });
    }
    getAuthContext(): AuthContext | null {
-@@ -345,17 +385,14 @@
+@@ -345,17 +387,14 @@
    }
  }
 
@@ -254,25 +261,29 @@
  }
 
  /**
-@@ -366,7 +403,8 @@
+@@ -366,8 +405,9 @@
    constructor(
      protected call: Call,
      // eslint-disable-next-line @typescript-eslint/no-explicit-any
 -    protected methodDefinition: ClientMethodDefinition<any, any>
+-  ) {}
 +    protected methodDefinition: ClientMethodDefinition<any, any>,
 +    protected lifetime: CallLifetime
-   ) {}
++  ) { inheritCallExpiryCheck(this, lifetime); }
    cancelWithStatus(status: Status, details: string): void {
      this.call.cancelWithStatus(status, details);
-@@ -376,6 +414,7 @@
+   }
+@@ -376,16 +416,22 @@
    }
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    sendMessageWithContext(context: MessageContext, message: any): void {
-+    if (this.lifetime.isTerminal()) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
++    if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
      let serialized: Buffer;
      try {
        serialized = this.methodDefinition.requestSerialize(message);
-@@ -384,6 +423,9 @@
+     } catch (e) {
++      if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
+       this.call.cancelWithStatus(
          Status.INTERNAL,
          `Request message serialization failure: ${getErrorMessage(e)}`
        );
@@ -281,16 +292,32 @@
 +      context.callback?.(Object.assign(new Error('WGA_REQUEST_SERIALIZATION'), { code: Status.INTERNAL }));
        return;
      }
++    if (stopExpiredCall(this)) { context.callback?.(new Error('WGA_CALL_TERMINATED')); return; }
      this.call.sendMessageWithContext(context, serialized);
-@@ -396,6 +438,7 @@
+   }
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+@@ -396,6 +442,7 @@
      metadata: Metadata,
      interceptingListener?: Partial<InterceptingListener>
    ): void {
-+    if (this.lifetime.isTerminal()) return;
++    if (stopExpiredCall(this)) return;
      let readError: StatusObject | null = null;
      this.call.start(metadata, {
        onReceiveMetadata: metadata => {
-@@ -446,8 +489,8 @@
+@@ -427,10 +474,10 @@
+     });
+   }
+   startRead() {
+-    this.call.startRead();
++    if (!stopExpiredCall(this)) this.call.startRead();
+   }
+   halfClose(): void {
+-    this.call.halfClose();
++    if (!stopExpiredCall(this)) this.call.halfClose();
+   }
+   getAuthContext(): AuthContext | null {
+     return this.call.getAuthContext();
+@@ -446,8 +493,8 @@
    implements InterceptingCallInterface
  {
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -301,7 +328,7 @@
    }
    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
      let receivedMessage = false;
-@@ -483,13 +526,14 @@
+@@ -483,13 +530,14 @@
    channel: Channel,
    options: InterceptorOptions,
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -320,7 +347,7 @@
    }
  }
 
-@@ -518,7 +562,8 @@
+@@ -518,7 +566,8 @@
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    methodDefinition: ClientMethodDefinition<any, any>,
    options: CallOptions,
@@ -330,7 +357,7 @@
  ): InterceptingCallInterface {
    if (
      interceptorArgs.clientInterceptors.length > 0 &&
-@@ -564,6 +609,11 @@
+@@ -564,6 +613,11 @@
        .filter(interceptor => interceptor);
      // Filter out falsy values when providers return nothing
    }
@@ -342,8 +369,16 @@
    const interceptorOptions = Object.assign({}, options, {
      method_definition: methodDefinition,
    });
-@@ -579,7 +629,8 @@
-       return currentOptions => nextInterceptor(currentOptions, nextCall);
+@@ -576,10 +630,15 @@
+    * channel. */
+   const getCall: NextCall = interceptors.reduceRight<NextCall>(
+     (nextCall: NextCall, nextInterceptor: Interceptor) => {
+-      return currentOptions => nextInterceptor(currentOptions, nextCall);
++      return currentOptions => {
++        const call = nextInterceptor(currentOptions, nextCall);
++        inheritCallExpiryCheck(call, lifetime);
++        return call;
++      };
      },
      (finalOptions: InterceptorOptions) =>
 -      getBottomInterceptingCall(channel, finalOptions, methodDefinition)

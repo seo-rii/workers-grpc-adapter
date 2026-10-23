@@ -155,6 +155,62 @@ for (const specifier of ['`./dependency.cjs`', "'./' + 'dependency.cjs'", "`./${
   });
 }
 
+for (const [name, specifier] of [
+  ['literal', '"./dependency.cjs" satisfies string'],
+  ['folded', '("./" satisfies string) + ("dependency.cjs" as const satisfies string)'],
+  ['conditional', '(choose() ? ("./dependency.cjs" satisfies string) : "./other.cjs") satisfies string'],
+]) test(`PREBUNDLE preserves typed ${name} satisfies imports and lazy CJS interop`, async t => {
+  const f = fixture(t);
+  f.write('package.json', { name: 'strictness-consumer', private: true, type: 'module' });
+  f.write('trace.cjs', 'exports.events = [];');
+  for (const label of ['dependency', 'other']) f.write(`${label}.cjs`,
+    `require('./trace.cjs').events.push('${label}'); module.exports = {__esModule: true, default: '${label}', kind: 'namespace'};`);
+  const source = `export {client} from '@grpc/grpc-js'; import trace from './trace.cjs';
+    export async function inspect(first: boolean) {
+      function choose() { trace.events.push('choose'); return first; }
+      trace.events.push('call');
+      const pending = import(${specifier});
+      trace.events.push('requested');
+      const value = (await pending).default;
+      trace.events.push('resolved');
+      return {value, events: [...trace.events]};
+    }`;
+  const entry = f.write('wrapper.ts', source);
+  const types = f.write('types.d.ts', `declare module '@grpc/grpc-js' { export function client(): object; }
+    declare module '*.cjs' { const value: {events: string[]}; export default value; }`);
+  const program = ts.createProgram([entry, types], { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler, strict: true, noEmit: true, types: [] });
+  assert.deepEqual(ts.getPreEmitDiagnostics(program).map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')), []);
+  const native = f.write('native.mjs', ts.transpileModule(source, { compilerOptions: {
+    target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext,
+  } }).outputText);
+  const original = await import(pathToFileURL(native).href);
+  const built = await f.build({ entryPoint: 'wrapper.ts' });
+  const consumers = [require(built.bundlePath), await import(pathToFileURL(path.join(built.outdir, 'index.mjs')).href)];
+  for (const [index, consumer] of consumers.entries()) {
+    const expected = await original.inspect(index === 0);
+    if (index === 0) {
+      assert.deepEqual(expected.value, { __esModule: true, default: 'dependency', kind: 'namespace' });
+      assert.deepEqual(expected.events, ['call', ...(name === 'conditional' ? ['choose'] : []), 'requested', 'dependency', 'resolved']);
+    }
+    assert.deepEqual(await consumer.inspect(index === 0), expected);
+  }
+});
+
+for (const [specifier, code] of [
+  ['target satisfies string', 'WGA_PREBUNDLE_DYNAMIC_IMPORT'],
+  ['(true ? "./dependency.cjs" : target) satisfies string', 'WGA_PREBUNDLE_AUDIT'],
+]) {
+  test(`PREBUNDLE still rejects uncaptured satisfies import targets: ${specifier}`, async t => {
+    const f = fixture(t);
+    f.write('package.json', { name: 'strictness-consumer', private: true, type: 'module' });
+    f.write('dependency.cjs', 'module.exports = {__esModule: true, default: "inner"};');
+    f.write('wrapper.ts', `export {client} from '@grpc/grpc-js'; export function inspect(target: string) { return import(${specifier}); }`);
+    await assert.rejects(f.build({ entryPoint: 'wrapper.ts' }), { code });
+    assert.equal(fs.existsSync(path.join(f.projectRoot, 'out')), false);
+  });
+}
+
 for (const change of ['nearest', 'inherited', 'package', 'added', 'after-compilation']) {
   test(`PREBUNDLE rejects ${change} compiler configuration changes between compilation stages`, async t => {
     const f = fixture(t);

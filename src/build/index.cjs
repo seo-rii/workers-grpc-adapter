@@ -198,7 +198,7 @@ function generateVerifiedSchemas(projectRoot, profile, resolution, codegen) {
   if (!profile.schemas.length) return [];
   // A build process can already contain an older protobuf module at the same
   // path. Execute a private graph without changing the caller's module cache,
-  // and compile pinned JavaScript from the bytes whose hashes we checked.
+  // and generate from the JavaScript and schema bytes whose hashes we checked.
   const sources = new Map();
   for (const [kind, files] of [['codegen-hash', profile.codegenInputs], ['schema-hash', profile.schemas]]) {
     for (const file of files) {
@@ -222,8 +222,16 @@ function generateVerifiedSchemas(projectRoot, profile, resolution, codegen) {
     const codecs = new Map();
     const generated = tasks.map(task => {
       const P = require(task.generator);
-      const json = task.common ? P.common[task.common] : task.file.endsWith('.proto')
-        ? P.loadSync(task.file).toJSON() : JSON.parse(captured.get(task.file));
+      let json;
+      if (task.common) json = P.common[task.common];
+      else if (task.file.endsWith('.proto')) {
+        P.parse.filename = task.file;
+        const parsed = P.parse(captured.get(task.file));
+        // Shipped profiles have no proto imports. Fail closed until a profile
+        // can capture and verify the entire import closure before generation.
+        if (parsed.imports?.length || parsed.weakImports?.length) throw new Error('Static proto imports are unsupported');
+        json = parsed.root.toJSON();
+      } else json = JSON.parse(captured.get(task.file));
       if (!json || typeof json !== 'object') throw new Error('Unknown static schema');
       const key = JSON.stringify(json);
       if (!codecs.has(key)) codecs.set(key, generateHydrator(P, json));
@@ -240,7 +248,7 @@ function generateVerifiedSchemas(projectRoot, profile, resolution, codegen) {
   try { generated = JSON.parse(result.stdout); } catch { /* Fail closed on an incomplete generator response. */ }
   if (!Array.isArray(generated) || generated.length !== tasks.length) fail('WGA_SCHEMA_MISMATCH', 'Verified protobuf generation returned an invalid result');
   // Keep the usual file checks around generation, even though captured pinned
-  // JavaScript does not depend on later reads of those files.
+  // generator and schema bytes do not depend on later reads of those files.
   validateProfile(projectRoot, profile);
   return generated;
 }
