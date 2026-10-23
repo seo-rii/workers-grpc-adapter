@@ -6,6 +6,8 @@ const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const hash = value => createHash('sha256').update(value).digest('hex');
+// Retained exports execute this loaded generation even if its file is replaced.
+const implementationSha256 = hash(fs.readFileSync(__filename));
 function fail(code, detail) { const error = new Error(`${code}: ${detail}`); error.code = code; throw error; }
 function readProfile(id) {
   if (!['google-static-v1', 'google-modern-v1'].includes(id)) fail('WGA_UNSUPPORTED_DEPENDENCY', 'Unknown build profile');
@@ -278,9 +280,8 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
       unique.set(key, { source, count, schema: schema.path, sha256: schema.sha256, common: schema.common });
     }
   }
-  // Includes actual transformer bytes as well as an explicit semantic version: even
-  // an unversioned local transformer edit cannot reuse a previous registry key.
-  const transformer = { version: transformerVersion, sha256: hash(fs.readFileSync(__filename)), typescriptVersion: ts.version };
+  // Identify the loaded code, rather than a later replacement of its source file.
+  const transformer = { version: transformerVersion, sha256: implementationSha256, typescriptVersion: ts.version };
   const generatorInputs = [...codegen.generators].map(([schema, entry]) => [schema, entry.path]);
   const inputSha256 = hash(JSON.stringify({ packages: profile.packages.map(pkg => [pkg.path, pkg.packageJsonSha256]), generators: generatorInputs,
     sources: [...profile.files, ...profile.schemas, ...profile.codegenInputs].map(file => [file.path, file.sha256]) }));
