@@ -118,7 +118,7 @@ These message ceilings are adapter policy, not Google or Cloudflare service limi
 
 Configuration snapshots are immutable. Reapplying the same normalized configuration is allowed. A different second configuration throws `WGA_CONFIG_ALREADY_SET`; changing it after the first globally configured Channel throws `WGA_CONFIG_LOCKED`.
 
-Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, user information, paths, queries or fragments. Gateway values must be origins. RPC methods use `/package.Service/Method`.
+Targets accept `hostname[:port]`, not URLs, resolver schemes such as `dns:///`, user information, paths, queries or fragments. Bracketed IPv6 literals, including IPv4-embedded forms such as `[::ffff:192.0.2.1]`, are canonicalized before endpoint lookup. Gateway values must be origins. RPC methods use `/package.Service/Method`.
 
 ## Per-instance adapter
 

@@ -49,7 +49,7 @@ export function normalizeAuthority(target: string): string {
     if (typeof target !== 'string' || !target || /[/@?#\s%\\]/.test(target)) {
         return fail('WGA_INVALID_TARGET', 'Use a hostname[:port], not a URL or resolver scheme');
     }
-    if (!/^(?:[a-zA-Z0-9.-]+|\[[a-fA-F0-9:]+\])(?::[0-9]+)?$/.test(target)) {
+    if (!/^(?:[a-zA-Z0-9.-]+|\[[a-fA-F0-9:.]+\])(?::[0-9]+)?$/.test(target)) {
         return fail('WGA_INVALID_TARGET', 'Invalid authority');
     }
     let url: URL;
