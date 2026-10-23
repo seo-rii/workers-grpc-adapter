@@ -165,13 +165,19 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         const record = { name: manifest.name, version: manifest.version, path: rel(directory), integrity: lock?.packages?.[rel(directory)]?.integrity ?? null, dependencies: [], grpcImports: [] };
         allPackages.set(directory, record);
         const req = createRequire(manifestPath);
-        for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
+        for (const name of Object.keys({ ...manifest.peerDependencies, ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
             let dependencyManifest;
             try {
                 dependencyManifest = packageFor(req, name);
             } catch (error) {
                 if (error.code !== 'MODULE_NOT_FOUND') throw error;
-                record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name] });
+                // Peer metadata applies only to peer-only declarations. A
+                // required direct dependency cannot become optional merely
+                // because it is also advertised as an optional peer.
+                const onlyPeer = !Object.hasOwn(manifest.dependencies || {}, name)
+                    && !Object.hasOwn(manifest.optionalDependencies || {}, name);
+                record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name]
+                    || onlyPeer && manifest.peerDependenciesMeta?.[name]?.optional === true });
                 continue;
             }
             // Optional means the package may be absent. An installed package
