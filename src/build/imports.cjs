@@ -462,6 +462,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         bind(scopeAt(index), factories, 'factory');
         bind(scopeAt(index), namespaces, 'namespace');
     }
+    const iterationBindings = new Set();
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (['const', 'let', 'var'].includes(value(index)) && !property(index)) {
             let end = index + 1;
@@ -486,11 +487,20 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                     // an empty iterable never overwrites the wrapper value.
                     if (iterationBinding) {
                         const body = pairs.get(index - 1) + 1;
-                        bind(addScope(body, statementAfter(body) - 1), names);
+                        const iteration = addScope(body, statementAfter(body) - 1);
+                        bind(iteration, names);
+                        iterationBindings.add(iteration);
                     }
                     continue;
                 }
                 bind(scope, names, loader);
+                // The iteration assignment is not a lexical declaration. A
+                // later var initializer in this body can restore a loader.
+                if (scope === scopeRoot && value(index) === 'var' && loader) {
+                    for (const iteration of iterationBindings) {
+                        if (iteration.start <= index && index <= iteration.end) bind(iteration, names, loader);
+                    }
+                }
             }
         }
         if (['function', 'class'].includes(value(index)) && !property(index)) {
