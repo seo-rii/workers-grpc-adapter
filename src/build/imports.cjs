@@ -40,7 +40,21 @@ function tokensFor(source, sourceType) {
     const allowsRegex = () => {
         const last = previous();
         if (!last) return true;
-        if (last.kind === 'identifier') return prefix.has(last.value);
+        if (last.kind === 'identifier') {
+            if (lineTerminator.test(source.slice(last.end, offset))) {
+                // debugger and restricted jumps end before a slash on the
+                // next line. A jump's label belongs to it only on the same
+                // line; qualified/private property names remain expressions.
+                let statement = tokens.length - 1;
+                if (!['debugger', 'break', 'continue'].includes(last.value)) {
+                    const jump = tokens[statement - 1];
+                    statement = ['break', 'continue'].includes(jump?.value)
+                        && !lineTerminator.test(source.slice(jump.end, last.start)) ? statement - 1 : -1;
+                }
+                if (statement >= 0 && !['.', '?.', '#'].includes(tokens[statement - 1]?.value)) return true;
+            }
+            return prefix.has(last.value);
+        }
         if (['literal', 'number', 'regex', 'template-end'].includes(last.kind)) return false;
         if ([')', '}'].includes(last.value)) return last.statementEnd;
         return ![']', '++', '--', '.', '?.'].includes(last.value);
