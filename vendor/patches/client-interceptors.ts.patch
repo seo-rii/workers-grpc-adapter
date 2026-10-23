@@ -304,7 +304,23 @@
      let readError: StatusObject | null = null;
      this.call.start(metadata, {
        onReceiveMetadata: metadata => {
-@@ -427,10 +474,10 @@
+@@ -407,6 +454,7 @@
+         try {
+           deserialized = this.methodDefinition.responseDeserialize(message);
+         } catch (e) {
++          if (stopExpiredCall(this)) return;
+           readError = {
+             code: Status.INTERNAL,
+             details: `Response message parsing error: ${getErrorMessage(e)}`,
+@@ -415,6 +463,7 @@
+           this.call.cancelWithStatus(readError.code, readError.details);
+           return;
+         }
++        if (stopExpiredCall(this)) return;
+         interceptingListener?.onReceiveMessage?.(deserialized);
+       },
+       onReceiveStatus: status => {
+@@ -427,10 +476,10 @@
      });
    }
    startRead() {
@@ -317,7 +333,7 @@
    }
    getAuthContext(): AuthContext | null {
      return this.call.getAuthContext();
-@@ -446,8 +493,8 @@
+@@ -446,8 +495,8 @@
    implements InterceptingCallInterface
  {
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -328,7 +344,7 @@
    }
    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
      let receivedMessage = false;
-@@ -483,13 +530,14 @@
+@@ -483,13 +532,14 @@
    channel: Channel,
    options: InterceptorOptions,
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -347,7 +363,7 @@
    }
  }
 
-@@ -518,7 +566,8 @@
+@@ -518,7 +568,8 @@
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    methodDefinition: ClientMethodDefinition<any, any>,
    options: CallOptions,
@@ -357,7 +373,7 @@
  ): InterceptingCallInterface {
    if (
      interceptorArgs.clientInterceptors.length > 0 &&
-@@ -564,6 +613,11 @@
+@@ -564,6 +615,11 @@
        .filter(interceptor => interceptor);
      // Filter out falsy values when providers return nothing
    }
@@ -369,7 +385,7 @@
    const interceptorOptions = Object.assign({}, options, {
      method_definition: methodDefinition,
    });
-@@ -576,10 +630,15 @@
+@@ -576,10 +632,15 @@
     * channel. */
    const getCall: NextCall = interceptors.reduceRight<NextCall>(
      (nextCall: NextCall, nextInterceptor: Interceptor) => {
