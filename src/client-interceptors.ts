@@ -454,6 +454,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
         try {
           deserialized = this.methodDefinition.responseDeserialize(message);
         } catch (e) {
+          if (stopExpiredCall(this)) return;
           readError = {
             code: Status.INTERNAL,
             details: `Response message parsing error: ${getErrorMessage(e)}`,
@@ -462,6 +463,7 @@ class BaseInterceptingCall implements InterceptingCallInterface {
           this.call.cancelWithStatus(readError.code, readError.details);
           return;
         }
+        if (stopExpiredCall(this)) return;
         interceptingListener?.onReceiveMessage?.(deserialized);
       },
       onReceiveStatus: status => {

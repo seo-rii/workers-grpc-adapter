@@ -73,6 +73,10 @@ Response delivery checks the absolute deadline as well as the timer's state. If 
 
 Outgoing requester hooks and continuations also check that deadline before forwarding startup, messages, reads or half-close. A continuation resumed at or after expiry cannot invoke a downstream requester or serialize another request while waiting for the timer. If a synchronous hook or request serializer throws after consuming the remaining budget, the call finishes with `DEADLINE_EXCEEDED`. Failures handled before expiry retain their existing status. An already selected terminal result is preserved.
 
+Response deserialization uses the same absolute budget. If the response decoder returns or throws at or after expiry, the call finishes with `DEADLINE_EXCEEDED` before forwarding the decoded value to an inbound interceptor. Decoder failures before expiry retain `INTERNAL`; cancellation or channel closure already selected during decoding remains unchanged.
+
+`test/inbound-decoder-deadline.test.cjs` advances absolute time inside response deserializers across supported call kinds and modes. It checks successful and throwing decoder overruns, default and inherited budgets, explicit `Infinity`, reentrant termination, inbound hook suppression and resource cleanup. These are local controlled-peer checks, not deployed provider tests.
+
 Incoming status waits for both metadata and message transformations to finish. Duplicate continuations cannot repeat delivery, and termination clears adapter-owned incoming and outgoing queues. References held by application interceptor code remain the application's responsibility. Custom `InterceptingCall.sendMessage()` overrides still run, including overrides that supply message flags.
 
 `test/call-lifetime.test.cjs` and `test/call-lifetime-property.test.cjs` verify stalled startup/status delivery and generated completion/cancellation schedules in both transport modes. `test/deadline-expiry.test.cjs` advances wall time independently of timer delivery to check message, trailer, EOF and interceptor boundaries, including inherited deadlines.
