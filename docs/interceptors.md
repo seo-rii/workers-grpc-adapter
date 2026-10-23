@@ -69,6 +69,13 @@ The logical RPC owns its deadline and parent cancellation outside the intercepto
 
 Cancellation, channel closure and deadlines complete the local callback/status once even when a requester withholds `next()`. Late startup, message and response continuations cannot restart Fetch or deliver another result. Outstanding write callbacks are settled on termination. Cancellation requesters are notified, but cannot veto local cleanup by withholding their continuation or throwing. Finite deadlines remain necessary when an interceptor intentionally never completes and the caller does not cancel.
 
+For adapter-created readable, writable and duplex streams, `cancel()` or `destroy()`
+in an invocation transformer or interceptor constructor is remembered until the
+logical call is attached. It then completes with `CANCELLED` before authentication,
+admission or Fetch starts. The public callback and status remain asynchronous and
+are delivered once; repeated cancellation and destruction are safe. A replacement
+surface supplied by a transformer continues to own its cancellation behavior.
+
 Response delivery checks the absolute deadline as well as the timer's state. If immediately available Fetch chunks or interceptor continuations delay timer execution, a new response message or final success cannot pass an expired deadline. The same check applies after response EOF and after an inbound interceptor resumes. A terminal result already selected for the logical call remains unchanged. These checks do not guarantee that timer callbacks can interrupt synchronous application code or an unbounded stream of immediately available chunks.
 
 Outgoing requester hooks and continuations also check that deadline before forwarding startup, messages, reads or half-close. A continuation resumed at or after expiry cannot invoke a downstream requester or serialize another request while waiting for the timer. If a synchronous hook or request serializer throws after consuming the remaining budget, the call finishes with `DEADLINE_EXCEEDED`. Failures handled before expiry retain their existing status. An already selected terminal result is preserved.
@@ -80,3 +87,8 @@ Incoming status waits for both metadata and message transformations to finish. D
 `test/startup-deadline.test.cjs` covers time spent in invocation transformers and both provider scopes across supported RPC shapes. It checks the remaining timeout at Fetch, rejects expired startup before authentication, preserves explicit and final interceptor deadlines, applies the selected channel's default, and verifies cleanup when a provider throws.
 
 `test/outgoing-deadline.test.cjs` holds outgoing continuations while advancing absolute time independently of timer delivery. It checks request serialization, nested requester hooks, public stream half-close, synchronous hook overruns, effective default and inherited deadlines, explicit `Infinity`, write callback settlement and terminal status preservation.
+
+`test/stream-startup-cancellation.test.cjs` checks cancellation and destruction in
+both startup hooks for every supported streaming shape, with and without admission
+limits. It also checks reentrant cancellation, cleanup, cancellation after Fetch
+starts, and reuse of the client after a cancelled startup.

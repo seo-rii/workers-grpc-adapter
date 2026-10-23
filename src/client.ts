@@ -28,6 +28,7 @@ import {
   ClientWritableStream,
   ClientWritableStreamImpl,
   ServiceError,
+  bindCallSurface,
   callErrorFromStatus,
   markCallSurfaceTerminal,
   SurfaceCall,
@@ -452,7 +453,7 @@ export class Client {
      * enforce this with the type system. We need to construct this emitter
      * before calling the CallInvocationTransformer, and we need to create the
      * call after that. */
-    emitter.call = call;
+    bindCallSurface(emitter, call);
     let responseMessage: ResponseType | null = null;
     let receivedStatus = false;
     let callerStackError: Error | null = new Error();
@@ -573,7 +574,7 @@ export class Client {
      * enforce this with the type system. We need to construct this emitter
      * before calling the CallInvocationTransformer, and we need to create the
      * call after that. */
-    stream.call = call;
+    bindCallSurface(stream, call);
     let receivedStatus = false;
     let callerStackError: Error | null = new Error();
     call.start(callProperties.metadata, {
@@ -674,7 +675,7 @@ export class Client {
      * enforce this with the type system. We need to construct this emitter
      * before calling the CallInvocationTransformer, and we need to create the
      * call after that. */
-    stream.call = call;
+    bindCallSurface(stream, call);
     let receivedStatus = false;
     let callerStackError: Error | null = new Error();
     call.start(callProperties.metadata, {

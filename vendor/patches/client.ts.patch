@@ -9,9 +9,11 @@
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
-@@ -26,17 +29,18 @@
+@@ -25,18 +28,20 @@
+   ClientWritableStream,
    ClientWritableStreamImpl,
    ServiceError,
++  bindCallSurface,
    callErrorFromStatus,
 +  markCallSurfaceTerminal,
    SurfaceCall,
@@ -36,7 +38,7 @@
  import {
    getInterceptingCall,
    Interceptor,
-@@ -44,13 +48,8 @@
+@@ -44,13 +49,8 @@
    InterceptorArguments,
    InterceptingCallInterface,
  } from './client-interceptors';
@@ -52,7 +54,7 @@
 
  const CHANNEL_SYMBOL = Symbol();
  const INTERCEPTOR_SYMBOL = Symbol();
-@@ -71,11 +70,8 @@
+@@ -71,11 +71,8 @@
  export interface CallOptions {
    deadline?: Deadline;
    host?: string;
@@ -66,7 +68,7 @@
    propagate_flags?: number;
    credentials?: CallCredentials;
    interceptors?: Interceptor[];
-@@ -110,7 +106,63 @@
+@@ -110,7 +107,63 @@
  };
 
  function getErrorStackString(error: Error): string {
@@ -131,7 +133,7 @@
  }
 
  /**
-@@ -144,23 +196,23 @@
+@@ -144,23 +197,23 @@
      this[CALL_INVOCATION_TRANSFORMER_SYMBOL] =
        options.callInvocationTransformer;
      delete options.callInvocationTransformer;
@@ -169,7 +171,7 @@
    }
 
    close(): void {
-@@ -172,64 +224,8 @@
+@@ -172,64 +225,8 @@
    }
 
    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void {
@@ -236,7 +238,7 @@
    }
 
    makeUnaryRequest<RequestType, ResponseType>(
-@@ -273,8 +269,9 @@
+@@ -273,8 +270,9 @@
      options?: CallOptions | UnaryCallback<ResponseType>,
      callback?: UnaryCallback<ResponseType>
    ): ClientUnaryCall {
@@ -247,7 +249,7 @@
          metadata,
          options,
          callback
-@@ -313,7 +310,8 @@
+@@ -313,7 +311,8 @@
        interceptorArgs,
        callProperties.methodDefinition,
        callProperties.callOptions,
@@ -257,7 +259,7 @@
      );
      /* This needs to happen before the emitter is used. Unfortunately we can't
       * enforce this with the type system. We need to construct this emitter
-@@ -365,7 +363,7 @@
+@@ -365,7 +364,7 @@
          emitter.emit('status', status);
        },
      });
@@ -266,7 +268,7 @@
      call.halfClose();
      return emitter;
    }
-@@ -406,8 +404,9 @@
+@@ -406,8 +405,9 @@
      options?: CallOptions | UnaryCallback<ResponseType>,
      callback?: UnaryCallback<ResponseType>
    ): ClientWritableStream<RequestType> {
@@ -277,7 +279,7 @@
          metadata,
          options,
          callback
-@@ -446,7 +445,8 @@
+@@ -446,13 +446,14 @@
        interceptorArgs,
        callProperties.methodDefinition,
        callProperties.callOptions,
@@ -287,7 +289,14 @@
      );
      /* This needs to happen before the emitter is used. Unfortunately we can't
       * enforce this with the type system. We need to construct this emitter
-@@ -473,6 +473,7 @@
+      * before calling the CallInvocationTransformer, and we need to create the
+      * call after that. */
+-    emitter.call = call;
++    bindCallSurface(emitter, call);
+     let responseMessage: ResponseType | null = null;
+     let receivedStatus = false;
+     let callerStackError: Error | null = new Error();
+@@ -473,6 +474,7 @@
            return;
          }
          receivedStatus = true;
@@ -295,7 +304,7 @@
          if (status.code === Status.OK) {
            if (responseMessage === null) {
              const callerStack = getErrorStackString(callerStackError!);
-@@ -502,30 +503,6 @@
+@@ -502,30 +504,6 @@
      return emitter;
    }
 
@@ -326,7 +335,7 @@
    makeServerStreamRequest<RequestType, ResponseType>(
      method: string,
      serialize: (value: RequestType) => Buffer,
-@@ -549,7 +526,8 @@
+@@ -549,7 +527,8 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientReadableStream<ResponseType> {
@@ -336,7 +345,7 @@
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -558,10 +536,11 @@
+@@ -558,10 +537,11 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -349,7 +358,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -573,6 +552,9 @@
+@@ -573,6 +553,9 @@
      }
      const stream: ClientReadableStream<ResponseType> =
        callProperties.call as ClientReadableStream<ResponseType>;
@@ -359,7 +368,7 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -584,7 +566,8 @@
+@@ -584,13 +567,14 @@
        interceptorArgs,
        callProperties.methodDefinition,
        callProperties.callOptions,
@@ -369,7 +378,14 @@
      );
      /* This needs to happen before the emitter is used. Unfortunately we can't
       * enforce this with the type system. We need to construct this emitter
-@@ -606,8 +589,9 @@
+      * before calling the CallInvocationTransformer, and we need to create the
+      * call after that. */
+-    stream.call = call;
++    bindCallSurface(stream, call);
+     let receivedStatus = false;
+     let callerStackError: Error | null = new Error();
+     call.start(callProperties.metadata, {
+@@ -606,8 +590,9 @@
            return;
          }
          receivedStatus = true;
@@ -380,7 +396,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -617,7 +601,7 @@
+@@ -617,7 +602,7 @@
          stream.emit('status', status);
        },
      });
@@ -389,7 +405,7 @@
      call.halfClose();
      return stream;
    }
-@@ -642,7 +626,8 @@
+@@ -642,7 +627,8 @@
      metadata?: Metadata | CallOptions,
      options?: CallOptions
    ): ClientDuplexStream<RequestType, ResponseType> {
@@ -399,7 +415,7 @@
      const methodDefinition: ClientMethodDefinition<RequestType, ResponseType> =
        {
          path: method,
-@@ -651,12 +636,12 @@
+@@ -651,12 +637,12 @@
          requestSerialize: serialize,
          responseDeserialize: deserialize,
        };
@@ -416,7 +432,7 @@
        channel: this[CHANNEL_SYMBOL],
        methodDefinition: methodDefinition,
        callOptions: checkedArguments.options,
-@@ -668,6 +653,9 @@
+@@ -668,6 +654,9 @@
      }
      const stream: ClientDuplexStream<RequestType, ResponseType> =
        callProperties.call as ClientDuplexStream<RequestType, ResponseType>;
@@ -426,7 +442,7 @@
      const interceptorArgs: InterceptorArguments = {
        clientInterceptors: this[INTERCEPTOR_SYMBOL],
        clientInterceptorProviders: this[INTERCEPTOR_PROVIDER_SYMBOL],
-@@ -679,7 +667,8 @@
+@@ -679,13 +668,14 @@
        interceptorArgs,
        callProperties.methodDefinition,
        callProperties.callOptions,
@@ -436,7 +452,14 @@
      );
      /* This needs to happen before the emitter is used. Unfortunately we can't
       * enforce this with the type system. We need to construct this emitter
-@@ -700,8 +689,9 @@
+      * before calling the CallInvocationTransformer, and we need to create the
+      * call after that. */
+-    stream.call = call;
++    bindCallSurface(stream, call);
+     let receivedStatus = false;
+     let callerStackError: Error | null = new Error();
+     call.start(callProperties.metadata, {
+@@ -700,8 +690,9 @@
            return;
          }
          receivedStatus = true;
@@ -447,7 +470,7 @@
            const callerStack = getErrorStackString(callerStackError!);
            stream.emit('error', callErrorFromStatus(status, callerStack));
          }
-@@ -714,3 +704,12 @@
+@@ -714,3 +705,12 @@
      return stream;
    }
  }
