@@ -135,12 +135,22 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
     const routes = new Map<string, { definition: ServerMethodDefinition<any, any>; handler: GrpcWebHandler<any, any> }>();
     for (const key of Object.keys(definition)) {
         const item = definition[key];
-        if (['__proto__', 'prototype', 'constructor'].includes(key) || !item || typeof item !== 'object'
-            || !/^\/[A-Za-z_][A-Za-z0-9_.]*\/[A-Za-z_][A-Za-z0-9_]*$/.test(item.path)
-            || typeof item.requestStream !== 'boolean' || typeof item.responseStream !== 'boolean'
-            || typeof item.requestDeserialize !== 'function' || typeof item.responseSerialize !== 'function'
-            || !Object.hasOwn(handlers, key) || typeof handlers[key] !== 'function' || routes.has(item.path)) invalid();
-        routes.set(item.path, { definition: { ...item }, handler: handlers[key] });
+        if (['__proto__', 'prototype', 'constructor'].includes(key) || !item || typeof item !== 'object' || !Object.hasOwn(handlers, key)) invalid();
+        // Keep the existing shallow copy, then capture required fields omitted
+        // by spread (inherited or non-enumerable). Read each field once and
+        // validate the same owned values we retain.
+        const snapshot = { ...item };
+        if (!Object.hasOwn(snapshot, 'path')) snapshot.path = item.path;
+        if (!Object.hasOwn(snapshot, 'requestStream')) snapshot.requestStream = item.requestStream;
+        if (!Object.hasOwn(snapshot, 'responseStream')) snapshot.responseStream = item.responseStream;
+        if (!Object.hasOwn(snapshot, 'requestDeserialize')) snapshot.requestDeserialize = item.requestDeserialize;
+        if (!Object.hasOwn(snapshot, 'responseSerialize')) snapshot.responseSerialize = item.responseSerialize;
+        const handler = handlers[key];
+        if (!/^\/[A-Za-z_][A-Za-z0-9_.]*\/[A-Za-z_][A-Za-z0-9_]*$/.test(snapshot.path)
+            || typeof snapshot.requestStream !== 'boolean' || typeof snapshot.responseStream !== 'boolean'
+            || typeof snapshot.requestDeserialize !== 'function' || typeof snapshot.responseSerialize !== 'function'
+            || typeof handler !== 'function' || routes.has(snapshot.path)) invalid();
+        routes.set(snapshot.path, { definition: snapshot, handler });
     }
     if (!routes.size || Object.keys(handlers).some(key => !Object.hasOwn(definition, key))) invalid();
     return async request => {
