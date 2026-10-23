@@ -135,6 +135,34 @@ test('SERVER snapshots method accessors and own handlers with one read', async t
     }
 });
 
+test('SERVER rejects handlers removed by descriptor accessors before capture', async t => {
+    for (const shape of ['own', 'inherited', 'nonenumerable', 'additional']) {
+        await t.test(shape, async () => {
+            let inheritedReads = 0, inheritedCalls = 0, fieldReads = 0;
+            const handlers = Object.create({
+                get echo() { inheritedReads++; return () => { inheritedCalls++; return Buffer.from('inherited handler'); }; },
+            }, { echo: { value: echo, configurable: true, enumerable: true } });
+            const method = { ...unary };
+            const field = shape === 'additional' ? 'custom' : 'path';
+            const accessor = { configurable: true, enumerable: shape !== 'nonenumerable',
+                get() { fieldReads++; delete handlers.echo; return unary.path; } };
+            if (shape === 'inherited') {
+                delete method.path;
+                Object.setPrototypeOf(method, Object.defineProperty({}, field, accessor));
+            } else Object.defineProperty(method, field, accessor);
+            let registrationError, handler;
+            try { handler = createGrpcWebHandler({ echo: method }, handlers); }
+            catch (error) { registrationError = error; }
+            if (handler) await observe(await handler(request()));
+            assert.equal(inheritedReads, 0, 'registration must not read an inherited handler');
+            assert.equal(inheritedCalls, 0, 'registration must not invoke an inherited handler');
+            assert.equal(registrationError?.code, 'WGA_SERVER_CONFIG');
+            assert.equal(fieldReads, 1);
+            assert.equal(Object.hasOwn(handlers, 'echo'), false);
+        });
+    }
+});
+
 test('SERVER preserves additional enumerable fields on the owned method snapshot', async () => {
     let customReads = 0;
     const method = { ...unary, originalName: 'originalEcho',

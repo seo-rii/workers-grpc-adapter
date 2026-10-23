@@ -135,7 +135,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
     const routes = new Map<string, { definition: ServerMethodDefinition<any, any>; handler: GrpcWebHandler<any, any> }>();
     for (const key of Object.keys(definition)) {
         const item = definition[key];
-        if (['__proto__', 'prototype', 'constructor'].includes(key) || !item || typeof item !== 'object' || !Object.hasOwn(handlers, key)) invalid();
+        if (['__proto__', 'prototype', 'constructor'].includes(key) || !item || typeof item !== 'object') invalid();
         // Keep the existing shallow copy, then capture required fields omitted
         // by spread (inherited or non-enumerable). Read each field once and
         // validate the same owned values we retain.
@@ -145,6 +145,7 @@ export function createGrpcWebHandler<const D extends Definition>(definition: D, 
         if (!Object.hasOwn(snapshot, 'responseStream')) snapshot.responseStream = item.responseStream;
         if (!Object.hasOwn(snapshot, 'requestDeserialize')) snapshot.requestDeserialize = item.requestDeserialize;
         if (!Object.hasOwn(snapshot, 'responseSerialize')) snapshot.responseSerialize = item.responseSerialize;
+        if (!Object.hasOwn(handlers, key)) invalid();
         const handler = handlers[key];
         if (!/^\/[A-Za-z_][A-Za-z0-9_.]*\/[A-Za-z_][A-Za-z0-9_]*$/.test(snapshot.path)
             || typeof snapshot.requestStream !== 'boolean' || typeof snapshot.responseStream !== 'boolean'
