@@ -136,7 +136,7 @@ again after generation before the registry is published.
 `transformer` alongside the original audit fields. The registry key includes:
 
 - The complete profile manifest hash, including rules and loader options.
-- Transformer semantic version **and the SHA256 of its implementation bytes**.
+- Transformer semantic version **and the SHA256 of its loaded implementation bytes**.
 - The supplied TypeScript compiler's version.
 - All validated package-manifest, source, schema and code-generator hashes.
 - The mapping from each schema to its validated generator role and entry.
@@ -144,6 +144,12 @@ again after generation before the registry is published.
 Identical inputs generate the same registry identity regardless of output
 directory. Changes to any of those inputs select another registry namespace,
 including a transformer edit whose author forgot to increment its version.
+Implementation hashes are captured when each build helper's CommonJS module
+loads. A retained API or prepared plugin keeps its original transformer identity
+after an on-disk update, because it still executes the original code. The
+prebundle manifest's `build.prebundleSha256` follows the same rule, including
+updates during an asynchronous build. Restart the build process after updating
+the tools to load the new implementation and its identity.
 The preset still validates inputs and generates its registry on each invocation;
 it does not trust or load a persistent artifact cache. Applications may use the
 identity as one component of their own cache key. A complete Worker bundle also

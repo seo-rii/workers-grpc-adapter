@@ -6,6 +6,8 @@ const os = require('node:os');
 const { createHash } = require('node:crypto');
 const { isBuiltin } = require('node:module');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+// An async build can outlive a source-file update; identify its loaded helper.
+const implementationSha256 = hash(fs.readFileSync(__filename));
 function fail(code, message, diagnostic) {
   const error = new Error(`${code}: ${message}`);
   error.code = code;
@@ -1317,7 +1319,7 @@ async function buildGoogleWorkerPrebundle(options) {
     const artifacts = Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, { sha256: hash(bytes), bytes: Buffer.byteLength(bytes) }]));
     const manifest = { schemaVersion: 1, kind: 'google-worker-prebundle', serverOnly: true, exports: names, profile: presetManifest.profile, revision: presetManifest.revision,
       profileSha256: presetManifest.profileSha256, cacheKey: presetManifest.cacheKey, inputSha256: presetManifest.inputSha256, transformer: presetManifest.transformer,
-      build: { prebundleVersion: 1, prebundleSha256: hash(fs.readFileSync(__filename)), esbuildVersion: esbuild.version, nodeVersion: process.version, format: 'cjs', moduleStrictness: 'preserved', target: 'es2022', minify: true, legalComments: 'eof', sourcemap: false },
+      build: { prebundleVersion: 1, prebundleSha256: implementationSha256, esbuildVersion: esbuild.version, nodeVersion: process.version, format: 'cjs', moduleStrictness: 'preserved', target: 'es2022', minify: true, legalComments: 'eof', sourcemap: false },
       packages: presetManifest.packages, schemas: presetManifest.schemas, registrySha256: presetManifest.registrySha256,
       // Replacement text embeds a disposable registry path. The portable bundle
       // hash covers transformed output; retain path-independent source receipts.
