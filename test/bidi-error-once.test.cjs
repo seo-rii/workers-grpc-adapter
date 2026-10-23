@@ -5,6 +5,41 @@ const cp = require('node:child_process');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 
+test('BIDI early OK settles pending writes without an error or losing a buffered response', { timeout: 15000 }, async t => {
+    const { client, response, immediate } = require('./helpers.cjs');
+    const errors = [], statuses = [], writes = [];
+    const c = client({}, {
+        mode: 'grpc-web', endpoints: { 'echo.test': 'https://gateway.test' },
+        experimentalRequestStreaming: true,
+        fetcher: { async fetch() {
+            // Complete without consuming the upload, leaving one active and one queued write.
+            return response([{ text: 'retained response' }], { extra: 'x-receipt: retained\r\n' });
+        } },
+    });
+    t.after(() => c.close());
+    const call = c.bidi();
+    call.on('error', error => errors.push(error));
+    call.on('status', result => statuses.push(result));
+    const terminal = new Promise(resolve => call.once('status', resolve));
+    call.write({ text: 'pending' }, error => writes.push(error));
+    call.write({ text: 'queued' }, error => writes.push(error));
+    // Start reading into the Node buffer without consuming the response.
+    call.read(0);
+    const result = await terminal;
+    await immediate(); await immediate();
+    assert.equal(result.code, 0);
+    assert.deepEqual(result.metadata.get('x-receipt'), ['retained']);
+    assert.equal(statuses.length, 1);
+    assert.deepEqual(errors, []);
+    assert.equal(writes.length, 2);
+    assert.ok(writes.every(error => error instanceof Error));
+    assert.equal(c.getChannel().activeCallCount(), 0);
+    assert.equal(call.destroyed, true);
+    assert.equal(call.readableLength, 1);
+    assert.deepEqual(call.read(), { text: 'retained response' });
+    assert.equal(call.read(), null);
+});
+
 for (const action of ['cancel', 'deadline', 'close', 'remote', 'oversize', 'serialize']) {
     test(`BIDI delivers one RPC error while settling pending writes: ${action}`, () => {
         const source = `
