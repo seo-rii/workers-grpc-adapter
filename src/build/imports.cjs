@@ -238,6 +238,11 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
     const property = index => ['.', '?.'].includes(value(index - 1));
+    // Sloppy scripts can use let as an expression identifier. Its member
+    // access and in/instanceof operators do not begin a lexical declaration.
+    const declarationAt = index => identifier(index) && ['const', 'let', 'var'].includes(value(index)) && !property(index)
+        && (value(index) !== 'let' || identifier(index + 1) && !['in', 'instanceof'].includes(value(index + 1))
+            || ['{', '['].includes(value(index + 1)));
     const scopeRoot = { start: 0, end: tokens.length, function: true, bindings: new Map() }, scopes = [scopeRoot];
     const byRange = new Map([[`0:${tokens.length}`, scopeRoot]]);
     const addScope = (start, end, isFunction = false) => {
@@ -358,7 +363,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     }
     // Establish function/arrow and loop scopes before assigning any binding,
     // so declarations also shadow references earlier in their lexical scope.
-    const parameters = [];
+    const parameters = [], loopDeclarationEnds = new Map();
     const functionBodies = new Set([...definitions].filter(([index]) => value(index) === 'function').map(([, definition]) => definition.body));
     if (!declaration) for (const [index, definition] of definitions) {
         if (value(index) !== 'class') continue;
@@ -394,6 +399,34 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
             }
             if (forLoop) {
                 addScope(index, statementAfter(body) - 1);
+                const declaration = index + 1, first = declaration + 1;
+                if (declarationAt(declaration)) {
+                    let classic = false;
+                    for (let cursor = first; cursor < close; cursor++) {
+                        if (pairs.get(cursor) > cursor) { cursor = pairs.get(cursor); continue; }
+                        if (tokens[cursor].kind === 'punctuation' && value(cursor) === ';') classic = true;
+                    }
+                    // Only the separator after a for-in/of binding ends its
+                    // declaration. In ordinary initializers, in is an operator
+                    // and of can be a property, string or identifier.
+                    const afterBinding = identifier(first) ? first + 1
+                        : ['{', '['].includes(value(first)) && pairs.has(first) ? pairs.get(first) + 1 : undefined;
+                    if (!classic && afterBinding !== undefined) {
+                        if (identifier(afterBinding) && ['in', 'of'].includes(value(afterBinding))) {
+                            loopDeclarationEnds.set(declaration, afterBinding);
+                        } else if (value(declaration) === 'var' && value(afterBinding) === '=') {
+                            // Annex B permits a simple var initializer in a
+                            // sloppy for-in loop. Paired expressions and member
+                            // names cannot be that loop's in separator.
+                            for (let cursor = afterBinding + 1; cursor < close; cursor++) {
+                                if (pairs.get(cursor) > cursor) { cursor = pairs.get(cursor); continue; }
+                                if (identifier(cursor) && value(cursor) === 'in' && !['.', '?.', '#'].includes(value(cursor - 1))) {
+                                    loopDeclarationEnds.set(declaration, cursor); break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         if (value(index) === '=>') {
@@ -463,9 +496,11 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         bind(scopeAt(index), namespaces, 'namespace');
     }
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
-        if (['const', 'let', 'var'].includes(value(index)) && !property(index)) {
+        if (declarationAt(index)) {
             let end = index + 1;
-            for (; end < tokens.length && ![';', ')', '}', 'in', 'of'].includes(value(end)); end++) {
+            const loopEnd = loopDeclarationEnds.get(index);
+            for (; end < tokens.length && end !== loopEnd
+                && !(tokens[end].kind === 'punctuation' && [';', ')', '}'].includes(value(end))); end++) {
                 if (pairs.get(end) > end) end = pairs.get(end);
             }
             for (const [start, finish] of separated(index + 1, end)) {
