@@ -320,6 +320,12 @@ The compiler-free source scanner recognizes literal import and re-export
 specifiers, including comments between tokens, string escapes and static
 template literals in `require()` or `import()`. It ignores comment/string/regex
 contents, property calls, and ordinary locally bound `require` functions.
+Declaration scanning distinguishes a for-in/of separator from `in` operators
+and `in`/`of` strings, properties or identifiers in initializers. A later local
+`require` binding, including its proven `createRequire` base, keeps its identity
+through the complete declaration list. Classic for, for-in/of and for-await-of
+bindings remain limited to their JavaScript scopes. Contextual `let` used as a
+sloppy-script expression identifier does not introduce a declaration.
 Script/CommonJS scan also ignores legacy HTML comments; known ES modules do not
 use that comment goal. Physical file extensions and the nearest package scope
 select the goal, including nested package scopes and source symlinks.
