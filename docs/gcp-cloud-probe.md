@@ -444,7 +444,7 @@ For Cloudflare, each upload carries the run tag and records its immutable versio
 
 Database deletion can remain asynchronous after a resource starts returning `404`. The runner submits the two independent database deletions sequentially, then waits for both operation completions before accepting final absence. Local cleanup tests also verify that a replaced UID is never deleted and an unfinished operation cannot be treated as complete.
 
-Cloud Run uses immutable public image digests, min instances `0`, max instances `1`, concurrency `4` and a 30-second request timeout. No build job, source upload or Artifact Registry repository/image is created. Both services require Cloud Run IAM authentication; no anonymous invoker grant is added. See the [upstream fixture guide](../fixtures/cloud-run-probe/README.md).
+Cloud Run uses immutable public image digests, min instances `0`, max instances `1`, concurrency `4` and a 30-second request timeout. No build job, source upload or Artifact Registry repository/image is created. Both services require Cloud Run IAM authentication; no anonymous invoker grant is added. See the [upstream fixture guide](https://github.com/seo-rii/workers-grpc-adapter/blob/main/fixtures/cloud-run-probe/README.md).
 
 Existing-resource inventory is compared afterward: service identities/generations, database identities/configuration, secret metadata, service accounts and artifact repositories. A mismatch or failed final inventory is a failed verification, not permission to revert unrelated changes.
 
