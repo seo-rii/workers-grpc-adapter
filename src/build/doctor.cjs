@@ -186,7 +186,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 dependencyManifest = packageFor(req, name);
             } catch (error) {
                 if (error.code !== 'MODULE_NOT_FOUND') throw error;
-                record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name] });
+                record.dependencies.push({ name, missing: true, optional: Object.hasOwn(manifest.optionalDependencies ?? {}, name) });
                 continue;
             }
             // Optional means the package may be absent. An installed package
