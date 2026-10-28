@@ -90,6 +90,35 @@ for (const [name, source] of [
     ['with header', `with ({}) ${pattern}.test(''); ${load};`],
 ]) test(`DOCTOR preserves genuine regexp operands after ${name}`, () => check(source));
 
+for (const value of [',', ';', ':', ')', ']', '}', '?']) for (const template of [false, true]) {
+    const literal = template ? `\`${value}\`` : JSON.stringify(value);
+    test(`DOCTOR keeps arrow grammar after punctuation-valued ${literal}`, async () => {
+        await check(`(async () => ${literal} + await ${pattern})(); ${load};`);
+        await check(`const await = 12; async function run() { return (() => ${literal} + await / ${load} / 1)(); } run();`);
+        await check(`(async () => { const result = false ? () => ${literal} : await ${pattern}; ${load}; })();`);
+    });
+}
+for (const literal of ['";"', '`;`']) {
+    test(`DOCTOR keeps class field indexes after punctuation-valued ${literal}`, () =>
+        check(`const await = 12; async function run() { class C { value = ${literal}\n[await / ${load} / 1]; } return new C(); } run();`));
+}
+test('DOCTOR preserves async and generator grammar in quoted closing-bracket methods', async () => {
+    await check(`({ async "]"() { await ${pattern}; } })["]"](); ${load};`);
+    await check(`class C { async "]"() { await ${pattern}; } } new C()["]"](); ${load};`);
+    await check(`({ *"]"() { yield ${pattern}; } })["]"]().next(); ${load};`);
+    await check(`class C { *"]"() { yield ${pattern}; } } new C()["]"]().next(); ${load};`);
+});
+test('DOCTOR preserves computed class name grammar after a quoted closing-bracket field', () =>
+    check(`(async () => { class C { "]"\n[await ${pattern}]() {} } ${load}; })();`));
+for (const prefix of ['"for"', '`for`', '({for: 12}).for', '({for: 12})?.for']) {
+    test(`DOCTOR scans division after await() following ${prefix}`, async () => {
+        await check(`(async () => { ${prefix}\nawait (12) / ${load} / 1; })();`);
+        await check(`const await = value => value; ${prefix}\nawait (12) / ${load} / 1;`);
+    });
+}
+test('DOCTOR scans division after await() following a private for property', () =>
+    check(`class C { #for = 12; async run() { this.#for\nawait (12) / ${load} / 1; } } new C().run();`));
+
 test('DOCTOR API and CLI reject missing imports hidden after contextual divisions', t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-doctor-contextual-division-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));

@@ -30,7 +30,7 @@ function tokensFor(source, sourceType) {
     };
     function functionContext(index) {
         let name = index - 1;
-        if (tokens[name]?.value === ']') name = pairs.get(name);
+        if (tokens[name]?.kind === 'punctuation' && tokens[name].value === ']') name = pairs.get(name);
         if (tokens[name - 1]?.value === '#') name--;
         const parent = tokens[groups[groups.length - 1]?.index];
         if (['object', 'class'].includes(parent?.container) && !memberAt(name)
@@ -116,9 +116,15 @@ function tokensFor(source, sourceType) {
             const asi = finished && lineTerminator.test(source.slice(last.end, start)) && !token.template
                 && (kind === 'identifier' && !['in', 'instanceof'].includes(value)
                     || ['literal', 'number'].includes(kind));
-            if (groups.length < arrow.depth || [',', ';', ')', ']', '}'].includes(value)
-                || value === ':' && !arrow.conditionals || asi) arrows.pop();
-            else { if (value === '?') arrow.conditionals++; else if (value === ':') arrow.conditionals--; break; }
+            if (groups.length < arrow.depth || kind === 'punctuation' && ([',', ';', ')', ']', '}'].includes(value)
+                || value === ':' && !arrow.conditionals) || asi) arrows.pop();
+            else {
+                if (kind === 'punctuation') {
+                    if (value === '?') arrow.conditionals++;
+                    else if (value === ':') arrow.conditionals--;
+                }
+                break;
+            }
         }
         if (kind === 'identifier' && ['await', 'yield'].includes(value)) token.operator = context()[value];
         const parent = groups[groups.length - 1];
@@ -148,7 +154,8 @@ function tokensFor(source, sourceType) {
                 let control;
                 if (value === '(' && last?.kind === 'identifier' && !memberAt(index - 1)) {
                     if (controls.has(last.value)) control = last.value;
-                    else if (last.value === 'await' && tokens[index - 2]?.value === 'for') control = 'for';
+                    else if (last.value === 'await' && tokens[index - 2]?.kind === 'identifier'
+                        && tokens[index - 2].value === 'for' && !memberAt(index - 2)) control = 'for';
                 } else if (value === '{') control = last?.control;
                 let statementEnd = value === '(' ? !!control
                     : value === '{' && (!last || !['=', '(', '[', ',', ':', 'return'].includes(last.value));
@@ -160,14 +167,16 @@ function tokensFor(source, sourceType) {
                     let before = index - 1;
                     while (['static', 'async', 'get', 'set', '*'].includes(tokens[before]?.value)) before--;
                     let bareField = before;
-                    if (tokens[bareField]?.value === ']') bareField = pairs.get(bareField);
+                    if (tokens[bareField]?.kind === 'punctuation' && tokens[bareField].value === ']') bareField = pairs.get(bareField);
                     if (['identifier', 'literal', 'number'].includes(tokens[bareField]?.kind) || tokens[bareField]?.value === '[') {
                         bareField--;
                         if (tokens[bareField]?.value === '#') bareField--;
                         if (tokens[bareField]?.value === 'static') bareField--;
                     }
                     const boundary = cursor => {
-                        if (cursor === parent.index || tokens[cursor]?.value === ';') return true;
+                        if (cursor === parent.index) return true;
+                        if (tokens[cursor]?.kind !== 'punctuation') return false;
+                        if (tokens[cursor].value === ';') return true;
                         const body = pairs.get(cursor), head = tokens[body - 1];
                         return tokens[cursor]?.value === '}' && tokens[body]?.parent === parent.index
                             && (head?.context?.method || head?.value === 'static');
