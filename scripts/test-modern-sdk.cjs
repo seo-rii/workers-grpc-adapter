@@ -17,6 +17,7 @@ const modernRequire = createRequire(path.join(modernRoot, 'package.json'));
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { Miniflare, convertV4MiniflareOptions, Log, LogLevel } = workerRequire('miniflare');
 const { inspect } = require('./doctor.cjs');
+const { matchesFixtureLocks } = require('./fixture-lock-graph.cjs');
 const { inspectSDKBundle } = require('./sdk-bundle-inspection.cjs');
 const { ts, typeRoots } = require('./toolchain.cjs').toolchain();
 const sourceBuild = process.argv.includes('--source-build');
@@ -43,11 +44,15 @@ async function bounded(promise, milliseconds = 20000) {
 function checkGraphsAndDeclarations() {
   const versions = { '@google-cloud/datastore': '11.1.0', '@google-cloud/firestore': '9.2.0', '@google-cloud/secret-manager': '7.1.0' };
   const source = fs.readFileSync(path.join(root, 'fixtures/google/types/consumer.mts'), 'utf8');
+  const repositoryLock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
+  const installedRepositoryLock = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/.package-lock.json')));
   for (const [runtime, fixtureName, expected] of [['native', 'modern-native', '@grpc/grpc-js'], ['adapter', 'modern', 'workers-grpc-adapter']]) {
     const fixture = path.join(root, 'fixtures', fixtureName), graph = inspect(fixture, undefined, expected);
     check(graph.passed && graph.results.every(item => item.version === versions[item.sdk]), 'MODERN_GRAPH');
     const packages = [...new Map(graph.results.flatMap(item => item.graph).map(item => [item.path, item])).values()];
-    check(packages.every(item => !!item.integrity), 'LOCKED_PACKAGE_INTEGRITY');
+    const fixtureLock = JSON.parse(fs.readFileSync(path.join(fixture, 'package-lock.json')));
+    check(matchesFixtureLocks(graph, fixture, fixtureLock, root, repositoryLock, installedRepositoryLock,
+      { requireIntegrity: true }), 'LOCKED_PACKAGE_INTEGRITY');
     const auth = packages.filter(item => item.name === 'google-auth-library').map(({ path, version, integrity }) => ({ path, version, integrity })).sort((a, b) => a.path.localeCompare(b.path));
     check(auth.map(item => item.version).sort().join(',') === '10.9.1,11.1.0', 'AUTH_VERSION_PINS');
     report.graphs.push({ runtime, fixture: fixtureName, passed: true, lockfileSha256: graph.lockfileSha256, graphSha256: graph.graphSha256,
