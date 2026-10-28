@@ -249,7 +249,7 @@
          metadata,
          options,
          callback
-@@ -313,7 +311,8 @@
+@@ -313,13 +311,14 @@
        interceptorArgs,
        callProperties.methodDefinition,
        callProperties.callOptions,
@@ -259,6 +259,13 @@
      );
      /* This needs to happen before the emitter is used. Unfortunately we can't
       * enforce this with the type system. We need to construct this emitter
+      * before calling the CallInvocationTransformer, and we need to create the
+      * call after that. */
+-    emitter.call = call;
++    bindCallSurface(emitter, call);
+     let responseMessage: ResponseType | null = null;
+     let receivedStatus = false;
+     let callerStackError: Error | null = new Error();
 @@ -365,7 +364,7 @@
          emitter.emit('status', status);
        },

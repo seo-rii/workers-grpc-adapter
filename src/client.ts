@@ -318,7 +318,7 @@ export class Client {
      * enforce this with the type system. We need to construct this emitter
      * before calling the CallInvocationTransformer, and we need to create the
      * call after that. */
-    emitter.call = call;
+    bindCallSurface(emitter, call);
     let responseMessage: ResponseType | null = null;
     let receivedStatus = false;
     let callerStackError: Error | null = new Error();

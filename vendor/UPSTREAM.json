@@ -18,9 +18,9 @@
       "source": "vendor/client/client.ts",
       "sha256": "215d41d55165e9c21656a043894eccc9065745f8735f0818c1cb05124168df53",
       "target": "src/client.ts",
-      "patchedSha256": "01d869d7ccd6634deae1863596dd6e0428d8fbe50a8733d2d9acc5599501fb17",
+      "patchedSha256": "5b1516f7fbe7f2bd81c39e8ee0d65d4b52fc57c36452fd029f5135d277609a69",
       "patch": "vendor/patches/client.ts.patch",
-      "patchSha256": "07748b38c24f4a3c56911d9aa81d0ede334993f88656b5ccdfe89a497802a773"
+      "patchSha256": "b8e9ebfe7d9b44bd0ac8d7a73a3268f53c8cef00f3f53de6378d727e4544f7e5"
     },
     {
       "upstreamPath": "src/make-client.ts",
@@ -45,9 +45,9 @@
       "source": "vendor/client/call.ts",
       "sha256": "3a6fd60fd29da2ee15c771d92e54a6773a74cd7a7b68c1510e2afc25e0347e81",
       "target": "src/call-surface.ts",
-      "patchedSha256": "61d808bb73085cdc9a780027d2489a0e3fd1143949cd252a25101a6430893802",
+      "patchedSha256": "f74846bb8ea599d923343e6ed59de7aa525e2f79451fbcc8522e67df25d00701",
       "patch": "vendor/patches/call-surface.ts.patch",
-      "patchSha256": "f66b35874c5c550766faab835ee727075f332df032639e1f300c03778d262081"
+      "patchSha256": "7e4a1ba40e9ac1bdd69d0afbd5197e66a810ca718dc07d42ec6b790199a9c701"
     },
     {
       "upstreamPath": "src/client-interceptors.ts",

@@ -91,10 +91,14 @@ export function callErrorFromStatus(
 }
 
 const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
+const pendingUnaryCancellations = new WeakSet<SurfaceCall>();
 
-/** Replay stream cancellation requested by synchronous startup hooks before I/O. */
+/** Replay cancellation requested by synchronous startup hooks before I/O. */
 export function bindCallSurface(surface: SurfaceCall, call: InterceptingCallInterface): void {
   surface.call = call;
+  if (pendingUnaryCancellations.delete(surface)) {
+    call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+  }
   streamLifecycles.get(surface)?.flushCancellation();
 }
 
@@ -188,7 +192,8 @@ export class ClientUnaryCallImpl
   }
 
   cancel(): void {
-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    if (this.call) this.call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    else pendingUnaryCancellations.add(this);
   }
 
   getPeer(): string {
