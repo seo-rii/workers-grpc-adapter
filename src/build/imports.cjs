@@ -238,6 +238,27 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
     const property = index => ['.', '?.'].includes(value(index - 1));
+    const calls = [];
+    for (let index = 0; index < tokens.length; index++) {
+        if (!['require', 'import'].includes(value(index)) || property(index)) continue;
+        const kind = value(index) === 'require' ? 'require' : 'import';
+        let call = index + 1, first = index;
+        while (value(first - 1) === '(' && pairs.get(first - 1) === call) { first--; call++; }
+        if (value(call) === '?.') call++;
+        if (value(call) !== '(' || !pairs.has(call)) continue;
+        // Parentheses around a literal do not compute a module specifier.
+        // Split arguments first so import options and trailing commas retain
+        // their ordinary meaning, then unwrap only the complete first one.
+        const [start, end] = unparenthesized(...separated(call + 1, pairs.get(call))[0]);
+        if (end === start + 1 && tokens[start]?.kind === 'literal' && included(value(start))) {
+            calls.push({ index, kind, token: tokens[start] });
+        }
+    }
+    // Generated peers can contain thousands of local-looking path constants.
+    // Only an actual candidate import site needs the expensive scope analysis.
+    // Static imports/re-exports put their literal immediately after import/from.
+    if (!calls.length && !tokens.some((token, index) => token.kind === 'literal' && included(token.value)
+        && ['import', 'from'].includes(value(index - 1)))) return [];
     const scopeRoot = { start: 0, end: tokens.length, function: true, bindings: new Map() }, scopes = [scopeRoot];
     const byRange = new Map([[`0:${tokens.length}`, scopeRoot]]);
     const addScope = (start, end, isFunction = false) => {
@@ -566,21 +587,10 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         }
         return false;
     }
-    for (let index = 0; index < tokens.length; index++) {
-        if (!['require', 'import'].includes(value(index)) || property(index)) continue;
-        const kind = value(index) === 'require' ? 'require' : 'import';
-        let call = index + 1, first = index;
-        while (value(first - 1) === '(' && pairs.get(first - 1) === call) { first--; call++; }
-        if (value(call) === '?.') call++;
-        if (value(call) !== '(' || !pairs.has(call)) continue;
-        // Parentheses around a literal do not compute a module specifier.
-        // Split arguments first so import options and trailing commas retain
-        // their ordinary meaning, then unwrap only the complete first one.
-        const [start, end] = unparenthesized(...separated(call + 1, pairs.get(call))[0]);
-        if (end !== start + 1) continue;
+    for (const { index, kind, token } of calls) {
         const loader = kind === 'require' ? loaderAt(index) : true;
         if (!loader) continue;
-        record(kind, tokens[start], typeof loader === 'object' ? loader.base : undefined);
+        record(kind, token, typeof loader === 'object' ? loader.base : undefined);
     }
     return [...imports.values()];
 }
