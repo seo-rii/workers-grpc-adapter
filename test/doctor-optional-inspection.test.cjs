@@ -53,6 +53,62 @@ test('DOCTOR permits a genuinely absent optional dependency and inspects an inst
   assert.equal(report.passed, true);
   assert.ok(report.results[0].graph.some(p=>p.name==='helper'));
 });
+
+for (const owner of ['sdk', 'google-gax']) for (const range of ['', '*']) {
+  test(`DOCTOR optional dependency range ${JSON.stringify(range)} permits an absent package below ${owner}`, t => {
+    const f = fixture(t);
+    f.write(`node_modules/${owner}/package.json`, { name: owner, version: '1.0.0',
+      dependencies: { [owner === 'sdk' ? 'google-gax' : '@grpc/grpc-js']: '*' },
+      optionalDependencies: { helper: range } });
+    const report = f.inspect();
+    assert.equal(report.passed, true, 'empty and wildcard npm ranges are both optional declarations');
+    assert.deepEqual(report.results[0].graph.find(pkg => pkg.name === owner).dependencies.find(edge => edge.name === 'helper'),
+      { name: 'helper', missing: true, optional: true });
+    assert.deepEqual(report.results[0].unresolved, []);
+    const cli = spawnSync(process.execPath, [path.resolve(__dirname, '../src/build/doctor-cli.cjs'), f.root, '--sdk=sdk'], { encoding: 'utf8' });
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).passed, true);
+  });
+}
+
+for (const owner of ['sdk', 'google-gax']) for (const state of ['required missing', 'installed valid', 'installed invalid']) {
+  test(`DOCTOR optional dependency range controls ${owner}: ${state}`, t => {
+    const f = fixture(t), required = state === 'required missing';
+    f.write(`node_modules/${owner}/package.json`, { name: owner, version: '1.0.0',
+      dependencies: { [owner === 'sdk' ? 'google-gax' : '@grpc/grpc-js']: '*', ...(required ? { helper: '' } : {}) },
+      optionalDependencies: required ? {} : { helper: '' } });
+    if (!required) {
+      f.write('node_modules/helper/package.json', { name: 'helper', version: '1.0.0', main: 'index.cjs' });
+      f.write('node_modules/helper/index.cjs', state === 'installed invalid'
+        ? 'require("@grpc/grpc-js/missing");' : 'require("@grpc/grpc-js");');
+    }
+    const report = f.inspect();
+    assert.equal(report.passed, state === 'installed valid');
+    const edge = report.results[0].graph.find(pkg => pkg.name === owner).dependencies.find(item => item.name === 'helper');
+    if (required) {
+      assert.deepEqual(edge, { name: 'helper', missing: true, optional: false });
+      assert.deepEqual(report.results[0].unresolved, [`node_modules/${owner}:helper`]);
+    } else {
+      assert.deepEqual(edge, { name: 'helper', path: 'node_modules/helper' });
+      assert.deepEqual(report.results[0].graph.find(pkg => pkg.name === 'helper').grpcImports.map(item => item.status),
+        [state === 'installed valid' ? 'resolved-to-replacement' : 'resolution-failed']);
+    }
+  });
+}
+
+for (const optional of [false, true]) {
+  test(`DOCTOR optional dependency ownership excludes inherited names: optional=${optional}`, t => {
+    const f = fixture(t);
+    f.write('node_modules/sdk/package.json', { name: 'sdk', version: '1.0.0',
+      dependencies: { 'google-gax': '*', constructor: '' }, optionalDependencies: optional ? { constructor: '' } : {} });
+    const report = f.inspect();
+    assert.equal(report.passed, optional);
+    assert.deepEqual(report.results[0].graph.find(pkg => pkg.name === 'sdk').dependencies.find(edge => edge.name === 'constructor'),
+      { name: 'constructor', missing: true, optional });
+    assert.deepEqual(report.results[0].unresolved, optional ? [] : ['node_modules/sdk:constructor']);
+  });
+}
+
 for (const layout of ['directory', 'symlink', 'nested shadow']) {
   test('DOCTOR blocks a loadable optional package without a manifest: ' + layout, t => {
     const f = fixture(t);

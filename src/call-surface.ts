@@ -150,6 +150,10 @@ class ClientStreamLifecycle {
     const once: WriteCallback = error => {
       if (this.pendingWrite !== once) return;
       this.pendingWrite = undefined;
+      // RPC completion already delivered its error/status. Close the stream
+      // before a failed pending write reaches Node's errorOrDestroy path so
+      // upload cleanup cannot emit a second, unrelated stream error.
+      if (error && this.terminal) this.stream.destroy();
       callback(error);
     };
     this.pendingWrite = once;

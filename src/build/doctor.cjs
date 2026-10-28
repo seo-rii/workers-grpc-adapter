@@ -99,10 +99,25 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         try { recordResolution(packageFor(rootRequire, specifier), '.', specifier); }
         catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
     }
-    const resolvedImport = (entry, full, resolved, parent) => {
-        const grpcManifestPath = packageFor(createRequire(parent), '@grpc/grpc-js');
+    const resolvedImport = (entry, full, resolved) => {
+        // Resolution follows entrypoint and directory symlinks. The alias's
+        // manifest cannot establish which package owns the resulting file.
+        // Ignore unnamed package scopes used only to select CJS/ESM syntax.
+        let directory = path.dirname(resolved), grpcManifestPath, grpcManifest;
+        for (;;) {
+            if (path.basename(directory) === 'node_modules') throw new Error('resolved-package-owner-missing');
+            const candidate = path.join(directory, 'package.json');
+            try {
+                const manifest = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+                if (typeof manifest.name === 'string' && manifest.name) {
+                    grpcManifestPath = candidate; grpcManifest = manifest; break;
+                }
+            } catch (error) { if (error.code !== 'ENOENT') throw error; }
+            const parent = path.dirname(directory);
+            if (parent === directory) throw new Error('resolved-package-owner-missing');
+            directory = parent;
+        }
         recordResolution(grpcManifestPath, rel(full), entry.specifier);
-        const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
         Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
             status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
     };
@@ -176,7 +191,7 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 // because it is also advertised as an optional peer.
                 const onlyPeer = !Object.hasOwn(manifest.dependencies || {}, name)
                     && !Object.hasOwn(manifest.optionalDependencies || {}, name);
-                record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name]
+                record.dependencies.push({ name, missing: true, optional: Object.hasOwn(manifest.optionalDependencies ?? {}, name)
                     || onlyPeer && manifest.peerDependenciesMeta?.[name]?.optional === true });
                 continue;
             }
@@ -273,8 +288,8 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
     for (const record of allPackages.values()) record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
     const resolved = resolveImports(pendingImports);
     for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
-        const { full, entry, parent } = pendingImports[index];
-        try { resolvedImport(entry, full, resolved[index], parent); } catch { /* Keep the unresolved diagnostic. */ }
+        const { full, entry } = pendingImports[index];
+        try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {
         if (result.graph.some(item => packageFailures.has(path.resolve(base, item.path)))) {
