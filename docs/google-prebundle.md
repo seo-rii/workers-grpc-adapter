@@ -149,6 +149,17 @@ on a known Node module object follows the same member checks as direct property
 access. An unknown computed property on a Node module namespace is rejected
 because it could select a loader. Ordinary application promises and reflective
 reads on ordinary objects remain supported.
+Conditional and logical value expressions retain all possible namespace origins;
+comma expressions retain the final operand. Literal array members, including
+nested arrays with fixed element positions, retain their namespace origins.
+This array tracking excludes spreads whose iterable lengths are not analyzed,
+and object spread or `Object.assign()` copies whose property overwrite order is
+not analyzed.
+Previously observed namespace origins remain possible after reassignment or
+array mutation; this analysis does not model mutation order.
+Unknown index selection remains conservative when it can
+select a Node namespace. Known non-loader members such as `isBuiltin()` and
+ordinary application objects remain supported.
 
 One physical adapter installation is necessary but does not alone prove one
 runtime. The build also rejects different esbuild module identities for the

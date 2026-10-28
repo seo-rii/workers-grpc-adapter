@@ -571,7 +571,10 @@ function checkModuleLoaders(ts, captured) {
     || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
-  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set();
+  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set(), originCache = new Map(), originQueries = [];
+  const recordOriginDependency = dependency => {
+    for (const query of originQueries) query.add(dependency);
+  };
   const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
   const loaderMembers = ['createRequire', '_load', 'register', 'registerHooks'];
   const builtinExportNames = new Set([...Object.keys(require('node:module')), 'default']);
@@ -727,6 +730,7 @@ function checkModuleLoaders(ts, captured) {
   }
   function exportedOrigin(file, name, seen) {
     const marker = JSON.stringify([file, name]);
+    recordOriginDependency(marker);
     if (seen.has(marker)) return 0n;
     const next = new Set([...seen, marker]);
     // Enumerate effective names, then use ordinary lookup so explicit exports
@@ -745,6 +749,10 @@ function checkModuleLoaders(ts, captured) {
     // Descriptors can themselves be reflected upon. Intern structural
     // containers instead of dropping provenance at a fixed nesting depth.
     for (const [flag, shape] of containers) if (origin & flag) {
+      if (shape.kind.startsWith('property:')) {
+        if (name === undefined || shape.kind === `property:${JSON.stringify(name)}`) result |= shape.value;
+        continue;
+      }
       result |= shape.kind === 'exports' ? exportedOrigin(shape.value, name, seen) : shape.kind === 'value'
         ? name === 'value' ? shape.value : name === undefined ? LOADER : 0n
         : container('value', member(shape.value, name, seen));
@@ -764,6 +772,8 @@ function checkModuleLoaders(ts, captured) {
         if (symbol.flags & ts.SymbolFlags.Alias) boundAliasNames.add(symbol.name);
         if (!values.has(symbol)) values.set(symbol, []);
         values.get(symbol).push({ value, keys });
+        // Fulfillment callback parameters are bound after the first queries.
+        originCache.clear();
       }
     } else if (ts.isObjectBindingPattern(name)) {
       for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
@@ -801,7 +811,16 @@ function checkModuleLoaders(ts, captured) {
   }
   for (const source of sources.values()) collect(source);
   function symbolOrigin(symbol, seen) {
-    if (!symbol || seen.has(symbol)) return 0n;
+    if (!symbol) return 0n;
+    recordOriginDependency(symbol);
+    if (seen.has(symbol)) return 0n;
+    const cached = originCache.get(symbol);
+    if (cached && [...cached.dependencies].every(dependency => cached.ancestors.has(dependency) === seen.has(dependency))) {
+      for (const dependency of cached.dependencies) recordOriginDependency(dependency);
+      return cached.result;
+    }
+    const dependencies = new Set();
+    originQueries.push(dependencies);
     const next = new Set([...seen, symbol]);
     let result = (values.get(symbol) || []).reduce((flags, value) => flags
       | value.keys.reduce((current, name) => member(current, name, next), origin(value.value, next)), 0n);
@@ -816,6 +835,10 @@ function checkModuleLoaders(ts, captured) {
         result |= importedNamespace(declaration, declaration.parent.moduleSpecifier.text);
       } else if (ts.isExportAssignment(declaration)) result |= origin(declaration.expression, next);
     }
+    originQueries.pop();
+    // Cycle cuts depend only on ancestors the query actually touched. Share
+    // unrelated diamond paths, but recompute when a relevant ancestor changes.
+    originCache.set(symbol, { result, dependencies, ancestors: new Set(seen) });
     return result;
   }
   function origin(expression, seen = new Set()) {
@@ -838,9 +861,25 @@ function checkModuleLoaders(ts, captured) {
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text, seen);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true), seen);
+    // Value-producing expressions preserve every possible module origin. A
+    // comma expression returns only its right operand; the discarded operand
+    // is still independently visited for direct loader use.
+    if (ts.isConditionalExpression(node)) return origin(node.whenTrue, seen) | origin(node.whenFalse, seen);
+    if (ts.isBinaryExpression(node)) {
+      if ([ts.SyntaxKind.BarBarToken, ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.QuestionQuestionToken]
+        .includes(node.operatorToken.kind)) return origin(node.left, seen) | origin(node.right, seen);
+      if (node.operatorToken.kind === ts.SyntaxKind.CommaToken) return origin(node.right, seen);
+    }
+    if (ts.isArrayLiteralExpression(node)) {
+      // Do not guess offsets across arbitrary iterables. Only literal arrays
+      // whose element positions are fixed participate in this source audit.
+      if (node.elements.some(ts.isSpreadElement)) return 0n;
+      return node.elements.reduce((result, element, index) =>
+        result | container(`property:${JSON.stringify(String(index))}`, origin(element, seen)), 0n);
+    }
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
-      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
-    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
+      result | (ts.isSpreadAssignment(property) ? copiedOrigin(property.expression, seen) : 0n), 0n);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | copiedOrigin(argument, seen), 0n);
     if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen);
     if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
       && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen));
@@ -851,6 +890,13 @@ function checkModuleLoaders(ts, captured) {
       && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
     return 0n;
+  }
+  function copiedOrigin(expression, seen) {
+    let result = origin(expression, seen);
+    // Object copies do not track property overwrite order. Keep fixed array
+    // slots in indexed reads only, where their positions are still meaningful.
+    for (const [flag, shape] of containers) if (shape.kind.startsWith('property:')) result &= ~flag;
+    return result;
   }
   function bindCallback(expression, value, seen = new Set()) {
     const node = unwrap(expression);
