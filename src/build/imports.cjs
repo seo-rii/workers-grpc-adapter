@@ -4,7 +4,7 @@
 // literal module sites without evaluating inspected code. It is deliberately
 // separate from the profile compiler's full AST and semantic validation.
 function tokensFor(source, sourceType) {
-    const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map();
+    const tokens = [], groups = [], pairs = new Map(), classes = [], definitions = new Map(), arrows = [];
     let offset = 0, lineStart = true;
     const lineTerminator = /[\r\n\u2028\u2029]/;
     const codePointAt = index => index < source.length ? String.fromCodePoint(source.codePointAt(index)) : undefined;
@@ -17,6 +17,46 @@ function tokensFor(source, sourceType) {
         '<', '>', '==', '!=', '+=', '-=', '/=', 'return', 'throw', 'yield', 'await',
         'new', 'void', 'typeof', 'delete', 'in', 'instanceof', 'of', 'case', 'extends']);
     const previous = () => tokens[tokens.length - 1];
+    const memberAt = index => tokens[index - 1]?.kind === 'punctuation' && ['.', '?.', '#'].includes(tokens[index - 1].value);
+    const context = () => {
+        const group = groups.findLast(group => group.context), arrow = arrows[arrows.length - 1];
+        return arrow && arrow.index > (group?.index ?? -1) ? arrow.context
+            : group?.context ?? { await: sourceType === 'module', yield: false };
+    };
+    const arrowContext = index => {
+        const first = tokens[index - 1]?.value === ')' ? pairs.get(index - 1) : index - 1;
+        return { await: tokens[first - 1]?.value === 'async'
+            && !lineTerminator.test(source.slice(tokens[first - 1].end, tokens[first].start)), yield: false };
+    };
+    function functionContext(index) {
+        let name = index - 1;
+        if (tokens[name]?.value === ']') name = pairs.get(name);
+        if (tokens[name - 1]?.value === '#') name--;
+        const parent = tokens[groups[groups.length - 1]?.index];
+        if (['object', 'class'].includes(parent?.container) && !memberAt(name)
+            && (['identifier', 'literal', 'number'].includes(tokens[name]?.kind) || ['[', '#'].includes(tokens[name]?.value))) {
+            let modifier = name - 1;
+            const generator = tokens[modifier]?.value === '*';
+            if (generator) modifier--;
+            const async = tokens[modifier]?.value === 'async'
+                && !lineTerminator.test(source.slice(tokens[modifier].end, tokens[name].start));
+            if (async) modifier--;
+            if (['get', 'set', 'static'].includes(tokens[modifier]?.value)) modifier--;
+            if (modifier === groups[groups.length - 1].index || [',', ';', '}'].includes(tokens[modifier]?.value)
+                || parent.container === 'class' && tokens[modifier]
+                    && lineTerminator.test(source.slice(tokens[modifier].end, tokens[modifier + 1].start))) {
+                return { await: async, yield: generator, method: true };
+            }
+        }
+        let keyword = name;
+        if (tokens[keyword]?.kind === 'identifier' && tokens[keyword]?.value !== 'function') keyword--;
+        const generator = tokens[keyword]?.value === '*';
+        if (generator) keyword--;
+        if (tokens[keyword]?.value === 'function' && !memberAt(keyword)) {
+            return { await: tokens[keyword - 1]?.value === 'async'
+                && !lineTerminator.test(source.slice(tokens[keyword - 1].end, tokens[keyword].start)), yield: generator };
+        }
+    }
     const expressionBefore = (index, start = tokens[index]?.start ?? offset) => {
         const before = tokens[index - 1];
         if (before?.value === ':' && groups[groups.length - 1]?.control === 'switch') {
@@ -43,8 +83,7 @@ function tokensFor(source, sourceType) {
         if (last.kind === 'identifier') {
             // Keywords used as property names end an expression just like any
             // other member. A following slash divides; it cannot start a regexp.
-            const member = tokens[tokens.length - 2];
-            if (member?.kind === 'punctuation' && ['.', '?.', '#'].includes(member.value)) return false;
+            if (memberAt(tokens.length - 1)) return false;
             if (lineTerminator.test(source.slice(last.end, offset))) {
                 // debugger and restricted jumps end before a slash on the
                 // next line. A jump's label belongs to it only on the same
@@ -57,7 +96,7 @@ function tokensFor(source, sourceType) {
                 }
                 if (statement >= 0 && !['.', '?.', '#'].includes(tokens[statement - 1]?.value)) return true;
             }
-            return prefix.has(last.value);
+            return ['await', 'yield', 'of'].includes(last.value) ? last.operator : prefix.has(last.value);
         }
         if (['literal', 'number', 'regex', 'template-end'].includes(last.kind)) return false;
         if ([')', '}'].includes(last.value)) return last.statementEnd;
@@ -66,6 +105,34 @@ function tokensFor(source, sourceType) {
     function add(kind, value, start, extra = {}) {
         lineStart = false;
         const token = { kind, value, start, end: offset, ...extra }, index = tokens.length;
+        // Concise arrows own an AssignmentExpression. Delimiters and an ASI
+        // statement restore the containing function's await/yield grammar.
+        while (arrows.length) {
+            const arrow = arrows[arrows.length - 1], last = previous();
+            if (groups.length > arrow.depth) break;
+            const finished = last && (['literal', 'number', 'regex', 'template-end'].includes(last.kind)
+                || last.kind === 'identifier' && !(last.operator ?? prefix.has(last.value))
+                || [')', ']', '}', '++', '--'].includes(last.value));
+            const asi = finished && lineTerminator.test(source.slice(last.end, start)) && !token.template
+                && (kind === 'identifier' && !['in', 'instanceof'].includes(value)
+                    || ['literal', 'number'].includes(kind));
+            if (groups.length < arrow.depth || [',', ';', ')', ']', '}'].includes(value)
+                || value === ':' && !arrow.conditionals || asi) arrows.pop();
+            else { if (value === '?') arrow.conditionals++; else if (value === ':') arrow.conditionals--; break; }
+        }
+        if (kind === 'identifier' && ['await', 'yield'].includes(value)) token.operator = context()[value];
+        const parent = groups[groups.length - 1];
+        if (parent?.control === 'for' && parent.value === '(') {
+            if (value === ';') parent.iteration = true;
+            if (value === 'in' && !memberAt(index)) parent.iteration = true;
+            if (value === 'of') {
+                const last = previous();
+                token.operator = !parent.iteration && !memberAt(index)
+                    && (last?.kind === 'identifier' && !['let', 'const', 'var'].includes(last.value)
+                        || [')', ']', '}'].includes(last?.value));
+                if (token.operator) parent.iteration = true;
+            }
+        }
         const header = classes[classes.length - 1];
         if (header?.depth === groups.length && header.stage !== 'heritage') {
             if (value === 'extends') header.stage = 'heritage';
@@ -78,8 +145,41 @@ function tokensFor(source, sourceType) {
                 token.parent = groups[groups.length - 1]?.index;
                 if (value === '{') token.container = last?.value !== '=>' && (expressionBefore(index, start)
                     || last?.value === 'default' && tokens[index - 2]?.value === 'export') ? 'object' : 'block';
-                let statementEnd = value === '(' ? controls.has(last?.value)
+                let control;
+                if (value === '(' && last?.kind === 'identifier' && !memberAt(index - 1)) {
+                    if (controls.has(last.value)) control = last.value;
+                    else if (last.value === 'await' && tokens[index - 2]?.value === 'for') control = 'for';
+                } else if (value === '{') control = last?.control;
+                let statementEnd = value === '(' ? !!control
                     : value === '{' && (!last || !['=', '(', '[', ',', ':', 'return'].includes(last.value));
+                let scope;
+                if (value === '(') scope = functionContext(index);
+                else if (value === '{' && last?.value === ')') scope = last.context;
+                else if (value === '{' && last?.value === '=>') scope = arrowContext(index - 1);
+                if (value === '[' && tokens[parent?.index]?.container === 'class') {
+                    let before = index - 1;
+                    while (['static', 'async', 'get', 'set', '*'].includes(tokens[before]?.value)) before--;
+                    let bareField = before;
+                    if (tokens[bareField]?.value === ']') bareField = pairs.get(bareField);
+                    if (['identifier', 'literal', 'number'].includes(tokens[bareField]?.kind) || tokens[bareField]?.value === '[') {
+                        bareField--;
+                        if (tokens[bareField]?.value === '#') bareField--;
+                        if (tokens[bareField]?.value === 'static') bareField--;
+                    }
+                    const boundary = cursor => {
+                        if (cursor === parent.index || tokens[cursor]?.value === ';') return true;
+                        const body = pairs.get(cursor), head = tokens[body - 1];
+                        return tokens[cursor]?.value === '}' && tokens[body]?.parent === parent.index
+                            && (head?.context?.method || head?.value === 'static');
+                    };
+                    // Computed class names run in the containing scope. Field
+                    // initializers and method bodies have their own grammar;
+                    // an initializer's continued `array[index]` is not a name.
+                    if (boundary(before) || boundary(bareField) && tokens[before]
+                        && lineTerminator.test(source.slice(tokens[before].end, start))) {
+                        scope = tokens[parent.index].outerContext;
+                    }
+                }
                 let functionBody = false;
                 if (value === '{' && last?.value === ')') {
                     let keyword = (pairs.get(index - 1) ?? index) - 1;
@@ -103,20 +203,23 @@ function tokensFor(source, sourceType) {
                     statementEnd = !definition.expression;
                     definitions.set(definition.index, { expression: definition.expression, body: index });
                     token.container = 'class';
+                    token.outerContext = context();
+                    scope = { await: false, yield: false };
                     classes.pop();
                 }
-                groups.push({ index, value, statementEnd,
-                    control: value === '(' ? last?.value : value === '{' ? last?.control : undefined });
+                groups.push({ index, value, statementEnd, control, context: scope });
             } else if ([')', ']', '}'].includes(value)) {
                 const open = groups[groups.length - 1];
                 if (open && ({ ')': ['('], ']': ['['], '}': ['{', '${'] })[value].includes(open.value)) {
                     groups.pop(); pairs.set(open.index, index); pairs.set(index, open.index);
                     token.statementEnd = open.statementEnd;
                     token.control = open.control;
+                    token.context = open.context;
                 }
             }
         }
         tokens.push(token);
+        if (kind === 'punctuation' && value === '=>') arrows.push({ index, depth: groups.length, context: arrowContext(index), conditionals: 0 });
         if (kind === 'identifier' && value === 'class' && !['.', '?.'].includes(tokens[index - 1]?.value)) {
             classes.push({ index, depth: groups.length, stage: 'name', expression: expressionBefore(index) });
         }
