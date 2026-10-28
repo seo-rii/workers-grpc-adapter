@@ -40,7 +40,7 @@ function fixture(t) {
     const installedRepositoryLock = structuredClone(repositoryLock);
     const f = { repository, project, report, fixtureLock, repositoryLock, installedRepositoryLock,
         inspect: () => inspectGoogleWorkerGraph({ projectRoot: project, sdks: ['sdk'] }),
-        matches: () => matchesFixtureLocks(f.report, project, fixtureLock, repository, repositoryLock, installedRepositoryLock) };
+        matches: options => matchesFixtureLocks(f.report, project, fixtureLock, repository, repositoryLock, installedRepositoryLock, options) };
     return f;
 }
 
@@ -50,6 +50,28 @@ test('fixture lock verification accepts installed ancestor peers covered by the 
         'the previous fixture-only check rejected the normal ancestor peer closure');
     assert.equal(f.matches(), true);
 });
+
+test('strict fixture lock verification accepts the locked ancestor peers omitted from fixture integrity metadata', t => {
+    const f = fixture(t);
+    assert.equal(f.report.results[0].graph.every(item => !!item.integrity), false,
+        'the modern SDK gate previously rejected the ancestor peer metadata');
+    assert.equal(f.matches({ requireIntegrity: true }), true);
+});
+
+for (const location of ['fixture', 'root']) for (const integrity of [undefined, '']) {
+    test(`strict fixture lock verification rejects ${location} integrity ${integrity === undefined ? 'omission' : 'empty string'}`, t => {
+        const f = fixture(t);
+        if (location === 'fixture') {
+            f.fixtureLock.packages['node_modules/sdk'].integrity = integrity;
+            f.report.results[0].graph.find(item => item.name === 'sdk').integrity = integrity ?? null;
+        } else {
+            f.repositoryLock.packages['node_modules/tool'].integrity = integrity;
+            f.installedRepositoryLock.packages['node_modules/tool'].integrity = integrity;
+        }
+        assert.equal(f.matches(), true, 'matching metadata alone does not require a recorded integrity');
+        assert.equal(f.matches({ requireIntegrity: true }), false, 'the modern SDK gate still requires an integrity for every package');
+    });
+}
 
 test('fixture lock verification uses the physical root node_modules directory', t => {
     const f = fixture(t);
