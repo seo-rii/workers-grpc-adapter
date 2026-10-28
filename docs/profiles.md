@@ -300,6 +300,9 @@ Hidden runtime directories and source symlinks are included. Symlink imports
 resolve from the physical source location, and repeated physical files and
 directory cycles are visited once per package. Dependency `node_modules` trees
 are followed through package dependencies; version-control internals are skipped.
+Packages declared in `optionalDependencies` may be absent, including when
+their version range is the empty string. Installed optional packages still
+receive full manifest and source checks; missing required packages fail.
 Profile AST checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.

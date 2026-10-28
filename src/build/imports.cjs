@@ -489,12 +489,15 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         bind(scopeAt(index), factories, 'factory');
         bind(scopeAt(index), namespaces, 'namespace');
     }
+    const iterationBindings = new Set();
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (['const', 'let', 'var'].includes(value(index)) && !property(index)) {
             let end = index + 1;
             for (; end < tokens.length && ![';', ')', '}', 'in', 'of'].includes(value(end)); end++) {
                 if (pairs.get(end) > end) end = pairs.get(end);
             }
+            const iterationBinding = ['in', 'of'].includes(value(end)) && value(index - 1) === '('
+                && (value(index - 2) === 'for' || value(index - 2) === 'await' && value(index - 3) === 'for');
             for (const [start, finish] of separated(index + 1, end)) {
                 // A following expression after automatic semicolon insertion
                 // is not another binding just because it contains a comma.
@@ -505,8 +508,26 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                 const scope = scopeAt(index, value(index) === 'var');
                 // Redeclaring the CJS wrapper parameter with an uninitialized
                 // top-level var preserves its existing Node loader value.
-                if (scope === scopeRoot && value(index) === 'var' && value(start) === 'require' && initial < 0) continue;
+                if (scope === scopeRoot && value(index) === 'var' && value(start) === 'require' && initial < 0) {
+                    // A for-in/of body runs after its iteration assignment.
+                    // Keep the loader before/in the RHS and after the loop:
+                    // an empty iterable never overwrites the wrapper value.
+                    if (iterationBinding) {
+                        const body = pairs.get(index - 1) + 1;
+                        const iteration = addScope(body, statementAfter(body) - 1);
+                        bind(iteration, names);
+                        iterationBindings.add(iteration);
+                    }
+                    continue;
+                }
                 bind(scope, names, loader, value(index) !== 'var');
+                // The iteration assignment is not a lexical declaration. A
+                // later var initializer in this body can restore a loader.
+                if (scope === scopeRoot && value(index) === 'var' && loader) {
+                    for (const iteration of iterationBindings) {
+                        if (iteration.start <= index && index <= iteration.end) bind(iteration, names, loader);
+                    }
+                }
             }
         }
         if (['function', 'class'].includes(value(index)) && !property(index)) {
