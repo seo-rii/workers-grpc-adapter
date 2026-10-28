@@ -240,6 +240,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     const property = index => ['.', '?.'].includes(value(index - 1));
     const scopeRoot = { start: 0, end: tokens.length, function: true, bindings: new Map() }, scopes = [scopeRoot];
     const byRange = new Map([[`0:${tokens.length}`, scopeRoot]]);
+    scopeRoot.parameters = new Set(sourceType === 'script' ? ['exports', 'require', 'module', '__filename', '__dirname'] : []);
     const addScope = (start, end, isFunction = false) => {
         const key = `${start}:${end}`, found = byRange.get(key);
         if (found) { found.function ||= isFunction; return found; }
@@ -272,7 +273,13 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         }
         return names;
     }
-    const bind = (scope, names, loader = false) => { for (const name of names) scope.bindings.set(name, loader); };
+    const bind = (scope, names, loader = false, lexical = false) => {
+        for (const name of names) scope.bindings.set(name, loader);
+        if (lexical) {
+            scope.lexicals ??= new Set();
+            for (const name of names) scope.lexicals.add(name);
+        }
+    };
     const expressionPrefixes = new Set(['return', 'throw', 'yield', 'await', 'new', 'delete', 'void', 'typeof', 'var', 'in', 'instanceof']);
     const expressionContinuations = new Set(['(', '[', '.', '?.', ',', '?', ':', '+', '-', '*', '/', '%', '**',
         '&', '|', '^', '&&', '||', '??', '<', '>', '=', '==', '!=', '+=', '-=', '/=', 'in', 'instanceof']);
@@ -316,6 +323,8 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         const keyword = value(start);
         if (keyword === ';') return start + 1;
         if (keyword === '{' && pairs.has(start)) return pairs.get(start) + 1;
+        const definition = definitions.get(start);
+        if (definition && !definition.expression && pairs.has(definition.body)) return pairs.get(definition.body) + 1;
         if (identifier(start) && value(start + 1) === ':') return statementAfter(start + 2, depth + 1);
         if (['if', 'for', 'while', 'with', 'switch'].includes(keyword)) {
             const open = start + (keyword === 'for' && value(start + 1) === 'await' ? 2 : 1);
@@ -360,6 +369,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     // so declarations also shadow references earlier in their lexical scope.
     const parameters = [];
     const functionBodies = new Set([...definitions].filter(([index]) => value(index) === 'function').map(([, definition]) => definition.body));
+    const conditionalFunctions = new Set(), conditionalVars = [];
     if (!declaration) for (const [index, definition] of definitions) {
         if (value(index) !== 'class') continue;
         // A class static block has its own var environment. Visit only direct
@@ -376,6 +386,17 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     if (!declaration) for (let index = 0; index < tokens.length; index++) {
         if (value(index) === '(' && pairs.has(index)) {
             const close = pairs.get(index), body = close + 1, before = value(index - 1);
+            if (sourceType === 'script' && before === 'if' && !property(index - 1)) {
+                const after = statementAfter(body);
+                for (const branch of [body, ...(value(after) === 'else' ? [after + 1] : [])]) {
+                    const definition = value(branch) === 'function' && definitions.get(branch);
+                    if (!definition || definition.expression || !pairs.has(definition.body)) continue;
+                    // Annex B treats an unbraced function branch as a block.
+                    // Its lexical name must not shadow the following statement.
+                    addScope(branch, pairs.get(definition.body));
+                    conditionalFunctions.add(branch);
+                }
+            }
             // Parameters belong to actual function definitions, direct object/
             // class methods, or a catch clause. A call followed by an ASI block
             // has none of these contexts, even if its callee is named catch.
@@ -390,7 +411,9 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                 // The body block is the same function scope for var bindings.
                 if (!catchClause) addScope(body, pairs.get(body), true);
                 parameters.push({ scope, start: index + 1, end: close });
-                if (catchClause) bind(scopeAt(body), bindings(index + 1, close));
+                // Annex B permits a same-name var through a simple catch
+                // identifier, but a destructured catch binding blocks it.
+                if (catchClause) bind(scopeAt(body), bindings(index + 1, close), false, !identifier(index + 1));
             }
             if (forLoop) {
                 addScope(index, statementAfter(body) - 1);
@@ -409,8 +432,12 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     for (const parameter of parameters) {
         const names = bindings(parameter.start, parameter.end);
         bind(parameter.scope, names);
+        parameter.scope.parameters = new Set(names);
         // A narrower body scope must retain the enclosing parameter binding.
-        for (const child of scopes) if (child.function && child.start > parameter.scope.start && child.end === parameter.scope.end) bind(child, names);
+        for (const child of scopes) if (child.function && child.start > parameter.scope.start && child.end === parameter.scope.end) {
+            bind(child, names);
+            child.parameters = new Set(names);
+        }
     }
     function bindingAt(name, index) {
         const owners = scopes.filter(scope => scope.start <= index && index <= scope.end && scope.bindings.has(name))
@@ -493,7 +520,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                     }
                     continue;
                 }
-                bind(scope, names, loader);
+                bind(scope, names, loader, value(index) !== 'var');
                 // The iteration assignment is not a lexical declaration. A
                 // later var initializer in this body can restore a loader.
                 if (scope === scopeRoot && value(index) === 'var' && loader) {
@@ -509,9 +536,24 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
             if (!identifier(name) || value(name) === 'extends' || !definition || !pairs.has(definition.body)) continue;
             // Scope ownership must agree with the lexer, including async
             // modifiers and class heritage that contains other definitions.
-            if (definition.expression) bind(addScope(name, pairs.get(definition.body)), [value(name)]);
-            else bind(scopeAt(index), [value(name)]);
+            if (definition.expression) bind(addScope(name, pairs.get(definition.body)), [value(name)], false, value(index) === 'class');
+            else {
+                bind(scopeAt(index), [value(name)], false, value(index) === 'class');
+                if (conditionalFunctions.has(index)) {
+                    // The legacy outer var is suppressed by a matching formal
+                    // parameter, including the CommonJS wrapper's require.
+                    const owner = scopeAt(index, true);
+                    if (!owner.parameters?.has(value(name))) conditionalVars.push({ owner, name: value(name), declaration: index });
+                }
+            }
         }
+    }
+    // A lexical declaration can suppress the Annex B copy, and an existing
+    // var already owns the name. Keep their collected loader provenance.
+    for (const { owner, name, declaration } of conditionalVars) {
+        const blocked = scopes.some(scope => scope.start >= owner.start && scope.end <= owner.end
+            && scope.start < declaration && declaration <= scope.end && scope.lexicals?.has(name));
+        if (!blocked && !owner.bindings.has(name)) bind(owner, [name]);
     }
     function unparenthesized(start, end) {
         while (value(start) === '(' && pairs.get(start) === end - 1) { start++; end--; }
