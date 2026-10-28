@@ -116,6 +116,31 @@ for (const [name, expression] of [
   assert.equal(require((await f.build()).bundlePath).probe(), 23);
 });
 
+for (const [name, expression] of [
+  ['explicit property after array spread', '({...[mod], 0: ordinary})[0]'],
+  ['object spread after array spread', '({...[mod], ...{0: ordinary}})[0]'],
+  ['computed property after array spread', '({...[mod], [key]: ordinary})[0]'],
+  ['nested array spread', '({...[[mod]], 0: [ordinary]})[0][0]'],
+  ['Object.assign array target', 'Object.assign([mod], {0: ordinary})[0]'],
+  ['Object.assign array source', 'Object.assign({}, [mod], {0: ordinary})[0]'],
+]) test(`PREBUNDLE preserves an ordinary overwrite in ${name}`, async t => {
+  const f = fixture(t, `import mod from 'node:module'; const key = '0'; const ordinary = {createRequire: () => 23};
+    const selected = ${expression}; export function probe() { return selected.createRequire(); }`);
+  assert.equal(await f.native(), 23);
+  assert.equal(require((await f.build()).bundlePath).probe(), 23);
+});
+
+for (const [name, selection] of [
+  ['scalar reassignment', 'let selected = mod; selected = ordinary;'],
+  ['array member overwrite', 'const values = [mod]; values[0] = ordinary; const selected = values[0];'],
+  ['Object.assign mutation', 'const values = [mod]; Object.assign(values, {0: ordinary}); const selected = values[0];'],
+]) test(`PREBUNDLE retains observed namespace origins after ${name}`, async t => {
+  const f = fixture(t, `import mod from 'node:module'; const ordinary = {createRequire: () => 23};
+    ${selection} export function probe() { return selected.createRequire(); }`);
+  assert.equal(await f.native(), 23);
+  await assert.rejects(f.build(), { code: 'WGA_PREBUNDLE_DYNAMIC_IMPORT' });
+});
+
 for (const kind of ['conditional', 'array']) for (const cyclic of [false, true]) test(`PREBUNDLE bounds ${kind} alias graph traversal with cyclic=${cyclic}`, () => {
   const source = fs.readFileSync(path.join(__dirname, '../src/build/prebundle.cjs'), 'utf8');
   const start = source.indexOf('function bindSources('), end = source.indexOf('function checkExportStability(');

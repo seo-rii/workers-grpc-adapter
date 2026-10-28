@@ -878,8 +878,8 @@ function checkModuleLoaders(ts, captured) {
         result | container(`property:${JSON.stringify(String(index))}`, origin(element, seen)), 0n);
     }
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
-      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
-    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
+      result | (ts.isSpreadAssignment(property) ? copiedOrigin(property.expression, seen) : 0n), 0n);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | copiedOrigin(argument, seen), 0n);
     if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen);
     if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
       && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen));
@@ -890,6 +890,13 @@ function checkModuleLoaders(ts, captured) {
       && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
     return 0n;
+  }
+  function copiedOrigin(expression, seen) {
+    let result = origin(expression, seen);
+    // Object copies do not track property overwrite order. Keep fixed array
+    // slots in indexed reads only, where their positions are still meaningful.
+    for (const [flag, shape] of containers) if (shape.kind.startsWith('property:')) result &= ~flag;
+    return result;
   }
   function bindCallback(expression, value, seen = new Set()) {
     const node = unwrap(expression);
