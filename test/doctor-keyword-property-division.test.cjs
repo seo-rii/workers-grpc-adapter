@@ -48,6 +48,19 @@ test('DOCTOR still treats genuine keyword regex operands as regular expressions'
     ]) check(source);
 });
 
+for (const value of ['.', '?.', '#']) for (const template of [false, true]) {
+    test(`DOCTOR preserves regex operands after an ASI-terminated ${template ? 'template' : 'string'} ${value}`, () => {
+        const literal = template ? `\`${value}\`` : JSON.stringify(value);
+        const pattern = '/require("@grpc\\/grpc-js\\/regex-only")/';
+        for (const source of [
+            `function f() { ${literal}\nreturn ${pattern}; } f(); ${load};`,
+            `try { ${literal}\nthrow ${pattern}; } catch {} ${load};`,
+            `${literal}\nvoid ${pattern}; ${load};`,
+            `${literal}\ntypeof ${pattern}; ${load};`,
+        ]) check(source);
+    });
+}
+
 test('DOCTOR API and built CLI reject a missing import in keyword member division', t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-doctor-division-'));
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
