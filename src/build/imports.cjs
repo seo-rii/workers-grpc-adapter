@@ -241,7 +241,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     if (!tokens.some(token => token.kind === 'literal' && included(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
-    const property = index => ['.', '?.'].includes(value(index - 1));
+    const property = index => tokens[index - 1]?.kind === 'punctuation' && ['.', '?.'].includes(value(index - 1));
     const calls = [];
     for (let index = 0; index < tokens.length; index++) {
         if (!['require', 'import'].includes(value(index)) || property(index)) continue;
