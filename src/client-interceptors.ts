@@ -41,6 +41,7 @@ import { getErrorMessage } from './error';
 import { AuthContext } from './auth-context';
 import type { CallLifetime } from './call-lifetime';
 import { inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
+import { observeRejection } from './observe-rejection';
 
 /**
  * Error class associated with passing both interceptors and interceptor
@@ -253,9 +254,9 @@ export class InterceptingCall implements InterceptingCallInterface {
 
   cancelWithStatus(status: Status, details: string) {
     this.disposePending();
-    this.requester.cancel(() => {
+    observeRejection(this.requester.cancel(() => {
       this.nextCall.cancelWithStatus(status, details);
-    });
+    }), () => { /* Cleanup cannot replace the local cancellation outcome. */ });
   }
 
   disposePending(): void {

@@ -54,9 +54,9 @@
       "source": "vendor/client/client-interceptors.ts",
       "sha256": "fb6fc290df96c2e810fc4bef692539b3848f26f8360ad3d9d9be246ac80cb6af",
       "target": "src/client-interceptors.ts",
-      "patchedSha256": "100dbfab33c34df950af9b45ea91afcac8f65c5c1acbde916dd6ebb62bd16051",
+      "patchedSha256": "a86431b03fd3d89fab8ae3900cab668353bbc5a93978f8e28bf175288dd57da6",
       "patch": "vendor/patches/client-interceptors.ts.patch",
-      "patchSha256": "8070eaaee720fa0d82cbd0a9056c04281fc7bdc29ad4ab4415c2a5d3cdff3344"
+      "patchSha256": "b7ca0b3e2e66e0bc6a6bbd866650fec202f5c0520950a0f7631a373d28a33867"
     },
     {
       "upstreamPath": "src/call-interface.ts",
