@@ -21,6 +21,17 @@ that error to its callback when present, and otherwise throws synchronously.
 Previously submitted messages can still finish transformation and drain before
 half-close reaches the transport.
 
+Returned promises and thenables from outgoing `start`, `sendMessage` and
+`halfClose` requesters are observed for rejection. Before completion, a rejection
+finishes the logical call with `INTERNAL`, using the same phase diagnostic as a
+synchronous failure. An expired deadline takes precedence; a terminal result
+already selected by the call is preserved. Rejections after completion are
+consumed without changing that result. Promise fulfillment never advances an
+operation: the requester must still call `next()` explicitly. This containment is
+an adapter-specific correction; the pinned native grpc-js does not observe these
+returned promises. Incoming listener and application callback exception behavior
+is unchanged.
+
 These rules apply at every `InterceptingCall` in an interceptor chain. They do
 not make it safe for application interceptors to retain payloads or callbacks
 indefinitely. The adapter cannot release memory retained by application code.
@@ -31,7 +42,7 @@ Build and run the focused state-machine and public-client tests:
 
 ```sh
 npm run build
-node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs test/startup-deadline.test.cjs
+node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs test/interceptor-requester-rejections.test.cjs test/startup-deadline.test.cjs
 ```
 
 The fixed regressions cover all four synchronous/asynchronous startup and

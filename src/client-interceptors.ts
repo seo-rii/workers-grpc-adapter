@@ -40,7 +40,7 @@ import { ClientMethodDefinition } from './factory';
 import { getErrorMessage } from './error';
 import { AuthContext } from './auth-context';
 import type { CallLifetime } from './call-lifetime';
-import { inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
+import { failCall, inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
 import { observeRejection } from './observe-rejection';
 
 /**
@@ -279,6 +279,16 @@ export class InterceptingCall implements InterceptingCallInterface {
     return this.nextCall.getPeer();
   }
 
+  private observeRequester(value: unknown, details: string): void {
+    observeRejection(value, () => {
+      if (this.disposed || stopExpiredCall(this)) return;
+      if (!failCall(this, details)) {
+        this.disposePending();
+        this.nextCall.cancelWithStatus(Status.INTERNAL, details);
+      }
+    });
+  }
+
   private flushPendingOperations() {
     if (this.disposed || stopExpiredCall(this) || this.processingMetadata || this.flushing) return;
     this.flushing = true;
@@ -317,7 +327,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     };
     this.processingMetadata = true;
     let continued = false;
-    this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
+    this.observeRequester(this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       let finalInterceptingListener: InterceptingListenerImpl;
@@ -343,7 +353,7 @@ export class InterceptingCall implements InterceptingCallInterface {
       invokeWithCallExpiry(this, () => this.nextCall.start(md, finalInterceptingListener));
       this.processingMetadata = false;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_START');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
@@ -357,13 +367,13 @@ export class InterceptingCall implements InterceptingCallInterface {
     const pending = { context, message: undefined as any, ready: false };
     this.pendingMessages.push(pending);
     let continued = false;
-    this.requester.sendMessage(message, finalMessage => {
+    this.observeRequester(this.requester.sendMessage(message, finalMessage => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       pending.message = finalMessage;
       pending.ready = true;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_SEND');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessage(message: any): void {
@@ -376,12 +386,12 @@ export class InterceptingCall implements InterceptingCallInterface {
     if (this.disposed || stopExpiredCall(this) || this.halfCloseRequested) return;
     this.halfCloseRequested = true;
     let continued = false;
-    this.requester.halfClose(() => {
+    this.observeRequester(this.requester.halfClose(() => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       this.pendingHalfClose = true;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_HALF_CLOSE');
   }
   getAuthContext(): AuthContext | null {
     return this.nextCall.getAuthContext();
