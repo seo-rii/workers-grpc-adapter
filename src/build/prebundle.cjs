@@ -631,13 +631,20 @@ function checkModuleLoaders(ts, captured) {
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)
     || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node)
     || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
-  function key(expression, computed = false, seen = new Set()) {
+  function key(expression, computed = false) {
+    const value = keyValue(expression, computed);
+    return value === undefined ? undefined : String(value);
+  }
+  function keyValue(expression, computed = false, seen = new Set()) {
     const node = unwrap(expression);
-    if (ts.isComputedPropertyName(node)) return key(node.expression, true, seen);
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isNumericLiteral(node)
+    if (ts.isComputedPropertyName(node)) return keyValue(node.expression, true, seen);
+    // Preserve primitive types through addition: numeric operands add, while
+    // a string operand concatenates. Coerce only the final property key.
+    if (ts.isNumericLiteral(node)) return Number(node.text);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
       || !computed && ts.isIdentifier(node)) return node.text;
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-      const left = key(node.left, true, seen), right = key(node.right, true, seen);
+      const left = keyValue(node.left, true, seen), right = keyValue(node.right, true, seen);
       if (left !== undefined && right !== undefined) return left + right;
     }
     if (ts.isIdentifier(node)) {
@@ -646,7 +653,7 @@ function checkModuleLoaders(ts, captured) {
       const declaration = symbol.declarations[0];
       if (ts.isVariableDeclaration(declaration) && declaration.initializer
         && ts.isVariableDeclarationList(declaration.parent) && declaration.parent.flags & ts.NodeFlags.Const) {
-        return key(declaration.initializer, true, new Set([...seen, symbol]));
+        return keyValue(declaration.initializer, true, new Set([...seen, symbol]));
       }
     }
   }
