@@ -275,7 +275,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         const parts = []; let first = start;
         for (let index = start; index < end; index++) {
             if (pairs.get(index) > index) { index = pairs.get(index); continue; }
-            if (value(index) === separator) { parts.push([first, index]); first = index + 1; }
+            if (tokens[index].kind === 'punctuation' && value(index) === separator) { parts.push([first, index]); first = index + 1; }
         }
         parts.push([first, end]); return parts;
     }
@@ -287,8 +287,11 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
             else if (['{', '['].includes(value(first)) && pairs.has(first)) {
                 const object = value(first) === '{';
                 for (const [begin, finish] of separated(first + 1, Math.min(last, pairs.get(first)))) {
-                    const parts = object ? separated(begin, finish, ':') : [[begin, finish]];
-                    names.push(...bindings(...(parts.length > 1 ? parts[parts.length - 1] : [begin, finish])));
+                    // Only the binding pattern declares names. A default value
+                    // can contain a conditional ':' which is not a property alias.
+                    const [patternStart, patternEnd] = separated(begin, finish, '=')[0];
+                    const parts = object ? separated(patternStart, patternEnd, ':') : [[patternStart, patternEnd]];
+                    names.push(...bindings(...parts[parts.length - 1]));
                 }
             }
         }
