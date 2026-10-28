@@ -41,6 +41,9 @@ function tokensFor(source, sourceType) {
         const last = previous();
         if (!last) return true;
         if (last.kind === 'identifier') {
+            // Keywords used as property names end an expression just like any
+            // other member. A following slash divides; it cannot start a regexp.
+            if (['.', '?.', '#'].includes(tokens[tokens.length - 2]?.value)) return false;
             if (lineTerminator.test(source.slice(last.end, offset))) {
                 // debugger and restricted jumps end before a slash on the
                 // next line. A jump's label belongs to it only on the same
