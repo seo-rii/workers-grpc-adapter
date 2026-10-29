@@ -1,14 +1,15 @@
 --- a/src/client-interceptors.ts
 +++ b/src/client-interceptors.ts
-@@ -1,5 +1,8 @@
+@@ -1,6 +1,9 @@
  /*
   * Copyright 2019 gRPC authors.
-+ *
+  *
 + * Modified by workers-grpc-adapter contributors for the Fetch-based Workers
 + * transport. See vendor/UPSTREAM.json and vendor/patches for provenance.
-  *
++ *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
 @@ -29,12 +32,16 @@
    MessageContext,
    Call,
@@ -38,7 +39,18 @@
    cancelWithStatus(status: Status, details: string): void;
    getPeer(): string;
    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void;
-@@ -212,25 +221,25 @@
+@@ -202,6 +211,10 @@
+   getAuthContext(): AuthContext | null;
+ }
+
++// Track adapter-owned wrapper links without inspecting custom transports.
++// A synthetic chain can be assembled before it has any logical call owner.
++const interceptingCallLinks = new WeakMap<InterceptingCallInterface, InterceptingCallInterface>();
++
+ export class InterceptingCall implements InterceptingCallInterface {
+   /**
+    * The requester that this InterceptingCall uses to modify outgoing operations
+@@ -212,25 +225,26 @@
     * method but it has not been passed to the corresponding next callback
     */
    private processingMetadata = false;
@@ -74,11 +86,12 @@
      private nextCall: InterceptingCallInterface,
      requester?: Requester
    ) {
++    interceptingCallLinks.set(this, nextCall);
 +    inheritCallExpiryCheck(this, nextCall);
      if (requester) {
        this.requester = {
          start: requester.start ?? defaultRequester.start,
-@@ -244,29 +253,59 @@
+@@ -244,29 +258,59 @@
    }
 
    cancelWithStatus(status: Status, details: string) {
@@ -119,11 +132,6 @@
 -      this.pendingMessageContext = null;
 -      this.pendingMessage = null;
 -    }
--  }
--
--  private processPendingHalfClose() {
--    if (this.pendingHalfClose) {
--      this.nextCall.halfClose();
 +  private observeRequester(value: unknown, details: string): void {
 +    observeRejection(value, () => {
 +      if (this.disposed || stopExpiredCall(this)) return;
@@ -132,8 +140,11 @@
 +        this.nextCall.cancelWithStatus(Status.INTERNAL, details);
 +      }
 +    });
-+  }
-+
+   }
+
+-  private processPendingHalfClose() {
+-    if (this.pendingHalfClose) {
+-      this.nextCall.halfClose();
 +  private flushPendingOperations() {
 +    if (this.disposed || stopExpiredCall(this) || this.processingMetadata || this.flushing) return;
 +    this.flushing = true;
@@ -154,7 +165,7 @@
      }
    }
 
-@@ -274,6 +313,7 @@
+@@ -274,6 +318,7 @@
      metadata: Metadata,
      interceptingListener?: Partial<InterceptingListener>
    ): void {
@@ -162,7 +173,7 @@
      const fullInterceptingListener: InterceptingListener = {
        onReceiveMetadata:
          interceptingListener?.onReceiveMetadata?.bind(interceptingListener) ??
-@@ -286,11 +326,15 @@
+@@ -286,11 +331,15 @@
          (status => {}),
      };
      this.processingMetadata = true;
@@ -182,7 +193,7 @@
        } else {
          const fullListener: FullListener = {
            onReceiveMetadata:
-@@ -305,57 +349,63 @@
+@@ -305,57 +354,63 @@
            fullInterceptingListener
          );
        }
@@ -280,7 +291,7 @@
  }
 
  /**
-@@ -366,8 +416,9 @@
+@@ -366,8 +421,9 @@
    constructor(
      protected call: Call,
      // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -292,7 +303,7 @@
    cancelWithStatus(status: Status, details: string): void {
      this.call.cancelWithStatus(status, details);
    }
-@@ -376,16 +427,22 @@
+@@ -376,16 +432,22 @@
    }
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    sendMessageWithContext(context: MessageContext, message: any): void {
@@ -315,7 +326,7 @@
      this.call.sendMessageWithContext(context, serialized);
    }
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-@@ -396,6 +453,7 @@
+@@ -396,6 +458,7 @@
      metadata: Metadata,
      interceptingListener?: Partial<InterceptingListener>
    ): void {
@@ -323,7 +334,7 @@
      let readError: StatusObject | null = null;
      this.call.start(metadata, {
        onReceiveMetadata: metadata => {
-@@ -407,6 +465,7 @@
+@@ -407,6 +470,7 @@
          try {
            deserialized = this.methodDefinition.responseDeserialize(message);
          } catch (e) {
@@ -331,7 +342,7 @@
            readError = {
              code: Status.INTERNAL,
              details: `Response message parsing error: ${getErrorMessage(e)}`,
-@@ -415,6 +474,7 @@
+@@ -415,6 +479,7 @@
            this.call.cancelWithStatus(readError.code, readError.details);
            return;
          }
@@ -339,7 +350,7 @@
          interceptingListener?.onReceiveMessage?.(deserialized);
        },
        onReceiveStatus: status => {
-@@ -427,10 +487,10 @@
+@@ -427,10 +492,10 @@
      });
    }
    startRead() {
@@ -352,7 +363,7 @@
    }
    getAuthContext(): AuthContext | null {
      return this.call.getAuthContext();
-@@ -446,8 +506,8 @@
+@@ -446,8 +511,8 @@
    implements InterceptingCallInterface
  {
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -363,7 +374,7 @@
    }
    start(metadata: Metadata, listener?: Partial<InterceptingListener>): void {
      let receivedMessage = false;
-@@ -483,13 +543,14 @@
+@@ -483,13 +548,14 @@
    channel: Channel,
    options: InterceptorOptions,
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -382,7 +393,7 @@
    }
  }
 
-@@ -518,7 +579,8 @@
+@@ -518,7 +584,8 @@
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
    methodDefinition: ClientMethodDefinition<any, any>,
    options: CallOptions,
@@ -392,7 +403,7 @@
  ): InterceptingCallInterface {
    if (
      interceptorArgs.clientInterceptors.length > 0 &&
-@@ -564,6 +626,11 @@
+@@ -564,6 +631,11 @@
        .filter(interceptor => interceptor);
      // Filter out falsy values when providers return nothing
    }
@@ -404,14 +415,18 @@
    const interceptorOptions = Object.assign({}, options, {
      method_definition: methodDefinition,
    });
-@@ -576,10 +643,15 @@
+@@ -576,10 +648,19 @@
     * channel. */
    const getCall: NextCall = interceptors.reduceRight<NextCall>(
      (nextCall: NextCall, nextInterceptor: Interceptor) => {
 -      return currentOptions => nextInterceptor(currentOptions, nextCall);
 +      return currentOptions => {
 +        const call = nextInterceptor(currentOptions, nextCall);
-+        inheritCallExpiryCheck(call, lifetime);
++        // A single interceptor may return several nested wrappers over a
++        // synthetic transport. Give every existing wrapper the same owner.
++        for (let current: InterceptingCallInterface | undefined = call; current; current = interceptingCallLinks.get(current)) {
++          inheritCallExpiryCheck(current, lifetime);
++        }
 +        return call;
 +      };
      },
@@ -420,7 +435,6 @@
 +      getBottomInterceptingCall(channel, finalOptions, finalOptions.method_definition, lifetime)
    );
 -  return getCall(interceptorOptions);
--}
 +  try { return lifetime.bind(getCall(interceptorOptions)); }
 +  catch (error) { lifetime.cancelWithStatus(Status.INTERNAL, 'WGA_INTERCEPTOR_CONSTRUCTION'); throw error; }
-+}
+ }
