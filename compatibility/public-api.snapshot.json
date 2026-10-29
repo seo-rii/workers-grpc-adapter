@@ -12165,14 +12165,14 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface GoogleWorkerGraphInspection {\n    scope: string;\n    passed: boolean;\n    expectedImplementation: 'workers-grpc-adapter' | '@grpc/grpc-js';\n    environment: {\n        node: string;\n        platform: string;\n        arch: string;\n        packageManager: string | null;\n    };\n    lockfiles: Array<{\n        path: string;\n        sha256: string;\n    }>;\n    lockfileVersion: number | null;\n    lockfileSha256: string | null;\n    graphSha256: string;\n    identity: {\n        status: 'duplicate-installations' | 'single-installation' | 'not-installed';\n        installations: Array<{\n            path: string;\n            version: string;\n            resolvedBy: Array<{\n                consumer: string;\n                specifier: string;\n            }>;\n        }>;\n    };\n    diagnostics: Array<{\n        code: string;\n        message: string;\n        paths: string[];\n    }>;\n    results: Array<{\n        sdk: string;\n        version?: string;\n        status: string;\n        reason?: string;\n        graph?: GoogleWorkerGraphPackage[];\n        gax?: Array<{\n            path: string;\n            version: string;\n        }>;\n        grpc?: Array<{\n            path: string;\n            implementation: string;\n            version: string;\n        }>;\n        grpcImportCount?: number;\n        prerelease?: Array<{\n            name: string;\n            version: string;\n            expected: boolean;\n        }>;\n        unresolved?: string[];\n    }>;\n    buildProfile?: GoogleWorkerProfileInspection;\n}",
-          "sha256": "5dbea5ff9047ed66cf27b16689a76736d20136ccd7e2a1355d2f937b98a7bc2c",
+          "sha256": "93c9c2af74e7de17bd89808a4a2b0038dc3b5e8fa69d9844cac952c07c70d713",
           "dependencies": [
             "7b661b46b814c7108ee3ce211461f64c179fe603b75ca53655249e888c8b7f68",
+            "91ceeef37f66251e626192846a46dcd2c7548326fbcdad8d8335d23763782890",
             "972146181f0b30ee597d963b5d726ac54a62025a328b2e0bbc8837d7b77bbd2b",
             "a4ce6133e1e5d873eed7344fc395f10123d5736012b5c70511042cbaa03ba6f1",
             "b892721e8c1473bcffc8775f19e6ea07e263ebe30fb5d1598ab749ec601d5a9f",
             "ba432da6eb666805850ddec048c36d86f38765b857dd84317b15f2071167b526",
-            "d27ccb09c5b2858f4482fa2102532e95a6efa4f065e6ae47c47bc70a2099f714",
             "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec"
           ]
         },
@@ -12193,8 +12193,8 @@
           "type": true,
           "value": false,
           "kind": "InterfaceDeclaration",
-          "signature": "interface GoogleWorkerGraphPackage {\n    name: string;\n    version: string;\n    path: string;\n    integrity: string | null;\n    dependencies: Array<{\n        name: string;\n        path?: string;\n        missing?: boolean;\n        optional?: boolean;\n    }>;\n    grpcImports: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import' | 'declaration';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n}",
-          "sha256": "ea7b04c5a9aa3f44b8050ee3eab835dff1f266e7eac23ad61431449500a52470",
+          "signature": "interface GoogleWorkerGraphPackage {\n    name: string;\n    version: string;\n    path: string;\n    integrity: string | null;\n    dependencies: Array<{\n        name: string;\n        path?: string;\n        missing?: boolean;\n        optional?: boolean;\n    }>;\n    grpcImports: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import' | 'declaration';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n    packageImports?: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n}",
+          "sha256": "b9439919c6f1cb559db2666d734324432953d955e81e0d7120f55768b7805415",
           "dependencies": [
             "972146181f0b30ee597d963b5d726ac54a62025a328b2e0bbc8837d7b77bbd2b"
           ]
@@ -12309,15 +12309,15 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function inspectGoogleWorkerGraph(options: GoogleWorkerGraphOptions): GoogleWorkerGraphInspection;",
-          "sha256": "ad3c608b75998d1f6082431ab29c719b7cdef835f6cd42493cc501e5babb50d7",
+          "sha256": "e5d238a304e8cb743a59cf14b4dfc55191aff16abfc877d1d2c8574237de8bac",
           "dependencies": [
             "372f9272d768bbfe8eedaa8dd59b69137910b122ec20229c1257c6774e68915a",
             "7b661b46b814c7108ee3ce211461f64c179fe603b75ca53655249e888c8b7f68",
+            "91ceeef37f66251e626192846a46dcd2c7548326fbcdad8d8335d23763782890",
             "972146181f0b30ee597d963b5d726ac54a62025a328b2e0bbc8837d7b77bbd2b",
             "a4ce6133e1e5d873eed7344fc395f10123d5736012b5c70511042cbaa03ba6f1",
             "b892721e8c1473bcffc8775f19e6ea07e263ebe30fb5d1598ab749ec601d5a9f",
             "ba432da6eb666805850ddec048c36d86f38765b857dd84317b15f2071167b526",
-            "d27ccb09c5b2858f4482fa2102532e95a6efa4f065e6ae47c47bc70a2099f714",
             "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec",
             "e128630c2c333911173abc8f1495e9c4c82c5004927e952a6b787ed7ae44b27a",
             "ea1f1805b1bc07405dc261b466262ed72ed2e8bfc7d3bac933c670b7facd8091"
@@ -12371,6 +12371,11 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface GoogleWorkerPrebundleOptions {\n    projectRoot: string;\n    outdir: string;\n    typescript: typeof import('typescript');\n    esbuild: typeof import('esbuild');\n    entryPoint: string;\n    exports: string[];\n    declarationFile: string;\n    packageName?: string;\n    profile?: GoogleWorkerProfile;\n}"
         },
+        "91ceeef37f66251e626192846a46dcd2c7548326fbcdad8d8335d23763782890": {
+          "name": "dist/build/doctor.d.cts#GoogleWorkerGraphPackage",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface GoogleWorkerGraphPackage {\n    name: string;\n    version: string;\n    path: string;\n    integrity: string | null;\n    dependencies: Array<{\n        name: string;\n        path?: string;\n        missing?: boolean;\n        optional?: boolean;\n    }>;\n    grpcImports: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import' | 'declaration';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n    packageImports?: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n}"
+        },
         "972146181f0b30ee597d963b5d726ac54a62025a328b2e0bbc8837d7b77bbd2b": {
           "name": "typescript/lib/lib.es5.d.ts#Array",
           "kind": "external",
@@ -12390,11 +12395,6 @@
           "name": "dist/build/index.d.cts#GoogleWorkerProfileInspection",
           "kind": "InterfaceDeclaration",
           "signature": "interface GoogleWorkerProfileInspection {\n    profile: GoogleWorkerProfile;\n    revision: number;\n    passed: boolean;\n    scope: string;\n    transformationsChecked: boolean;\n    diagnostics: GoogleWorkerProfileDiagnostic[];\n    capabilities: string[];\n    requiredChecks: string[];\n    buildIdentity?: GoogleWorkerBuildIdentity;\n    resolvedPaths: GoogleWorkerResolvedPath[];\n}"
-        },
-        "d27ccb09c5b2858f4482fa2102532e95a6efa4f065e6ae47c47bc70a2099f714": {
-          "name": "dist/build/doctor.d.cts#GoogleWorkerGraphPackage",
-          "kind": "InterfaceDeclaration",
-          "signature": "interface GoogleWorkerGraphPackage {\n    name: string;\n    version: string;\n    path: string;\n    integrity: string | null;\n    dependencies: Array<{\n        name: string;\n        path?: string;\n        missing?: boolean;\n        optional?: boolean;\n    }>;\n    grpcImports: Array<{\n        file: string;\n        specifier: string;\n        kind: 'require' | 'import' | 'declaration';\n        resolved?: string;\n        implementation?: string;\n        version?: string;\n        status: string;\n    }>;\n}"
         },
         "e1252c1e1c1ea2ae96c1ac0322595b282662b9f262b4efaaabf474fb3c5051ec": {
           "name": "dist/build/index.d.cts#GoogleWorkerProfile",
