@@ -447,7 +447,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         const prefixes = new Set(expressionPrefixes);
         prefixes.delete('yield');
         if (!asyncArrow) prefixes.delete('await');
-        let index = start;
+        let index = start, conditionals = 0;
         for (; index < tokens.length; index++) {
             // A concise arrow owns an AssignmentExpression, not the following
             // ASI statement. Preserve calls, operators and tagged templates
@@ -457,6 +457,15 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                 index = expressionEnd(index + 1, asyncArrowAt(index), depth + 1); continue;
             }
             if (pairs.get(index) > index) { index = pairs.get(index); continue; }
+            // A colon closes this arrow only when it belongs to the containing
+            // conditional. Nested conditionals still belong to its body.
+            if (tokens[index].kind === 'punctuation') {
+                if (value(index) === '?') conditionals++;
+                else if (value(index) === ':') {
+                    if (conditionals === 0) break;
+                    conditionals--;
+                }
+            }
             if ([',', ';', ')', ']', '}'].includes(syntax(index))) break;
         }
         return index - 1;
