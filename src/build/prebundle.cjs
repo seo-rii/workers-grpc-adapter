@@ -647,6 +647,15 @@ function checkModuleLoaders(ts, captured) {
       const left = keyValue(node.left, true, seen), right = keyValue(node.right, true, seen);
       if (left !== undefined && right !== undefined) return left + right;
     }
+    if (ts.isTemplateExpression(node)) {
+      let value = node.head.text;
+      for (const span of node.templateSpans) {
+        const substitution = keyValue(span.expression, true, seen);
+        if (substitution === undefined) return;
+        value += substitution + span.literal.text;
+      }
+      return value;
+    }
     if (ts.isIdentifier(node)) {
       const symbol = checker.getSymbolAtLocation(node);
       if (!symbol || seen.has(symbol) || symbol.declarations?.length !== 1) return;
@@ -938,7 +947,7 @@ function checkModuleLoaders(ts, captured) {
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
-      && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
+      && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
     return 0n;
   }
