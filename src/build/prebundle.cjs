@@ -773,8 +773,12 @@ function checkModuleLoaders(ts, captured) {
     return result;
   };
   function bind(name, value, keys = []) {
+    name = unwrap(name);
     if (ts.isIdentifier(name)) {
-      const symbol = checker.getSymbolAtLocation(name);
+      // In an assignment's shorthand property, the property symbol is not
+      // the variable receiving the value.
+      const symbol = ts.isShorthandPropertyAssignment(name.parent)
+        ? checker.getShorthandAssignmentValueSymbol(name.parent) : checker.getSymbolAtLocation(name);
       if (symbol) {
         if (symbol.flags & ts.SymbolFlags.Alias) boundAliasNames.add(symbol.name);
         if (!values.has(symbol)) values.set(symbol, []);
@@ -783,9 +787,48 @@ function checkModuleLoaders(ts, captured) {
         originCache.clear();
       }
     } else if (ts.isObjectBindingPattern(name)) {
-      for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
-        ? keys : [...keys, key(element.propertyName || element.name)]);
+      for (const element of name.elements) {
+        bind(element.name, value, element.dotDotDotToken ? keys : [...keys, key(element.propertyName || element.name)]);
+        if (element.initializer) bind(element.name, element.initializer);
+      }
+    } else if (ts.isArrayBindingPattern(name)) {
+      name.elements.forEach((element, index) => {
+        if (ts.isOmittedExpression(element)) return;
+        bind(element.name, value, [...keys, element.dotDotDotToken ? { rest: index } : String(index)]);
+        if (element.initializer) bind(element.name, element.initializer);
+      });
+    } else if (ts.isBinaryExpression(name) && name.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+      // A default can supply a namespace independently of the selected
+      // source member. Keep both possible origins, as for conditional values.
+      bind(name.left, value, keys);
+      bind(name.left, name.right);
+    } else if (ts.isArrayLiteralExpression(name)) {
+      name.elements.forEach((element, index) => {
+        if (ts.isOmittedExpression(element)) return;
+        bind(ts.isSpreadElement(element) ? element.expression : element, value,
+          [...keys, ts.isSpreadElement(element) ? { rest: index } : String(index)]);
+      });
+    } else if (ts.isObjectLiteralExpression(name)) {
+      for (const property of name.properties) {
+        if (ts.isPropertyAssignment(property)) bind(property.initializer, value, [...keys, key(property.name)]);
+        else if (ts.isShorthandPropertyAssignment(property)) {
+          bind(property.name, value, [...keys, property.name.text]);
+          if (property.objectAssignmentInitializer) bind(property.name, property.objectAssignmentInitializer);
+        } else if (ts.isSpreadAssignment(property)) bind(property.expression, value, keys);
+      }
     }
+  }
+  function arrayRest(flags, start) {
+    let result = 0n;
+    // Rest bindings preserve the known suffix of a fixed literal array.
+    // Source arrays containing arbitrary spreads still have no fixed slots.
+    for (const [flag, shape] of containers) if (flags & flag && shape.kind.startsWith('property:')) {
+      const name = JSON.parse(shape.kind.slice('property:'.length)), index = Number(name);
+      if (Number.isInteger(index) && String(index) === name && index >= start) {
+        result |= container(`property:${JSON.stringify(String(index - start))}`, shape.value);
+      }
+    }
+    return result;
   }
   function builtinMethod(node, receiver, method) {
     if (!ts.isCallExpression(node)) return false;
@@ -800,7 +843,7 @@ function checkModuleLoaders(ts, captured) {
   const reflectGet = node => builtinMethod(node, 'Reflect', 'get');
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
-    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) bind(node.left, node.right);
     if (objectAssign(node) && node.arguments.length && ts.isIdentifier(node.arguments[0])) bind(node.arguments[0], node);
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && !node.importClause?.isTypeOnly) {
       const clause = node.importClause;
@@ -830,7 +873,8 @@ function checkModuleLoaders(ts, captured) {
     originQueries.push(dependencies);
     const next = new Set([...seen, symbol]);
     let result = (values.get(symbol) || []).reduce((flags, value) => flags
-      | value.keys.reduce((current, name) => member(current, name, next), origin(value.value, next)), 0n);
+      | value.keys.reduce((current, name) => typeof name === 'object' ? arrayRest(current, name.rest)
+        : member(current, name, next), origin(value.value, next)), 0n);
     for (const declaration of symbol.declarations || []) {
       if (ts.isExportSpecifier(declaration)) {
         const statement = declaration.parent.parent;
