@@ -16,6 +16,8 @@ export interface GoogleWorkerGraphPackage {
   integrity: string | null;
   dependencies: Array<{ name: string; path?: string; missing?: boolean; optional?: boolean }>;
   grpcImports: Array<{ file: string; specifier: string; kind: 'require' | 'import' | 'declaration'; resolved?: string; implementation?: string; version?: string; status: string }>;
+  /** Literal runtime #imports sites, including non-gRPC helpers and builtins. */
+  packageImports?: Array<{ file: string; specifier: string; kind: 'require' | 'import'; resolved?: string; implementation?: string; version?: string; status: string }>;
 }
 export interface GoogleWorkerGraphInspection {
   scope: string;

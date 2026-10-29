@@ -296,6 +296,18 @@ Node's import/require resolvers and proven `createRequire` bases. JSON and nativ
 addon targets remain data; unreferenced extensionless README/data files are not
 treated as JavaScript. Computed module paths, export-pattern expansion, and
 non-Node command scripts are outside this discovery pass.
+Literal package-private `#imports` sites also use Node's resolver, including
+conditional external-package targets and patterns selected by a concrete import.
+This follows referenced sites without enumerating every possible pattern match.
+The owning package's optional `packageImports` list records each alias, its
+import/require kind, physical target (or builtin), and resolution status.
+Missing targets and unverified `createRequire` bases fail the graph check.
+Targets owned by or reached through a gRPC/adapter package also appear in
+`grpcImports` and participate in implementation and physical installation checks.
+For private aliases, a separate lookup retains the logical package path before
+symlinks and must agree with the default resolver's physical target. Other
+resolved files are followed for further imports, while JSON and native-addon
+files remain data.
 Hidden runtime directories and source symlinks are included. Symlink imports
 resolve from the physical source location, and repeated physical files and
 directory cycles are visited once per package. Dependency `node_modules` trees
