@@ -350,7 +350,7 @@ function tokensFor(source, sourceType) {
 function literalImports(source, declaration = false, { includeLocal = false, sourceType = 'script' } = {}) {
     const { tokens, pairs, definitions } = tokensFor(source, sourceType), imports = new Map();
     const included = specifier => typeof specifier === 'string' && (/^@grpc\/grpc-js(?:\/|$)/.test(specifier)
-        || includeLocal && /^(?:\.{1,2}\/|\/|file:)/.test(specifier));
+        || includeLocal && /^(?:\.{1,2}\/|\/|file:|#)/.test(specifier));
     if (!tokens.some(token => token.kind === 'literal' && included(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
