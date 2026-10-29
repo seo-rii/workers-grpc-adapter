@@ -211,6 +211,10 @@ export interface InterceptingCallInterface {
   getAuthContext(): AuthContext | null;
 }
 
+// Track adapter-owned wrapper links without inspecting custom transports.
+// A synthetic chain can be assembled before it has any logical call owner.
+const interceptingCallLinks = new WeakMap<InterceptingCallInterface, InterceptingCallInterface>();
+
 export class InterceptingCall implements InterceptingCallInterface {
   /**
    * The requester that this InterceptingCall uses to modify outgoing operations
@@ -239,6 +243,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     private nextCall: InterceptingCallInterface,
     requester?: Requester
   ) {
+    interceptingCallLinks.set(this, nextCall);
     inheritCallExpiryCheck(this, nextCall);
     if (requester) {
       this.requester = {
@@ -645,7 +650,11 @@ export function getInterceptingCall(
     (nextCall: NextCall, nextInterceptor: Interceptor) => {
       return currentOptions => {
         const call = nextInterceptor(currentOptions, nextCall);
-        inheritCallExpiryCheck(call, lifetime);
+        // A single interceptor may return several nested wrappers over a
+        // synthetic transport. Give every existing wrapper the same owner.
+        for (let current: InterceptingCallInterface | undefined = call; current; current = interceptingCallLinks.get(current)) {
+          inheritCallExpiryCheck(current, lifetime);
+        }
         return call;
       };
     },
