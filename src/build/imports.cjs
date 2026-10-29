@@ -59,12 +59,13 @@ function tokensFor(source, sourceType) {
     }
     const expressionBefore = (index, start = tokens[index]?.start ?? offset) => {
         const before = tokens[index - 1];
-        if (before?.value === ':' && groups[groups.length - 1]?.control === 'switch') {
+        if (before?.kind === 'punctuation' && before.value === ':' && groups[groups.length - 1]?.control === 'switch') {
             // A switch clause starts statements, while an unmatched question
             // mark makes this a conditional-expression alternate in that body.
             let alternatives = 0;
             for (let cursor = index - 2; cursor >= 0; cursor--) {
                 if (pairs.get(cursor) < cursor) { cursor = pairs.get(cursor); continue; }
+                if (tokens[cursor].kind !== 'punctuation') continue;
                 const value = tokens[cursor].value;
                 if (value === ':') alternatives++;
                 else if (value === '?' && alternatives-- === 0) return true;
@@ -74,7 +75,7 @@ function tokensFor(source, sourceType) {
         }
         // A line break after return/yield ends that expression before a new
         // declaration; comments are already absent from the token stream.
-        return expressionPrefixes.has(before?.value) && !(['return', 'yield'].includes(before.value)
+        return ['identifier', 'punctuation'].includes(before?.kind) && expressionPrefixes.has(before.value) && !(['return', 'yield'].includes(before.value)
             && lineTerminator.test(source.slice(before.end, start)));
     };
     const allowsRegex = () => {
@@ -353,6 +354,8 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
     if (!tokens.some(token => token.kind === 'literal' && included(token.value))) return [];
     const value = index => tokens[index]?.value;
     const identifier = index => tokens[index]?.kind === 'identifier';
+    // Literal contents never act as delimiters or statement keywords.
+    const syntax = index => ['identifier', 'punctuation'].includes(tokens[index]?.kind) ? value(index) : undefined;
     const property = index => tokens[index - 1]?.kind === 'punctuation' && ['.', '?.'].includes(value(index - 1));
     const calls = [];
     for (let index = 0; index < tokens.length; index++) {
@@ -429,7 +432,7 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         const finished = ['literal', 'number', 'regex', 'template-end'].includes(previous.kind)
             || previous.kind === 'identifier' && (!prefixes.has(previous.value) || property(index - 1))
             || [')', ']', '}', '++', '--'].includes(previous.value);
-        return finished && !expressionContinuations.has(token.value) && !token.template && token.kind !== 'template-start';
+        return finished && !expressionContinuations.has(syntax(index)) && !token.template && token.kind !== 'template-start';
     }
     const asyncArrowAt = index => {
         const first = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
@@ -450,44 +453,44 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
             // ASI statement. Preserve calls, operators and tagged templates
             // that continue the same expression across a line terminator.
             if (index > start && lineEndsExpression(index, prefixes)) break;
-            if (value(index) === '=>' && value(index + 1) !== '{') {
+            if (syntax(index) === '=>' && syntax(index + 1) !== '{') {
                 index = expressionEnd(index + 1, asyncArrowAt(index), depth + 1); continue;
             }
             if (pairs.get(index) > index) { index = pairs.get(index); continue; }
-            if ([',', ';', ')', ']', '}'].includes(value(index))) break;
+            if ([',', ';', ')', ']', '}'].includes(syntax(index))) break;
         }
         return index - 1;
     }
     function statementAfter(start, depth = 0) {
         if (depth > 128) throw new Error('WGA_DOCTOR_SOURCE_NESTING');
-        const keyword = value(start);
+        const keyword = syntax(start);
         if (keyword === ';') return start + 1;
         if (keyword === '{' && pairs.has(start)) return pairs.get(start) + 1;
         const definition = definitions.get(start);
         if (definition && !definition.expression && pairs.has(definition.body)) return pairs.get(definition.body) + 1;
-        if (identifier(start) && value(start + 1) === ':') return statementAfter(start + 2, depth + 1);
+        if (identifier(start) && syntax(start + 1) === ':') return statementAfter(start + 2, depth + 1);
         if (['if', 'for', 'while', 'with', 'switch'].includes(keyword)) {
-            const open = start + (keyword === 'for' && value(start + 1) === 'await' ? 2 : 1);
-            if (value(open) === '(' && pairs.has(open)) {
+            const open = start + (keyword === 'for' && syntax(start + 1) === 'await' ? 2 : 1);
+            if (syntax(open) === '(' && pairs.has(open)) {
                 let next = statementAfter(pairs.get(open) + 1, depth + 1);
-                if (keyword === 'if' && value(next) === 'else') next = statementAfter(next + 1, depth + 1);
+                if (keyword === 'if' && syntax(next) === 'else') next = statementAfter(next + 1, depth + 1);
                 return next;
             }
         }
         if (keyword === 'do') {
             const next = statementAfter(start + 1, depth + 1), open = next + 1;
-            if (value(next) === 'while' && value(open) === '(' && pairs.has(open)) {
+            if (syntax(next) === 'while' && syntax(open) === '(' && pairs.has(open)) {
                 const end = pairs.get(open) + 1;
-                return end + Number(value(end) === ';');
+                return end + Number(syntax(end) === ';');
             }
         }
         if (keyword === 'try') {
             let next = statementAfter(start + 1, depth + 1);
-            if (value(next) === 'catch') {
-                const body = value(next + 1) === '(' && pairs.has(next + 1) ? pairs.get(next + 1) + 1 : next + 1;
+            if (syntax(next) === 'catch') {
+                const body = syntax(next + 1) === '(' && pairs.has(next + 1) ? pairs.get(next + 1) + 1 : next + 1;
                 next = statementAfter(body, depth + 1);
             }
-            if (value(next) === 'finally') next = statementAfter(next + 1, depth + 1);
+            if (syntax(next) === 'finally') next = statementAfter(next + 1, depth + 1);
             return next;
         }
         // Expression statements can contain commas and paired groups. A line
@@ -495,8 +498,8 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
         // members and operators across lines remain in the same loop body.
         for (let index = start; index < tokens.length; index++) {
             const token = tokens[index], previous = tokens[index - 1];
-            if (value(index) === ';') return index + 1;
-            if (value(index) === '}' || value(index) === 'else' && !property(index)) return index;
+            if (syntax(index) === ';') return index + 1;
+            if (syntax(index) === '}' || syntax(index) === 'else' && !property(index)) return index;
             if (index > start && /[\r\n\u2028\u2029]/.test(source.slice(previous.end, token.start))) {
                 if (index === start + 1 && ['return', 'break', 'continue', 'debugger'].includes(keyword)
                     || lineEndsExpression(index)) return index;
@@ -559,13 +562,13 @@ function literalImports(source, declaration = false, { includeLocal = false, sou
                 addScope(index, statementAfter(body) - 1);
             }
         }
-        if (value(index) === '=>') {
+        if (syntax(index) === '=>') {
             const start = value(index - 1) === ')' ? pairs.get(index - 1) : index - 1;
             if (start === undefined) continue;
-            const body = index + 1, end = value(body) === '{' ? pairs.get(body) : expressionEnd(body, asyncArrowAt(index));
+            const body = index + 1, end = syntax(body) === '{' ? pairs.get(body) : expressionEnd(body, asyncArrowAt(index));
             if (end === undefined) continue;
             const scope = addScope(start, end, true);
-            if (value(body) === '{') addScope(body, end, true);
+            if (syntax(body) === '{') addScope(body, end, true);
             parameters.push({ scope, start: value(start) === '(' ? start + 1 : start, end: value(start) === '(' ? index - 1 : index });
         }
     }
