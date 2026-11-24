@@ -129,3 +129,21 @@ test('SCOPE dispose leaves pending calls running and detaches only the signal', 
         });
     } finally { c.close(); }
 });
+
+test('SCOPE caps the GAX timeout at the time left so SDK retries stop at the deadline', () => {
+    const open = createCancellationScope();
+    assert.equal(Object.hasOwn(open.gaxOptions(), 'timeout'), false, 'no deadline leaves GAX timeouts alone');
+    assert.equal(open.gaxOptions({ timeout: 25 }).timeout, 25);
+    const deadline = Date.now() + 5_000, scope = createCancellationScope({ deadline });
+    const capped = scope.gaxOptions({ timeout: 60_000 }).timeout;
+    assert.ok(capped > 4_000 && capped <= 5_000, String(capped));
+    assert.equal(scope.gaxOptions({ timeout: 100 }).timeout, 100, 'a smaller caller timeout wins');
+    for (const invalid of [0, -1, 'slow', undefined]) {
+        const value = scope.gaxOptions({ timeout: invalid }).timeout;
+        assert.ok(value > 4_000 && value <= 5_000, String(invalid));
+    }
+    const original = { timeout: 60_000 };
+    scope.gaxOptions(original);
+    assert.equal(original.timeout, 60_000, 'the caller object is not changed');
+    assert.equal(createCancellationScope({ deadline: Date.now() - 10 }).gaxOptions().timeout, 1, 'an expired scope keeps GAX bounded');
+});

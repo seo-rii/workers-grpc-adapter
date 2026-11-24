@@ -162,7 +162,8 @@ export function createCancellationScope(options: SdkCancellationScopeOptions = {
         if (key !== 'signal' && key !== 'deadline') throw new TypeError('WGA_SDK_OPTIONS');
     }
     validateSignal(options.signal);
-    const parent = new CancellationParent(parseDeadline(options.deadline));
+    const deadline = parseDeadline(options.deadline);
+    const parent = new CancellationParent(deadline);
     const flags = propagate.CANCELLATION | (options.deadline === undefined ? 0 : propagate.DEADLINE);
     let disposed = false;
     const detach = subscribe(options.signal, () => parent.cancel());
@@ -170,7 +171,17 @@ export function createCancellationScope(options: SdkCancellationScopeOptions = {
         get cancelled() { return parent.cancelled; },
         gaxOptions<Options extends object = object>(gaxOptions?: Options): Options & SdkGaxOptions {
             if (disposed) throw new TypeError('WGA_SDK_SCOPE_DISPOSED');
-            return withParent<Options>(callOptionParts(gaxOptions), parent, flags);
+            const scoped = withParent<Options>(callOptionParts(gaxOptions), parent, flags) as Options & SdkGaxOptions & { timeout?: unknown };
+            if (deadline !== Infinity) {
+                // GAX retries some codes, including DEADLINE_EXCEEDED, until its
+                // own total timeout, and derives that timeout from `timeout`. Cap
+                // it at the time left so retries stop at the scope's deadline. A
+                // zero timeout would disable GAX's limit, so keep it positive.
+                const remaining = Math.max(1, deadline - Date.now());
+                const current = scoped.timeout;
+                scoped.timeout = typeof current === 'number' && current > 0 ? Math.min(current, remaining) : remaining;
+            }
+            return scoped;
         },
         cancel() { parent.cancel(); },
         dispose() {
