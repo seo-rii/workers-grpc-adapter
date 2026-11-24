@@ -21,7 +21,7 @@ function main(args, defaults = {}) {
       try { typescript = createRequire(path.join(projectRoot, 'package.json'))('typescript'); }
       catch (error) {
         if (error.code !== 'MODULE_NOT_FOUND') throw error;
-        throw new Error('WGA_UNSUPPORTED_DEPENDENCY: profile AST inspection requires TypeScript >=5.8 <6 in the inspected build workspace');
+        throw new Error('WGA_UNSUPPORTED_DEPENDENCY: profile AST inspection requires TypeScript >=5.8 <7 in the inspected build workspace');
       }
     }
     const report = inspectGoogleWorkerGraph({ projectRoot, ...(sdks.length ? { sdks } : {}), profile, typescript });
