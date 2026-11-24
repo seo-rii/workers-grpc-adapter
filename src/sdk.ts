@@ -21,6 +21,22 @@ export interface SdkQueryStreamOptions<Options extends object = object> extends 
     /** Wrapper queue in objects, 1..1024 (default 1); excludes SDK-owned buffers. */
     highWaterMark?: number;
 }
+export interface SdkCancellationScopeOptions {
+    /** Cancels every call in the scope when aborted, such as a Worker request's signal. */
+    signal?: AbortSignal;
+    /** Absolute Unix milliseconds (or Date) that bounds every call in the scope. */
+    deadline?: number | Date;
+}
+export interface SdkCancellationScope {
+    /** True once cancel() ran or the signal aborted. */
+    readonly cancelled: boolean;
+    /** GAX options for one SDK call in this scope: a copy of `gaxOptions` with the scope's parent added. */
+    gaxOptions<Options extends object = object>(gaxOptions?: Options): Options & SdkGaxOptions;
+    /** Cancels pending adapter calls that use this scope and makes later ones fail immediately; never rolls back a write. */
+    cancel(): void;
+    /** Detaches the signal. Pending calls are unaffected; a later gaxOptions() call throws. */
+    dispose(): void;
+}
 export interface CancellableCall<T> {
     readonly promise: Promise<T>;
     /** Cancels local waiting and associated adapter RPCs; never rolls back a write. */
@@ -68,23 +84,39 @@ function record(value: unknown): Record<string, unknown> {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('WGA_SDK_OPTIONS');
     return value as Record<string, unknown>;
 }
+function validateSignal(signal: AbortSignal | undefined): void {
+    if (signal !== undefined && (signal === null || typeof signal.aborted !== 'boolean'
+        || typeof signal.addEventListener !== 'function' || typeof signal.removeEventListener !== 'function')) {
+        throw new TypeError('WGA_SDK_SIGNAL');
+    }
+}
+function parseDeadline(value: number | Date | undefined): number {
+    const deadline = value === undefined ? Infinity : value instanceof Date ? value.getTime() : value;
+    if (typeof deadline !== 'number' || Number.isNaN(deadline) || deadline === -Infinity) throw new TypeError('WGA_SDK_DEADLINE');
+    return deadline;
+}
+type CallOptionParts = { gax: Record<string, unknown>; other: Record<string, unknown>; call: Record<string, unknown> };
+/** Validates the caller's GAX options; a caller-owned parent would conflict with the helper's. */
+function callOptionParts(value: object | undefined): CallOptionParts {
+    const gax = value === undefined ? {} : record(value);
+    const other = gax.otherArgs === undefined ? {} : record(gax.otherArgs);
+    const call = other.options === undefined ? {} : record(other.options);
+    if ('parent' in call || 'propagate_flags' in call) throw new TypeError('WGA_SDK_PARENT_CONFLICT');
+    return { gax, other, call };
+}
+/** Copies the caller's GAX options and adds the private parent at the per-call options path. */
+function withParent<Options extends object>({ gax, other, call }: CallOptionParts, parent: CancellationParent, flags: number): Options & SdkGaxOptions {
+    return { ...gax, otherArgs: { ...other, options: { ...call, parent, propagate_flags: flags } } } as Options & SdkGaxOptions;
+}
 function prepare<Options extends object>(options: SdkCancellationOptions<Options>): {
     parent: CancellationParent; gaxOptions: Options & SdkGaxOptions;
 } {
     record(options);
-    const gax = options.gaxOptions === undefined ? {} : record(options.gaxOptions);
-    const other = gax.otherArgs === undefined ? {} : record(gax.otherArgs);
-    const call = other.options === undefined ? {} : record(other.options);
-    if ('parent' in call || 'propagate_flags' in call) throw new TypeError('WGA_SDK_PARENT_CONFLICT');
-    if (options.signal !== undefined && (options.signal === null || typeof options.signal.aborted !== 'boolean'
-        || typeof options.signal.addEventListener !== 'function' || typeof options.signal.removeEventListener !== 'function')) {
-        throw new TypeError('WGA_SDK_SIGNAL');
-    }
-    const deadline = options.deadline === undefined ? Infinity : options.deadline instanceof Date ? options.deadline.getTime() : options.deadline;
-    if (typeof deadline !== 'number' || Number.isNaN(deadline) || deadline === -Infinity) throw new TypeError('WGA_SDK_DEADLINE');
-    const parent = new CancellationParent(deadline);
+    const parts = callOptionParts(options.gaxOptions);
+    validateSignal(options.signal);
+    const parent = new CancellationParent(parseDeadline(options.deadline));
     const flags = propagate.CANCELLATION | (options.deadline === undefined ? 0 : propagate.DEADLINE);
-    return { parent, gaxOptions: { ...gax, otherArgs: { ...other, options: { ...call, parent, propagate_flags: flags } } } as Options & SdkGaxOptions };
+    return { parent, gaxOptions: withParent<Options>(parts, parent, flags) };
 }
 /** One operation timer also bounds periods before/between actual adapter calls. */
 function watchDeadline(deadline: number, expire: () => void): () => void {
@@ -115,6 +147,38 @@ function subscribe(signal: AbortSignal | undefined, cancel: () => void): () => v
 function releasePendingSourceGuards(this: Readable): void {
     this.removeListener('error', releasePendingSourceGuards);
     this.removeListener('close', releasePendingSourceGuards);
+}
+
+/**
+ * One cancellation and deadline scope for many SDK calls, such as all calls an
+ * ORM makes for one request. Pass gaxOptions() to each call, for example from a
+ * store adapter's per-call options hook. Unlike cancellableCall(), the scope
+ * keeps no timer and wraps no promise: each call ends with the adapter's own
+ * CANCELLED or DEADLINE_EXCEEDED status.
+ */
+export function createCancellationScope(options: SdkCancellationScopeOptions = {}): SdkCancellationScope {
+    record(options);
+    for (const key of Object.keys(options)) {
+        if (key !== 'signal' && key !== 'deadline') throw new TypeError('WGA_SDK_OPTIONS');
+    }
+    validateSignal(options.signal);
+    const parent = new CancellationParent(parseDeadline(options.deadline));
+    const flags = propagate.CANCELLATION | (options.deadline === undefined ? 0 : propagate.DEADLINE);
+    let disposed = false;
+    const detach = subscribe(options.signal, () => parent.cancel());
+    return Object.freeze({
+        get cancelled() { return parent.cancelled; },
+        gaxOptions<Options extends object = object>(gaxOptions?: Options): Options & SdkGaxOptions {
+            if (disposed) throw new TypeError('WGA_SDK_SCOPE_DISPOSED');
+            return withParent<Options>(callOptionParts(gaxOptions), parent, flags);
+        },
+        cancel() { parent.cancel(); },
+        dispose() {
+            if (disposed) return;
+            disposed = true;
+            detach();
+        },
+    });
 }
 
 /** Opt-in cancellation and a total deadline for an SDK promise whose RPC options reach this adapter. */

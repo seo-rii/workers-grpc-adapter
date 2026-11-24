@@ -11993,6 +11993,29 @@
           ]
         },
         {
+          "name": "SdkCancellationScope",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationScope {\n    readonly cancelled: boolean;\n    gaxOptions<Options extends object = object>(gaxOptions?: Options): Options & SdkGaxOptions;\n    cancel(): void;\n    dispose(): void;\n}",
+          "sha256": "e20925720db806e631ec5b863424947f590df07498d92bcea93c7c224a501b52",
+          "dependencies": [
+            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162"
+          ]
+        },
+        {
+          "name": "SdkCancellationScopeOptions",
+          "type": true,
+          "value": false,
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationScopeOptions {\n    signal?: AbortSignal;\n    deadline?: number | Date;\n}",
+          "sha256": "70789b22a4d1f3b26f16426b0a21843f2a6dcd76be91532b9ca505d273b97401",
+          "dependencies": [
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec"
+          ]
+        },
+        {
           "name": "SdkGaxOptions",
           "type": true,
           "value": false,
@@ -12070,6 +12093,21 @@
             "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
             "aeff2d5b80d7e313b28893ec8c50cb4d81627b7a54a21d551a7d8b4a2f67eeca"
           ]
+        },
+        {
+          "name": "createCancellationScope",
+          "type": false,
+          "value": true,
+          "kind": "FunctionDeclaration",
+          "signature": "function createCancellationScope(options?: SdkCancellationScopeOptions): SdkCancellationScope;",
+          "sha256": "61ca7133b58cb4fd8147109e6d207009afe9df0ff09f17047dad62b9c038fec4",
+          "dependencies": [
+            "24281f28f0a36e715c185d4cef845422081c3af8ebb741bc19abd6521609dc64",
+            "a33fbdb4c1db6f585922fc5264093d208afd3cb77c81f01453f095794766683a",
+            "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec",
+            "aa03d15c926c7aff0e3594291f9f7f21ecdef91bac9fe748913c0a2d87c15162",
+            "e8fe4dc484320b3b53e31654277e00e9cd7fcb5c4f208c64cf528f7632babbf7"
+          ]
         }
       ],
       "declarations": {
@@ -12113,6 +12151,11 @@
           "kind": "external",
           "signature": "typescript/lib/lib.es2015.iterable.d.ts#SymbolConstructor"
         },
+        "a33fbdb4c1db6f585922fc5264093d208afd3cb77c81f01453f095794766683a": {
+          "name": "dist/sdk.d.ts#SdkCancellationScope",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationScope {\n    readonly cancelled: boolean;\n    gaxOptions<Options extends object = object>(gaxOptions?: Options): Options & SdkGaxOptions;\n    cancel(): void;\n    dispose(): void;\n}"
+        },
         "a3a680ac6016caf28800f60fc066086e883320c08644dd2c283ad92de8d6a2ec": {
           "name": "typescript/lib/lib.dom.d.ts#AbortSignal",
           "kind": "external",
@@ -12132,6 +12175,11 @@
           "name": "typescript/lib/lib.es5.d.ts#Symbol",
           "kind": "external",
           "signature": "typescript/lib/lib.es5.d.ts#Symbol"
+        },
+        "e8fe4dc484320b3b53e31654277e00e9cd7fcb5c4f208c64cf528f7632babbf7": {
+          "name": "dist/sdk.d.ts#SdkCancellationScopeOptions",
+          "kind": "InterfaceDeclaration",
+          "signature": "interface SdkCancellationScopeOptions {\n    signal?: AbortSignal;\n    deadline?: number | Date;\n}"
         }
       }
     },

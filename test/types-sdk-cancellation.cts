@@ -1,4 +1,5 @@
-import { cancellableCall, cancellableQueryStream, type CancellableCall, type SdkQueryStream, type SdkCancellationOptions } from '@grpc/grpc-js/sdk';
+import { cancellableCall, cancellableQueryStream, createCancellationScope, type CancellableCall, type SdkCancellationScope,
+    type SdkQueryStream, type SdkCancellationOptions } from '@grpc/grpc-js/sdk';
 import { Readable, Transform } from 'node:stream';
 
 type Assert<T extends true> = T;
@@ -54,4 +55,18 @@ cancellableCall(() => Promise.resolve(), { deadline: '1000' });
 cancellableQueryStream(() => new Transform(), { deadline: {} });
 // @ts-expect-error queue is a numeric object count
 cancellableQueryStream(() => new Transform(), { highWaterMark: '2' });
-void [same, exact, noOptions, literalOptions, structural, explicitItemWithOptions, typed, readable, value, consume];
+const scope: SdkCancellationScope = createCancellationScope({ signal: controller.signal, deadline: Date.now() + 1000 });
+const scoped = scope.gaxOptions(options);
+const keptTimeout: number | undefined = scoped.timeout;
+const scopedCommit: Promise<[{ applied: boolean }, { requestId: string }]> = sdk.commit({ id: 'scoped' }, scoped);
+const cancelled: boolean = scope.cancelled;
+scope.cancel(); scope.dispose();
+createCancellationScope();
+// @ts-expect-error a scope deadline uses the same absolute deadline contract
+createCancellationScope({ deadline: '1000' });
+// @ts-expect-error a scope has no per-call GAX options of its own
+createCancellationScope({ gaxOptions: options });
+// @ts-expect-error the cancelled flag is read-only
+scope.cancelled = true;
+void [same, exact, noOptions, literalOptions, structural, explicitItemWithOptions, typed, readable, value, consume,
+    keptTimeout, scopedCommit, cancelled];
