@@ -21,6 +21,17 @@ that error to its callback when present, and otherwise throws synchronously.
 Previously submitted messages can still finish transformation and drain before
 half-close reaches the transport.
 
+Returned promises and thenables from outgoing `start`, `sendMessage` and
+`halfClose` requesters are observed for rejection. Before completion, a rejection
+finishes the logical call with `INTERNAL`, using the same phase diagnostic as a
+synchronous failure. An expired deadline takes precedence; a terminal result
+already selected by the call is preserved. Rejections after completion are
+consumed without changing that result. Promise fulfillment never advances an
+operation: the requester must still call `next()` explicitly. This containment is
+an adapter-specific correction; the pinned native grpc-js does not observe these
+returned promises. Incoming listener and application callback exception behavior
+is unchanged.
+
 These rules apply at every `InterceptingCall` in an interceptor chain. They do
 not make it safe for application interceptors to retain payloads or callbacks
 indefinitely. The adapter cannot release memory retained by application code.
@@ -31,7 +42,7 @@ Build and run the focused state-machine and public-client tests:
 
 ```sh
 npm run build
-node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs test/startup-deadline.test.cjs
+node --test test/interceptor-ordering.test.cjs test/interceptor-property.test.cjs test/interceptor-requester-rejections.test.cjs test/startup-deadline.test.cjs
 ```
 
 The fixed regressions cover all four synchronous/asynchronous startup and
@@ -69,12 +80,13 @@ The logical RPC owns its deadline and parent cancellation outside the intercepto
 
 Cancellation, channel closure and deadlines complete the local callback/status once even when a requester withholds `next()`. Late startup, message and response continuations cannot restart Fetch or deliver another result. Outstanding write callbacks are settled on termination. Cancellation requesters are notified, but cannot veto local cleanup by withholding their continuation or throwing. Finite deadlines remain necessary when an interceptor intentionally never completes and the caller does not cancel.
 
-For adapter-created readable, writable and duplex streams, `cancel()` or `destroy()`
-in an invocation transformer or interceptor constructor is remembered until the
-logical call is attached. It then completes with `CANCELLED` before authentication,
-admission or Fetch starts. The public callback and status remain asynchronous and
-are delivered once; repeated cancellation and destruction are safe. A replacement
-surface supplied by a transformer continues to own its cancellation behavior.
+For adapter-created unary calls and readable, writable and duplex streams,
+`cancel()` in an invocation transformer or interceptor constructor is remembered
+until the logical call is attached. Stream `destroy()` has the same effect.
+The call then completes with `CANCELLED` before authentication, admission or Fetch
+starts. The public callback and status remain asynchronous and are delivered once;
+repeated cancellation and destruction are safe. A replacement surface supplied by
+a transformer continues to own its cancellation behavior.
 
 Response delivery checks the absolute deadline as well as the timer's state. If immediately available Fetch chunks or interceptor continuations delay timer execution, a new response message or final success cannot pass an expired deadline. The same check applies after response EOF and after an inbound interceptor resumes. A terminal result already selected for the logical call remains unchanged. These checks do not guarantee that timer callbacks can interrupt synchronous application code or an unbounded stream of immediately available chunks.
 

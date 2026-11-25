@@ -31,7 +31,8 @@ export class CallLifetime implements InterceptingCallInterface {
         this.applyOptions(options);
         // Constructors can still replace provisional options. Activate the
         // deadline gate only once startup has selected options and parent state.
-        setCallExpiryCheck(this, () => this.terminal !== undefined || (this.started && this.stopIfExpired()));
+        setCallExpiryCheck(this, () => this.terminal !== undefined || (this.started && this.stopIfExpired()),
+            details => this.cancelWithStatus(status.INTERNAL, details));
     }
     /** Interceptor constructors are synchronous; snapshot their final call options. */
     applyOptions(options: CallOptions): CallOptions {

@@ -40,7 +40,8 @@ import { ClientMethodDefinition } from './factory';
 import { getErrorMessage } from './error';
 import { AuthContext } from './auth-context';
 import type { CallLifetime } from './call-lifetime';
-import { inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
+import { failCall, inheritCallExpiryCheck, invokeWithCallExpiry, stopExpiredCall } from './call-expiry';
+import { observeRejection } from './observe-rejection';
 
 /**
  * Error class associated with passing both interceptors and interceptor
@@ -210,6 +211,10 @@ export interface InterceptingCallInterface {
   getAuthContext(): AuthContext | null;
 }
 
+// Track adapter-owned wrapper links without inspecting custom transports.
+// A synthetic chain can be assembled before it has any logical call owner.
+const interceptingCallLinks = new WeakMap<InterceptingCallInterface, InterceptingCallInterface>();
+
 export class InterceptingCall implements InterceptingCallInterface {
   /**
    * The requester that this InterceptingCall uses to modify outgoing operations
@@ -238,6 +243,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     private nextCall: InterceptingCallInterface,
     requester?: Requester
   ) {
+    interceptingCallLinks.set(this, nextCall);
     inheritCallExpiryCheck(this, nextCall);
     if (requester) {
       this.requester = {
@@ -253,9 +259,9 @@ export class InterceptingCall implements InterceptingCallInterface {
 
   cancelWithStatus(status: Status, details: string) {
     this.disposePending();
-    this.requester.cancel(() => {
+    observeRejection(this.requester.cancel(() => {
       this.nextCall.cancelWithStatus(status, details);
-    });
+    }), () => { /* Cleanup cannot replace the local cancellation outcome. */ });
   }
 
   disposePending(): void {
@@ -276,6 +282,16 @@ export class InterceptingCall implements InterceptingCallInterface {
 
   getPeer() {
     return this.nextCall.getPeer();
+  }
+
+  private observeRequester(value: unknown, details: string): void {
+    observeRejection(value, () => {
+      if (this.disposed || stopExpiredCall(this)) return;
+      if (!failCall(this, details)) {
+        this.disposePending();
+        this.nextCall.cancelWithStatus(Status.INTERNAL, details);
+      }
+    });
   }
 
   private flushPendingOperations() {
@@ -316,7 +332,7 @@ export class InterceptingCall implements InterceptingCallInterface {
     };
     this.processingMetadata = true;
     let continued = false;
-    this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
+    this.observeRequester(this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       let finalInterceptingListener: InterceptingListenerImpl;
@@ -342,7 +358,7 @@ export class InterceptingCall implements InterceptingCallInterface {
       invokeWithCallExpiry(this, () => this.nextCall.start(md, finalInterceptingListener));
       this.processingMetadata = false;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_START');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessageWithContext(context: MessageContext, message: any): void {
@@ -356,13 +372,13 @@ export class InterceptingCall implements InterceptingCallInterface {
     const pending = { context, message: undefined as any, ready: false };
     this.pendingMessages.push(pending);
     let continued = false;
-    this.requester.sendMessage(message, finalMessage => {
+    this.observeRequester(this.requester.sendMessage(message, finalMessage => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       pending.message = finalMessage;
       pending.ready = true;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_SEND');
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendMessage(message: any): void {
@@ -375,12 +391,12 @@ export class InterceptingCall implements InterceptingCallInterface {
     if (this.disposed || stopExpiredCall(this) || this.halfCloseRequested) return;
     this.halfCloseRequested = true;
     let continued = false;
-    this.requester.halfClose(() => {
+    this.observeRequester(this.requester.halfClose(() => {
       if (continued || this.disposed || stopExpiredCall(this)) return;
       continued = true;
       this.pendingHalfClose = true;
       this.flushPendingOperations();
-    });
+    }), 'WGA_INTERCEPTOR_HALF_CLOSE');
   }
   getAuthContext(): AuthContext | null {
     return this.nextCall.getAuthContext();
@@ -634,7 +650,11 @@ export function getInterceptingCall(
     (nextCall: NextCall, nextInterceptor: Interceptor) => {
       return currentOptions => {
         const call = nextInterceptor(currentOptions, nextCall);
-        inheritCallExpiryCheck(call, lifetime);
+        // A single interceptor may return several nested wrappers over a
+        // synthetic transport. Give every existing wrapper the same owner.
+        for (let current: InterceptingCallInterface | undefined = call; current; current = interceptingCallLinks.get(current)) {
+          inheritCallExpiryCheck(current, lifetime);
+        }
         return call;
       };
     },

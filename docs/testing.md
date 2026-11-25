@@ -82,6 +82,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `node scripts/test-datastore-pagination.cjs` | 50 native/Node/workerd query cases: pagination, overloads, stream errors, `end()` versus `destroy()`, per-call accounting and reuse | `verification/datastore-pagination.json` |
 | `node scripts/test-workers-resilience.cjs` | Repeated concurrent failures, slow streams and recovery in both workerd modes | `verification/workers-resilience.json` |
 | `node scripts/test-google-worker-build.cjs` | Actual live entry, Wrangler custom build and guarded requests with outbound denied | Console; `verify` records `verification/google-worker-build.log` |
+| `npm run test:typescript:compilers` | Both pinned profiles built through the esbuild preset with TypeScript 5.8.3 and 6.0.3; outputs must match apart from the compiler-bound cache identity | `verification/typescript-compilers.json` |
 | `npm run test:workers:shared` | Identical native/workerd business modules and controlled faults | `verification/workers-shared.json` |
 | `npm run test:emulators` | Official Native/Datastore emulators with native, Node adapter and workerd consumers | `verification/google-emulators.json` |
 | `npm run test:emulators:lifecycle` | Startup/running signal handling and repeated stop cleanup | `verification/emulator-lifecycle.json` |

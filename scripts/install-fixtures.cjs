@@ -5,6 +5,7 @@ const path = require('node:path');
 const cp = require('node:child_process');
 const crypto = require('node:crypto');
 const { inspect } = require('./doctor.cjs');
+const { matchesFixtureLocks } = require('./fixture-lock-graph.cjs');
 const root = path.resolve(__dirname, '..');
 function npm(args, cwd = root) {
     cp.execFileSync('npm', args, { cwd, stdio: 'inherit' });
@@ -40,7 +41,8 @@ if (!after.passed) throw new Error('Installed Google SDK graph does not resolve 
 const identities = report => report.results.map(result => result.graph.map(({ name, version, path, integrity }) => ({ name, version, path, integrity })));
 const reproduced = before.passed
     ? JSON.stringify(identities(before)) === JSON.stringify(identities(after))
-    : after.results.every(result => result.graph.every(item => lock.packages[item.path]?.version === item.version && (lock.packages[item.path]?.integrity ?? null) === item.integrity));
+    : matchesFixtureLocks(after, fixture, lock, root, JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'))),
+        JSON.parse(fs.readFileSync(path.join(root, 'node_modules/.package-lock.json'))));
 if (!reproduced) throw new Error('npm ci changed the locked SDK graph');
 fs.writeFileSync(path.join(root, 'compatibility/google-graph.json'), JSON.stringify({ ...after, installation: { npmCiPassed: true, graphReproduced: reproduced, tarballIntegrity: integrity } }, null, 2) + '\n');
 const native = path.join(root, 'fixtures/native');

@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { createRequire } = require('node:module');
+const { createRequire, isBuiltin } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 const { literalImports } = require('./imports.cjs');
@@ -29,7 +29,7 @@ function packageFor(req, name) {
     }
     throw Object.assign(new Error('dependency-not-installed'), { code: 'MODULE_NOT_FOUND' });
 }
-function resolveImports(imports) {
+function resolveImports(imports, preserveSymlinks = false) {
     if (!imports.length) return [];
     // Resolve each inspection in a clean process. CommonJS caches paths and
     // package metadata across createRequire instances, so a long-lived doctor
@@ -37,20 +37,24 @@ function resolveImports(imports) {
     const source = `
         import { readFileSync, realpathSync, statSync } from 'node:fs';
         import { fileURLToPath } from 'node:url';
-        import { createRequire } from 'node:module';
+        import { createRequire, isBuiltin } from 'node:module';
         const requests = JSON.parse(readFileSync(0, 'utf8'));
         const results = requests.map(([specifier, parent, kind]) => {
             try {
-                const file = kind === 'import' ? fileURLToPath(import.meta.resolve(specifier, parent))
+                const target = kind === 'import' ? import.meta.resolve(specifier, parent)
                     : createRequire(parent).resolve(specifier);
+                // Package imports can select a builtin. Let Node resolve the
+                // actual conditions first; not every builtin mapping is valid.
+                if (isBuiltin(target)) return target.startsWith('node:') ? target : 'node:' + target;
+                const file = kind === 'import' ? fileURLToPath(target) : target;
                 // import.meta.resolve can return URLs for missing files and
                 // directories. Neither is a loadable ESM file.
-                return statSync(file).isFile() ? realpathSync(file) : null;
+                return statSync(file).isFile() ? (${preserveSymlinks} ? file : realpathSync(file)) : null;
             } catch { return null; }
         });
         process.stdout.write(JSON.stringify(results));
     `;
-    const result = spawnSync(process.execPath, ['--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
+    const result = spawnSync(process.execPath, [...(preserveSymlinks ? ['--preserve-symlinks'] : []), '--experimental-import-meta-resolve', '--input-type=module', '--eval', source], {
         encoding: 'utf8', input: JSON.stringify(imports.map(({ parent, entry }) => [entry.specifier, parent, entry.kind])),
         env: { ...process.env, NODE_OPTIONS: '' }, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
     });
@@ -99,12 +103,30 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         try { recordResolution(packageFor(rootRequire, specifier), '.', specifier); }
         catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
     }
-    const resolvedImport = (entry, full, resolved, parent) => {
-        const grpcManifestPath = packageFor(createRequire(parent), '@grpc/grpc-js');
-        recordResolution(grpcManifestPath, rel(full), entry.specifier);
-        const grpcManifest = JSON.parse(fs.readFileSync(grpcManifestPath, 'utf8'));
-        Object.assign(entry, { resolved: rel(resolved), implementation: grpcManifest.name, version: grpcManifest.version,
-            status: grpcManifest.name === expected ? successStatus : 'wrong-implementation' });
+    const packageOwner = resolved => {
+        // Resolution follows entrypoint and directory symlinks. The alias's
+        // manifest cannot establish which package owns the resulting file.
+        // Ignore unnamed package scopes used only to select CJS/ESM syntax.
+        let directory = path.dirname(resolved);
+        for (;;) {
+            if (path.basename(directory) === 'node_modules') return;
+            const candidate = path.join(directory, 'package.json');
+            try {
+                const manifest = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+                if (typeof manifest.name === 'string' && manifest.name) {
+                    return { path: candidate, manifest };
+                }
+            } catch (error) { if (error.code !== 'ENOENT') throw error; }
+            const parent = path.dirname(directory);
+            if (parent === directory) return;
+            directory = parent;
+        }
+    };
+    const resolvedImport = (entry, full, resolved, owner = packageOwner(resolved)) => {
+        if (!owner) throw new Error('resolved-package-owner-missing');
+        recordResolution(owner.path, rel(full), entry.specifier);
+        Object.assign(entry, { resolved: rel(resolved), implementation: owner.manifest.name, version: owner.manifest.version,
+            status: owner.manifest.name === expected ? successStatus : 'wrong-implementation' });
     };
     const sourceGoals = new Map();
     const sourceGoal = file => {
@@ -149,6 +171,10 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
                 const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
                 state.record.grpcImports.push(imported);
                 pendingImports.push({ full, entry: imported, parent });
+            } else if (specifier.startsWith('#')) {
+                const imported = { file: rel(full), specifier, kind, status: parent === null ? 'resolution-base-unverified' : 'resolution-failed' };
+                (state.record.packageImports ??= []).push(imported);
+                pendingRuntimeImports.push({ state, entry: imported, parent, full, packageImport: true });
             } else pendingRuntimeImports.push({ state, entry: { kind, specifier }, parent });
         }
     };
@@ -165,13 +191,19 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
         const record = { name: manifest.name, version: manifest.version, path: rel(directory), integrity: lock?.packages?.[rel(directory)]?.integrity ?? null, dependencies: [], grpcImports: [] };
         allPackages.set(directory, record);
         const req = createRequire(manifestPath);
-        for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
+        for (const name of Object.keys({ ...manifest.peerDependencies, ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
             let dependencyManifest;
             try {
                 dependencyManifest = packageFor(req, name);
             } catch (error) {
                 if (error.code !== 'MODULE_NOT_FOUND') throw error;
-                record.dependencies.push({ name, missing: true, optional: !!manifest.optionalDependencies?.[name] });
+                // Peer metadata applies only to peer-only declarations. A
+                // required direct dependency cannot become optional merely
+                // because it is also advertised as an optional peer.
+                const onlyPeer = !Object.hasOwn(manifest.dependencies || {}, name)
+                    && !Object.hasOwn(manifest.optionalDependencies || {}, name);
+                record.dependencies.push({ name, missing: true, optional: Object.hasOwn(manifest.optionalDependencies ?? {}, name)
+                    || onlyPeer && manifest.peerDependenciesMeta?.[name]?.optional === true });
                 continue;
             }
             // Optional means the package may be absent. An installed package
@@ -256,19 +288,51 @@ function inspect(base, sdks = sdksDefault, expected = 'workers-grpc-adapter', bu
             for (const { state } of batch) packageFailures.set(state.directory, new Error('WGA_DOCTOR_RUNTIME_RESOLUTION'));
             continue;
         }
+        // Keep Node's default physical resolution authoritative. A second
+        // lookup retains the package path before entrypoint symlinks, so a
+        // gRPC alias cannot hide a foreign implementation behind such a link.
+        const aliases = batch.filter((item, index) => item.packageImport && runtimeFiles[index] && !isBuiltin(runtimeFiles[index]));
+        const logicalFiles = resolveImports(aliases, true);
+        const logicalTargets = new Map(aliases.map((item, index) => [item, logicalFiles[index]]));
         for (let index = 0; index < batch.length; index++) {
             const full = runtimeFiles[index];
-            if (!full || /\.(?:json|node)$/.test(full)) continue;
-            const { state, entry, nodeBin } = batch[index];
-            try { inspectSource(state, full, [full, entry.specifier].some(name => /\.d\.[cm]?ts$/.test(name)), nodeBin); }
+            const { state, entry, nodeBin, packageImport, full: importer } = batch[index];
+            try {
+                if (packageImport) {
+                    // A literal private alias may hide the only gRPC edge in
+                    // this source. An unresolved mapping cannot certify it.
+                    if (!full) throw new Error('WGA_DOCTOR_PACKAGE_IMPORT_RESOLUTION');
+                    if (isBuiltin(full)) {
+                        Object.assign(entry, { resolved: full, status: 'resolved-builtin' });
+                        continue;
+                    }
+                    const logical = logicalTargets.get(batch[index]);
+                    if (!logical || fs.realpathSync(logical) !== full) throw new Error('WGA_DOCTOR_PACKAGE_IMPORT_RESOLUTION');
+                    const owner = packageOwner(full), logicalOwner = packageOwner(logical);
+                    // Only the nearest node_modules boundary identifies the
+                    // selected package; a helper can itself be nested in gRPC.
+                    const logicalPackage = logical.split(path.sep + 'node_modules' + path.sep).at(-1);
+                    const grpcPath = [adapterName, path.join('@grpc', 'grpc-js')].some(name => logicalPackage.startsWith(name + path.sep));
+                    Object.assign(entry, { resolved: rel(full) });
+                    if (owner) Object.assign(entry, { implementation: owner.manifest.name, version: owner.manifest.version });
+                    if (grpcPath || [owner?.manifest.name, logicalOwner?.manifest.name].some(name => [adapterName, '@grpc/grpc-js'].includes(name))) {
+                        state.record.grpcImports.push(entry);
+                        resolvedImport(entry, importer, full, owner);
+                    } else entry.status = 'resolved';
+                }
+                if (!full || /\.(?:json|node)$/.test(full)) continue;
+                inspectSource(state, full, [full, entry.specifier].some(name => /\.d\.[cm]?ts$/.test(name)), nodeBin);
+            }
             catch (error) { packageFailures.set(state.directory, error); }
         }
     }
-    for (const record of allPackages.values()) record.grpcImports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
+    for (const record of allPackages.values()) for (const imports of [record.grpcImports, record.packageImports || []]) {
+        imports.sort((a, b) => `${a.file}:${a.specifier}:${a.kind}`.localeCompare(`${b.file}:${b.specifier}:${b.kind}`));
+    }
     const resolved = resolveImports(pendingImports);
     for (let index = 0; index < pendingImports.length; index++) if (resolved[index]) {
-        const { full, entry, parent } = pendingImports[index];
-        try { resolvedImport(entry, full, resolved[index], parent); } catch { /* Keep the unresolved diagnostic. */ }
+        const { full, entry } = pendingImports[index];
+        try { resolvedImport(entry, full, resolved[index]); } catch { /* Keep the unresolved diagnostic. */ }
     }
     for (const result of results) if (result.graph) {
         if (result.graph.some(item => packageFailures.has(path.resolve(base, item.path)))) {

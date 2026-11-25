@@ -6,6 +6,8 @@ const os = require('node:os');
 const { createHash } = require('node:crypto');
 const { isBuiltin } = require('node:module');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+// An async build can outlive a source-file update; identify its loaded helper.
+const implementationSha256 = hash(fs.readFileSync(__filename));
 function fail(code, message, diagnostic) {
   const error = new Error(`${code}: ${message}`);
   error.code = code;
@@ -569,7 +571,10 @@ function checkModuleLoaders(ts, captured) {
     || !path.extname(source.physical) || /\.[cm]?[jt]sx?$/.test(source.physical))
     .map(({ source }) => [source.physical, ts.createSourceFile(source.physical, source.contents.toString('utf8'), ts.ScriptTarget.Latest, true,
       path.extname(source.physical) ? undefined : ts.ScriptKind.JS)]));
-  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set();
+  const checker = bindSources(ts, sources), values = new Map(), boundAliasNames = new Set(), originCache = new Map(), originQueries = [];
+  const recordOriginDependency = dependency => {
+    for (const query of originQueries) query.add(dependency);
+  };
   const MODULE = 1n, NAMESPACE = 2n, LOADER = 4n, REQUIRE = 8n;
   const loaderMembers = ['createRequire', '_load', 'register', 'registerHooks'];
   const builtinExportNames = new Set([...Object.keys(require('node:module')), 'default']);
@@ -626,14 +631,30 @@ function checkModuleLoaders(ts, captured) {
   const unwrap = node => ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)
     || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node)
     || ts.isAwaitExpression(node) ? unwrap(node.expression) : node;
-  function key(expression, computed = false, seen = new Set()) {
+  function key(expression, computed = false) {
+    const value = keyValue(expression, computed);
+    return value === undefined ? undefined : String(value);
+  }
+  function keyValue(expression, computed = false, seen = new Set()) {
     const node = unwrap(expression);
-    if (ts.isComputedPropertyName(node)) return key(node.expression, true, seen);
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isNumericLiteral(node)
+    if (ts.isComputedPropertyName(node)) return keyValue(node.expression, true, seen);
+    // Preserve primitive types through addition: numeric operands add, while
+    // a string operand concatenates. Coerce only the final property key.
+    if (ts.isNumericLiteral(node)) return Number(node.text);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
       || !computed && ts.isIdentifier(node)) return node.text;
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-      const left = key(node.left, true, seen), right = key(node.right, true, seen);
+      const left = keyValue(node.left, true, seen), right = keyValue(node.right, true, seen);
       if (left !== undefined && right !== undefined) return left + right;
+    }
+    if (ts.isTemplateExpression(node)) {
+      let value = node.head.text;
+      for (const span of node.templateSpans) {
+        const substitution = keyValue(span.expression, true, seen);
+        if (substitution === undefined) return;
+        value += substitution + span.literal.text;
+      }
+      return value;
     }
     if (ts.isIdentifier(node)) {
       const symbol = checker.getSymbolAtLocation(node);
@@ -641,7 +662,7 @@ function checkModuleLoaders(ts, captured) {
       const declaration = symbol.declarations[0];
       if (ts.isVariableDeclaration(declaration) && declaration.initializer
         && ts.isVariableDeclarationList(declaration.parent) && declaration.parent.flags & ts.NodeFlags.Const) {
-        return key(declaration.initializer, true, new Set([...seen, symbol]));
+        return keyValue(declaration.initializer, true, new Set([...seen, symbol]));
       }
     }
   }
@@ -725,6 +746,7 @@ function checkModuleLoaders(ts, captured) {
   }
   function exportedOrigin(file, name, seen) {
     const marker = JSON.stringify([file, name]);
+    recordOriginDependency(marker);
     if (seen.has(marker)) return 0n;
     const next = new Set([...seen, marker]);
     // Enumerate effective names, then use ordinary lookup so explicit exports
@@ -743,6 +765,10 @@ function checkModuleLoaders(ts, captured) {
     // Descriptors can themselves be reflected upon. Intern structural
     // containers instead of dropping provenance at a fixed nesting depth.
     for (const [flag, shape] of containers) if (origin & flag) {
+      if (shape.kind.startsWith('property:')) {
+        if (name === undefined || shape.kind === `property:${JSON.stringify(name)}`) result |= shape.value;
+        continue;
+      }
       result |= shape.kind === 'exports' ? exportedOrigin(shape.value, name, seen) : shape.kind === 'value'
         ? name === 'value' ? shape.value : name === undefined ? LOADER : 0n
         : container('value', member(shape.value, name, seen));
@@ -756,17 +782,62 @@ function checkModuleLoaders(ts, captured) {
     return result;
   };
   function bind(name, value, keys = []) {
+    name = unwrap(name);
     if (ts.isIdentifier(name)) {
-      const symbol = checker.getSymbolAtLocation(name);
+      // In an assignment's shorthand property, the property symbol is not
+      // the variable receiving the value.
+      const symbol = ts.isShorthandPropertyAssignment(name.parent)
+        ? checker.getShorthandAssignmentValueSymbol(name.parent) : checker.getSymbolAtLocation(name);
       if (symbol) {
         if (symbol.flags & ts.SymbolFlags.Alias) boundAliasNames.add(symbol.name);
         if (!values.has(symbol)) values.set(symbol, []);
         values.get(symbol).push({ value, keys });
+        // Fulfillment callback parameters are bound after the first queries.
+        originCache.clear();
       }
     } else if (ts.isObjectBindingPattern(name)) {
-      for (const element of name.elements) bind(element.name, value, element.dotDotDotToken
-        ? keys : [...keys, key(element.propertyName || element.name)]);
+      for (const element of name.elements) {
+        bind(element.name, value, element.dotDotDotToken ? keys : [...keys, key(element.propertyName || element.name)]);
+        if (element.initializer) bind(element.name, element.initializer);
+      }
+    } else if (ts.isArrayBindingPattern(name)) {
+      name.elements.forEach((element, index) => {
+        if (ts.isOmittedExpression(element)) return;
+        bind(element.name, value, [...keys, element.dotDotDotToken ? { rest: index } : String(index)]);
+        if (element.initializer) bind(element.name, element.initializer);
+      });
+    } else if (ts.isBinaryExpression(name) && name.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+      // A default can supply a namespace independently of the selected
+      // source member. Keep both possible origins, as for conditional values.
+      bind(name.left, value, keys);
+      bind(name.left, name.right);
+    } else if (ts.isArrayLiteralExpression(name)) {
+      name.elements.forEach((element, index) => {
+        if (ts.isOmittedExpression(element)) return;
+        bind(ts.isSpreadElement(element) ? element.expression : element, value,
+          [...keys, ts.isSpreadElement(element) ? { rest: index } : String(index)]);
+      });
+    } else if (ts.isObjectLiteralExpression(name)) {
+      for (const property of name.properties) {
+        if (ts.isPropertyAssignment(property)) bind(property.initializer, value, [...keys, key(property.name)]);
+        else if (ts.isShorthandPropertyAssignment(property)) {
+          bind(property.name, value, [...keys, property.name.text]);
+          if (property.objectAssignmentInitializer) bind(property.name, property.objectAssignmentInitializer);
+        } else if (ts.isSpreadAssignment(property)) bind(property.expression, value, keys);
+      }
     }
+  }
+  function arrayRest(flags, start) {
+    let result = 0n;
+    // Rest bindings preserve the known suffix of a fixed literal array.
+    // Source arrays containing arbitrary spreads still have no fixed slots.
+    for (const [flag, shape] of containers) if (flags & flag && shape.kind.startsWith('property:')) {
+      const name = JSON.parse(shape.kind.slice('property:'.length)), index = Number(name);
+      if (Number.isInteger(index) && String(index) === name && index >= start) {
+        result |= container(`property:${JSON.stringify(String(index - start))}`, shape.value);
+      }
+    }
+    return result;
   }
   function builtinMethod(node, receiver, method) {
     if (!ts.isCallExpression(node)) return false;
@@ -781,7 +852,7 @@ function checkModuleLoaders(ts, captured) {
   const reflectGet = node => builtinMethod(node, 'Reflect', 'get');
   function collect(node) {
     if (ts.isVariableDeclaration(node) && node.initializer) bind(node.name, node.initializer);
-    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(node.left)) bind(node.left, node.right);
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) bind(node.left, node.right);
     if (objectAssign(node) && node.arguments.length && ts.isIdentifier(node.arguments[0])) bind(node.arguments[0], node);
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && !node.importClause?.isTypeOnly) {
       const clause = node.importClause;
@@ -799,10 +870,20 @@ function checkModuleLoaders(ts, captured) {
   }
   for (const source of sources.values()) collect(source);
   function symbolOrigin(symbol, seen) {
-    if (!symbol || seen.has(symbol)) return 0n;
+    if (!symbol) return 0n;
+    recordOriginDependency(symbol);
+    if (seen.has(symbol)) return 0n;
+    const cached = originCache.get(symbol);
+    if (cached && [...cached.dependencies].every(dependency => cached.ancestors.has(dependency) === seen.has(dependency))) {
+      for (const dependency of cached.dependencies) recordOriginDependency(dependency);
+      return cached.result;
+    }
+    const dependencies = new Set();
+    originQueries.push(dependencies);
     const next = new Set([...seen, symbol]);
     let result = (values.get(symbol) || []).reduce((flags, value) => flags
-      | value.keys.reduce((current, name) => member(current, name, next), origin(value.value, next)), 0n);
+      | value.keys.reduce((current, name) => typeof name === 'object' ? arrayRest(current, name.rest)
+        : member(current, name, next), origin(value.value, next)), 0n);
     for (const declaration of symbol.declarations || []) {
       if (ts.isExportSpecifier(declaration)) {
         const statement = declaration.parent.parent;
@@ -814,6 +895,10 @@ function checkModuleLoaders(ts, captured) {
         result |= importedNamespace(declaration, declaration.parent.moduleSpecifier.text);
       } else if (ts.isExportAssignment(declaration)) result |= origin(declaration.expression, next);
     }
+    originQueries.pop();
+    // Cycle cuts depend only on ancestors the query actually touched. Share
+    // unrelated diamond paths, but recompute when a relevant ancestor changes.
+    originCache.set(symbol, { result, dependencies, ancestors: new Set(seen) });
     return result;
   }
   function origin(expression, seen = new Set()) {
@@ -836,9 +921,25 @@ function checkModuleLoaders(ts, captured) {
     }
     if (ts.isPropertyAccessExpression(node)) return member(origin(node.expression, seen), node.name.text, seen);
     if (ts.isElementAccessExpression(node) && node.argumentExpression) return member(origin(node.expression, seen), key(node.argumentExpression, true), seen);
+    // Value-producing expressions preserve every possible module origin. A
+    // comma expression returns only its right operand; the discarded operand
+    // is still independently visited for direct loader use.
+    if (ts.isConditionalExpression(node)) return origin(node.whenTrue, seen) | origin(node.whenFalse, seen);
+    if (ts.isBinaryExpression(node)) {
+      if ([ts.SyntaxKind.BarBarToken, ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.QuestionQuestionToken]
+        .includes(node.operatorToken.kind)) return origin(node.left, seen) | origin(node.right, seen);
+      if (node.operatorToken.kind === ts.SyntaxKind.CommaToken) return origin(node.right, seen);
+    }
+    if (ts.isArrayLiteralExpression(node)) {
+      // Do not guess offsets across arbitrary iterables. Only literal arrays
+      // whose element positions are fixed participate in this source audit.
+      if (node.elements.some(ts.isSpreadElement)) return 0n;
+      return node.elements.reduce((result, element, index) =>
+        result | container(`property:${JSON.stringify(String(index))}`, origin(element, seen)), 0n);
+    }
     if (ts.isObjectLiteralExpression(node)) return node.properties.reduce((result, property) =>
-      result | (ts.isSpreadAssignment(property) ? origin(property.expression, seen) : 0n), 0n);
-    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | origin(argument, seen), 0n);
+      result | (ts.isSpreadAssignment(property) ? copiedOrigin(property.expression, seen) : 0n), 0n);
+    if (objectAssign(node)) return node.arguments.reduce((result, argument) => result | copiedOrigin(argument, seen), 0n);
     if (reflectGet(node) && node.arguments.length >= 2) return member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen);
     if ((builtinMethod(node, 'Object', 'getOwnPropertyDescriptor') || builtinMethod(node, 'Reflect', 'getOwnPropertyDescriptor'))
       && node.arguments.length >= 2) return container('value', member(origin(node.arguments[0], seen), key(node.arguments[1], true), seen));
@@ -846,9 +947,16 @@ function checkModuleLoaders(ts, captured) {
     if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments.length >= 1 && node.arguments.length <= 2
       && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isCallExpression(node) && origin(node.expression, seen) & REQUIRE && node.arguments.length === 1
-      && ts.isStringLiteral(node.arguments[0]) && ['module', 'node:module'].includes(node.arguments[0].text)) return NAMESPACE;
+      && ['module', 'node:module'].includes(key(node.arguments[0], true))) return NAMESPACE;
     if (ts.isNewExpression(node) && origin(node.expression, seen) & NAMESPACE) return MODULE;
     return 0n;
+  }
+  function copiedOrigin(expression, seen) {
+    let result = origin(expression, seen);
+    // Object copies do not track property overwrite order. Keep fixed array
+    // slots in indexed reads only, where their positions are still meaningful.
+    for (const [flag, shape] of containers) if (shape.kind.startsWith('property:')) result &= ~flag;
+    return result;
   }
   function bindCallback(expression, value, seen = new Set()) {
     const node = unwrap(expression);
@@ -1317,7 +1425,7 @@ async function buildGoogleWorkerPrebundle(options) {
     const artifacts = Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, { sha256: hash(bytes), bytes: Buffer.byteLength(bytes) }]));
     const manifest = { schemaVersion: 1, kind: 'google-worker-prebundle', serverOnly: true, exports: names, profile: presetManifest.profile, revision: presetManifest.revision,
       profileSha256: presetManifest.profileSha256, cacheKey: presetManifest.cacheKey, inputSha256: presetManifest.inputSha256, transformer: presetManifest.transformer,
-      build: { prebundleVersion: 1, prebundleSha256: hash(fs.readFileSync(__filename)), esbuildVersion: esbuild.version, nodeVersion: process.version, format: 'cjs', moduleStrictness: 'preserved', target: 'es2022', minify: true, legalComments: 'eof', sourcemap: false },
+      build: { prebundleVersion: 1, prebundleSha256: implementationSha256, esbuildVersion: esbuild.version, nodeVersion: process.version, format: 'cjs', moduleStrictness: 'preserved', target: 'es2022', minify: true, legalComments: 'eof', sourcemap: false },
       packages: presetManifest.packages, schemas: presetManifest.schemas, registrySha256: presetManifest.registrySha256,
       // Replacement text embeds a disposable registry path. The portable bundle
       // hash covers transformed output; retain path-independent source receipts.

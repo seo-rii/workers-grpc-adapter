@@ -110,6 +110,7 @@ test('BUILD generated registry identity covers transformer bytes/version, TypeSc
   assert.notEqual(input.cacheKey, compiler.cacheKey);
   assert.equal(input.inputSha256, compiler.inputSha256);
   fs.appendFileSync(fixture.moduleFile, '\n// controlled transformer implementation drift\n');
+  delete require.cache[fixture.moduleFile];
   const changed = fixture.prepare().manifest();
   assert.notEqual(input.cacheKey, changed.cacheKey);
   assert.notEqual(input.transformer.sha256, changed.transformer.sha256);

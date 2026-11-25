@@ -136,7 +136,7 @@ again after generation before the registry is published.
 `transformer` alongside the original audit fields. The registry key includes:
 
 - The complete profile manifest hash, including rules and loader options.
-- Transformer semantic version **and the SHA256 of its implementation bytes**.
+- Transformer semantic version **and the SHA256 of its loaded implementation bytes**.
 - The supplied TypeScript compiler's version.
 - All validated package-manifest, source, schema and code-generator hashes.
 - The mapping from each schema to its validated generator role and entry.
@@ -144,6 +144,12 @@ again after generation before the registry is published.
 Identical inputs generate the same registry identity regardless of output
 directory. Changes to any of those inputs select another registry namespace,
 including a transformer edit whose author forgot to increment its version.
+Implementation hashes are captured when each build helper's CommonJS module
+loads. A retained API or prepared plugin keeps its original transformer identity
+after an on-disk update, because it still executes the original code. The
+prebundle manifest's `build.prebundleSha256` follows the same rule, including
+updates during an asynchronous build. Restart the build process after updating
+the tools to load the new implementation and its identity.
 The preset still validates inputs and generates its registry on each invocation;
 it does not trust or load a persistent artifact cache. Applications may use the
 identity as one component of their own cache key. A complete Worker bundle also
@@ -205,10 +211,20 @@ identity as well. Normal Node/esbuild
 symlink resolution is the tested path; custom loaders and `preserveSymlinks`
 can change dependency lookup and need separate validation.
 
-Build profiles currently require TypeScript `>=5.8 <6`. An application using
-another compiler can run the SDK transformation in an isolated build workspace
-with TypeScript 5.8.3, then consume its JavaScript artifact. This does not claim
-TypeScript 6 support or require disabling peer/profile checks.
+Build profiles require TypeScript `>=5.8 <7`. The transforms and audits use only
+the parser, binder and checker APIs, and the profile cache key records the
+compiler version. `npm run test:typescript:compilers` builds both pinned
+profiles through the esbuild preset with TypeScript 5.8.3 and 6.0.3; the
+unminified bundles must be byte-identical after replacing the compiler-bound
+cache key and generated registry hash. The prebundle SDK test also builds each
+prebundle with both compilers and requires identical declarations, ESM facade,
+package metadata and manifest inputs. Its minified CommonJS bundle is not
+compared byte for byte, because esbuild chooses minified identifier names from
+character frequency, which those hashes change. Any other compiler version
+fails with `WGA_UNSUPPORTED_DEPENDENCY`; an application using one can run the
+SDK transformation in an isolated build workspace and consume its JavaScript
+artifact. Equal build output does not type-check an application's use of the
+generated declarations; run that check with the application's own compiler.
 
 ## Inspecting transformations and proving bundle coverage
 
@@ -290,10 +306,25 @@ Node's import/require resolvers and proven `createRequire` bases. JSON and nativ
 addon targets remain data; unreferenced extensionless README/data files are not
 treated as JavaScript. Computed module paths, export-pattern expansion, and
 non-Node command scripts are outside this discovery pass.
+Literal package-private `#imports` sites also use Node's resolver, including
+conditional external-package targets and patterns selected by a concrete import.
+This follows referenced sites without enumerating every possible pattern match.
+The owning package's optional `packageImports` list records each alias, its
+import/require kind, physical target (or builtin), and resolution status.
+Missing targets and unverified `createRequire` bases fail the graph check.
+Targets owned by or reached through a gRPC/adapter package also appear in
+`grpcImports` and participate in implementation and physical installation checks.
+For private aliases, a separate lookup retains the logical package path before
+symlinks and must agree with the default resolver's physical target. Other
+resolved files are followed for further imports, while JSON and native-addon
+files remain data.
 Hidden runtime directories and source symlinks are included. Symlink imports
 resolve from the physical source location, and repeated physical files and
 directory cycles are visited once per package. Dependency `node_modules` trees
 are followed through package dependencies; version-control internals are skipped.
+Packages declared in `optionalDependencies` may be absent, including when
+their version range is the empty string. Installed optional packages still
+receive full manifest and source checks; missing required packages fail.
 Profile AST checks also load the installed compiler and hash-checked protobuf generators. Neither check
 performs authentication or proves that a final artifact was transformed. Preserve the prebundle's separate build
 coverage and artifact receipts for that evidence.

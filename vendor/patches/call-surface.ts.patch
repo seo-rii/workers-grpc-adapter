@@ -30,7 +30,7 @@
 
  /**
   * A type extending the built-in Error object with additional fields.
-@@ -82,8 +86,92 @@
+@@ -82,8 +86,100 @@
  ): ServiceError {
    const message = `${status.code} ${Status[status.code]}: ${status.details}`;
    const error = new Error(message);
@@ -40,10 +40,14 @@
 +}
 +
 +const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
++const pendingUnaryCancellations = new WeakSet<SurfaceCall>();
 +
-+/** Replay stream cancellation requested by synchronous startup hooks before I/O. */
++/** Replay cancellation requested by synchronous startup hooks before I/O. */
 +export function bindCallSurface(surface: SurfaceCall, call: InterceptingCallInterface): void {
 +  surface.call = call;
++  if (pendingUnaryCancellations.delete(surface)) {
++    call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++  }
 +  streamLifecycles.get(surface)?.flushCancellation();
 +}
 +
@@ -99,6 +103,10 @@
 +    const once: WriteCallback = error => {
 +      if (this.pendingWrite !== once) return;
 +      this.pendingWrite = undefined;
++      // RPC completion already delivered its error/status. Close the stream
++      // before a failed pending write reaches Node's errorOrDestroy path so
++      // upload cleanup cannot emit a second, unrelated stream error.
++      if (error && this.terminal) this.stream.destroy();
 +      callback(error);
 +    };
 +    this.pendingWrite = once;
@@ -124,7 +132,17 @@
  }
 
  export class ClientUnaryCallImpl
-@@ -113,12 +201,24 @@
+@@ -96,7 +192,8 @@
+   }
+
+   cancel(): void {
+-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++    if (this.call) this.call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
++    else pendingUnaryCancellations.add(this);
+   }
+
+   getPeer(): string {
+@@ -113,12 +210,24 @@
    implements ClientReadableStream<ResponseType>
  {
    public call?: InterceptingCallInterface;
@@ -154,7 +172,7 @@
    }
 
    getPeer(): string {
-@@ -139,12 +239,17 @@
+@@ -139,12 +248,17 @@
    implements ClientWritableStream<RequestType>
  {
    public call?: InterceptingCallInterface;
@@ -177,7 +195,7 @@
    }
 
    getPeer(): string {
-@@ -157,7 +262,7 @@
+@@ -157,7 +271,7 @@
 
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {
@@ -186,7 +204,7 @@
      };
      const flags = Number(encoding);
      if (!Number.isNaN(flags)) {
-@@ -177,15 +282,28 @@
+@@ -177,15 +291,28 @@
    implements ClientDuplexStream<RequestType, ResponseType>
  {
    public call?: InterceptingCallInterface;
@@ -220,7 +238,7 @@
    }
 
    getPeer(): string {
-@@ -202,7 +320,7 @@
+@@ -202,7 +329,7 @@
 
    _write(chunk: RequestType, encoding: string, cb: WriteCallback) {
      const context: MessageContext = {

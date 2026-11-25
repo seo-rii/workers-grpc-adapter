@@ -91,10 +91,14 @@ export function callErrorFromStatus(
 }
 
 const streamLifecycles = new WeakMap<SurfaceCall, ClientStreamLifecycle>();
+const pendingUnaryCancellations = new WeakSet<SurfaceCall>();
 
-/** Replay stream cancellation requested by synchronous startup hooks before I/O. */
+/** Replay cancellation requested by synchronous startup hooks before I/O. */
 export function bindCallSurface(surface: SurfaceCall, call: InterceptingCallInterface): void {
   surface.call = call;
+  if (pendingUnaryCancellations.delete(surface)) {
+    call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+  }
   streamLifecycles.get(surface)?.flushCancellation();
 }
 
@@ -150,6 +154,10 @@ class ClientStreamLifecycle {
     const once: WriteCallback = error => {
       if (this.pendingWrite !== once) return;
       this.pendingWrite = undefined;
+      // RPC completion already delivered its error/status. Close the stream
+      // before a failed pending write reaches Node's errorOrDestroy path so
+      // upload cleanup cannot emit a second, unrelated stream error.
+      if (error && this.terminal) this.stream.destroy();
       callback(error);
     };
     this.pendingWrite = once;
@@ -184,7 +192,8 @@ export class ClientUnaryCallImpl
   }
 
   cancel(): void {
-    this.call?.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    if (this.call) this.call.cancelWithStatus(Status.CANCELLED, 'Cancelled on client');
+    else pendingUnaryCancellations.add(this);
   }
 
   getPeer(): string {

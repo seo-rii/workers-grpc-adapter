@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, '..');
 const fixture = path.join(root, 'fixtures/prebundle-sdk');
 const workerRequire = createRequire(path.join(root, 'fixtures/worker/package.json'));
 const { syntheticPayload, crc32c } = require('../fixtures/prebundle-sdk/values.cjs');
+const { parityCompilers, compareBuilds } = require('./typescript-parity.cjs');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const sri = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64');
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -31,7 +32,7 @@ const expectedCases = {
   'secret-denied': { methods: ['AccessSecretVersion'], codes: [7] },
   'secret-unavailable': { methods: ['AccessSecretVersion'], codes: [14] },
 };
-const report = { schemaVersion: 1, status: 'running', stage: 'prepare', startedAt: new Date().toISOString(),
+const report = { schemaVersion: 1, status: 'running', stage: 'prepare', startedAt: new Date().toISOString(), typescriptParity: [],
   node: process.version, compatibilityDate: '2026-09-21', installedAdapterTarball: true,
   sourceAliases: false, liveGoogle: false, liveAuthentication: false, cloudflareAutomaticConversion: false,
   cloudflareEvidence: 'conversion-intent-and-controlled-grpc-web-wire-only',
@@ -332,6 +333,23 @@ async function profileRun(profile, adapterArchive, npmCache) {
       check(manifest.sources.some(item => item.path.startsWith(sdk + '@')), 'MATRIX_IMPORTED_SDK');
       check(manifest.transformed.some(item => item.path.includes(sdk + '/')), 'MATRIX_TRANSFORMED_SDK');
     }
+    // The same graph built with TypeScript 6 must differ only in its compiler-bound identity.
+    report.stage = `${profile.id}-prebundle-typescript-6`;
+    const compilers = parityCompilers();
+    const nextPrebundle = await build.buildGoogleWorkerPrebundle({ projectRoot, outdir: 'generated-typescript-6', typescript: compilers.next,
+      esbuild: workerRequire('esbuild'), entryPoint: 'wrapper.mjs', declarationFile: 'wrapper.d.ts',
+      packageName: '@wga-fixture/google-sdks', profile: profile.id,
+      exports: ['Firestore', 'Timestamp', 'firestoreV1', 'SecretManagerServiceClient', 'OAuth2Client', 'createWorkersGrpcTransport', 'cancellableCall'] });
+    const artifactTexts = directory => Object.fromEntries(Object.keys(manifest.artifacts).sort()
+      .map(name => [name, fs.readFileSync(path.join(directory, name), 'utf8')]));
+    // The minified CommonJS bundle is compared through its manifest inputs and
+    // transforms; byte parity of the transforms is checked unminified separately.
+    report.typescriptParity.push({ profile: profile.id, ...compareBuilds(
+      { version: compilers.current.version, manifest, texts: artifactTexts(prebundle.outdir) },
+      { version: compilers.next.version, manifest: json(nextPrebundle.manifestPath), texts: artifactTexts(nextPrebundle.outdir) },
+      { minified: ['index.cjs'] }) });
+    fs.rmSync(nextPrebundle.outdir, { recursive: true, force: true });
+    report.stage = `${profile.id}-prebundle`;
     const typedEntry = path.join(projectRoot, 'typecheck.mts');
     fs.copyFileSync(path.join(fixture, 'typecheck.mts'), typedEntry);
     const ts = require('typescript');
@@ -499,7 +517,7 @@ async function main() {
     'fixtures/prebundle-sdk/typecheck.mts',
     'fixtures/prebundle-sdk/typecheck-auth.mts',
     'fixtures/prebundle-sdk/worker.mjs', 'fixtures/prebundle-sdk/values.cjs', 'fixtures/prebundle-sdk/optional-dependencies.json',
-    'scripts/test-google-prebundle-sdks.cjs', 'fixtures/google/package.json', 'fixtures/google/package-lock.json',
+    'scripts/test-google-prebundle-sdks.cjs', 'scripts/typescript-parity.cjs', 'fixtures/google/package.json', 'fixtures/google/package-lock.json',
     'fixtures/modern/package.json', 'fixtures/modern/package-lock.json', 'package.json'];
   report.evidence = Object.fromEntries(sources.map(file => [file, hash(fs.readFileSync(path.join(root, file)))]));
   report.stage = 'build-adapter'; await run(process.execPath, ['scripts/build.cjs'], root);
@@ -511,6 +529,7 @@ async function main() {
   for (const profile of profiles) await profileRun(profile, adapterArchive, npmCache);
   report.rpcCount = report.cases.reduce((sum, item) => sum + item.rpcCount, 0);
   check(report.cases.length === 28 && report.rpcCount === 48, 'MATRIX_COMPLETE_CASES');
+  check(report.typescriptParity.length === profiles.length, 'MATRIX_TYPESCRIPT_PARITY');
   for (const [file, digest] of Object.entries(report.generatedArtifacts)) {
     const bytes = fs.readFileSync(path.join(root, file));
     check(hash(bytes) === digest && !bytes.includes(token), 'MATRIX_FINAL_ARTIFACT_HASH');

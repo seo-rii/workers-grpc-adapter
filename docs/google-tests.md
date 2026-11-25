@@ -59,7 +59,7 @@ npm run test:emulators:lifecycle
 
 The launcher starts the pinned official Firestore emulator in separate Native and Datastore modes. Real Envoy translates gRPC-Web to their native gRPC endpoints. `shared/emulator-suites.mjs` registers the original CRUD/transaction functions and additional data-model, query, aggregation, rollback, error, BulkWriter and SDK stream scenarios.
 
-Every suite runs with native grpc-js, the Node adapter and two separate workerd invocations. The harness compares the exact shared source bytes, business assertions, upstream method/status counts and adapter Fetch arrivals. Emulator RPC responses are not mocked. Reports are written to `verification/google-emulators.json` and `verification/emulator-lifecycle.json` and included in CI evidence artifacts. See the [emulator fixture guide](../fixtures/emulators/README.md) for toolchain and process details.
+Every suite runs with native grpc-js, the Node adapter and two separate workerd invocations. The harness compares the exact shared source bytes, business assertions, upstream method/status counts and adapter Fetch arrivals. Emulator RPC responses are not mocked. Reports are written to `verification/google-emulators.json` and `verification/emulator-lifecycle.json` and included in CI evidence artifacts. See the [emulator fixture guide](https://github.com/seo-rii/workers-grpc-adapter/blob/main/fixtures/emulators/README.md) for toolchain and process details.
 
 These tests provide local behavior evidence. They do not establish live IAM, quotas, index requirements or production transaction concurrency. Secret Manager has no official emulator in this harness.
 

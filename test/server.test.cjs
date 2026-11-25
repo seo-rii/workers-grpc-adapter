@@ -48,6 +48,156 @@ test('SERVER registers immutable exact routes and rejects unsafe definitions', a
     }
 });
 
+test('SERVER snapshots structural method fields for every RPC kind', async t => {
+    for (const shape of ['plain', 'inherited', 'nonenumerable', 'class']) {
+        for (const requestStream of [false, true]) for (const responseStream of [false, true]) {
+            await t.test(`${shape}: requestStream=${requestStream}, responseStream=${responseStream}`, async () => {
+                const methodPath = '/fixture.Server/Snapshot';
+                let method;
+                const fields = { path: methodPath, requestStream, responseStream,
+                    requestDeserialize(bytes) {
+                        assert.notEqual(this, method);
+                        assert.equal(this.path, methodPath);
+                        assert.equal(this.requestStream, requestStream);
+                        return Buffer.from(`decoded:${bytes}`);
+                    },
+                    responseSerialize(bytes) {
+                        assert.notEqual(this, method);
+                        assert.equal(this.path, methodPath);
+                        assert.equal(this.responseStream, responseStream);
+                        return Buffer.from(`encoded:${bytes}`);
+                    } };
+                if (shape === 'plain') method = { ...fields };
+                else if (shape === 'inherited') method = Object.create(fields);
+                else if (shape === 'nonenumerable') {
+                    method = Object.defineProperties({}, Object.fromEntries(Object.entries(fields).map(([key, value]) =>
+                        [key, { value, writable: true, configurable: true }])));
+                } else {
+                    class Method {
+                        requestDeserialize(bytes) { return fields.requestDeserialize.call(this, bytes); }
+                        responseSerialize(bytes) { return fields.responseSerialize.call(this, bytes); }
+                    }
+                    method = Object.assign(new Method(), { path: methodPath, requestStream, responseStream });
+                }
+                let calls = 0;
+                const collect = async input => {
+                    calls++;
+                    if (!requestStream) return input;
+                    const parts = [];
+                    for await (const value of input) parts.push(value.toString());
+                    return Buffer.from(parts.join('|'));
+                };
+                const handlers = { call: responseStream
+                    ? async function* (input) { yield await collect(input); yield Buffer.from('last'); }
+                    : collect };
+                const handler = createGrpcWebHandler({ call: method }, handlers);
+                Object.assign(method, { path: '/changed.Service/Method', requestStream: !requestStream, responseStream: !responseStream,
+                    requestDeserialize() { throw new Error('mutated deserializer'); },
+                    responseSerialize() { throw new Error('mutated serializer'); } });
+                handlers.call = () => { throw new Error('mutated handler'); };
+                const body = Buffer.concat((requestStream ? ['one', 'two'] : ['one']).map(value => encodeFrame(Buffer.from(value))));
+                const actual = await observe(await handler(request(body, { path: methodPath })));
+                assert.equal(actual.status.code, status.OK);
+                assert.deepEqual(actual.messages.map(value => value.toString()), [
+                    requestStream ? 'encoded:decoded:one|decoded:two' : 'encoded:decoded:one',
+                    ...(responseStream ? ['encoded:last'] : []),
+                ]);
+                assert.equal(calls, 1);
+            });
+        }
+    }
+});
+
+test('SERVER snapshots method accessors and own handlers with one read', async t => {
+    for (const shape of ['own', 'inherited', 'nonenumerable']) {
+        await t.test(shape, async () => {
+            const fields = { path: unary.path, requestStream: false, responseStream: false,
+                requestDeserialize: echo, responseSerialize: echo };
+            const reads = Object.fromEntries(Object.keys(fields).map(key => [key, 0]));
+            const source = Object.defineProperties({}, Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, {
+                enumerable: shape !== 'nonenumerable',
+                get() { assert.equal(++reads[key], 1, `${key} read more than once`); return value; },
+            }])));
+            const method = shape === 'inherited' ? Object.create(source) : source;
+            let methodReads = 0, handlerReads = 0;
+            const methods = { get echo() { assert.equal(++methodReads, 1); return method; } };
+            const handlers = { get echo() { assert.equal(++handlerReads, 1); return echo; } };
+            const handler = createGrpcWebHandler(methods, handlers);
+            for (let i = 0; i < 2; i++) {
+                const actual = await observe(await handler(request()));
+                assert.equal(actual.status.code, status.OK);
+                assert.equal(actual.messages[0].toString(), 'request');
+            }
+            assert.deepEqual(reads, Object.fromEntries(Object.keys(fields).map(key => [key, 1])));
+            assert.equal(methodReads, 1);
+            assert.equal(handlerReads, 1);
+        });
+    }
+});
+
+test('SERVER rejects handlers removed by descriptor accessors before capture', async t => {
+    for (const shape of ['own', 'inherited', 'nonenumerable', 'additional']) {
+        await t.test(shape, async () => {
+            let inheritedReads = 0, inheritedCalls = 0, fieldReads = 0;
+            const handlers = Object.create({
+                get echo() { inheritedReads++; return () => { inheritedCalls++; return Buffer.from('inherited handler'); }; },
+            }, { echo: { value: echo, configurable: true, enumerable: true } });
+            const method = { ...unary };
+            const field = shape === 'additional' ? 'custom' : 'path';
+            const accessor = { configurable: true, enumerable: shape !== 'nonenumerable',
+                get() { fieldReads++; delete handlers.echo; return unary.path; } };
+            if (shape === 'inherited') {
+                delete method.path;
+                Object.setPrototypeOf(method, Object.defineProperty({}, field, accessor));
+            } else Object.defineProperty(method, field, accessor);
+            let registrationError, handler;
+            try { handler = createGrpcWebHandler({ echo: method }, handlers); }
+            catch (error) { registrationError = error; }
+            if (handler) await observe(await handler(request()));
+            assert.equal(inheritedReads, 0, 'registration must not read an inherited handler');
+            assert.equal(inheritedCalls, 0, 'registration must not invoke an inherited handler');
+            assert.equal(registrationError?.code, 'WGA_SERVER_CONFIG');
+            assert.equal(fieldReads, 1);
+            assert.equal(Object.hasOwn(handlers, 'echo'), false);
+        });
+    }
+});
+
+test('SERVER preserves additional enumerable fields on the owned method snapshot', async () => {
+    let customReads = 0;
+    const method = { ...unary, originalName: 'originalEcho',
+        get custom() { customReads++; return 'prefix'; },
+        requestSerialize(bytes) {
+            assert.notEqual(this, method);
+            return Buffer.from(`request:${this.custom}:${bytes}`);
+        },
+        responseDeserialize(bytes) {
+            assert.notEqual(this, method);
+            return Buffer.from(`response:${this.originalName}:${bytes}`);
+        },
+        requestDeserialize(bytes) { return this.requestSerialize(bytes); },
+        responseSerialize(bytes) { return this.responseDeserialize(bytes); } };
+    const handler = createGrpcWebHandler({ echo: method }, { echo });
+    Object.defineProperty(method, 'custom', { value: 'changed' });
+    method.originalName = 'changed';
+    method.requestSerialize = method.responseDeserialize = () => { throw new Error('mutated codec'); };
+    const actual = await observe(await handler(request()));
+    assert.equal(actual.status.code, status.OK);
+    assert.deepEqual(actual.messages.map(value => value.toString()), ['response:originalEcho:request:prefix:request']);
+    assert.equal(customReads, 1);
+});
+
+test('SERVER validates structural method fields before registration', () => {
+    for (const [key, value] of [['path', '/invalid'], ['requestStream', 0], ['responseStream', undefined],
+        ['requestDeserialize', null], ['responseSerialize', 'serialize']]) {
+        const fields = { ...unary, [key]: value };
+        for (const method of [Object.create(fields), Object.defineProperties({},
+            Object.fromEntries(Object.entries(fields).map(([name, field]) => [name, { value: field }])))]) {
+            assert.throws(() => createGrpcWebHandler({ echo: method }, { echo }), { code: 'WGA_SERVER_CONFIG' });
+        }
+    }
+});
+
 test('SERVER enforces binary POST and cancels rejected request bodies', async () => {
     const handler = createGrpcWebHandler({ echo: unary }, { echo });
     assert.equal((await handler(new Request(`https://server.test${unary.path}`))).status, 405);
