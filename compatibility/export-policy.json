@@ -773,7 +773,7 @@
       "entry": "./sdk",
       "scope": "Optional operation-scoped cancellation for Promise-based Google SDK calls and Datastore paginated query streams over the adapter.",
       "documentation": "docs/sdk-cancellation.md",
-      "signatureNotes": "cancellableCall returns a Promise and an explicit cancel handle; cancellableQueryStream bounds its public queue and propagates destroy/iterator exit to page production and the active RPC. Both pass a private cancellation parent through GAX per-call options without closing or modifying the shared SDK client. AbortSignal support is local cancellation, never rollback of accepted writes. These helpers extend the pinned SDK surface; unwrapped native SDK behavior remains unchanged."
+      "signatureNotes": "cancellableCall returns a Promise and an explicit cancel handle; cancellableQueryStream bounds its public queue and propagates destroy/iterator exit to page production and the active RPC. Both pass a private cancellation parent through GAX per-call options without closing or modifying the shared SDK client. AbortSignal support is local cancellation, never rollback of accepted writes. createCancellationScope shares one such parent and absolute deadline across many SDK calls through gaxOptions(), with explicit cancel and dispose and no wrapper promise or timer. These helpers extend the pinned SDK surface; unwrapped native SDK behavior remains unchanged."
     },
     {
       "entry": "./build",

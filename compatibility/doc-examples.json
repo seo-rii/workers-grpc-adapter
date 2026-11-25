@@ -489,6 +489,16 @@
       "file": "docs/sdk-cancellation.md",
       "ordinal": 2,
       "language": "ts",
+      "sha256": "e5b58223c236ec4683d3b14c642e39e7c64d8aa7ff3b51ea2d20450f8b32ad02",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative request-wide SDK cancellation scope with application-owned request, datastore and key values; adapter behavior is verified by test/sdk-scope.test.cjs."
+    },
+    {
+      "id": "docs/sdk-cancellation.md#fence-3",
+      "file": "docs/sdk-cancellation.md",
+      "ordinal": 3,
+      "language": "ts",
       "sha256": "115c8864e097c15855dcef14fb7b578771738baa68de6067398225a9bec90713",
       "classification": "expected",
       "category": "illustrative-code",

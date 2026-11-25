@@ -43,6 +43,27 @@ The first observed terminal outcome wins. A pre-aborted signal produces `CANCELL
 
 The helper adds no retry loop and cannot deduplicate retries owned by several layers. Assign one retry owner for each operation. When the adapter owns retries, disable the SDK's retry loop where its API supports `gaxOptions: { retry: null }`; when the SDK owns retries, leave the adapter retry policy disabled. Reuse the same absolute deadline across application retries. Reads and explicitly idempotent writes can use a bounded retry policy; ordinary mutations and partially delivered streams need service-specific outcome or resume handling. An expired operation must not be retried with a freshly calculated budget.
 
+## One scope for many calls
+
+`createCancellationScope({ signal?, deadline? })` shares one cancellation parent and total deadline across every SDK call that uses its options, without wrapping each promise. It suits code that makes many SDK calls internally, such as an ORM store adapter with a per-call options hook. Each call ends with the adapter's own status: `CANCELLED` (details `Cancelled by parent call`) or `DEADLINE_EXCEEDED`.
+
+```ts
+import { createCancellationScope } from '@grpc/grpc-js/sdk';
+
+// One scope per incoming Worker request.
+const scope = createCancellationScope({ signal: request.signal, deadline: Date.now() + 10_000 });
+try {
+  const [entity] = await datastore.get(key, { gaxOptions: scope.gaxOptions() });
+  await datastore.save({ key, data: { ...entity, seen: true } }, scope.gaxOptions({ timeout: 5_000 }));
+} finally {
+  scope.dispose();
+}
+```
+
+`gaxOptions(existing)` copies the caller's GAX option containers and adds the scope's parent, as the other helpers do; a caller-supplied `parent` or `propagate_flags` throws `WGA_SDK_PARENT_CONFLICT`. An abort or `cancel()` cancels every pending call that used the options and makes later calls fail before Fetch. The deadline joins each call's own deadline, and the earlier one wins. With a deadline, `gaxOptions()` also caps GAX `timeout` at the time left, never raising a smaller one. GAX derives its total retry budget from `timeout` and retries some codes, including `DEADLINE_EXCEEDED`, so without the cap an expired call would be retried locally until GAX's default budget ran out. The scope keeps no timer and wraps no promise, so SDK startup or backoff between calls is not interrupted; only the next adapter call observes the cancelled parent or expired deadline. `dispose()` detaches the signal: pending calls continue, and a later `gaxOptions()` throws `WGA_SDK_SCOPE_DISPOSED`. Unknown options throw `WGA_SDK_OPTIONS`.
+
+Cancelling a Commit never rolls back an accepted write, so treat a cancelled Commit as an unknown outcome. Workers deliver an incoming request's `signal` only with the [`enable_request_signal` compatibility flag](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#enable-requestsignal-for-incoming-requests). `test/sdk-scope.test.cjs` covers shared cancellation, pre-aborted and later signals, deadline joining, option copying, conflicts and disposal against the adapter's Fetch transport.
+
 ## Datastore query streams
 
 `cancellableQueryStream<T>(start, { gaxOptions?, signal?, deadline?, highWaterMark? })` returns a typed object-mode Node `Readable`. The factory must return a readable with `end()`, as the pinned Datastore `runQueryStream()` does:
