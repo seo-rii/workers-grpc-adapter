@@ -116,9 +116,10 @@ lock hashes, tarball integrity and installed adapter package hash. This does
 not alter any SDK pin or disable profile validation.
 
 The fixture pins SvelteKit 2.70.3, Svelte 5.57.2, Vite 7.3.7,
-adapter-cloudflare 7.2.9, TypeScript 5.8.3 and esbuild 0.28.2. The supported
-TypeScript 5 compiler is deliberate; this test makes no TypeScript 6 or
-SvelteKit 3 support claim. The pnpm isolated linker and disabled hoisting expose
+adapter-cloudflare 7.2.9, TypeScript 5.8.3 and esbuild 0.28.2. This test runs
+the build and declaration checks with TypeScript 5.8.3 only and makes no
+SvelteKit 3 support claim; TypeScript 6 build output is compared separately
+(see [profiles](profiles.md)). The pnpm isolated linker and disabled hoisting expose
 the SDKs' physical `.pnpm` paths. Version and graph updates require reviewing
 both the lock and the SDK profile.
 

@@ -205,5 +205,5 @@ test('DOCTOR fails closed for invalid options and unsupported CLI flags', t => {
 test('DOCTOR profile CLI requires an inspected supported compiler instead of skipping AST checks', t => {
   const f = fixture(t);
   const result = spawnSync(process.execPath, [cli, '--profile=google-static-v1'], { cwd: f.directory, encoding: 'utf8', env: { PATH: process.env.PATH } });
-  assert.equal(result.status, 2); assert.match(result.stderr, /TypeScript >=5.8 <6/);
+  assert.equal(result.status, 2); assert.match(result.stderr, /TypeScript >=5.8 <7/);
 });

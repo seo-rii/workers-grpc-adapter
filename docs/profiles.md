@@ -211,10 +211,20 @@ identity as well. Normal Node/esbuild
 symlink resolution is the tested path; custom loaders and `preserveSymlinks`
 can change dependency lookup and need separate validation.
 
-Build profiles currently require TypeScript `>=5.8 <6`. An application using
-another compiler can run the SDK transformation in an isolated build workspace
-with TypeScript 5.8.3, then consume its JavaScript artifact. This does not claim
-TypeScript 6 support or require disabling peer/profile checks.
+Build profiles require TypeScript `>=5.8 <7`. The transforms and audits use only
+the parser, binder and checker APIs, and the profile cache key records the
+compiler version. `npm run test:typescript:compilers` builds both pinned
+profiles through the esbuild preset with TypeScript 5.8.3 and 6.0.3; the
+unminified bundles must be byte-identical after replacing the compiler-bound
+cache key and generated registry hash. The prebundle SDK test also builds each
+prebundle with both compilers and requires identical declarations, ESM facade,
+package metadata and manifest inputs. Its minified CommonJS bundle is not
+compared byte for byte, because esbuild chooses minified identifier names from
+character frequency, which those hashes change. Any other compiler version
+fails with `WGA_UNSUPPORTED_DEPENDENCY`; an application using one can run the
+SDK transformation in an isolated build workspace and consume its JavaScript
+artifact. Equal build output does not type-check an application's use of the
+generated declarations; run that check with the application's own compiler.
 
 ## Inspecting transformations and proving bundle coverage
 

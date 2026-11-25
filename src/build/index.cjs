@@ -266,7 +266,10 @@ function createGoogleWorkerBuild({ projectRoot, outdir, profile: profileId = 'go
   const ts = typescript;
   if (!ts || typeof ts.createSourceFile !== 'function') fail('WGA_UNSUPPORTED_DEPENDENCY', 'Pass the installed TypeScript compiler as typescript');
   const compiler = /^(\d+)\.(\d+)\./.exec(ts.version || '');
-  if (!compiler || Number(compiler[1]) !== 5 || Number(compiler[2]) < 8) fail('WGA_UNSUPPORTED_DEPENDENCY', 'Build profiles require TypeScript >=5.8 <6; use an isolated build workspace for other app compilers');
+  // TypeScript 6 produces the same profile transforms and audits as 5.8; only
+  // the compiler-bound cache identity differs. Keep later majors explicit.
+  const [major, minor] = compiler ? [Number(compiler[1]), Number(compiler[2])] : [];
+  if (!compiler || !((major === 5 && minor >= 8) || major === 6)) fail('WGA_UNSUPPORTED_DEPENDENCY', 'Build profiles require TypeScript >=5.8 <7; use an isolated build workspace for other app compilers');
   fs.mkdirSync(outdir, { recursive: true });
   const unique = new Map();
   let legacyKeySchema, datastoreStructSchema;

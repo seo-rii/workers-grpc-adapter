@@ -280,11 +280,22 @@ test('BUILD verification rejects an installation link retargeted after inspectio
   assert.throws(() => preset.verifyBuild({ inputs: {}, outputs: {} }), /WGA_SOURCE_IDENTITY|WGA_UNSUPPORTED_DEPENDENCY/);
 });
 
-test('BUILD compiler range stays explicit rather than silently accepting TS 6', t => {
+test('BUILD compiler range stays explicit rather than silently accepting TS 7', t => {
   const f = fixture(t);
-  assert.throws(() => f.api.createGoogleWorkerBuild({ projectRoot: f.project, outdir: path.join(f.project, 'out'),
-    typescript: { ...ts, version: '6.0.0' } }), /TypeScript >=5.8 <6/);
-  assert.equal(fs.existsSync(path.join(f.project, 'out')), false);
+  for (const version of ['7.0.0', '5.7.3', '4.9.5', 'next']) {
+    assert.throws(() => f.api.createGoogleWorkerBuild({ projectRoot: f.project, outdir: path.join(f.project, 'out'),
+      typescript: { ...ts, version } }), /TypeScript >=5.8 <7/, version);
+    assert.equal(fs.existsSync(path.join(f.project, 'out')), false, version);
+  }
+});
+
+test('BUILD compiler range accepts TypeScript 6 and records it in the cache identity', t => {
+  const f = fixture(t);
+  const current = f.api.createGoogleWorkerBuild({ projectRoot: f.project, outdir: path.join(f.project, 'out-5'), typescript: ts });
+  const next = f.api.createGoogleWorkerBuild({ projectRoot: f.project, outdir: path.join(f.project, 'out-6'),
+    typescript: { ...ts, version: '6.0.3' } });
+  assert.equal(next.manifest().transformer.typescriptVersion, '6.0.3');
+  assert.notEqual(next.manifest().cacheKey, current.manifest().cacheKey);
 });
 
 test('BUILD doctor checks physical AST anchors when the nested logical role does not exist', t => {
