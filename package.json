@@ -69,6 +69,7 @@
     "test:pack": "node scripts/test-pack.cjs",
     "test:prebundle:sdks": "node scripts/test-google-prebundle-sdks.cjs",
     "test:types": "node scripts/test-types.cjs",
+    "test:typescript:compilers": "node scripts/test-typescript-compilers.cjs",
     "test:google": "node scripts/google-test.cjs",
     "test:request-streaming": "node scripts/test-request-streaming.cjs",
     "test:workers": "node scripts/workers-test.cjs",
@@ -93,7 +94,7 @@
     "doctor": "node scripts/doctor.cjs",
     "prepack": "npm run build && node vendor/verify.cjs"
   },
-  "devDependencies": { "typescript": "5.8.3", "@types/node": "22.15.30", "fast-check": "4.10.2" },
-  "peerDependencies": { "esbuild": ">=0.25.0 <1", "typescript": ">=5.8.0 <6" },
+  "devDependencies": { "typescript": "5.8.3", "typescript-6": "npm:typescript@6.0.3", "@types/node": "22.15.30", "fast-check": "4.10.2" },
+  "peerDependencies": { "esbuild": ">=0.25.0 <1", "typescript": ">=5.8.0 <7" },
   "peerDependenciesMeta": { "esbuild": { "optional": true }, "typescript": { "optional": true } }
 }
