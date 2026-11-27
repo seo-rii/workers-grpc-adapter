@@ -28,7 +28,7 @@ Native grpc-js `ServerUnaryCall`, `ServerReadableStream`, `ServerWritableStream`
 
 Flags must be an unsigned 16-bit integer. Census/tracing and other bits are inert, including those present in `DEFAULTS`; they do not propagate a tracing context. The pinned native implementation likewise uses only the deadline and cancellation bits on this path.
 
-With deadline propagation enabled, the effective absolute deadline is the minimum of the parent deadline and the child's deadline. If the child omitted its deadline, its configured `defaultTimeoutMs` applies before taking this minimum. The resulting deadline controls the logical call, credential wait, retry backoff, upload/download and the outbound `grpc-timeout` header. A later parent deadline cannot extend an explicit child deadline. The parent deadline is read once when the child starts; later changes to the parent object do not extend or reset it.
+With deadline propagation enabled, the effective absolute deadline is the minimum of the parent deadline and the child's deadline. If the child omitted its deadline, its configured `defaultTimeoutMs` applies before taking this minimum. The resulting deadline controls the logical call, credential wait, retry backoff, upload/download and the outbound `grpc-timeout` header. A transport call that an interceptor creates later with `nextCall(options)`, such as a retry, keeps the inherited parent deadline. A later parent deadline cannot extend an explicit child deadline. The parent deadline is read once when the child starts; later changes to the parent object do not extend or reset it.
 
 Cancellation is one-way. Cancelling or closing a child does not cancel its parent or sibling calls. A propagated cancellation finishes with `CANCELLED` and `Cancelled by parent call`, aborts Fetch, stops retries and removes the parent's listener. Every other terminal outcome also removes that listener. A parent already marked cancelled terminates a cancellation-enabled child before credential generation or Fetch; this is an additional guard beyond the pinned native implementation's event subscription.
 
@@ -65,7 +65,7 @@ The Fetch context retains its existing lifecycle: successful response completion
 
 ## Local evidence and limits
 
-`test/parent-calls.test.cjs` covers independent flags, default masks with a bit removed, inherited timeout headers, expired/already-cancelled parents, all four client call kinds, pending credentials, retry backoff, sibling isolation, terminal listener cleanup, malformed input and synchronous subscription reentrancy. It also exercises actual Fetch handler forwarding and successful parent completion.
+`test/parent-calls.test.cjs` covers independent flags, default masks with a bit removed, inherited timeout headers, expired/already-cancelled parents, all four client call kinds, pending credentials, retry backoff, calls that a retrying interceptor creates after startup, sibling isolation, terminal listener cleanup, malformed input and synchronous subscription reentrancy. It also exercises actual Fetch handler forwarding and successful parent completion.
 
 Run the native and workerd gate after building and installing fixtures:
 
