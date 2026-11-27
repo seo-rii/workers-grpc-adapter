@@ -597,6 +597,18 @@ export class WorkersCall {
                 this.finish(status.UNKNOWN, 'WGA_REDIRECT_BLOCKED');
                 return;
             }
+            const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+            if (contentType !== 'application/grpc-web+proto' && contentType !== 'application/grpc-web') {
+                void response.body?.cancel().catch(() => {});
+                // A proxy or CDN error page delivers no metadata. Fields that
+                // gRPC metadata cannot represent must not replace its mapping.
+                let explicit: StatusObject | null = null;
+                try { explicit = statusFromHeaders(response.headers); } catch { /* Use the HTTP status mapping. */ }
+                // Preserve explicit remote failures, but a status header alone
+                // cannot turn an unsupported response representation into OK.
+                return { result: explicit && explicit.code !== status.OK ? explicit
+                    : { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
+            }
             let initial: Metadata, headerStatus: StatusObject | null;
             try {
                 initial = metadataFromHeaders(response.headers);
@@ -604,14 +616,6 @@ export class WorkersCall {
             } catch (error) {
                 void response.body?.cancel().catch(() => {});
                 throw error;
-            }
-            const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
-            if (contentType !== 'application/grpc-web+proto' && contentType !== 'application/grpc-web') {
-                void response.body?.cancel().catch(() => {});
-                // Preserve explicit remote failures, but a status header alone
-                // cannot turn an unsupported response representation into OK.
-                return { result: headerStatus && headerStatus.code !== status.OK ? headerStatus
-                    : { code: httpStatusToGrpc(response.status), details: 'WGA_NOT_GRPC_WEB', metadata: new Metadata() }, retryable: false };
             }
             let pendingInitial: Metadata | undefined = policy ? initial : undefined;
             if (!policy) notify(() => this.listener!.onReceiveMetadata(initial));

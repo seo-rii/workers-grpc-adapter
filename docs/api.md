@@ -44,7 +44,9 @@ Both binary response content types are accepted. The protobuf framing is the sam
 Missing or unsupported response content types cannot succeed, including an empty
 server stream with `grpc-status: 0`. An explicit non-OK gRPC header status retains
 its code, details and metadata; otherwise the response uses the HTTP-to-gRPC error
-mapping with `WGA_NOT_GRPC_WEB` (`UNKNOWN` for HTTP 200). These responses are not
+mapping with `WGA_NOT_GRPC_WEB` (`UNKNOWN` for HTTP 200). Header fields that gRPC
+metadata cannot represent, such as a malformed `-bin` value on a proxy error page,
+fall back to that mapping instead of failing with `INTERNAL`. These responses are not
 retried, and their body cleanup does not delay the terminal result.
 
 ### Cloudflare automatic outgoing conversion

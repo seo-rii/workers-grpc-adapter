@@ -70,3 +70,23 @@ for (const contentType of ['application/grpc-web', 'application/grpc-web+proto',
     });
   }
 }
+
+// A proxy or CDN error page is not a gRPC response and delivers no metadata.
+// Header fields that gRPC metadata cannot represent must not hide its status.
+for (const [name, headers] of [
+  ['metadata-invalid field name', { 'x-proxy!': 'edge' }],
+  ['malformed binary field', { 'x-trace-bin': 'not base64!' }],
+  ['oversized field set', { 'x-proxy-debug': 'a'.repeat(70000) }],
+]) {
+  for (const [httpStatus, expectedCode] of [[503, grpc.status.UNAVAILABLE], [403, grpc.status.PERMISSION_DENIED]]) {
+    test(`CLIENT invalid MIME HTTP ${httpStatus} with ${name} keeps the HTTP status mapping`, async () => {
+      const c = client({}, { fetcher: { async fetch() {
+        return new Response('<html>edge error</html>', { status: httpStatus, headers: { 'content-type': 'text/html', ...headers } });
+      } } });
+      try {
+        await assert.rejects(unary(c).promise, { code: expectedCode, details: 'WGA_NOT_GRPC_WEB' });
+        assert.equal(c.getChannel().activeCallCount(), 0);
+      } finally { c.close(); }
+    });
+  }
+}
