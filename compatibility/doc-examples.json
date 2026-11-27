@@ -455,6 +455,16 @@
       "reason": "Illustrative application or API fragment with surrounding setup and values; this exact block is not executed by the documentation gate."
     },
     {
+      "id": "docs/resources.md#fence-2",
+      "file": "docs/resources.md",
+      "ordinal": 2,
+      "language": "ts",
+      "sha256": "bd2e6d1d760b363a74afe76c38c315e74c09c9c3321b9f8ec449677f8a6fec96",
+      "classification": "expected",
+      "category": "illustrative-code",
+      "reason": "Illustrative bounded ctx.waitUntil() wait with application-owned ctx and transport values; workerd completion is verified by scripts/test-workerd-detached-calls.cjs."
+    },
+    {
       "id": "docs/retries.md#fence-1",
       "file": "docs/retries.md",
       "ordinal": 1,

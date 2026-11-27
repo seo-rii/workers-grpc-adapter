@@ -62,6 +62,7 @@
     "test:bootstrap:catalog": "node scripts/test-bootstrap-catalog.cjs",
     "test:security:catalog": "node scripts/test-security-catalog.cjs",
     "test:workerd:observer": "node scripts/test-workerd-observer.cjs",
+    "test:workerd:detached-calls": "node scripts/test-workerd-detached-calls.cjs",
     "test:workerd:server-streaming": "node scripts/test-workerd-server-streaming.cjs",
     "test:workerd:transport-extensions": "node scripts/test-workerd-transport-extensions.cjs",
     "test:api:contracts": "node scripts/test-api-contracts.cjs",

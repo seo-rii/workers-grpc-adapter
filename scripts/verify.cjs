@@ -92,6 +92,7 @@ function main() {
     run('bootstrap-catalog', ['scripts/test-bootstrap-catalog.cjs']);
     run('security-catalog', ['scripts/test-security-catalog.cjs']);
     run('workerd-observer', ['scripts/test-workerd-observer.cjs']);
+    run('workerd-detached-calls', ['scripts/test-workerd-detached-calls.cjs']);
     run('workerd-server-streaming', ['scripts/test-workerd-server-streaming.cjs']);
     run('workerd-transport-extensions', ['scripts/test-workerd-transport-extensions.cjs']);
     run('transport-benchmark', ['scripts/benchmark.cjs']);

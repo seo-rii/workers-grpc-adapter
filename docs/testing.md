@@ -48,6 +48,7 @@ Individual commands assume their required fixtures and build outputs are prepare
 | `npm run test:workerd:integration` | Two real Workers using the public client/server APIs through a service binding; 72 cases and 96 RPCs | `verification/workerd-integration.json` |
 | `npm run test:workerd:lifecycle` | Installed client/server APIs in two real Workers; 39 interceptor, termination, metadata, resource, configuration and deadline cases with 70 logical RPCs | `verification/workerd-lifecycle.json` |
 | `npm run test:workerd:observer` | Logical call/attempt timing, privacy, traffic and callback isolation in workerd | `verification/workerd-observer.json` |
+| `npm run test:workerd:detached-calls` | RPCs still running when a Worker returns: runtime cancellation at the peer, stranded admission and buffers, expiry after the deadline, and `ctx.waitUntil()` completion | `verification/workerd-detached-calls.json` |
 | `npm run test:workerd:server-streaming` | Lazy server uploads, duplex demand, EOF/error/cancel/deadline and two-Worker service-binding cleanup | `verification/workerd-server-streaming.json` |
 | `npm run test:workerd:transport-extensions` | Shared retry-budget depletion/recovery/isolation and structured error decoding in both modes | `verification/workerd-transport-extensions.json` |
 | `npm run test:benchmark:sdk` | Two pinned profiles × four actual SDK Worker graphs: bundle/startup/first/authenticated/warm RPC, concurrent slow streams, compression and sampled V8 heap | `verification/sdk-benchmark.json` |
