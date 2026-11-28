@@ -72,6 +72,9 @@ export class WorkersCall {
     private metadata?: Metadata;
     private baseMetadata?: Metadata;
     private request?: Buffer;
+    /** Parent of every reservation this call makes, so a detached call can release them. */
+    private readonly ownedScope?: ResourceScope;
+    private unwatchDeadline?: () => void;
     private requestScope?: ResourceScope;
     private releaseAdmission?: () => void;
     private requestBody?: RequestStreamBody;
@@ -107,10 +110,11 @@ export class WorkersCall {
         this.retryThrottle = retryThrottleFor(context.config, context.authority, context.origin);
         this.observation = context.lifetime?.observation ?? (context.config.observer ? new CallObservation(context.config.observer) : undefined);
         this.credentials = context.credentials._getCallCredentials();
+        this.ownedScope = context.resources?.scope();
         if (context.requestStream && context.config.mode === 'grpc-web' && context.config.experimentalRequestStreaming) {
             this.requestBody = new RequestStreamBody({ maxMessageBytes: context.limits.maxSend,
                 maxWireBytes: context.config.transportMaxSendBytes, compression: context.limits.compression,
-                budget: context.resources,
+                budget: this.ownedScope,
                 beforeFrame: () => { this.stopIfExpired(); },
                 onFrame: this.observation ? bytes => this.observation!.sent(bytes) : undefined,
                 // Fetch can cancel an upload after an early server response.
@@ -246,6 +250,11 @@ export class WorkersCall {
             return;
         }
         if (!c.lifetime) this.armTimer();
+        // The deadline timer belongs to the runtime context that started this
+        // call. Workers drops that context's timers, continuations and Fetch I/O
+        // once its request has ended, so this work could otherwise stay
+        // admitted and charged forever. Later budget activity expires it.
+        this.unwatchDeadline = c.resources?.watchDeadline(this.deadline, () => this.expireDetached());
         if (c.insecure && (!this.credentials.isEmpty() || ['authorization', 'cookie', 'x-api-key', 'x-goog-api-key'].some(k => this.metadata!.get(k).length > 0))) {
             this.finish(status.UNAUTHENTICATED, 'WGA_INSECURE_AUTH');
             return;
@@ -392,7 +401,7 @@ export class WorkersCall {
             return;
         }
         try {
-            this.requestScope = this.context.resources?.scope();
+            this.requestScope = this.ownedScope?.scope();
             this.requestScope?.reserve(message.length);
             this.request = Buffer.from(message);
         } catch (error) {
@@ -526,13 +535,17 @@ export class WorkersCall {
                     return;
                 }
             }
-        } finally { this.activePumps--; }
+        } finally {
+            this.activePumps--;
+            if (this.terminal && this.activePumps === 0) this.settleWatch();
+        }
     }
     private async executeAttempt(policy: RetryPolicySnapshot | undefined, attempt: number, previous?: AttemptOutcome): Promise<AttemptOutcome | undefined> {
         const c = this.context;
         // Attempt buffers outlive logical cancellation when a custom Fetch
-        // ignores abort. Keep their leases until the actual owner unwinds.
-        const attemptScope = c.resources?.scope();
+        // ignores abort. Keep their leases until the actual owner unwinds, or
+        // until a detached call's owner can no longer unwind (expireDetached).
+        const attemptScope = this.ownedScope?.scope();
         try {
             if (this.deadline <= Date.now()) {
                 this.finish(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
@@ -624,7 +637,7 @@ export class WorkersCall {
             if (response.body) {
                 for await (const frame of decodeFrames(response.body, c.limits.maxReceive, this.aborter.signal,
                     { encoding: responseCompression(response.headers), maxWireBytes: c.config.transportMaxReceiveBytes,
-                        budget: c.resources, diagnostics: this.parserDiagnostics, onChunk: bytes => {
+                        budget: attemptScope, diagnostics: this.parserDiagnostics, onChunk: bytes => {
                             this.observation?.received(bytes);
                             // Ready partial or empty chunks can keep timer callbacks
                             // queued indefinitely without completing another frame.
@@ -715,8 +728,27 @@ export class WorkersCall {
         this.wakeRead = undefined;
         wake?.();
         this.context.onFinish();
+        if (this.activePumps === 0) this.settleWatch();
         this.deliverTerminal();
         this.releaseStoppedUploadCallbacks();
+    }
+    /** Normal completion: the call and all of its transport work have unwound. */
+    private settleWatch(): void {
+        const unwatch = this.unwatchDeadline;
+        this.unwatchDeadline = undefined;
+        unwatch?.();
+    }
+    /**
+     * The call's deadline passed long ago, yet neither its timer nor its
+     * transport work has unwound: the runtime context that owns them can no
+     * longer run them (in Workers, its request has ended and its Fetch was
+     * cancelled). Settle the logical call as its own timer would have, then
+     * release the reservations that suspended work can never close itself.
+     */
+    private expireDetached(): void {
+        this.unwatchDeadline = undefined;
+        if (!this.terminal) this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE');
+        this.ownedScope?.close();
     }
     private releaseStoppedUploadCallbacks(): void {
         if (!this.terminal || (this.context.lifetime && !this.context.lifetime.isTerminal())) return;

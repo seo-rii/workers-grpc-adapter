@@ -17,6 +17,7 @@ export class CallLifetime implements InterceptingCallInterface {
     private delivered = false;
     private started = false;
     private timer?: ReturnType<typeof setTimeout>;
+    private unwatchDeadline?: () => void;
     private removeParent?: () => void;
     private chainStarted = false;
     private readonly pending: Array<() => void> = [];
@@ -67,6 +68,11 @@ export class CallLifetime implements InterceptingCallInterface {
         if (!this.attachParent(flags)) return;
         this.armTimer();
         if (this.terminal) return;
+        // The timer above belongs to the caller's runtime context. If that
+        // context ends first (a Worker request that already returned), later
+        // activity on the shared budget still expires this logical call.
+        this.unwatchDeadline = this.resources?.watchDeadline(this.deadline,
+            () => this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE'));
         // Admission can defer even an immediately available slot. Own the
         // caller's headers and interceptor context before yielding to it.
         if (this.resources?.limits.maxConcurrentCalls !== undefined) {
@@ -198,6 +204,7 @@ export class CallLifetime implements InterceptingCallInterface {
         this.terminal = result;
         if (this.timer !== undefined) clearTimeout(this.timer);
         this.timer = undefined;
+        this.unwatchDeadline?.(); this.unwatchDeadline = undefined;
         const detach = this.removeParent; this.removeParent = undefined;
         try { detach?.(); } catch { /* A custom parent must not prevent cleanup. */ }
         this.onFinish();
