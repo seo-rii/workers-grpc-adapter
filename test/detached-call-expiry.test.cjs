@@ -224,3 +224,36 @@ test('DETACHED a call that expired by its own timer is not expired again; an uns
         assert.equal(call.statuses.length, 1);
     } finally { client.close(); }
 });
+
+for (const [name, retryDeadline] of [['extends', START + 5000], ['shortens', START + 500]]) {
+    test(`DETACHED expiry follows a retry deadline that ${name} the call's deadline after startup`, async t => {
+        const clock = detachedRuntime(t);
+        const deadline = START + 1000;
+        const unavailable = async () => new Response(trailers(grpc.status.UNAVAILABLE),
+            { headers: { 'content-type': 'application/grpc-web+proto' } });
+        // grpc-node's retry interceptor pattern: another transport call from onReceiveStatus.
+        const retry = (options, nextCall) => new grpc.InterceptingCall(nextCall(options), {
+            start(metadata, _listener, next) {
+                next(metadata, { onReceiveStatus(value, nextStatus) {
+                    if (value.code !== grpc.status.UNAVAILABLE) { nextStatus(value); return; }
+                    const call = nextCall({ ...options, deadline: retryDeadline });
+                    call.start(metadata, { onReceiveMetadata() {}, onReceiveMessage() {}, onReceiveStatus: nextStatus });
+                    call.sendMessage({ text: 'again' }); call.halfClose();
+                } });
+            },
+        });
+        const { transport, client, fetchCount } = setup([unavailable, pendingFetch]);
+        try {
+            const call = unary(client, deadline, { interceptors: [retry] });
+            await settle();
+            assert.equal(fetchCount(), 2);
+            clock.set(retryDeadline + GRACE - 1);
+            assert.equal(usage(transport).activeCalls, 1, 'not expired before the retry deadline and its grace');
+            assert.deepEqual(call.callbacks, []);
+            clock.set(retryDeadline + GRACE);
+            assert.deepEqual(usage(transport), { activeCalls: 0, queuedCalls: 0, bufferedBytes: 0 });
+            await settle();
+            assert.deepEqual(call.callbacks, [grpc.status.DEADLINE_EXCEEDED]);
+        } finally { client.close(); }
+    });
+}

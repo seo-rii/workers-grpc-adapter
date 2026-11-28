@@ -53,7 +53,12 @@ export class CallLifetime implements InterceptingCallInterface {
             this.timer = undefined;
             if (typeof this.deadline !== 'number' || Number.isNaN(this.deadline) || this.deadline === -Infinity) {
                 this.cancelWithStatus(status.INVALID_ARGUMENT, 'WGA_INVALID_DEADLINE');
-            } else this.armTimer();
+            } else {
+                this.armTimer();
+                // The detached-context watch must follow the re-armed deadline:
+                // a stale earlier one would expire the call too soon.
+                if (this.unwatchDeadline) this.watchDetachedDeadline();
+            }
         }
         return { ...options, deadline: this.deadline };
     }
@@ -85,8 +90,7 @@ export class CallLifetime implements InterceptingCallInterface {
         // The timer above belongs to the caller's runtime context. If that
         // context ends first (a Worker request that already returned), later
         // activity on the shared budget still expires this logical call.
-        this.unwatchDeadline = this.resources?.watchDeadline(this.deadline,
-            () => this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE'));
+        this.watchDetachedDeadline();
         // Admission can defer even an immediately available slot. Own the
         // caller's headers and interceptor context before yielding to it.
         if (this.resources?.limits.maxConcurrentCalls !== undefined) {
@@ -163,6 +167,11 @@ export class CallLifetime implements InterceptingCallInterface {
             this.removeParent = undefined;
             this.cancelWithStatus(status.INTERNAL, 'WGA_INVALID_PARENT'); return false;
         }
+    }
+    private watchDetachedDeadline(): void {
+        this.unwatchDeadline?.();
+        this.unwatchDeadline = this.terminal ? undefined : this.resources?.watchDeadline(this.deadline,
+            () => this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE'));
     }
     private armTimer(): void {
         this.deadlineArmed = true;
