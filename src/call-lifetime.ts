@@ -11,6 +11,10 @@ import { invokeWithCallExpiry, setCallExpiryCheck } from './call-expiry';
 export class CallLifetime implements InterceptingCallInterface {
     private options: CallOptions;
     private deadline = Infinity;
+    // A propagated parent deadline and whether start() has armed the deadline
+    // timer. Interceptors can create another transport call after startup.
+    private parentDeadline = Infinity;
+    private deadlineArmed = false;
     private nextCall?: InterceptingCallInterface;
     private listener?: Partial<InterceptingListener>;
     private terminal?: StatusObject;
@@ -39,8 +43,18 @@ export class CallLifetime implements InterceptingCallInterface {
     applyOptions(options: CallOptions): CallOptions {
         this.options = { ...options };
         const value = options.deadline;
-        this.deadline = value === undefined ? (this.defaultTimeoutMs === undefined ? Infinity : this.createdAt + this.defaultTimeoutMs)
+        const deadline = value === undefined ? (this.defaultTimeoutMs === undefined ? Infinity : this.createdAt + this.defaultTimeoutMs)
             : value instanceof Date ? value.getTime() : value;
+        // A retrying interceptor can call nextCall(options) again after start
+        // attached the parent. Its options cannot drop the inherited deadline.
+        this.deadline = typeof deadline === 'number' && this.parentDeadline < deadline ? this.parentDeadline : deadline;
+        if (this.deadlineArmed && !this.terminal) {
+            if (this.timer !== undefined) clearTimeout(this.timer);
+            this.timer = undefined;
+            if (typeof this.deadline !== 'number' || Number.isNaN(this.deadline) || this.deadline === -Infinity) {
+                this.cancelWithStatus(status.INVALID_ARGUMENT, 'WGA_INVALID_DEADLINE');
+            } else this.armTimer();
+        }
         return { ...options, deadline: this.deadline };
     }
     bind(nextCall: InterceptingCallInterface): this { this.nextCall = nextCall; return this; }
@@ -129,6 +143,7 @@ export class CallLifetime implements InterceptingCallInterface {
                 const value = parent.getDeadline();
                 const deadline = value instanceof Date ? value.getTime() : value;
                 if (typeof deadline !== 'number' || Number.isNaN(deadline) || deadline === -Infinity) throw new Error();
+                this.parentDeadline = deadline;
                 this.deadline = Math.min(this.deadline, deadline);
                 for (const call of this.transports) call.updateManagedDeadline(this.deadline);
             }
@@ -150,6 +165,7 @@ export class CallLifetime implements InterceptingCallInterface {
         }
     }
     private armTimer(): void {
+        this.deadlineArmed = true;
         if (this.terminal || this.deadline === Infinity) return;
         const remaining = this.deadline - Date.now();
         if (remaining <= 0) { this.cancelWithStatus(status.DEADLINE_EXCEEDED, 'WGA_DEADLINE'); return; }
