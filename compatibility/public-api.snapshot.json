@@ -6592,7 +6592,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
+          "sha256": "32e7fc70d5f4c0652fab20a7277b15abb248527f2ef931865dd8a805127d3ac0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6671,7 +6671,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -6743,7 +6743,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
+          "sha256": "9a8274207207507764f8e3dc7dc63605672622f268ae540426a3ba095673939a",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6821,7 +6821,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -6842,7 +6842,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}",
-          "sha256": "4943e8d11b39e0dfc55841a78c973065426646d603809aaad2eabe91bee0ccc9",
+          "sha256": "93c6e1d787ddd31ff769b480e42dceb012ae427a44b28c4d07c7fc910069e1d1",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -6915,7 +6915,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -6948,7 +6948,7 @@
           "value": false,
           "kind": "ClassDeclaration",
           "signature": "class Channel {\n    constructor(target: string, creds: ChannelCredentials, options?: ChannelOptions);\n    getTarget(): string;\n    getReadQueueLimit(): number | undefined;\n    close(): void;\n    getConnectivityState(_tryToConnect?: boolean): connectivityState;\n    watchConnectivityState(_current: connectivityState, _deadline: Date | number, callback: (error?: Error) => void): void;\n    getChannelzRef(): {\n        kind: string;\n        id: number;\n        name: string;\n    };\n    createCall(): never;\n    createCallForMethod(path: string, requestStream: boolean, responseStream: boolean, options: CallOptions, lifetime?: CallLifetime): WorkersCall;\n    createCallLifetime(options: CallOptions, callStartTime?: number): CallLifetime;\n    activeCallCount(): number;\n}",
-          "sha256": "b694f56fe9fea4d3c0a2faf7a2c471d66df631fb3fd06c66a5b9b98fef169129",
+          "sha256": "9f5b2eddd6e227175df958b85e39d6658b2a937317e7f7cb99f39718ab65404d",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -7021,7 +7021,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -7042,7 +7042,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
+          "sha256": "f919b297c141a485595cec87c6e91a1187a7113d36ba789aaec661bf71cc64c4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7133,7 +7133,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -7194,7 +7194,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
+          "sha256": "a6973e1fd6609180ce9cac9c3c6cc7ba0578bf380c9c62566fbf7a30b11007d0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -7274,7 +7274,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -7437,7 +7437,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface GrpcObject {\n    [index: string]: GrpcObject | ServiceClientConstructor | ProtobufTypeDefinition;\n}",
-          "sha256": "8c0faf227c4bd41727398b310417b2dd35c1e9f8c06428ea9f2523a16a577726",
+          "sha256": "ed56ebadc7f1e2d7bd06114d2d686d286ab6937ae538ead0b64004f6545ec32e",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7536,7 +7536,7 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -7611,7 +7611,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class HealthClient {\n    constructor(client: Client);\n    check(service?: string, options?: HealthCallOptions): Promise<HealthCheckResponse>;\n    watch(service?: string, options?: Omit<HealthCallOptions, 'signal'>): ClientReadableStream<HealthCheckResponse>;\n    monitor(service?: string, options?: HealthWatchOptions): HealthWatch;\n}",
-          "sha256": "867b4bc9f345f6629aef585a1c58223ae7f7f527b857135b95ccb51fc1d7c1c6",
+          "sha256": "d8d4f537d628f261c752c1464e703014de01ea898b7a26f912bdb84cf076f4ef",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7709,8 +7709,8 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
             "f19898906877d04df32788d114b14dc97bc5ecc4d7c1d2f1f2b6eef62ffeae85",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -7745,7 +7745,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class HealthWatch {\n    constructor(client: HealthClient, service?: string, options?: HealthWatchOptions);\n    getState(): HealthWatchState;\n    waitForServing(options: HealthWaitOptions): Promise<HealthWatchState>;\n    close(): void;\n}",
-          "sha256": "9c0d95f0eb1258caf0586ecfff198512ef86cf328c051c2ff7e0c893ca6470b6",
+          "sha256": "060a8d46e1e2cc8d8ba36e817aaf595f9c0db2744ba09b0c9a77320606938a04",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -7843,8 +7843,8 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
             "f19898906877d04df32788d114b14dc97bc5ecc4d7c1d2f1f2b6eef62ffeae85",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -8527,7 +8527,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface ServiceClient extends Client {\n    [methodName: string]: Function;\n}",
-          "sha256": "43f3e65bcee5cdb0df400538415a70f48e95fb383abf8e038d52c7a0aec9ad6d",
+          "sha256": "34c7ce1e6aa7adaae1b7719c0e8fd87bc99b06db208854a0ffb2cb05d5c7acea",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8619,7 +8619,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -8632,7 +8632,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface ServiceClientConstructor {\n    new (address: string, credentials: ChannelCredentials, options?: Partial<ChannelOptions>): ServiceClient;\n    service: ServiceDefinition;\n    serviceName: string;\n}",
-          "sha256": "b6be3628cd2d1de4abf6e5d0d50fd90ab785a921d85a5742dd6fd4130d07db83",
+          "sha256": "65f360e80a2ee9b46839e7a2faba4f81c6b3d950a68d0caca79edb590944abbc",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8729,7 +8729,7 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -8862,7 +8862,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
+          "sha256": "30eb385dfe05f9eaff8870ccdecc734c958d19c781b9ce342cd8f0d2c033b776",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -8954,7 +8954,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -9022,7 +9022,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
+          "sha256": "c5c0769d4efe742732892cc0675e52ce26bc81fbc7862b2a5b172f78899ecb7c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9114,7 +9114,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -9127,7 +9127,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function loadPackageDefinition(packageDef: PackageDefinition): GrpcObject;",
-          "sha256": "3055416ae14b1c128747d530b27927ce1301332af28386c68240964d1a740532",
+          "sha256": "08ea6bac37f68c86a68e8c97f4be95374f8e34e24278ede63246ea5bb55a3455",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9228,7 +9228,7 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -9241,7 +9241,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function makeClientConstructor(methods: ServiceDefinition, serviceName: string, classOptions?: {}): ServiceClientConstructor;",
-          "sha256": "d7fa0400b7c225c78a22b1f5095123bd8d64e72dc0fdd2ca5735d7bd31004839",
+          "sha256": "b0ee663e4dc65edc2033f41761de03a2401a135beb6e432d085b8d5821f69d70",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9339,7 +9339,7 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -9352,7 +9352,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function makeClientConstructor(methods: ServiceDefinition, serviceName: string, classOptions?: {}): ServiceClientConstructor;",
-          "sha256": "f0719c3bbf0863c6a8fc2c3154603b9361b6866e92b1977a9805d66323ace55d",
+          "sha256": "743d0ae8f5b8c5f7e2cefbe0de1d25af324543461cde7406189be8ce6ab0e82b",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9450,7 +9450,7 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -9510,7 +9510,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
+          "sha256": "f3a87aaf0966382feefd6087cd7caf86406235b907a665e01f98b818bc420f98",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -9602,7 +9602,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -10166,15 +10166,15 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface CallMetadataOptions {\n    service_url: string;\n    method_name: string;\n}"
         },
-        "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba": {
-          "name": "dist/resources.d.ts#ResourceBudget",
-          "kind": "ClassDeclaration",
-          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
-        },
         "f19898906877d04df32788d114b14dc97bc5ecc4d7c1d2f1f2b6eef62ffeae85": {
           "name": "dist/health.d.ts#HealthWatchOptions",
           "kind": "InterfaceDeclaration",
           "signature": "interface HealthWatchOptions extends Omit<HealthCallOptions, 'deadline' | 'signal'> {\n    initialBackoffMs?: number;\n    maxBackoffMs?: number;\n    backoffMultiplier?: number;\n    backoffJitter?: number;\n    attemptTimeoutMs?: number;\n}"
+        },
+        "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0": {
+          "name": "dist/resources.d.ts#ResourceBudget",
+          "kind": "ClassDeclaration",
+          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    watchDeadline(deadline: number, expire: () => void): () => void;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
         },
         "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409": {
           "name": "dist/retry.d.ts#RetryPolicySnapshot",
@@ -10616,7 +10616,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function createWorkersGrpcTransport(config?: WorkersGrpcConfig): {\n    channelCredentials: grpc.ChannelCredentials;\n    grpcOptions: (existing?: ClientOptions) => ClientOptions;\n    resourceUsage(): import(\"./resources\").ResourceDiagnostics;\n    retryUsage(target: string): import(\"./retry\").WorkersGrpcRetryUsage | undefined;\n    gaxOptions<T extends Record<string, unknown>>(existing: T): T & {\n        grpc: typeof grpc;\n        fallback: false;\n    };\n};",
-          "sha256": "0e16e08c38882a8837d21b413a44d3465718153992e227c92c5562fc70f005d8",
+          "sha256": "edd7649e4fc25a481e9c51215a884f812892203a1c2935d1011f2113c597e835",
           "dependencies": [
             "0162278b73d696951e34121a89dd22c692765b5c177f53e92189c223626923f4",
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
@@ -10750,8 +10750,8 @@
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efb08b428923bb751a519f1a740a32a85d44024b42962fc7362e8ea220031659",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
             "f19898906877d04df32788d114b14dc97bc5ecc4d7c1d2f1f2b6eef62ffeae85",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -11420,15 +11420,15 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface CallMetadataOptions {\n    service_url: string;\n    method_name: string;\n}"
         },
-        "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba": {
-          "name": "dist/resources.d.ts#ResourceBudget",
-          "kind": "ClassDeclaration",
-          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
-        },
         "f19898906877d04df32788d114b14dc97bc5ecc4d7c1d2f1f2b6eef62ffeae85": {
           "name": "dist/health.d.ts#HealthWatchOptions",
           "kind": "InterfaceDeclaration",
           "signature": "interface HealthWatchOptions extends Omit<HealthCallOptions, 'deadline' | 'signal'> {\n    initialBackoffMs?: number;\n    maxBackoffMs?: number;\n    backoffMultiplier?: number;\n    backoffJitter?: number;\n    attemptTimeoutMs?: number;\n}"
+        },
+        "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0": {
+          "name": "dist/resources.d.ts#ResourceBudget",
+          "kind": "ClassDeclaration",
+          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    watchDeadline(deadline: number, expire: () => void): () => void;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
         },
         "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409": {
           "name": "dist/retry.d.ts#RetryPolicySnapshot",
@@ -12475,7 +12475,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
+          "sha256": "32e7fc70d5f4c0652fab20a7277b15abb248527f2ef931865dd8a805127d3ac0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12554,7 +12554,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -12617,7 +12617,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
+          "sha256": "9a8274207207507764f8e3dc7dc63605672622f268ae540426a3ba095673939a",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12695,7 +12695,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -12707,7 +12707,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
+          "sha256": "f919b297c141a485595cec87c6e91a1187a7113d36ba789aaec661bf71cc64c4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -12798,7 +12798,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -12859,7 +12859,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
+          "sha256": "a6973e1fd6609180ce9cac9c3c6cc7ba0578bf380c9c62566fbf7a30b11007d0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -12939,7 +12939,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -13152,7 +13152,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
+          "sha256": "30eb385dfe05f9eaff8870ccdecc734c958d19c781b9ce342cd8f0d2c033b776",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13244,7 +13244,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -13257,7 +13257,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
+          "sha256": "c5c0769d4efe742732892cc0675e52ce26bc81fbc7862b2a5b172f78899ecb7c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13349,7 +13349,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -13362,7 +13362,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
+          "sha256": "f3a87aaf0966382feefd6087cd7caf86406235b907a665e01f98b818bc420f98",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -13454,7 +13454,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -13913,10 +13913,10 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface CallMetadataOptions {\n    service_url: string;\n    method_name: string;\n}"
         },
-        "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba": {
+        "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0": {
           "name": "dist/resources.d.ts#ResourceBudget",
           "kind": "ClassDeclaration",
-          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
+          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    watchDeadline(deadline: number, expire: () => void): () => void;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
         },
         "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409": {
           "name": "dist/retry.d.ts#RetryPolicySnapshot",
@@ -13949,7 +13949,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallInvocationTransformer {\n    (callProperties: CallProperties<any, any>): CallProperties<any, any>;\n}",
-          "sha256": "cede76a6f83dae8b3c352432fc17f45c7ef5cd960dec3dd72d3bf4df1f1afa39",
+          "sha256": "32e7fc70d5f4c0652fab20a7277b15abb248527f2ef931865dd8a805127d3ac0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -14028,7 +14028,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -14091,7 +14091,7 @@
           "value": false,
           "kind": "InterfaceDeclaration",
           "signature": "interface CallProperties<RequestType, ResponseType> {\n    argument?: RequestType;\n    metadata: Metadata;\n    call: SurfaceCall;\n    channel: Channel;\n    methodDefinition: ClientMethodDefinition<RequestType, ResponseType>;\n    callOptions: CallOptions;\n    callback?: UnaryCallback<ResponseType>;\n}",
-          "sha256": "84c41416d2a6e824c512361920ab0ee7c236edc20c4c129a15f60c11fc1a409c",
+          "sha256": "9a8274207207507764f8e3dc7dc63605672622f268ae540426a3ba095673939a",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -14169,7 +14169,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -14181,7 +14181,7 @@
           "value": true,
           "kind": "ClassDeclaration",
           "signature": "class Client {\n    constructor(address: string, credentials: ChannelCredentials, options?: ClientOptions);\n    close(): void;\n    getChannel(): Channel;\n    waitForReady(deadline: Deadline, callback: (error?: Error) => void): void;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeUnaryRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, callback: UnaryCallback<ResponseType>): ClientUnaryCall;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options: CallOptions, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeClientStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, callback: UnaryCallback<ResponseType>): ClientWritableStream<RequestType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, metadata: Metadata, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeServerStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, argument: RequestType, options?: CallOptions): ClientReadableStream<ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, metadata: Metadata, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n    makeBidiStreamRequest<RequestType, ResponseType>(method: string, serialize: (value: RequestType) => Buffer, deserialize: (value: Buffer) => ResponseType, options?: CallOptions): ClientDuplexStream<RequestType, ResponseType>;\n}",
-          "sha256": "ca48053f094ef3c6ee93493b894a5e779740860f2578119440caff48c36aaa79",
+          "sha256": "f919b297c141a485595cec87c6e91a1187a7113d36ba789aaec661bf71cc64c4",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14272,7 +14272,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -14333,7 +14333,7 @@
           "value": false,
           "kind": "TypeAliasDeclaration",
           "signature": "type ClientOptions = Partial<ChannelOptions> & {\n    channelOverride?: Channel;\n    channelFactoryOverride?: (address: string, credentials: ChannelCredentials, options: ClientOptions) => Channel;\n    interceptors?: Interceptor[];\n    interceptor_providers?: InterceptorProvider[];\n    callInvocationTransformer?: CallInvocationTransformer;\n};",
-          "sha256": "4a2436fc132906366373347afee1086fa2235a43f444c6467ea5b629db98b94b",
+          "sha256": "a6973e1fd6609180ce9cac9c3c6cc7ba0578bf380c9c62566fbf7a30b11007d0",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0f73b43fec5155c5771f32c85132e51c5df992c3e2d943dd9f5d7a450dcbbcdb",
@@ -14413,7 +14413,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
             "fc845605c3a6f7661850bf4cce8d1cebc9ad997cdac56578b684a98d141d9908"
@@ -14626,7 +14626,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function closeClient(client: Client): void;",
-          "sha256": "1040ba47a487ac57e3f3490df2a6da75250c037810f01d3b4058461f1bba97f4",
+          "sha256": "30eb385dfe05f9eaff8870ccdecc734c958d19c781b9ce342cd8f0d2c033b776",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14718,7 +14718,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -14731,7 +14731,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function getClientChannel(client: Client): Channel;",
-          "sha256": "2dbcc84bd2580b404d1346615f11b250a0fc46dd3a9134a7928017f643edd5cc",
+          "sha256": "c5c0769d4efe742732892cc0675e52ce26bc81fbc7862b2a5b172f78899ecb7c",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14823,7 +14823,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -14836,7 +14836,7 @@
           "value": true,
           "kind": "FunctionDeclaration",
           "signature": "function waitForClientReady(client: Client, deadline: Deadline, callback: (error?: Error) => void): void;",
-          "sha256": "85a571ef5e752eb1639c5b98c99cdf41c0c598bcd119ac53dfc5cca6077375c0",
+          "sha256": "f3a87aaf0966382feefd6087cd7caf86406235b907a665e01f98b818bc420f98",
           "dependencies": [
             "05d98044a3f30d2db26ee395c916c0348ac5d225a004ca59abe9b3a191af9e04",
             "0c3ae45c1b7e677c3e68d637be423295d88ac80e688de73d1427c9da5ee3dae3",
@@ -14928,7 +14928,7 @@
             "edaf0644f8a63d208ff16e936817553f242fe90ce3c08b859e087c8f38a8a976",
             "ee65ef8eae1a7cde5ab42a02b92cdbb7ebfeb42ec9ab4e9a2f83cc6e341ea29b",
             "efbee809948132aec19cc666c7e7af7c5d401e5d6b12538005a7fba19a0b4564",
-            "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba",
+            "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0",
             "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409",
             "f5a74929e31a928b6291199df539f47086fce36fb557d28e3a0820ff5052aee3",
             "f95d6d69e4edeced98045c7810630ebff36093fe3263238ad271583cc93b6758",
@@ -15387,10 +15387,10 @@
           "kind": "InterfaceDeclaration",
           "signature": "interface CallMetadataOptions {\n    service_url: string;\n    method_name: string;\n}"
         },
-        "f126eafd08ae8fd2065848d5616544d32deaa61884000022ae7843fc268a1cba": {
+        "f29c26eb8519d3c3fe0ad1f7537be5ae530ade144588f4d5298c178dbb653fe0": {
           "name": "dist/resources.d.ts#ResourceBudget",
           "kind": "ClassDeclaration",
-          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
+          "signature": "class ResourceBudget {\n    readonly limits: Readonly<ResourceLimits>;\n    constructor(limits?: ResourceLimits);\n    diagnostics(): ResourceDiagnostics;\n    watchDeadline(deadline: number, expire: () => void): () => void;\n    acquire(signal?: AbortSignal): Promise<() => void>;\n    scope(): ResourceScope;\n    reserve(bytes: number): ByteLease;\n}"
         },
         "f48ab26c5d2dda867261d35c3ec17dfe23fd7c4c5ccfdb6cb50a9d73a5f32409": {
           "name": "dist/retry.d.ts#RetryPolicySnapshot",

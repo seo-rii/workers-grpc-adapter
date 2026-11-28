@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { CompressionEncoding } from './compression';
 import { encodeMessageFrame } from './wire';
 import { status, TransportError } from './status';
-import type { ByteLease, ResourceBudget, ResourceScope } from './resources';
+import type { ByteLease, ResourceScope, ScopeOwner } from './resources';
 
 export interface RequestStreamBodyOptions {
     maxMessageBytes: number;
@@ -10,7 +10,7 @@ export interface RequestStreamBodyOptions {
     compression: CompressionEncoding;
     /** Fetch cancelled the request body; emitted at most once. */
     onCancel?: (error: Error) => void;
-    budget?: ResourceBudget;
+    budget?: ScopeOwner;
     /** Internal wire counter: a frame has been accepted by the body reader. */
     onFrame?: (bytes: number) => void;
     /** Let the owning call expire and abort before a frame reaches the reader. */
@@ -37,7 +37,7 @@ export class RequestStreamBody {
     private readonly maxWireBytes: number;
     private readonly compression: CompressionEncoding;
     private readonly onCancel?: (error: Error) => void;
-    private readonly budget?: ResourceBudget;
+    private readonly budget?: ScopeOwner;
     private readonly onFrame?: (bytes: number) => void;
     private readonly beforeFrame?: () => void;
     constructor(options: RequestStreamBodyOptions) {
@@ -79,9 +79,10 @@ export class RequestStreamBody {
             const error = new TransportError(status.RESOURCE_EXHAUSTED, 'WGA_REQUEST_SIZE');
             this.abort(error); return Promise.reject(error);
         }
-        const scope = this.budget?.scope();
-        let copy: Buffer, inputLease: ByteLease | undefined;
+        let scope: ResourceScope | undefined, copy: Buffer, inputLease: ByteLease | undefined;
         try {
+            // A detached call's owner scope can already be closed.
+            scope = this.budget?.scope();
             // Reserve before snapshotting input for compression or a delayed pull.
             inputLease = scope?.reserve(message.byteLength);
             copy = Buffer.from(message);

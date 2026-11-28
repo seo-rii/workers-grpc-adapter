@@ -183,6 +183,44 @@ test('PARENT cancellation interrupts retry backoff without a second attempt', as
     } finally { c.close(); }
 });
 
+test('PARENT and attempt deadlines bound a call that a retrying interceptor creates after startup', { timeout: 5000 }, async () => {
+    // grpc-node's retry interceptor example calls nextCall(options) again from
+    // onReceiveStatus, after the logical call has already attached its parent.
+    for (const scenario of ['parent', 'attempt']) {
+        const retry = (options, nextCall) => new grpc.InterceptingCall(nextCall(options), {
+            start(metadata, _listener, next) {
+                next(metadata, { onReceiveStatus(status, nextStatus) {
+                    if (status.code !== grpc.status.UNAVAILABLE) { nextStatus(status); return; }
+                    const call = nextCall(scenario === 'attempt' ? { ...options, deadline: Date.now() + 200 } : options);
+                    call.start(metadata, { onReceiveMetadata() {}, onReceiveMessage() {}, onReceiveStatus: nextStatus });
+                    call.sendMessage({ text: 'again' }); call.halfClose();
+                } });
+            },
+        });
+        const c = client({ interceptors: [retry] }), fake = hangingFetch();
+        const parent = new Parent(scenario === 'parent' ? Date.now() + 300 : Infinity);
+        const timeouts = []; let fetches = 0;
+        try {
+            await withFetch(async (url, init) => {
+                fetches++; timeouts.push(init.headers.get('grpc-timeout'));
+                return fetches === 1 ? response([], { code: 14 }) : fake.fetch(url, init);
+            }, async () => {
+                const started = Date.now();
+                const result = unary(c, undefined, { parent, ...(scenario === 'attempt' ? { deadline: started + 4000 } : {}) });
+                let guard;
+                const late = new Promise((_resolve, reject) => { guard = setTimeout(() => reject(new Error(`${scenario} deadline was not enforced`)), 1500); });
+                try { await Promise.race([assert.rejects(result.promise, { code: grpc.status.DEADLINE_EXCEEDED }), late]); }
+                finally { clearTimeout(guard); }
+                assert.equal(fetches, 2);
+                assert.match(timeouts[1], /^\d+m$/);
+                assert.ok(Number(timeouts[1].slice(0, -1)) <= 300, `${scenario}: ${timeouts[1]}`);
+                assert.equal(fake.aborts, 1);
+                clean(c, parent);
+            });
+        } finally { c.close(); }
+    }
+});
+
 test('PARENT subscription reentrancy and throwing registration cannot leak calls or listeners', async () => {
     const c = client();
     try {

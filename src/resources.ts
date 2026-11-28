@@ -20,6 +20,22 @@ export interface ByteLease {
     resize(bytes: number): void;
     release(): void;
 }
+/** Anything that can open a child buffer scope: a budget or another scope. */
+export interface ScopeOwner {
+    scope(): ResourceScope;
+}
+/**
+ * A call's own deadline timer runs in the runtime context that started the
+ * call. Workers cancels that context's timers, promise continuations and
+ * Fetch I/O once its request has ended, so such a call can never observe its
+ * deadline. An owner still registered this long after its deadline is treated
+ * as detached; later adapter activity on the same budget expires it.
+ */
+export const DETACHED_DEADLINE_GRACE_MS = 1000;
+interface DeadlineWatch {
+    readonly due: number;
+    readonly expire: () => void;
+}
 
 /** One buffer ownership lifetime; closing it also prevents later allocations. */
 export class ResourceScope {
@@ -109,16 +125,50 @@ export class ResourceBudget {
     private peakBuffered = 0;
     private readonly queue: Admission[] = [];
     private draining = false;
+    private readonly watches = new Set<DeadlineWatch>();
+    private nextWatchDue = Infinity;
+    private sweeping = false;
 
     constructor(limits?: ResourceLimits) {
         this.limits = validateResourceLimits(limits);
     }
     diagnostics(): ResourceDiagnostics {
+        this.sweep();
         return { activeCalls: this.active, queuedCalls: this.queue.length, bufferedBytes: this.buffered,
             peakActiveCalls: this.peakActive, peakQueuedCalls: this.peakQueued, peakBufferedBytes: this.peakBuffered };
     }
+    /**
+     * Registers a deadline-bounded owner (a logical call or its transport work).
+     * Owners unregister with the returned function once all of their work has
+     * unwound, so only work its own context can no longer run reaches expiry.
+     */
+    watchDeadline(deadline: number, expire: () => void): () => void {
+        if (!(deadline < Infinity)) return () => {};
+        const watch: DeadlineWatch = { due: deadline + DETACHED_DEADLINE_GRACE_MS, expire };
+        this.watches.add(watch);
+        if (watch.due < this.nextWatchDue) this.nextWatchDue = watch.due;
+        return () => { this.watches.delete(watch); };
+    }
+    /** Expires watched owners whose deadline timer could not run; see DETACHED_DEADLINE_GRACE_MS. */
+    private sweep(now = Date.now()): void {
+        if (this.sweeping || !(now >= this.nextWatchDue)) return;
+        this.sweeping = true;
+        try {
+            const due: DeadlineWatch[] = [];
+            let next = Infinity;
+            for (const watch of this.watches) {
+                if (now >= watch.due) { due.push(watch); this.watches.delete(watch); }
+                else if (watch.due < next) next = watch.due;
+            }
+            this.nextWatchDue = next;
+            for (const watch of due) {
+                try { watch.expire(); } catch { /* One owner cannot prevent other expiries. */ }
+            }
+        } finally { this.sweeping = false; }
+    }
     /** Abort releases admission only; independent buffer leases remain owned by their caller. */
     acquire(signal?: AbortSignal): Promise<() => void> {
+        this.sweep();
         return new Promise((resolve, reject) => {
             if (signal?.aborted) { reject(cancelled()); return; }
             const immediate = this.queue.length === 0 && this.active < (this.limits.maxConcurrentCalls ?? Infinity);

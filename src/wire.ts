@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { Metadata } from './metadata';
 import { status, TransportError } from './status';
 import { transformMessage, type CompressionEncoding } from './compression';
-import type { ResourceBudget, ResourceScope } from './resources';
+import type { ResourceScope, ScopeOwner } from './resources';
 export const METADATA_LIMIT = 65536;
 export interface StatusObject {
     code: status;
@@ -58,7 +58,7 @@ export function responseCompression(headers: Headers): string {
 }
 /** The parser holds one current Fetch chunk and one frame, never a growing stream array. */
 export async function* decodeFrames(body: ReadableStream<Uint8Array>, maxMessageBytes: number, signal?: AbortSignal,
-    compression: { encoding?: string; direction?: 'request' | 'response'; maxWireBytes?: number; budget?: ResourceBudget; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
+    compression: { encoding?: string; direction?: 'request' | 'response'; maxWireBytes?: number; budget?: ScopeOwner; onChunk?: (bytes: number) => void; diagnostics?: FrameParserDiagnostics } = {}): AsyncGenerator<Frame> {
     const reader = body.getReader();
     const diagnostics = compression.diagnostics;
     const chunkScope = compression.budget?.scope();
