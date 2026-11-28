@@ -177,6 +177,8 @@ export function createCancellationScope(options: SdkCancellationScopeOptions = {
                 // own total timeout, and derives that timeout from `timeout`. Cap
                 // it at the time left so retries stop at the scope's deadline. A
                 // zero timeout would disable GAX's limit, so keep it positive.
+                // The SDK's per-method default is not visible here: without a
+                // caller timeout, the time left replaces it, even when larger.
                 const remaining = Math.max(1, deadline - Date.now());
                 const current = scoped.timeout;
                 scoped.timeout = typeof current === 'number' && current > 0 ? Math.min(current, remaining) : remaining;
